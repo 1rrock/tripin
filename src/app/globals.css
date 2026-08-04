@@ -1,0 +1,115 @@
+@import "tailwindcss";
+
+/* ── 편집자막 월드 토큰 (방향 계약: src/app/layout.tsx) ─────────────
+   화이트 스튜디오 지면 + 잉크 블랙 + 형광펜 하이라이트.
+   --hl 은 문맥마다 바뀐다: 브랜드/홈 = 옐로, 조각 페이지 = 크리에이터 액센트. */
+:root {
+  --paper: #ffffff;
+  --ink: #111111;
+  --ink-soft: #55524a;
+  --hl-brand: #ffd400;
+  --hl: var(--hl-brand);
+}
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-ink: var(--ink);
+  --color-ink-soft: var(--ink-soft);
+  --color-hl-brand: var(--hl-brand);
+  --font-sans: var(--font-body), "Apple SD Gothic Neo", sans-serif;
+  --font-subtitle: var(--font-subtitle), "Apple SD Gothic Neo", sans-serif;
+  --font-timecode: var(--font-timecode), monospace;
+}
+
+body {
+  background: var(--paper);
+  color: var(--ink);
+  font-family: var(--font-body), "Apple SD Gothic Neo", sans-serif;
+}
+
+/* 자막체 — 장소명·헤딩의 목소리. 자간을 좁혀 편집자막의 밀도를 낸다. */
+.subtitle-face {
+  font-family: var(--font-subtitle), "Apple SD Gothic Neo", sans-serif;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+}
+
+/* 타임코드 — 숫자·라틴은 모노, 한글은 본문 얼굴로 안착 (Spline Sans Mono 는 한글 미보유). */
+.timecode-face {
+  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
+  font-variant-numeric: tabular-nums;
+}
+
+/* 키보드 포커스 — 2px 잉크 월드의 단일 포커스 링 */
+:focus-visible {
+  outline: 2px solid var(--ink);
+  outline-offset: 2px;
+}
+
+/* ── 형광펜 하이라이트 ──────────────────────────────────
+   글자 아랫단 55%에만 칠하는 예능 자막 형광펜. 줄바꿈에도 이어지도록 clone.
+   색은 --hl 로 문맥 주입 (조각 페이지에서 크리에이터 액센트로 교체). */
+.hl-pen {
+  /* 어두운 액센트도 형광펜답게 — 흰색을 섞어 항상 밝은 하이라이트를 만든다 (잉크 글자 대비 유지) */
+  background-image: linear-gradient(
+    to top,
+    transparent 6%,
+    color-mix(in srgb, var(--hl) 55%, white) 6%,
+    color-mix(in srgb, var(--hl) 55%, white) 52%,
+    transparent 52%
+  );
+  -webkit-box-decoration-break: clone;
+  box-decoration-break: clone;
+  padding-inline: 0.06em;
+}
+
+/* 선택된 리스트 항목의 형광펜 긋기 — 이 페이지의 단 하나의 authored 모션 */
+@keyframes pen-sweep {
+  from {
+    background-size: 0% 100%;
+  }
+  to {
+    background-size: 100% 100%;
+  }
+}
+.hl-pen-sweep {
+  background-repeat: no-repeat;
+  background-size: 100% 100%;
+  animation: pen-sweep 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .hl-pen-sweep {
+    animation: none;
+  }
+}
+
+/* ── 타임코드 칩 ── 영상 좌하단 타임코드 벅. `1:55 ▸` */
+.ts-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3em;
+  background: var(--ink);
+  color: #ffffff;
+  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
+  font-variant-numeric: tabular-nums;
+  font-size: 0.75rem;
+  line-height: 1;
+  padding: 0.35em 0.55em;
+  border-radius: 0.25em;
+  white-space: nowrap;
+}
+
+/* ── [대괄호] 메타 라벨 ── 편집자막의 상황 설명 자막 */
+.meta-label {
+  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
+  font-size: 0.75rem;
+  letter-spacing: 0.02em;
+  color: var(--ink-soft);
+  white-space: nowrap;
+}
+.meta-label::before {
+  content: "[";
+}
+.meta-label::after {
+  content: "]";
+}

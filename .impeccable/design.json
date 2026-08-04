@@ -1,0 +1,110 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-08-04T07:20:00+09:00",
+  "title": "Design System: Tripin",
+  "extensions": {
+    "colorMeta": {
+      "paper": { "role": "neutral", "displayName": "페이퍼", "canonical": "#ffffff", "tonalRamp": ["#262626", "#404040", "#5a5a5a", "#8c8c8c", "#bfbfbf", "#d9d9d9", "#f0f0f0", "#ffffff"] },
+      "ink": { "role": "neutral", "displayName": "잉크", "canonical": "#111111", "tonalRamp": ["#111111", "#262626", "#3d3d3d", "#555555", "#787878", "#a3a3a3", "#cccccc", "#f2f2f2"] },
+      "ink-soft": { "role": "neutral", "displayName": "소프트 잉크", "canonical": "#55524a", "tonalRamp": ["#26241f", "#3d3a33", "#55524a", "#6e6a60", "#8a857a", "#a8a399", "#c8c4bc", "#e8e5df"] },
+      "hl-brand": { "role": "primary", "displayName": "형광펜 옐로", "canonical": "#ffd400", "tonalRamp": ["#4d4000", "#806a00", "#b39500", "#e6bf00", "#ffd400", "#ffdf40", "#ffea80", "#fff5bf"] },
+      "hairline": { "role": "neutral", "displayName": "헤어라인", "canonical": "#e5e5e5", "tonalRamp": ["#454545", "#5c5c5c", "#737373", "#8f8f8f", "#ababab", "#c7c7c7", "#e5e5e5", "#f7f7f7"] }
+    },
+    "typographyMeta": {
+      "display": { "displayName": "자막체 디스플레이", "purpose": "페이지 H1 — 채널명·도시명. 형광펜과 함께 쓴다." },
+      "headline": { "displayName": "자막체 헤드라인", "purpose": "리스트 장소명·홈 채널명." },
+      "body": { "displayName": "본문", "purpose": "요약 불릿·설명." },
+      "label": { "displayName": "대괄호 라벨", "purpose": "[맛집] [위치 확인 중] 등 메타 정보. CSS가 대괄호를 부착." },
+      "timecode": { "displayName": "타임코드", "purpose": "모든 숫자 — 통계·리스트 번호·타임스탬프." }
+    },
+    "shadows": [
+      { "name": "map-pin", "value": "0 2px 5px rgba(0,0,0,.3)", "purpose": "지도 핀 전용 — 지면 위 요소는 그림자 금지 (The Flat Paper Rule)." }
+    ],
+    "motion": [
+      { "name": "pen-sweep", "value": "0.35s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "선택된 장소명에 형광펜 긋기 — 이 시스템의 유일한 authored 모션. reduced-motion 시 정지." }
+    ],
+    "breakpoints": [
+      { "name": "lg", "value": "1024px" }
+    ]
+  },
+  "components": [
+    {
+      "name": "잉크 칩",
+      "kind": "chip",
+      "refersTo": "chip-ink",
+      "description": "도시 링크·타입 필터 등 모든 인터랙티브 사각 요소. hover 시 잉크 반전.",
+      "html": "<a class=\"ds-chip-ink\">도쿄 <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"square\"><path d=\"M1.5 8.5 8.5 1.5M3 1.5h5.5V7\"/></svg></a>",
+      "css": ".ds-chip-ink { display: inline-flex; align-items: center; gap: 6px; border: 2px solid #111111; padding: 6px 14px; font-size: 14px; font-weight: 700; color: #111111; background: transparent; border-radius: 0; cursor: pointer; transition: background .15s, color .15s; } .ds-chip-ink:hover { background: #111111; color: #ffffff; } .ds-chip-ink:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+    },
+    {
+      "name": "타임코드 칩",
+      "kind": "chip",
+      "refersTo": "chip-timecode",
+      "description": "출처 영상 아웃링크 — 타임스탬프가 곧 버튼이다.",
+      "html": "<a class=\"ds-chip-timecode\">1:55 ▸</a>",
+      "css": ".ds-chip-timecode { display: inline-flex; align-items: center; gap: 4px; background: #111111; color: #ffffff; font-family: 'Spline Sans Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 1; padding: 5px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: opacity .15s; } .ds-chip-timecode:hover { opacity: .8; }"
+    },
+    {
+      "name": "형광펜 하이라이트",
+      "kind": "custom",
+      "refersTo": "hl-pen",
+      "description": "고유명사(채널명·도시명·장소명) 전용 하이라이트. --hl 로 문맥색 주입.",
+      "html": "<h2 class=\"ds-subtitle\"><span class=\"ds-hl-pen\">추성훈의 도쿄</span></h2>",
+      "css": ".ds-subtitle { font-family: 'Black Han Sans', 'Apple SD Gothic Neo', sans-serif; font-size: 28px; letter-spacing: -0.01em; line-height: 1.15; color: #111111; } .ds-hl-pen { --hl: #ffd400; background-image: linear-gradient(to top, transparent 6%, color-mix(in srgb, var(--hl) 55%, white) 6%, color-mix(in srgb, var(--hl) 55%, white) 52%, transparent 52%); -webkit-box-decoration-break: clone; box-decoration-break: clone; padding-inline: 0.06em; }"
+    },
+    {
+      "name": "대괄호 라벨",
+      "kind": "custom",
+      "refersTo": "meta-label",
+      "description": "메타 정보 라벨 — 대괄호는 CSS가 부착.",
+      "html": "<span class=\"ds-meta-label\">맛집</span>",
+      "css": ".ds-meta-label { font-family: 'Spline Sans Mono', monospace; font-size: 11.2px; letter-spacing: 0.02em; color: #55524a; white-space: nowrap; } .ds-meta-label::before { content: '['; } .ds-meta-label::after { content: ']'; }"
+    },
+    {
+      "name": "이니셜 뱃지",
+      "kind": "custom",
+      "refersTo": "initials-badge",
+      "description": "크리에이터 프로필 대체(법적 제약) — 액센트 원 + 잉크 보더.",
+      "html": "<span class=\"ds-initials\">추</span>",
+      "css": ".ds-initials { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 9999px; border: 2px solid #111111; background: #3b5fe0; color: #ffffff; font-family: 'Black Han Sans', sans-serif; font-size: 18px; }"
+    },
+    {
+      "name": "챕터 바",
+      "kind": "nav",
+      "refersTo": "chapter-bar",
+      "description": "장소 수만큼 나뉜 세그먼트 — 지도 핀·리스트 번호와 1:1 연동.",
+      "html": "<div class=\"ds-chapter-bar\"><button class=\"ds-chapter-seg is-active\"></button><button class=\"ds-chapter-seg\"></button><button class=\"ds-chapter-seg\"></button><button class=\"ds-chapter-seg\"></button></div>",
+      "css": ".ds-chapter-bar { display: flex; gap: 4px; } .ds-chapter-seg { height: 8px; flex: 1; border: none; background: color-mix(in srgb, #ffd400 60%, #111111); cursor: pointer; transition: background .15s; } .ds-chapter-seg.is-active { background: #111111; } .ds-chapter-seg:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "여행 영상 편집자막",
+    "overview": "한국 여행 유튜브의 편집자막 그래픽 — 초굵은 자막체, 형광펜 키워드 하이라이트, 좌하단 타임코드, [대괄호] 상황 라벨, 챕터 바 — 를 흰 정보 지면 위의 UI 언어로 쓴다. \"모든 장소는 영상에서 왔다\"는 제품 진실이 곧 시각 문법이다. 지면은 밝고 평평하며, 색은 문맥이 주입한다: 브랜드·홈은 형광 옐로, 채널×도시 조각은 그 크리에이터의 액센트색.",
+    "keyCharacteristics": [
+      "잉크 블랙 자막체가 화면의 목소리, 형광펜이 화면의 색",
+      "숫자는 전부 모노(타임코드) — 통계·번호·타임스탬프",
+      "인터랙티브 요소는 radius 0 + 2px 잉크 보더, hover 시 잉크 반전",
+      "지면은 평평 — 그림자는 지도 핀 하나뿐"
+    ],
+    "rules": [
+      { "name": "The Pen Rule", "body": "형광펜은 고유명사에만 긋는다 — 채널명, 도시명, 선택된 장소명. 칠할 때는 항상 --hl 55% + 흰색 혼합으로 밝게 유지한다.", "section": "colors" },
+      { "name": "The Context Ink Rule", "body": "크리에이터 액센트색은 --hl 주입으로만 쓴다. 버튼·텍스트·배경을 액센트색으로 직접 칠하지 않는다.", "section": "colors" },
+      { "name": "The Timecode Rule", "body": "화면의 모든 숫자는 Spline Sans Mono tabular로.", "section": "typography" },
+      { "name": "The Bracket Rule", "body": "메타 정보는 [대괄호] 모노 라벨로 — 대괄호는 CSS가 붙인다.", "section": "typography" },
+      { "name": "The Flat Paper Rule", "body": "지면 위 요소에 box-shadow를 주지 않는다. 유일한 예외는 지도 핀.", "section": "elevation" },
+      { "name": "The Two-Face Mono Rule", "body": "모노 계열 스택은 항상 var(--font-timecode), var(--font-body), Apple SD Gothic Neo, monospace — 숫자·라틴은 모노, 한글은 본문 얼굴.", "section": "typography" },
+      { "name": "The Click-Select Rule", "body": "지도↔리스트↔챕터 바 선택은 클릭으로만. 호버는 상태를 만들지 않고, 선택 시 다른 항목을 dim 처리하지 않는다.", "section": "colors" }
+    ],
+    "dos": [
+      "Do 새 화면의 액센트는 --hl 변수 주입으로 — 컴포넌트는 색을 모른 채 형광펜·챕터 바·핀에 반영되게 한다.",
+      "Do 숫자가 나오면 .timecode-face, 메타 정보면 .meta-label — 먼저 이 둘을 검토한다.",
+      "Do 인터랙티브 사각 요소는 radius 0 + 2px 잉크 보더 + hover 잉크 반전으로 통일."
+    ],
+    "donts": [
+      "Don't 유튜브 크롬을 차용하지 않는다 — 빨강 주조, 썸네일 그리드, 원형 재생버튼.",
+      "Don't 다크 모드·회색 카드·중간 라운드(8~16px)를 들이지 않는다.",
+      "Don't 형광펜을 문장·버튼·라벨에 긋지 않는다 (The Pen Rule).",
+      "Don't authored 모션을 추가하지 않는다 — pen-sweep 하나가 이 시스템의 전부다."
+    ]
+  }
+}
