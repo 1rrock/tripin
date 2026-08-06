@@ -1,6 +1,31 @@
 import type { Metadata } from "next";
+import { Noto_Sans, Noto_Sans_KR } from "next/font/google";
 import { publicEnv } from "@/shared/config/env";
 import "./globals.css";
+
+/**
+ * 공항 사인 시스템의 서체 — 휴머니스트 산세.
+ *
+ * 시안의 Frutiger Next 는 유료라 쓸 수 없다. Noto Sans 가 같은 계열(휴머니스트,
+ * 사인 가독성 목적으로 설계)의 무료 대체이고, Noto Sans KR 이 같은 슈퍼패밀리라
+ * 한글·라틴이 한 시스템으로 붙는다.
+ *
+ * 라틴을 따로 두는 이유: 게이트 번호·타임코드처럼 숫자가 주인공인 자리가 많은데
+ * Noto Sans 의 라틴 숫자가 KR 의 것보다 넓고 열려 있다.
+ * CDN(jsdelivr) 대신 next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
+ */
+const notoKr = Noto_Sans_KR({
+  subsets: ["latin"],
+  weight: ["400", "500", "700"],
+  variable: "--font-noto-kr",
+  display: "swap",
+});
+const noto = Noto_Sans({
+  subsets: ["latin"],
+  weight: ["400", "500", "600", "700"],
+  variable: "--font-noto",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   metadataBase: new URL(publicEnv.siteUrl),
@@ -30,7 +55,11 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="ko" className="h-full antialiased" suppressHydrationWarning>
+    <html
+      lang="ko"
+      className={`${notoKr.variable} ${noto.variable} h-full antialiased`}
+      suppressHydrationWarning
+    >
       <head>
         {/*
           테마 선반영 — 하이드레이션 이전, 첫 페인트 이전에 동기 실행된다.
@@ -49,12 +78,6 @@ export default function RootLayout({
         />
       </head>
       <body className="min-h-full flex flex-col">
-        {/* Pretendard Variable — 다이나믹 서브셋 CDN (next/font 는 이 서체를 제공하지 않음) */}
-        <link rel="preconnect" href="https://cdn.jsdelivr.net" crossOrigin="anonymous" />
-        <link
-          rel="stylesheet"
-          href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/variable/pretendardvariable-dynamic-subset.min.css"
-        />
         {/* 방향 계약 — 빌드 산출물에 HTML 주석으로 남아야 감사 가능 (JSX 주석은 스트립됨) */}
         <div
           hidden

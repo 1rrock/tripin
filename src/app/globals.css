@@ -1,220 +1,183 @@
 @import "tailwindcss";
 
-/* ── 월드 토큰 (방향 계약: src/app/layout.tsx) ─────────────────────────
-   1px 괘선 + 여백·타이포 위계로 선다. 색은 행동과 하이라이트에만.
-   깊이는 모바일 시트 그림자(--shadow-sheet) 하나뿐 — 그 외 어떤 그림자도 쓰지 않는다.
-   --hl 은 크리에이터 액센트 주입 슬롯: 뱃지·지도 핀·번호에만.
+/* ── 공항 사인 시스템 (방향 계약: src/app/layout.tsx, seed 21af9ba1) ─────────
+   지면이 사인 옐로 그 자체다. 검정은 픽토그램 인셋과 푸터에만, 흰색은 글리프에만.
+   보더는 검정이 아니라 **저대비 앰버 헤어라인** — 이걸 검정 굵은 선으로 바꾸면
+   사인 시스템이 데이터 테이블로 무너진다 (컴프 v1~v3 에서 실제로 그랬다).
 
-   ── 라이트/다크 ────────────────────────────────────────────────────
-   토큰 '이름'은 두 테마가 공유한다. 그래서 컴포넌트는 테마를 몰라도 되고,
-   `bg-paper text-ink` 같은 기존 클래스가 자동으로 두 테마에서 동작한다.
-   컴포넌트 안에 dark: 분기를 새로 만들지 말 것 — 여기서만 값을 바꾼다.
+   아래 값은 전부 시안 PNG 픽셀 실측이다 (.impeccable/refs/measure-reference.py).
+   승인 컴프: .impeccable/mocks/mobile-v4-structure.png
 
-   해상 순서: OS 설정(prefers-color-scheme) → 사용자 토글(html[data-theme]).
-   토글이 항상 이긴다. */
+   ── 조정하는 법 ────────────────────────────────────────────────────
+   아이콘이 크다/작다 → --glyph-ratio 하나만 바꾼다 (박스는 그대로, 글리프만 변한다).
+   박스 자체를 키우려면 --box-card / --box-quick / --box-avatar.
+   컴포넌트 안에서 px 를 직접 쓰지 말 것 — 여기서만 바꾼다. */
 :root {
-  --paper: #fffdf8;
-  --fill: #f4efe6;
-  --ink: #141414;
-  --ink-soft: #5d5a52;
-  --line: #e5e0d4;
-  --card: #ffffff;
-  --brand: #ff5a3c; /* 코랄 — CTA·담기·강조 */
-  --lemon: #ffd43a; /* 하이라이트·칩 */
-  --mint: #25d0a0;
-  --sky: #3f8cff;
-  --hl: var(--sky);
+  /* 지면과 잉크 */
+  --sign: #ffcc00;          /* 사인 옐로 — 배경·카드·칩 전부 이 색이다 */
+  --ink: #0e0d0b;           /* 제트 블랙 — 픽토그램 인셋·푸터·본문 */
+  --on-ink: #ffffff;        /* 잉크 지면 위 글리프·텍스트 */
+  --hairline: #977400;      /* 저대비 보더. 실측 rgb(151,116,0) */
+  --muted: #6b5200;         /* 플레이스홀더·보조 텍스트 */
 
-  /* 코랄 지면 위 글자색. 코랄은 두 테마에서 같은 중간톤이라 이 값도 고정이다.
-     --ink 를 쓰면 다크에서 밝은 글자 위 코랄이 되어 3.1:1 로 AA 미달한다. */
-  --on-brand: #23120c;
+  /* 획 — 실측 */
+  --stroke-card: 2px;
+  --stroke-active: 3.5px;   /* 활성은 색이 아니라 보더 굵기로 말한다 */
+  --stroke-divider: 1.2px;
 
-  /* 레몬 지면 위 글자색 — 코랄과 같은 이유로 고정이다.
-     레몬은 두 테마 모두 밝은 노랑이라 --ink 를 쓰면 다크에서 1.16:1 로 글자가 사라진다.
-     반전 상태(hover)는 이 값을 지면으로, --lemon 을 글자로 쓴다 — 12:1 이상으로 양쪽 다 성립한다. */
-  --on-lemon: #231a00;
+  /* 라운드 — 실측 */
+  --r-card: 17px;
+  --r-box: 17px;            /* 픽토그램 인셋 */
+  --r-field: 15px;          /* 검색·칩 */
+  --r-nav: 22px;
+  --r-pin: 10px;
+  --r-avatar: 13px;         /* 프로필 인셋 — 카드보다 작으므로 라운드도 작다 */
 
-  /* 테마와 무관한 고정 잉크. **테마 밖 지면** 위에서 쓴다 — 크리에이터 액센트(DB 값)와
-     지도 타일은 라이트/다크를 따라가지 않으므로, 그 위의 글자·지면도 따라가면 안 된다.
-     var(--ink) 를 쓰면 밝은 액센트 + 다크 테마에서 1.16:1 같은 파손이 난다.
-     어두운 액센트 위에는 흰색을 쓴다 (isDarkHex 분기). */
-  --ink-fixed: #141414;
+  /* 픽토그램 박스 — 여기가 조정 지점 */
+  --box-card: 86px;         /* 카드 안 인셋 */
+  --box-quick: 70px;        /* 퀵액션 */
+  --box-avatar: 52px;       /* 프로필 (원형 사진이 아니라 사각 인셋이다) */
+  --glyph-ratio: 0.5;       /* 박스 대비 글리프 크기. 1 에 가까울수록 꽉 찬다 */
+  --icon-nav: 28px;
+  --icon-field: 22px;
+  --icon-chevron: 17px;
 
-  /* 레몬 형광 밑줄의 띠 높이. 라이트는 글자를 관통하는 형광펜(글자가 잉크라 읽힌다),
-     다크는 글자가 밝으므로 겹치지 않게 baseline 아래로 내려 밑줄로 만든다. */
-  --hl-under: inset 0 -0.32em var(--lemon);
+  /* 타이포 — 실측. 라벨과 값의 스케일 점프가 이 월드의 대담함이다 */
+  --t-label: 12px;          /* 데이터 라벨. 자간 확장 필수 */
+  --t-value: 30px;          /* 데이터 값 */
+  --t-value-hero: 52px;     /* 거대 숫자 (시안의 "12 min") */
+  --t-screen: 30px;         /* 화면 제목 */
+  --t-title: 21px;          /* 카드 제목 — 한글 기준. 라틴이면 24 까지 올려도 안 넘친다 */
+  --t-body: 17px;
+  --t-nav: 14px;
 
-  --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
+  /* 리듬 */
+  --gutter: 20px;
+  --card-pad: 16px;
+  --stack: 16px;
+
   color-scheme: light;
 }
 
-/* OS 가 다크일 때의 기본값 */
+/* 다크 = 밤의 터미널. 지면이 잉크가 되고 사인만 켜져 있다 */
 @media (prefers-color-scheme: dark) {
   :root {
-    --paper: #0b0d10;
-    --fill: #1b2027;
-    --ink: #e9ebee;
-    --ink-soft: #97a0ad;
-    --line: #2a3038;
-    --card: #14171c;
-    --brand: #ff6f4d;
-    --lemon: #ffd84d;
-    --mint: #3fbfa6;
-    --sky: #7d9bff;
-    --hl: var(--sky);
-    --hl-under: inset 0 -0.12em var(--lemon);
-    --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    --sign: #17150f;
+    --ink: #ffcc00;
+    --on-ink: #17150f;
+    --hairline: #5c4a12;
+    --muted: #b39534;
     color-scheme: dark;
   }
 }
-
-/* 사용자가 토글로 고른 값은 OS 설정을 이긴다 (양방향) */
 :root[data-theme="light"] {
-  --paper: #fffdf8;
-  --fill: #f4efe6;
-  --ink: #141414;
-  --ink-soft: #5d5a52;
-  --line: #e5e0d4;
-  --card: #ffffff;
-  --brand: #ff5a3c;
-  --lemon: #ffd43a;
-  --mint: #25d0a0;
-  --sky: #3f8cff;
-  --hl: var(--sky);
-  --hl-under: inset 0 -0.32em var(--lemon);
-  --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
+  --sign: #ffcc00; --ink: #0e0d0b; --on-ink: #ffffff; --hairline: #977400; --muted: #6b5200;
   color-scheme: light;
 }
 :root[data-theme="dark"] {
-  --paper: #0b0d10;
-  --fill: #1b2027;
-  --ink: #e9ebee;
-  --ink-soft: #97a0ad;
-  --line: #2a3038;
-  --card: #14171c;
-  --brand: #ff6f4d;
-  --lemon: #ffd84d;
-  --mint: #3fbfa6;
-  --sky: #7d9bff;
-  --hl: var(--sky);
-  --hl-under: inset 0 -0.12em var(--lemon);
-  --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  --sign: #17150f; --ink: #ffcc00; --on-ink: #17150f; --hairline: #5c4a12; --muted: #b39534;
   color-scheme: dark;
 }
 
 @theme inline {
-  --color-paper: var(--paper);
-  --color-fill: var(--fill);
+  --color-sign: var(--sign);
   --color-ink: var(--ink);
-  --color-ink-soft: var(--ink-soft);
-  --color-line: var(--line);
-  --color-card: var(--card);
-  --color-brand: var(--brand);
-  --color-on-brand: var(--on-brand);
-  --color-lemon: var(--lemon);
-  --color-on-lemon: var(--on-lemon);
-  --color-mint: var(--mint);
-  --color-sky: var(--sky);
-  --font-sans:
-    "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR",
-    sans-serif;
+  --color-on-ink: var(--on-ink);
+  --color-hairline: var(--hairline);
+  --color-muted: var(--muted);
+  --radius-card: var(--r-card);
+  --radius-box: var(--r-box);
+  --radius-field: var(--r-field);
+  --radius-nav: var(--r-nav);
+  --font-sans: var(--font-noto-kr), var(--font-noto), -apple-system, sans-serif;
 }
 
 body {
-  background: var(--paper);
+  background: var(--sign);
   color: var(--ink);
-  font-family:
-    "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR",
-    sans-serif;
-  letter-spacing: -0.015em;
-  word-break: keep-all;
+  font-family: var(--font-noto-kr), var(--font-noto), -apple-system, sans-serif;
+  word-break: keep-all;               /* 한국어는 어절 단위로만 끊는다 */
+  -webkit-font-smoothing: antialiased;
 }
 
-/* 숫자는 어디서든 같은 폭 — 통계·번호·타임스탬프 정렬용 */
-.tnum {
-  font-variant-numeric: tabular-nums;
+/* 숫자는 어디서나 같은 폭 — 핀 번호·타임코드·통계 정렬 */
+.tnum { font-variant-numeric: tabular-nums; }
+
+/* 데이터 라벨 — 시안의 GATE / BOARDING / SEAT */
+.ds-label {
+  font-size: var(--t-label);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  line-height: 1.1;
 }
 
-/* 키보드 포커스 — 잉크 링 (괘선보다 굵어야 포커스가 보인다) */
-:focus-visible {
-  outline: 2px solid var(--ink);
-  outline-offset: 2px;
+/* 검정 픽토그램 인셋 — 이 월드의 서명.
+   글리프 크기는 박스 × --glyph-ratio 로만 정해진다 */
+.ds-box {
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: var(--ink);
+  border-radius: var(--r-box);
 }
+.ds-box > svg {
+  width: calc(var(--_box) * var(--glyph-ratio));
+  height: calc(var(--_box) * var(--glyph-ratio));
+  fill: var(--on-ink);
+}
+.ds-box--card   { --_box: var(--box-card);   width: var(--box-card);   height: var(--box-card); }
+.ds-box--quick  { --_box: var(--box-quick);  width: var(--box-quick);  height: var(--box-quick); }
+.ds-box--avatar { --_box: var(--box-avatar); width: var(--box-avatar); height: var(--box-avatar); border-radius: var(--r-avatar); }
 
-/* 잉크 지면 위에서는 링을 반전한다 (WCAG 2.4.7).
-   잉크 링이 잉크 지면과 1:1 로 같아져 포커스가 완전히 사라지는 곳 — 현재는 담은 목록 바 안의 "링크 복사".
+/* 카드 — 지면과 같은 색, 헤어라인으로만 선다 */
+.ds-card {
+  background: var(--sign);
+  border: var(--stroke-card) solid var(--hairline);
+  border-radius: var(--r-card);
+  padding: var(--card-pad);
+}
+.ds-card[data-active="true"] { border-color: var(--ink); border-width: var(--stroke-active); }
+.ds-divider { height: var(--stroke-divider); background: var(--hairline); border: 0; margin: 0; }
 
-   ⚠️ 이 규칙은 반드시 여기(레이어 밖)에 있어야 한다.
-   Tailwind 유틸리티(`focus-visible:outline-paper`)는 `@layer utilities` 안에 생성되는데,
-   위의 전역 :focus-visible 은 레이어 밖이다. 레이어 없는 CSS 가 레이어 CSS 를 항상 이기므로
-   특이도와 무관하게 유틸리티가 먹지 않는다. 같은 레이어 밖에서 덮어야 한다. */
-.focus-ring-invert:focus-visible {
-  outline-color: var(--paper);
-}
+/* 키보드 포커스 — 잉크 링. 레이어 밖이라 유틸리티로 덮이지 않는다 */
+:focus-visible { outline: 2px solid var(--ink); outline-offset: 2px; }
+/* 잉크 지면(푸터) 위에서는 반전하지 않으면 링이 사라진다 (WCAG 2.4.7) */
+.focus-ring-invert:focus-visible { outline-color: var(--on-ink); }
 
-/* 모바일 시트 그림자 — 이 월드에서 유일하게 허용된 깊이 */
-.sheet-shadow {
-  box-shadow: var(--shadow-sheet);
-}
+/* 지도 핀이 리스트 번호와 1:1 로 붙는 순간의 반응 */
+@keyframes pin-pop { from { transform: scale(1); } to { transform: scale(1.18); } }
+.pin-active { animation: pin-pop 0.12s ease-out forwards; }
 
-/* 레몬 형광 밑줄 — 히어로 키워드 전용.
-   띠 높이는 테마 토큰이다 (--hl-under 정의부 주석 참조) — 여기서 값을 분기하지 않는다. */
-.hl-under {
-  box-shadow: var(--hl-under);
-}
+/* 담기 바 등장 */
+@keyframes rise-in { from { transform: translateY(120%); opacity: 0; } to { transform: none; opacity: 1; } }
+.rise-in { animation: rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1); }
 
-/* 티커(장소 흐름) — 홈의 유일한 authored 모션 */
-@keyframes marquee {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
-}
-.ticker-track {
-  display: inline-flex;
-  white-space: nowrap;
-  animation: marquee 28s linear infinite;
-}
 @media (prefers-reduced-motion: reduce) {
-  .ticker-track {
-    animation: none;
-  }
+  .rise-in, .pin-active, .animate-pulse { animation: none; }
 }
 
-/* 담기 바 등장 — 탐색 화면의 유일한 authored 모션 */
-@keyframes rise-in {
-  from {
-    transform: translateY(120%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-.rise-in {
-  animation: rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
-}
-@media (prefers-reduced-motion: reduce) {
-  .rise-in {
-    animation: none;
-  }
-}
+/* 가로 스크롤 칩 스트립 */
+.no-scrollbar { scrollbar-width: none; }
+.no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* 지도 로딩 스켈레톤(MapView) — Tailwind 의 animate-pulse 는 자체 감속 가드가 없다.
-   authored 모션과 같은 기준으로 여기서 직접 끈다 */
-@media (prefers-reduced-motion: reduce) {
-  .animate-pulse {
-    animation: none;
+/* ── 반응형: 모바일이 원본, 데스크톱은 같은 시스템을 넓은 컨테이너에 담는다 ──
+   넓어질수록 값을 키운다. 컨테이너만 넓히고 값을 그대로 두면 헤어라인이 되어
+   사인 시스템이 표로 무너진다 — 데스크톱 컴프 실패의 원인이 정확히 이것이었다. */
+@media (min-width: 768px) {
+  :root {
+    --gutter: 32px; --card-pad: 20px; --stack: 20px;
+    --box-card: 104px; --box-quick: 84px; --box-avatar: 60px;
+    --stroke-card: 2.5px; --stroke-active: 4px;
+    --r-card: 20px; --r-box: 20px;
+    --t-screen: 40px; --t-title: 24px; --t-value: 36px; --t-value-hero: 68px;
   }
 }
-
-/* 가로 스크롤 스트립 — 스크롤바 숨김 (칩 행 전용) */
-.no-scrollbar {
-  scrollbar-width: none;
-}
-.no-scrollbar::-webkit-scrollbar {
-  display: none;
+@media (min-width: 1280px) {
+  :root {
+    --gutter: 40px; --card-pad: 24px;
+    --box-card: 120px; --box-quick: 96px; --box-avatar: 68px;
+    --stroke-card: 3px; --stroke-active: 5px;
+    --r-card: 24px; --r-box: 24px;
+    --t-screen: 52px; --t-title: 27px; --t-value: 42px; --t-value-hero: 84px;
+  }
 }
