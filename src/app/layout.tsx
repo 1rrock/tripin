@@ -1,29 +1,31 @@
 import type { Metadata } from "next";
-import { Noto_Sans, Noto_Sans_KR } from "next/font/google";
+import { Archivo, Gothic_A1 } from "next/font/google";
 import { publicEnv } from "@/shared/config/env";
 import "./globals.css";
 
 /**
- * 공항 사인 시스템의 서체 — 휴머니스트 산세.
+ * 콘택트 시트의 서체.
  *
- * 시안의 Frutiger Next 는 유료라 쓸 수 없다. Noto Sans 가 같은 계열(휴머니스트,
- * 사인 가독성 목적으로 설계)의 무료 대체이고, Noto Sans KR 이 같은 슈퍼패밀리라
- * 한글·라틴이 한 시스템으로 붙는다.
+ * Gothic A1 — 한글. 기하학적 고딕이라 각진 프레임·인덱스와 붙고, 100~900 이라
+ * 제목(900)과 본문(400) 사이를 한 패밀리로 벌릴 수 있다. Noto 는 워크호스지만
+ * 표정이 없어서 어두운 지면에서 화면이 밋밋해진다.
  *
- * 라틴을 따로 두는 이유: 게이트 번호·타임코드처럼 숫자가 주인공인 자리가 많은데
- * Noto Sans 의 라틴 숫자가 KR 의 것보다 넓고 열려 있다.
- * CDN(jsdelivr) 대신 next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
+ * Archivo — 라틴·숫자 전용. 인덱스 번호·타임코드·개수가 이 월드에서 자주
+ * 주인공이 되는데(콘택트 시트의 프레임 번호), 한글 폰트의 라틴 숫자는 대체로
+ * 폭이 좁고 밋밋하다. Archivo 는 그로테스크에 tabular numerals 가 있어
+ * 표처럼 줄 세워도 흔들리지 않는다.
+ *
+ * 둘 다 next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
  */
-const notoKr = Noto_Sans_KR({
+const gothic = Gothic_A1({
   subsets: ["latin"],
-  weight: ["400", "500", "700"],
-  variable: "--font-noto-kr",
+  weight: ["400", "500", "700", "900"],
+  variable: "--font-gothic",
   display: "swap",
 });
-const noto = Noto_Sans({
+const archivo = Archivo({
   subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
-  variable: "--font-noto",
+  variable: "--font-archivo",
   display: "swap",
 });
 
@@ -55,39 +57,18 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="ko"
-      className={`${notoKr.variable} ${noto.variable} h-full antialiased`}
-      suppressHydrationWarning
-    >
-      <head>
-        {/*
-          테마 선반영 — 하이드레이션 이전, 첫 페인트 이전에 동기 실행된다.
-          이게 없으면 저장된 값이 다크여도 라이트로 한 번 그려졌다가 뒤집혀 깜빡인다(FOUC).
-          저장값이 없으면 아무 속성도 붙이지 않아 globals.css 의
-          prefers-color-scheme 이 그대로 주도권을 갖는다.
-          <html> 에 suppressHydrationWarning 이 필요한 이유도 이 스크립트가
-          서버 HTML 에 없던 속성을 하이드레이션 전에 추가하기 때문이다.
-        */}
-        <script
-          dangerouslySetInnerHTML={{
-            __html:
-              "try{var t=localStorage.getItem('tripin-theme');" +
-              "if(t==='light'||t==='dark')document.documentElement.setAttribute('data-theme',t);}catch(e){}",
-          }}
-        />
-      </head>
-      <body className="min-h-full flex flex-col">
+    <html lang="ko" className={`${gothic.variable} ${archivo.variable} h-full antialiased`}>
+      <body className="flex min-h-full flex-col">
         {/* 방향 계약 — 빌드 산출물에 HTML 주석으로 남아야 감사 가능 (JSX 주석은 스트립됨) */}
         <div
           hidden
           dangerouslySetInnerHTML={{
             __html: `<!--
-THESIS: 조각은 터미널이고 장소는 게이트다. 공항 사인 시스템의 문법 — 매달린 노란 밴드, 검정 휴머니스트 산세, 정사각 인셋 픽토그램, 모서리에 고정된 화살표 — 으로 "지금 어디로 갈지" 하나만 크게 말한다. 거부하는 배치: 여백과 괘선으로만 서는 정보 서비스 캐논(2026-08-05~08-06 의 월드), 그리고 지도 퍼스트 여행 앱.
-OWN-WORLD: 사인 옐로 #ffcc00 이 길찾기 층을 통째로 갖는다(전폭 밴드) — 액센트가 아니라 지면이다. 콘크리트 #e5e5e5 위에 콘텐츠, 제트 블랙 #0d0d0d 이 구조·픽토그램 인셋·데이터 행. 누를 수 있는 것은 필이 아니라 검정 1.5px 사각 패널 + 우측 아이콘 인셋. 장소 번호는 게이트 번호처럼 기념비적 스케일. Noto Sans KR 단일 슈퍼패밀리(휴머니스트, 400~900).
-STORY: 검색 유입자가 밴드 한 줄로 "내 유튜버 × 이 도시"임을 알고, 번호로 훑고 → 담고 → 화살표가 가리키는 타임코드 영상/지도 앱으로 나간다.
-FIRST VIEWPORT: 조각(/c/[creator]/[city]) — 상단에 전폭 노란 밴드 하나("{크리에이터} → {도시} · 확정 12곳"), 그 아래 기념비적 번호로 선 장소 목록, 각 행 우측 모서리에 고정된 화살표가 영상·지도를 가리킨다. 지도는 밴드 아래.
-FORM: 공항 사인 시스템 (wayfinding-cartography-signage-terminal-yellow-wayfinding). 룰렛 배정은 내 후보 3번 "답사 자료집"이었고, 융합 계량에서 이 챌린저가 청중 식별·제품 명료성 두 축 모두 이겨 빌드가 됐다. seed key 21af9ba1 (scope direction, mode operate). 사용자가 결정 페이지에서 확정.
+THESIS: 이 서비스가 가진 유일한 시각 재료는 영상 썸네일이다. 그래서 썸네일을 늘어놓는 게 본업인 물건 — 암실의 콘택트 시트 — 을 지면으로 삼는다. 거부하는 배치: 픽토그램과 괘선으로 화면을 채우는 정보 서비스 캐논(2026-08-05~06 의 두 월드가 연달아 여기서 무너졌다), 그리고 지도 퍼스트 여행 앱.
+OWN-WORLD: 암실 지면 #0b0b0c 위에 16:9 프레임이 놓이고, 프레임만이 빛난다. 인화지 흰색 #f5f3ef 가 제목과 인덱스, 왁스 연필 #ff3d14 는 **표시에만** — 링·밑줄·활성 인덱스이지 버튼 배경이 아니다. 발광 금지(이 어둠은 네온이 아니라 은염). 라운드 4px, 실제 오프셋 그림자, 아주 약한 필름 그레인. Gothic A1(한글 400~900) + Archivo(라틴·숫자 tabular).
+STORY: 밤에 여행 영상을 보던 사람이 "그 가게 어디였지"로 들어와, 프레임을 훑고 → 그 아래 실제 상호명을 보고 → 타임코드가 붙은 영상과 지도로 나간다.
+FIRST VIEWPORT: 홈 — 제목 두 줄과 규모 한 줄 아래로 곧장 영상 프레임 시트. 첫 프레임은 전폭, 각 프레임 아래에 그 영상에 나온 실제 상호명이 붙어 메커니즘을 즉시 증명한다.
+FORM: 콘택트 시트(다크 시네마틱 계열). 룰렛 배정 아님 — 사용자가 구조화 질문에서 직접 핀했다(브리프 핀이 룰을 이긴다). 직전 월드 seed 21af9ba1 은 폐기.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`,
           }}

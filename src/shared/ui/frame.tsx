@@ -1,0 +1,233 @@
+/**
+ * 콘택트 시트의 문법 — 이 월드의 모든 화면이 여기서만 형태를 가져온다.
+ *
+ * 서버 컴포넌트에서도 쓸 수 있도록 훅이 없다. 핸들러가 필요한 컨트롤은
+ * 쓰는 쪽(클라이언트 컴포넌트)에서 onClick 을 넘긴다.
+ *
+ * 아이콘은 직접 그린 스트로크 세트다. 이전 월드의 꽉 찬 검정 픽토그램과 반대로,
+ * 여기서는 선이 얇고 열려 있어야 한다 — 왁스 연필로 그은 주석에 가깝다.
+ * 전부 24 그리드 / stroke 1.6 / round cap 으로 통일. 이 값을 아이콘마다
+ * 다르게 주기 시작하면 세트가 아니라 그림 모음이 된다.
+ */
+
+import Link from "next/link";
+import type { ReactNode } from "react";
+
+/* ── 아이콘 ──────────────────────────────────────────────────────────── */
+
+type IconProps = React.SVGProps<SVGSVGElement>;
+
+function stroke(path: ReactNode) {
+  return function Glyph(props: IconProps) {
+    return (
+      <svg
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth={1.6}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+        {...props}
+      >
+        {path}
+      </svg>
+    );
+  };
+}
+
+export const Icon = {
+  search: stroke(
+    <>
+      <circle cx="10.5" cy="10.5" r="6.5" />
+      <path d="M15.4 15.4 20 20" />
+    </>,
+  ),
+  chevron: stroke(<path d="m9 5 7 7-7 7" />),
+  back: stroke(
+    <>
+      <path d="M20 12H4" />
+      <path d="m10 6-6 6 6 6" />
+    </>,
+  ),
+  /** 사이트 밖으로 나가는 링크 — 유튜브·지도 앱 */
+  out: stroke(
+    <>
+      <path d="M8 16 20 4" />
+      <path d="M14 4h6v6" />
+      <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
+    </>,
+  ),
+  pin: stroke(
+    <>
+      <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
+      <circle cx="12" cy="10" r="2.6" />
+    </>,
+  ),
+  clock: stroke(
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M12 7v5.2l3.2 2" />
+    </>,
+  ),
+  play: stroke(<path d="M8 5.5v13l11-6.5-11-6.5Z" />),
+  map: stroke(
+    <>
+      <path d="M9 4 3.6 6.2v13.4L9 17.4l6 2.2 5.4-2.2V4L15 6.2 9 4Z" />
+      <path d="M9 4v13.4M15 6.2V19.6" />
+    </>,
+  ),
+  close: stroke(<path d="m6 6 12 12M18 6 6 18" />),
+} as const;
+
+export type IconName = keyof typeof Icon;
+
+/* ── 프레임 ──────────────────────────────────────────────────────────── */
+
+/**
+ * 썸네일이 앉는 16:9 프레임.
+ *
+ * ⚠️ 비율을 바꾸지 말 것 — 유튜브 원본이 16:9 라 여기서만 실제 잘림이 없다.
+ *    다른 비율을 주는 순간 '썸네일 변형'이 되어 정책 위반이다(LEGAL.md 4.5).
+ */
+export function Frame({
+  waxed = false,
+  className = "",
+  children,
+}: {
+  /** 고른 컷 — 왁스 연필로 두른 자국 */
+  waxed?: boolean;
+  className?: string;
+  children: ReactNode;
+}) {
+  return <span className={`frame ${waxed ? "waxed" : ""} ${className}`}>{children}</span>;
+}
+
+/* ── 채널 표식 ───────────────────────────────────────────────────────── */
+
+/**
+ * 채널 아바타 — 프로필 사진이 아니다.
+ *
+ * `creators` 에 avatar_url 컬럼이 없다(초상 사용 리스크 회피, LEGAL.md 1.3).
+ * 그래서 이니셜을 쓰되, 채널 고유색은 **채움이 아니라 링**으로 준다.
+ * accent_color 는 DB 에서 오는 임의의 hex 라 그 위 글자의 대비를 보장할 수 없다 —
+ * 배경으로 쓰면 채널마다 가독성이 달라진다. 링이면 대비는 항상 paper/sheet 가
+ * 책임지고 색은 식별만 한다.
+ */
+export function Avatar({
+  initials,
+  accent,
+  size = 34,
+}: {
+  initials: string;
+  accent: string;
+  size?: number;
+}) {
+  return (
+    <span
+      aria-hidden
+      className="grid shrink-0 place-items-center font-bold"
+      style={{
+        width: size,
+        height: size,
+        borderRadius: "var(--r-round)",
+        background: "var(--sheet)",
+        boxShadow: `inset 0 0 0 2px ${accent}`,
+        fontSize: Math.round(size * 0.4),
+        lineHeight: 1,
+      }}
+    >
+      {initials}
+    </span>
+  );
+}
+
+/* ── 텍스트 요소 ─────────────────────────────────────────────────────── */
+
+/** 인덱스·라벨 — 콘택트 시트의 프레임 번호 문법 */
+export function Index({
+  children,
+  tone = "dim",
+  className = "",
+}: {
+  children: ReactNode;
+  tone?: "dim" | "paper" | "wax";
+  className?: string;
+}) {
+  const color = tone === "wax" ? "var(--wax)" : tone === "paper" ? "var(--paper)" : "var(--dim)";
+  return (
+    <span className={`index ${className}`} style={{ color }}>
+      {children}
+    </span>
+  );
+}
+
+export function Rule({ className = "" }: { className?: string }) {
+  return <hr className={`rule ${className}`} />;
+}
+
+/**
+ * 메타 한 줄 — "간 곳 14 · 도쿄 · 4:32".
+ *
+ * 이전 월드의 DataRow(라벨/값 칸을 나눈 표)를 대체한다. 칸을 나누면 카드마다
+ * 같은 표가 반복되어 화면이 표 모음이 되는데, 여기서는 프레임이 주인공이라
+ * 메타는 한 줄로 눕혀 조용히 있어야 한다.
+ */
+export function Meta({
+  items,
+  className = "",
+}: {
+  items: (string | null | undefined)[];
+  className?: string;
+}) {
+  const shown = items.filter((v): v is string => Boolean(v));
+  if (shown.length === 0) return null;
+  return (
+    <p
+      className={`tnum ${className}`}
+      style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.5 }}
+    >
+      {shown.join("  ·  ")}
+    </p>
+  );
+}
+
+/* ── 컨트롤 ──────────────────────────────────────────────────────────── */
+
+/**
+ * 칩 — 필터·바로가기. href 면 링크, onClick 이면 버튼.
+ * 활성은 채움이 아니라 왁스 링이다(왁스가 면적을 먹으면 월드가 무너진다).
+ */
+export function Chip({
+  active = false,
+  href,
+  onClick,
+  children,
+}: {
+  active?: boolean;
+  href?: string;
+  onClick?: () => void;
+  children: ReactNode;
+}) {
+  const cls = "shrink-0 whitespace-nowrap px-3 py-1.5 transition-colors";
+  const style: React.CSSProperties = {
+    fontSize: "var(--t-meta)",
+    fontWeight: 500,
+    borderRadius: "var(--r-control)",
+    color: active ? "var(--paper)" : "var(--dim)",
+    boxShadow: `inset 0 0 0 1px ${active ? "var(--wax)" : "var(--hairline)"}`,
+  };
+
+  if (href) {
+    return (
+      <Link href={href} scroll={false} className={cls} style={style}>
+        {children}
+      </Link>
+    );
+  }
+  return (
+    <button type="button" onClick={onClick} aria-pressed={active} className={`${cls} cursor-pointer`} style={style}>
+      {children}
+    </button>
+  );
+}
