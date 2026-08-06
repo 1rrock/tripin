@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/shared/api/supabase";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import { Card, Chip, DataRow, Divider, Icon } from "@/shared/ui/sign";
 import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
 
 /**
@@ -194,20 +195,11 @@ export async function generateMetadata({
 /** 브레드크럼 구분자 — Explorer 와 같은 SVG 획. */
 function CrumbIcon() {
   return (
-    <svg
+    <Icon.chevron
       aria-hidden
-      width="10"
-      height="10"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="mx-1 inline text-line"
-    >
-      <path d="m6 3.5 4.5 4.5L6 12.5" />
-    </svg>
+      className="mx-1 inline"
+      style={{ width: 9, height: 9, fill: "var(--hairline)" }}
+    />
   );
 }
 
@@ -225,35 +217,36 @@ function PendingPiece({
   confirmedCount: number;
 }) {
   return (
-    <main className="mx-auto w-full max-w-2xl px-6 pt-8 pb-16 md:px-8">
-      <nav className="flex items-center text-xs text-ink-soft">
-        <Link href="/" className="font-medium transition hover:text-ink">
+    <main className="flex flex-col gap-(--stack) px-(--gutter) pt-6 pb-16">
+      <nav className="flex items-center" style={{ fontSize: "var(--t-meta)" }}>
+        <Link href="/" className="underline-offset-4 hover:underline">
           홈
         </Link>
         <CrumbIcon />
         <span>{creatorName}</span>
         <CrumbIcon />
-        <span className="text-ink">{cityName}</span>
+        <span className="font-medium">{cityName}</span>
       </nav>
-      <h1 className="mt-3.5 text-3xl font-black tracking-tight">
-        {creatorName}의 {cityName}
+      <h1
+        className="font-bold"
+        style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.2 }}
+      >
+        {creatorName} → {cityName}
       </h1>
-      <div className="mt-6 rounded-2xl border border-line bg-card p-6">
-        <p className="text-[15px] leading-relaxed">이 조각은 아직 준비 중이에요.</p>
-        <p className="mt-2 text-[13px] text-ink-soft">
-          확정 장소{" "}
-          <b className="tnum font-extrabold text-ink">
-            {confirmedCount}/{MIN_CONFIRMED_PINS}
-          </b>{" "}
-          · {MIN_CONFIRMED_PINS}곳을 채우면 공개돼요
-        </p>
-        <Link
-          href="/"
-          className="mt-5 inline-flex min-h-9 items-center rounded-full bg-fill px-3.5 text-[13px] font-bold transition hover:bg-line active:scale-[0.97]"
-        >
-          공개된 조각 보기
-        </Link>
-      </div>
+      <Card className="flex flex-col gap-(--card-pad)">
+        <p style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}>이 조각은 아직 준비 중이에요.</p>
+        <Divider />
+        {/* 게이트 문법 — 몇 개를 채워야 열리는지 숫자로 말한다 */}
+        <DataRow
+          items={[
+            { label: "확정", value: String(confirmedCount) },
+            { label: "공개 기준", value: String(MIN_CONFIRMED_PINS) },
+          ]}
+        />
+        <div>
+          <Chip href="/">공개된 조각 보기</Chip>
+        </div>
+      </Card>
     </main>
   );
 }

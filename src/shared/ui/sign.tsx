@@ -7,7 +7,8 @@
  * 근거: .impeccable/mocks/mobile-v4-structure.png (승인 컴프),
  *      실측 스크립트 .impeccable/refs/measure-reference.py
  */
-import type { ReactNode, SVGProps } from "react";
+import type { CSSProperties, ReactNode, SVGProps } from "react";
+import Link from "next/link";
 
 /* ── 픽토그램 ────────────────────────────────────────────────────────
    AIGA 교통 사인 계열의 솔리드 글리프. 64 그리드에서 그린다.
@@ -197,6 +198,83 @@ export function NavSpacer() {
   return <div aria-hidden style={{ height: "calc(96px + env(safe-area-inset-bottom))" }} />;
 }
 
+/* ── 액션 버튼 ─────────────────────────────────────────────────────
+   시안의 "Find Gates" 문법: 지면과 같은 노랑 + 검정 보더 + **우측 검정 아이콘 인셋**.
+   인셋이 이 버튼을 사인 시스템의 것으로 만든다 — 빼면 평범한 아웃라인 버튼이 된다.
+   primary 는 보더가 잉크, quiet 은 헤어라인. pressed 는 지면을 잉크로 반전한다. */
+export function Action({
+  icon,
+  children,
+  href,
+  onClick,
+  primary = false,
+  pressed,
+  title,
+}: {
+  icon: IconName;
+  children: ReactNode;
+  href?: string;
+  onClick?: () => void;
+  primary?: boolean;
+  pressed?: boolean;
+  title?: string;
+}) {
+  const Glyph = Icon[icon];
+  const inner = (
+    <>
+      <span style={{ fontSize: "var(--t-chip)", fontWeight: 500 }}>{children}</span>
+      <span
+        aria-hidden
+        className="grid shrink-0 place-items-center"
+        style={{
+          width: 30,
+          height: 30,
+          borderRadius: 7,
+          background: pressed ? "var(--sign)" : "var(--ink)",
+        }}
+      >
+        <Glyph
+          style={{ width: 14, height: 14, fill: pressed ? "var(--ink)" : "var(--on-ink)" }}
+        />
+      </span>
+    </>
+  );
+  const style: CSSProperties = {
+    background: pressed ? "var(--ink)" : "transparent",
+    color: pressed ? "var(--sign)" : "var(--ink)",
+    border: `var(--stroke-card) solid ${primary || pressed ? "var(--ink)" : "var(--hairline)"}`,
+    borderRadius: "var(--r-field)",
+  };
+  const cls = "inline-flex items-center gap-2.5 py-1.5 pr-1.5 pl-3.5";
+
+  if (href) {
+    return (
+      <a
+        href={href}
+        target="_blank"
+        rel="noopener noreferrer"
+        title={title}
+        className={cls}
+        style={style}
+      >
+        {inner}
+      </a>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      title={title}
+      className={`${cls} cursor-pointer`}
+      style={style}
+    >
+      {inner}
+    </button>
+  );
+}
+
 /* ── 칩 ────────────────────────────────────────────────────────────
    필터. 활성은 잉크 반전(지면이 잉크, 글자가 사인)이다. */
 export function Chip({
@@ -209,8 +287,10 @@ export function Chip({
   children: ReactNode;
 }) {
   return (
-    <a
+    <Link
       href={href}
+      // 필터 칩은 스크롤 위치를 유지해야 한다 — 훑던 자리에서 걸러야 과업이 안 끊긴다
+      scroll={false}
       aria-current={active ? "true" : undefined}
       className="inline-flex shrink-0 items-center px-4 py-2.5 font-medium"
       style={{
@@ -222,6 +302,6 @@ export function Chip({
       }}
     >
       {children}
-    </a>
+    </Link>
   );
 }
