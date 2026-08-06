@@ -12,8 +12,11 @@
 
 import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
-import { publicEnv } from "@/shared/config/env";
+import { isProduction, publicEnv } from "@/shared/config/env";
 import { isDarkHex } from "@/shared/lib/color";
+
+/** 타일이 이 시간 안에 안 그려지면 실패로 판정 — 조용한 회색 박스를 만들지 않는다. */
+const TILES_TIMEOUT_MS = 8000;
 
 export interface MapPin {
   id: string;
@@ -46,26 +49,26 @@ function loadSdk() {
   return { maps: importLibrary("maps"), marker: importLibrary("marker") };
 }
 
-/** 자막 외곽선 스타일 핀 — 액센트 원 + 잉크 테두리, 활성 시 잉크 반전 (편집자막 월드). */
+/** 번호 핀 — 액센트 원 + 2px 잉크 링 + 하드 섀도, 활성 시 잉크 반전 (Color Pop 월드). */
 function markerContent(pin: MapPin, active: boolean): HTMLElement {
   const el = document.createElement("div");
-  const color = pin.accentColor ?? "#ffd400";
+  const color = pin.accentColor ?? "#3f8cff";
   el.style.cssText = [
-    `background:${active ? "#111111" : color}`,
-    `color:${active || isDarkHex(color) ? "#ffffff" : "#111111"}`,
+    `background:${active ? "var(--ink)" : color}`,
+    `color:${active || isDarkHex(color) ? "#ffffff" : "var(--ink)"}`,
     "border-radius:9999px",
-    "min-width:27px",
-    "height:27px",
+    "min-width:28px",
+    "height:28px",
     "padding:0 4px",
     "display:flex",
     "align-items:center",
     "justify-content:center",
-    "font:700 13px/1 var(--font-timecode,monospace)",
+    "font:700 13px/1 'Pretendard Variable',Pretendard,-apple-system,sans-serif",
     "font-variant-numeric:tabular-nums",
-    "box-shadow:0 2px 5px rgba(0,0,0,.3)",
-    "border:2px solid #111111",
+    "box-shadow:2px 2px 0 rgba(20,20,20,.85)",
+    "border:2px solid var(--ink)",
     "cursor:pointer",
-    active ? "transform:scale(1.25)" : "",
+    active ? "transform:scale(1.2)" : "",
     "transition:transform .12s ease-out",
   ].join(";");
   el.textContent = pin.index !== undefined ? String(pin.index) : "•";
@@ -83,16 +86,28 @@ export function MapView({ pins, activeId, onPinClick, className, singlePinZoom =
   // 키 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생
   const [failed, setFailed] = useState(() => !publicEnv.googleMapsKey);
   const [loaded, setLoaded] = useState(false);
+  // 재시도 카운터 — 실패 후 "다시 시도"가 지도 생성 effect 를 다시 돌린다
+  const [attempt, setAttempt] = useState(0);
+  // "전체 핀 보기" — 마지막 핀 세트의 뷰포트 맞춤을 다시 실행한다
+  const refitRef = useRef<(() => void) | null>(null);
 
-  // 지도 생성 (1회)
+  // 지도 생성 (재시도 전까지 1회)
   useEffect(() => {
     if (!publicEnv.googleMapsKey) return;
+    if (publicEnv.googleMapsId === "DEMO_MAP_ID" && !isProduction) {
+      console.warn(
+        "[MapView] NEXT_PUBLIC_GOOGLE_MAPS_ID 미설정 — DEMO_MAP_ID 폴백은 구글 기본 POI 아이콘이 " +
+          "그대로 노출되어 우리 핀이 묻힙니다. Cloud Console 에서 POI 를 끈 Map ID 를 만들어 주입하세요.",
+      );
+    }
     let cancelled = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
+    let tilesListener: google.maps.MapsEventListener | undefined;
     const { maps } = loadSdk();
     maps
       .then(({ Map }) => {
         if (cancelled || !containerRef.current || mapRef.current) return;
-        mapRef.current = new Map(containerRef.current, {
+        const map = new Map(containerRef.current, {
           center: { lat: 20, lng: 0 },
           zoom: 2,
           mapId: publicEnv.googleMapsId,
@@ -100,13 +115,37 @@ export function MapView({ pins, activeId, onPinClick, className, singlePinZoom =
           zoomControl: true,
           clickableIcons: false, // 구글 기본 POI 클릭 방지 — 우리 핀에 집중
         });
-        setLoaded(true);
+        mapRef.current = map;
+        // 지도 객체 생성 ≠ 지도가 보임 — 타일이 실제로 그려진 시점에만 로딩을 해제한다.
+        // mapId 오설정·쿼터 초과 등 SDK 로드는 성공하지만 타일이 안 오는 실패를
+        // 타임아웃으로 잡아 폴백 문구가 제 역할을 하게 한다.
+        tilesListener = map.addListener("tilesloaded", () => {
+          tilesListener?.remove();
+          if (timer) clearTimeout(timer);
+          if (!cancelled) setLoaded(true);
+        });
+        timer = setTimeout(() => {
+          if (!cancelled) setFailed(true);
+        }, TILES_TIMEOUT_MS);
       })
-      .catch(() => setFailed(true));
+      .catch(() => {
+        if (!cancelled) setFailed(true);
+      });
     return () => {
       cancelled = true;
+      if (timer) clearTimeout(timer);
+      tilesListener?.remove();
     };
-  }, []);
+  }, [attempt]);
+
+  const retry = () => {
+    mapRef.current = null;
+    markersRef.current.clear();
+    pinsSigRef.current = "";
+    setFailed(false);
+    setLoaded(false);
+    setAttempt((a) => a + 1);
+  };
 
   // 핀 동기화
   useEffect(() => {
@@ -134,22 +173,29 @@ export function MapView({ pins, activeId, onPinClick, className, singlePinZoom =
             position: { lat: pin.lat, lng: pin.lng },
             content: markerContent(pin, pin.id === activeId),
             zIndex: pin.id === activeId ? 1000 : (pin.index ?? 0),
+            gmpClickable: Boolean(onPinClick),
           });
           if (onPinClick) {
-            m.addListener("click", () => onPinClick(pin.id));
+            // addListener("click") 은 deprecated — 표준 이벤트(gmp-click)로 받는다
+            m.addEventListener("gmp-click", () => onPinClick(pin.id));
           }
           markersRef.current.set(pin.id, m);
         }
 
         // 뷰포트: 전체 bounds + 패딩 / 핀 1개면 고정 줌 (CONCEPT.md 4.3)
-        if (pins.length === 1) {
-          map.setCenter({ lat: pins[0]!.lat, lng: pins[0]!.lng });
-          map.setZoom(singlePinZoom);
-        } else if (pins.length > 1) {
-          const bounds = new google.maps.LatLngBounds();
-          for (const pin of pins) bounds.extend({ lat: pin.lat, lng: pin.lng });
-          map.fitBounds(bounds, 48);
-        }
+        const fitAll = () => {
+          if (pins.length === 1) {
+            map.setCenter({ lat: pins[0]!.lat, lng: pins[0]!.lng });
+            map.setZoom(singlePinZoom);
+          } else if (pins.length > 1) {
+            const bounds = new google.maps.LatLngBounds();
+            for (const pin of pins) bounds.extend({ lat: pin.lat, lng: pin.lng });
+            map.fitBounds(bounds, 48);
+          }
+        };
+        fitAll();
+        // 팬·줌 후 원래 화면으로 돌아올 길 — "전체 보기" 버튼이 재사용한다
+        refitRef.current = fitAll;
       })
       .catch(() => setFailed(true));
     return () => {
@@ -167,7 +213,8 @@ export function MapView({ pins, activeId, onPinClick, className, singlePinZoom =
       const m = markersRef.current.get(pin.id);
       if (!m) continue;
       const active = pin.id === activeId;
-      m.content = markerContent(pin, active);
+      // .content 는 deprecated — 커스텀 엘리먼트의 children 교체로 동일 효과
+      m.replaceChildren(markerContent(pin, active));
       m.zIndex = active ? 1000 : (pin.index ?? 0);
       if (active) map.panTo({ lat: pin.lat, lng: pin.lng });
     }
@@ -175,21 +222,81 @@ export function MapView({ pins, activeId, onPinClick, className, singlePinZoom =
 
   if (failed) {
     return (
-      <div
-        className={`flex items-center justify-center bg-neutral-100 text-sm text-ink-soft ${className ?? ""}`}
-      >
-        지도를 불러오지 못했습니다 — 아래 목록으로 확인하세요
+      <div className={`relative overflow-hidden bg-fill ${className ?? ""}`}>
+        {/* 지도 자리 스케치 — 실패해도 빈 박스가 아니라 지면의 일부로 남는다 */}
+        <svg
+          aria-hidden
+          className="absolute inset-0 h-full w-full"
+          viewBox="0 0 600 600"
+          preserveAspectRatio="xMidYMid slice"
+        >
+          <g stroke="#e5e0d4" strokeWidth="7" fill="none" strokeLinecap="round">
+            <path d="M-20 170 C 140 140, 320 210, 620 150" />
+            <path d="M-20 400 C 180 370, 380 450, 620 380" />
+            <path d="M170 -20 C 190 180, 140 400, 190 620" />
+            <path d="M430 -20 C 410 200, 470 420, 440 620" />
+          </g>
+          <g fill="#e5e0d4">
+            <circle cx="300" cy="255" r="13" />
+            <circle cx="150" cy="330" r="10" />
+            <circle cx="470" cy="300" r="10" />
+            <circle cx="360" cy="470" r="10" />
+          </g>
+        </svg>
+        <div className="absolute inset-0 flex flex-col items-center justify-center gap-1.5 px-6 text-center">
+          <p className="text-[15px] font-bold">지도를 잠시 불러오지 못했어요</p>
+          <p className="text-[13px] text-ink-soft">목록만으로도 모든 장소를 확인할 수 있어요</p>
+          {publicEnv.googleMapsKey ? (
+            <button
+              type="button"
+              onClick={retry}
+              className="mt-3 min-h-10 cursor-pointer rounded-full bg-ink px-5 text-[13px] font-bold text-paper transition hover:opacity-85 active:scale-[0.97]"
+            >
+              다시 시도
+            </button>
+          ) : null}
+        </div>
       </div>
     );
   }
 
   return (
     <div className={`relative ${className ?? ""}`}>
-      <div ref={containerRef} aria-busy={!loaded} className="h-full w-full bg-neutral-100" />
+      <div ref={containerRef} aria-busy={!loaded} className="h-full w-full bg-fill" />
       {!loaded ? (
-        <p className="pointer-events-none absolute inset-0 flex items-center justify-center text-sm text-ink-soft">
-          지도 불러오는 중…
-        </p>
+        <div aria-hidden className="pointer-events-none absolute inset-0 animate-pulse bg-fill">
+          {/* 문구 대신 형태로 기다린다 — 지도의 뼈대(도로선·핀 자리) 스켈레톤 */}
+          <div className="absolute top-6 left-5 h-2 w-24 rounded-full bg-line" />
+          <div className="absolute top-11 left-5 h-2 w-14 rounded-full bg-line" />
+          <div className="absolute top-1/3 left-1/4 h-2 w-1/2 rotate-6 rounded-full bg-line" />
+          <div className="absolute top-1/2 left-[16%] h-2 w-2/3 -rotate-3 rounded-full bg-line" />
+          <div className="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 rounded-full border-4 border-line bg-paper" />
+          <div className="absolute right-6 bottom-8 h-9 w-9 rounded-full bg-line" />
+        </div>
+      ) : null}
+      {!loaded ? <p className="sr-only">지도 불러오는 중</p> : null}
+      {loaded && pins.length > 0 ? (
+        <button
+          type="button"
+          aria-label="전체 핀 보기"
+          onClick={() => refitRef.current?.()}
+          className="absolute bottom-3 left-3 flex h-10 w-10 cursor-pointer items-center justify-center rounded-full border border-line bg-paper text-ink transition hover:bg-fill active:scale-[0.95]"
+        >
+          <svg
+            aria-hidden
+            width="16"
+            height="16"
+            viewBox="0 0 16 16"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+          >
+            <path d="M2 6V3.5A1.5 1.5 0 0 1 3.5 2H6M10 2h2.5A1.5 1.5 0 0 1 14 3.5V6M14 10v2.5a1.5 1.5 0 0 1-1.5 1.5H10M6 14H3.5A1.5 1.5 0 0 1 2 12.5V10" />
+            <circle cx="8" cy="8" r="2" />
+          </svg>
+        </button>
       ) : null}
     </div>
   );

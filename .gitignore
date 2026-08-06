@@ -40,6 +40,12 @@ yarn-error.log*
 .DS_Store
 /.idea/
 /.omc/
+# impeccable 런타임 상태 — 세션·락·질문 로그는 머신별이다.
+# DESIGN.md 사이드카(design.json)·surfaces·config 는 프로젝트 산출물이라 커밋한다.
+/.impeccable/live/sessions/
+/.impeccable/live/accept-receipts/
+/.impeccable/live/locks/
+/.impeccable/questions/
 # Claude Code 개인 설정 — 머신별 로컬 (공유 스킬은 .claude/skills 로 커밋)
 .claude/settings.local.json
 

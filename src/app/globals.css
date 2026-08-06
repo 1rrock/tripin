@@ -1,115 +1,199 @@
 @import "tailwindcss";
 
-/* ── 편집자막 월드 토큰 (방향 계약: src/app/layout.tsx) ─────────────
-   화이트 스튜디오 지면 + 잉크 블랙 + 형광펜 하이라이트.
-   --hl 은 문맥마다 바뀐다: 브랜드/홈 = 옐로, 조각 페이지 = 크리에이터 액센트. */
+/* ── 월드 토큰 (방향 계약: src/app/layout.tsx) ─────────────────────────
+   1px 괘선 + 여백·타이포 위계로 선다. 색은 행동과 하이라이트에만.
+   깊이는 모바일 시트 그림자(--shadow-sheet) 하나뿐 — 그 외 어떤 그림자도 쓰지 않는다.
+   --hl 은 크리에이터 액센트 주입 슬롯: 뱃지·지도 핀·번호에만.
+
+   ── 라이트/다크 ────────────────────────────────────────────────────
+   토큰 '이름'은 두 테마가 공유한다. 그래서 컴포넌트는 테마를 몰라도 되고,
+   `bg-paper text-ink` 같은 기존 클래스가 자동으로 두 테마에서 동작한다.
+   컴포넌트 안에 dark: 분기를 새로 만들지 말 것 — 여기서만 값을 바꾼다.
+
+   해상 순서: OS 설정(prefers-color-scheme) → 사용자 토글(html[data-theme]).
+   토글이 항상 이긴다. */
 :root {
-  --paper: #ffffff;
-  --ink: #111111;
-  --ink-soft: #55524a;
-  --hl-brand: #ffd400;
-  --hl: var(--hl-brand);
+  --paper: #fffdf8;
+  --fill: #f4efe6;
+  --ink: #141414;
+  --ink-soft: #5d5a52;
+  --line: #e5e0d4;
+  --card: #ffffff;
+  --brand: #ff5a3c; /* 코랄 — CTA·담기·강조 */
+  --lemon: #ffd43a; /* 하이라이트·칩 */
+  --mint: #25d0a0;
+  --sky: #3f8cff;
+  --hl: var(--sky);
+
+  /* 코랄 지면 위 글자색. 코랄은 두 테마에서 같은 중간톤이라 이 값도 고정이다.
+     --ink 를 쓰면 다크에서 밝은 글자 위 코랄이 되어 3.1:1 로 AA 미달한다. */
+  --on-brand: #23120c;
+  --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
+  color-scheme: light;
+}
+
+/* OS 가 다크일 때의 기본값 */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --paper: #0b0d10;
+    --fill: #1b2027;
+    --ink: #e9ebee;
+    --ink-soft: #97a0ad;
+    --line: #2a3038;
+    --card: #14171c;
+    --brand: #ff6f4d;
+    --lemon: #ffd84d;
+    --mint: #3fbfa6;
+    --sky: #7d9bff;
+    --hl: var(--sky);
+    --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
+    color-scheme: dark;
+  }
+}
+
+/* 사용자가 토글로 고른 값은 OS 설정을 이긴다 (양방향) */
+:root[data-theme="light"] {
+  --paper: #fffdf8;
+  --fill: #f4efe6;
+  --ink: #141414;
+  --ink-soft: #5d5a52;
+  --line: #e5e0d4;
+  --card: #ffffff;
+  --brand: #ff5a3c;
+  --lemon: #ffd43a;
+  --mint: #25d0a0;
+  --sky: #3f8cff;
+  --hl: var(--sky);
+  --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
+  color-scheme: light;
+}
+:root[data-theme="dark"] {
+  --paper: #0b0d10;
+  --fill: #1b2027;
+  --ink: #e9ebee;
+  --ink-soft: #97a0ad;
+  --line: #2a3038;
+  --card: #14171c;
+  --brand: #ff6f4d;
+  --lemon: #ffd84d;
+  --mint: #3fbfa6;
+  --sky: #7d9bff;
+  --hl: var(--sky);
+  --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
+  color-scheme: dark;
 }
 
 @theme inline {
   --color-paper: var(--paper);
+  --color-fill: var(--fill);
   --color-ink: var(--ink);
   --color-ink-soft: var(--ink-soft);
-  --color-hl-brand: var(--hl-brand);
-  --font-sans: var(--font-body), "Apple SD Gothic Neo", sans-serif;
-  --font-subtitle: var(--font-subtitle), "Apple SD Gothic Neo", sans-serif;
-  --font-timecode: var(--font-timecode), monospace;
+  --color-line: var(--line);
+  --color-card: var(--card);
+  --color-brand: var(--brand);
+  --color-on-brand: var(--on-brand);
+  --color-lemon: var(--lemon);
+  --color-mint: var(--mint);
+  --color-sky: var(--sky);
+  --font-sans:
+    "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR",
+    sans-serif;
 }
 
 body {
   background: var(--paper);
   color: var(--ink);
-  font-family: var(--font-body), "Apple SD Gothic Neo", sans-serif;
+  font-family:
+    "Pretendard Variable", Pretendard, -apple-system, "Apple SD Gothic Neo", "Noto Sans KR",
+    sans-serif;
+  letter-spacing: -0.015em;
+  word-break: keep-all;
 }
 
-/* 자막체 — 장소명·헤딩의 목소리. 자간을 좁혀 편집자막의 밀도를 낸다. */
-.subtitle-face {
-  font-family: var(--font-subtitle), "Apple SD Gothic Neo", sans-serif;
-  letter-spacing: -0.01em;
-  line-height: 1.15;
-}
-
-/* 타임코드 — 숫자·라틴은 모노, 한글은 본문 얼굴로 안착 (Spline Sans Mono 는 한글 미보유). */
-.timecode-face {
-  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
+/* 숫자는 어디서든 같은 폭 — 통계·번호·타임스탬프 정렬용 */
+.tnum {
   font-variant-numeric: tabular-nums;
 }
 
-/* 키보드 포커스 — 2px 잉크 월드의 단일 포커스 링 */
+/* 키보드 포커스 — 잉크 링 (괘선보다 굵어야 포커스가 보인다) */
 :focus-visible {
   outline: 2px solid var(--ink);
   outline-offset: 2px;
 }
 
-/* ── 형광펜 하이라이트 ──────────────────────────────────
-   글자 아랫단 55%에만 칠하는 예능 자막 형광펜. 줄바꿈에도 이어지도록 clone.
-   색은 --hl 로 문맥 주입 (조각 페이지에서 크리에이터 액센트로 교체). */
-.hl-pen {
-  /* 어두운 액센트도 형광펜답게 — 흰색을 섞어 항상 밝은 하이라이트를 만든다 (잉크 글자 대비 유지) */
-  background-image: linear-gradient(
-    to top,
-    transparent 6%,
-    color-mix(in srgb, var(--hl) 55%, white) 6%,
-    color-mix(in srgb, var(--hl) 55%, white) 52%,
-    transparent 52%
-  );
-  -webkit-box-decoration-break: clone;
-  box-decoration-break: clone;
-  padding-inline: 0.06em;
+/* 잉크 지면 위에서는 링을 반전한다 (WCAG 2.4.7).
+   잉크 링이 잉크 지면과 1:1 로 같아져 포커스가 완전히 사라지는 곳 — 현재는 담은 목록 바 안의 "링크 복사".
+
+   ⚠️ 이 규칙은 반드시 여기(레이어 밖)에 있어야 한다.
+   Tailwind 유틸리티(`focus-visible:outline-paper`)는 `@layer utilities` 안에 생성되는데,
+   위의 전역 :focus-visible 은 레이어 밖이다. 레이어 없는 CSS 가 레이어 CSS 를 항상 이기므로
+   특이도와 무관하게 유틸리티가 먹지 않는다. 같은 레이어 밖에서 덮어야 한다. */
+.focus-ring-invert:focus-visible {
+  outline-color: var(--paper);
 }
 
-/* 선택된 리스트 항목의 형광펜 긋기 — 이 페이지의 단 하나의 authored 모션 */
-@keyframes pen-sweep {
+/* 모바일 시트 그림자 — 이 월드에서 유일하게 허용된 깊이 */
+.sheet-shadow {
+  box-shadow: var(--shadow-sheet);
+}
+
+/* 레몬 형광 밑줄 — 히어로 키워드 전용 */
+.hl-under {
+  box-shadow: inset 0 -0.32em var(--lemon);
+}
+
+/* 티커(장소 흐름) — 홈의 유일한 authored 모션 */
+@keyframes marquee {
   from {
-    background-size: 0% 100%;
+    transform: translateX(0);
   }
   to {
-    background-size: 100% 100%;
+    transform: translateX(-50%);
   }
 }
-.hl-pen-sweep {
-  background-repeat: no-repeat;
-  background-size: 100% 100%;
-  animation: pen-sweep 0.35s cubic-bezier(0.16, 1, 0.3, 1);
+.ticker-track {
+  display: inline-flex;
+  white-space: nowrap;
+  animation: marquee 28s linear infinite;
 }
 @media (prefers-reduced-motion: reduce) {
-  .hl-pen-sweep {
+  .ticker-track {
     animation: none;
   }
 }
 
-/* ── 타임코드 칩 ── 영상 좌하단 타임코드 벅. `1:55 ▸` */
-.ts-chip {
-  display: inline-flex;
-  align-items: center;
-  gap: 0.3em;
-  background: var(--ink);
-  color: #ffffff;
-  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
-  font-variant-numeric: tabular-nums;
-  font-size: 0.75rem;
-  line-height: 1;
-  padding: 0.35em 0.55em;
-  border-radius: 0.25em;
-  white-space: nowrap;
+/* 담기 바 등장 — 탐색 화면의 유일한 authored 모션 */
+@keyframes rise-in {
+  from {
+    transform: translateY(120%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.rise-in {
+  animation: rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+}
+@media (prefers-reduced-motion: reduce) {
+  .rise-in {
+    animation: none;
+  }
 }
 
-/* ── [대괄호] 메타 라벨 ── 편집자막의 상황 설명 자막 */
-.meta-label {
-  font-family: var(--font-timecode), var(--font-body), "Apple SD Gothic Neo", monospace;
-  font-size: 0.75rem;
-  letter-spacing: 0.02em;
-  color: var(--ink-soft);
-  white-space: nowrap;
+/* 지도 로딩 스켈레톤(MapView) — Tailwind 의 animate-pulse 는 자체 감속 가드가 없다.
+   authored 모션과 같은 기준으로 여기서 직접 끈다 */
+@media (prefers-reduced-motion: reduce) {
+  .animate-pulse {
+    animation: none;
+  }
 }
-.meta-label::before {
-  content: "[";
+
+/* 가로 스크롤 스트립 — 스크롤바 숨김 (칩 행 전용) */
+.no-scrollbar {
+  scrollbar-width: none;
 }
-.meta-label::after {
-  content: "]";
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
 }

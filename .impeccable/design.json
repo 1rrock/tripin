@@ -1,110 +1,540 @@
 {
   "schemaVersion": 2,
-  "generatedAt": "2026-08-04T07:20:00+09:00",
+  "generatedAt": "2026-08-06T10:30:00+09:00",
   "title": "Design System: Tripin",
   "extensions": {
     "colorMeta": {
-      "paper": { "role": "neutral", "displayName": "페이퍼", "canonical": "#ffffff", "tonalRamp": ["#262626", "#404040", "#5a5a5a", "#8c8c8c", "#bfbfbf", "#d9d9d9", "#f0f0f0", "#ffffff"] },
-      "ink": { "role": "neutral", "displayName": "잉크", "canonical": "#111111", "tonalRamp": ["#111111", "#262626", "#3d3d3d", "#555555", "#787878", "#a3a3a3", "#cccccc", "#f2f2f2"] },
-      "ink-soft": { "role": "neutral", "displayName": "소프트 잉크", "canonical": "#55524a", "tonalRamp": ["#26241f", "#3d3a33", "#55524a", "#6e6a60", "#8a857a", "#a8a399", "#c8c4bc", "#e8e5df"] },
-      "hl-brand": { "role": "primary", "displayName": "형광펜 옐로", "canonical": "#ffd400", "tonalRamp": ["#4d4000", "#806a00", "#b39500", "#e6bf00", "#ffd400", "#ffdf40", "#ffea80", "#fff5bf"] },
-      "hairline": { "role": "neutral", "displayName": "헤어라인", "canonical": "#e5e5e5", "tonalRamp": ["#454545", "#5c5c5c", "#737373", "#8f8f8f", "#ababab", "#c7c7c7", "#e5e5e5", "#f7f7f7"] }
+      "paper": {
+        "role": "neutral",
+        "displayName": "웜 페이퍼",
+        "canonical": "oklch(99.4% 0.007 88.6)",
+        "tonalRamp": [
+          "#0c0b08",
+          "#262521",
+          "#43423e",
+          "#63615d",
+          "#84827e",
+          "#a7a5a0",
+          "#cbc9c4",
+          "#f0eee9"
+        ],
+        "themes": {
+          "light": "#fffdf8",
+          "dark": "#0b0d10"
+        },
+        "purpose": "지면. 전 페이지 배경이자 잉크 지면 위 글자색"
+      },
+      "card": {
+        "role": "neutral",
+        "displayName": "카드 지면",
+        "canonical": "oklch(100.0% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "themes": {
+          "light": "#ffffff",
+          "dark": "#14171c"
+        },
+        "purpose": "카드·푸터 지면 — 지면과 미세하게 구분된다"
+      },
+      "fill": {
+        "role": "neutral",
+        "displayName": "필 베이지",
+        "canonical": "oklch(95.4% 0.013 82.4)",
+        "tonalRamp": [
+          "#0e0b06",
+          "#28251e",
+          "#45413a",
+          "#656159",
+          "#86827a",
+          "#a9a49c",
+          "#cdc8c0",
+          "#f3eee5"
+        ],
+        "themes": {
+          "light": "#f4efe6",
+          "dark": "#1b2027"
+        },
+        "purpose": "칩·태그·비활성 필의 지면"
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "잉크",
+        "canonical": "oklch(19.1% 0.000 89.9)",
+        "tonalRamp": [
+          "#0b0b0b",
+          "#252525",
+          "#424242",
+          "#616161",
+          "#828282",
+          "#a5a5a5",
+          "#c9c9c9",
+          "#eeeeee"
+        ],
+        "themes": {
+          "light": "#141414",
+          "dark": "#e9ebee"
+        },
+        "purpose": "본문·제목·활성 반전 지면"
+      },
+      "ink-soft": {
+        "role": "neutral",
+        "displayName": "소프트 잉크",
+        "canonical": "oklch(46.8% 0.013 89.8)",
+        "tonalRamp": [
+          "#0d0b05",
+          "#27251e",
+          "#45423a",
+          "#646159",
+          "#85827a",
+          "#a8a59c",
+          "#ccc9c0",
+          "#f2eee5"
+        ],
+        "themes": {
+          "light": "#5d5a52",
+          "dark": "#97a0ad"
+        },
+        "purpose": "보조 텍스트 — 주소·메타·고지"
+      },
+      "line": {
+        "role": "neutral",
+        "displayName": "괘선",
+        "canonical": "oklch(90.7% 0.017 88.0)",
+        "tonalRamp": [
+          "#0e0b04",
+          "#28251c",
+          "#464238",
+          "#656156",
+          "#868277",
+          "#a9a599",
+          "#cec9bd",
+          "#f3eee2"
+        ],
+        "themes": {
+          "light": "#e5e0d4",
+          "dark": "#2a3038"
+        },
+        "purpose": "1px 괘선·보더. 이 시스템에서 형태를 세우는 획"
+      },
+      "brand": {
+        "role": "primary",
+        "displayName": "코랄",
+        "canonical": "oklch(68.5% 0.206 32.5)",
+        "tonalRamp": [
+          "#400000",
+          "#690000",
+          "#910000",
+          "#ba0000",
+          "#e33e20",
+          "#ff6748",
+          "#ff8d6d",
+          "#ffb492"
+        ],
+        "themes": {
+          "light": "#ff5a3c",
+          "dark": "#ff6f4d"
+        },
+        "purpose": "담은 상태와 주 행동. 화살표 뱃지"
+      },
+      "on-brand": {
+        "role": "primary",
+        "displayName": "코랄 위 잉크",
+        "canonical": "oklch(20.4% 0.031 40.2)",
+        "tonalRamp": [
+          "#160703",
+          "#32201a",
+          "#513d36",
+          "#715c54",
+          "#937d75",
+          "#b79f97",
+          "#dcc3ba",
+          "#ffe8df"
+        ],
+        "themes": {
+          "light": "#23120c",
+          "dark": "#23120c"
+        },
+        "purpose": "코랄 지면 위 글자색. 두 테마 공통 고정값"
+      },
+      "lemon": {
+        "role": "secondary",
+        "displayName": "레몬",
+        "canonical": "oklch(88.3% 0.165 92.3)",
+        "tonalRamp": [
+          "#220000",
+          "#411900",
+          "#613900",
+          "#835a00",
+          "#a67c00",
+          "#caa000",
+          "#efc51f",
+          "#ffeb57"
+        ],
+        "themes": {
+          "light": "#ffd43a",
+          "dark": "#ffd84d"
+        },
+        "purpose": "하이라이트 — 히어로 밑줄·티커·도시 칩·선택 틴트"
+      },
+      "mint": {
+        "role": "tertiary",
+        "displayName": "민트",
+        "canonical": "oklch(76.5% 0.148 167.8)",
+        "tonalRamp": [
+          "#001900",
+          "#003815",
+          "#005832",
+          "#007a50",
+          "#009d71",
+          "#00c293",
+          "#4ae8b6",
+          "#78ffdb"
+        ],
+        "themes": {
+          "light": "#25d0a0",
+          "dark": "#3fbfa6"
+        },
+        "purpose": "예비. 공개 화면에서 사용하지 않는다"
+      },
+      "sky": {
+        "role": "tertiary",
+        "displayName": "스카이",
+        "canonical": "oklch(65.1% 0.187 258.5)",
+        "tonalRamp": [
+          "#070058",
+          "#00057d",
+          "#0035a2",
+          "#005ac8",
+          "#317ef0",
+          "#55a3ff",
+          "#79c8ff",
+          "#9eefff"
+        ],
+        "themes": {
+          "light": "#3f8cff",
+          "dark": "#7d9bff"
+        },
+        "purpose": "--hl 의 기본값"
+      }
     },
     "typographyMeta": {
-      "display": { "displayName": "자막체 디스플레이", "purpose": "페이지 H1 — 채널명·도시명. 형광펜과 함께 쓴다." },
-      "headline": { "displayName": "자막체 헤드라인", "purpose": "리스트 장소명·홈 채널명." },
-      "body": { "displayName": "본문", "purpose": "요약 불릿·설명." },
-      "label": { "displayName": "대괄호 라벨", "purpose": "[맛집] [위치 확인 중] 등 메타 정보. CSS가 대괄호를 부착." },
-      "timecode": { "displayName": "타임코드", "purpose": "모든 숫자 — 통계·리스트 번호·타임스탬프." }
+      "hero": {
+        "displayName": "hero",
+        "purpose": "홈 H1 단 하나. 36px, sm 이상에서 48px. 2행 키워드에 레몬 밑줄이 붙는다."
+      },
+      "hero-lg": {
+        "displayName": "hero-lg",
+        "purpose": "hero 의 sm 이상 단계 (48px)."
+      },
+      "og-card": {
+        "displayName": "og-card",
+        "purpose": "OG 이미지 전용 (72px). The One Typeface Rule 의 유일한 예외 — Noto Sans KR."
+      },
+      "page-title": {
+        "displayName": "page-title",
+        "purpose": "조각·허브 페이지 H1, 홈의 섹션 헤드."
+      },
+      "card-title": {
+        "displayName": "card-title",
+        "purpose": "크리에이터 카드의 채널명, 도시 카드의 도시명."
+      },
+      "wordmark": {
+        "displayName": "wordmark",
+        "purpose": "헤더 로고 'Trip[in]'."
+      },
+      "cta": {
+        "displayName": "cta",
+        "purpose": "홈 히어로 버튼 라벨."
+      },
+      "place": {
+        "displayName": "place",
+        "purpose": "장소 리스트의 장소명 — 가장 먼저 읽혀야 하는 단위."
+      },
+      "body": {
+        "displayName": "body",
+        "purpose": "요약 불릿·인트로. max-w-2xl(672px) 캡 — 한국어 한 줄 약 45자."
+      },
+      "meta": {
+        "displayName": "meta",
+        "purpose": "통계 줄, 주소, 부가 정보."
+      },
+      "label": {
+        "displayName": "label",
+        "purpose": "모든 칩·필·버튼. '누를 수 있는 것'의 크기."
+      },
+      "caption": {
+        "displayName": "caption",
+        "purpose": "브레드크럼, 푸터 고지, 헤더 고지 뱃지."
+      },
+      "tag": {
+        "displayName": "tag",
+        "purpose": "장소 타입 태그."
+      }
     },
     "shadows": [
-      { "name": "map-pin", "value": "0 2px 5px rgba(0,0,0,.3)", "purpose": "지도 핀 전용 — 지면 위 요소는 그림자 금지 (The Flat Paper Rule)." }
+      {
+        "name": "sheet-shadow",
+        "value": "var(--shadow-sheet)",
+        "purpose": "이 시스템의 유일한 그림자. 모바일 시트 상단 경계 전용 — 라이트 0 -10px 30px rgba(20,20,20,.1) / 다크 0 -10px 30px rgba(0,0,0,.5). lg 이상에서 해제된다."
+      },
+      {
+        "name": "focus-ring",
+        "value": "outline: 2px solid var(--ink); outline-offset: 2px",
+        "purpose": "전역 키보드 포커스. 레이어 밖 규칙이라 Tailwind 유틸리티로 덮이지 않는다."
+      },
+      {
+        "name": "focus-ring-invert",
+        "value": "outline-color: var(--paper)",
+        "purpose": "잉크 지면 위에 앉은 인터랙티브 요소 전용 (WCAG 2.4.7). 현재 적용처는 담은 목록 바의 '링크 복사' 하나."
+      }
     ],
     "motion": [
-      { "name": "pen-sweep", "value": "0.35s cubic-bezier(0.16, 1, 0.3, 1)", "purpose": "선택된 장소명에 형광펜 긋기 — 이 시스템의 유일한 authored 모션. reduced-motion 시 정지." }
+      {
+        "name": "marquee",
+        "value": "translateX(0 → -50%) 28s linear infinite",
+        "purpose": "홈 레몬 티커. 배열을 두 벌 이어붙여 심리스 루프. 홈의 유일한 authored 모션."
+      },
+      {
+        "name": "rise-in",
+        "value": "translateY(120%) → 0, opacity 0 → 1, 0.32s cubic-bezier(0.16, 1, 0.3, 1)",
+        "purpose": "담은 목록 바 등장. 조각 화면의 유일한 authored 모션."
+      },
+      {
+        "name": "press",
+        "value": "transform: scale(0.97), 0.12s",
+        "purpose": "모든 인터랙티브 요소의 눌림. The Move-Not-Glow Rule — 밝기가 아니라 반응으로 말한다."
+      },
+      {
+        "name": "surface-swap",
+        "value": "background 0.16s",
+        "purpose": "hover 시 지면 전환 (--fill → --line). 색만 바뀌고 반응이 없는 인터랙션은 죽은 것처럼 보인다."
+      },
+      {
+        "name": "pin-active",
+        "value": "scale(1.2), 0.12s ease-out",
+        "purpose": "지도 번호 핀 활성. 잉크 반전과 함께 일어난다."
+      },
+      {
+        "name": "reduced-motion",
+        "value": "@media (prefers-reduced-motion: reduce) → animation: none",
+        "purpose": "authored 모션 전부와 지도 스켈레톤의 animate-pulse 까지 정지한다."
+      }
     ],
     "breakpoints": [
-      { "name": "lg", "value": "1024px" }
-    ]
+      {
+        "name": "sm",
+        "value": "640px"
+      },
+      {
+        "name": "md",
+        "value": "768px"
+      },
+      {
+        "name": "lg",
+        "value": "1024px"
+      },
+      {
+        "name": "container",
+        "value": "1152px (max-w-6xl) + px-6 md:px-8 거터"
+      }
+    ],
+    "themes": {
+      "strategy": "토큰 이름을 두 테마가 공유하고 값만 갈린다. 컴포넌트 안에 dark: 분기를 만들지 않는다.",
+      "resolution": "OS 설정(prefers-color-scheme) → 사용자 토글(html[data-theme]). 토글이 항상 이긴다.",
+      "toggle": "src/shared/ui/ThemeToggle.tsx — system / light / dark 3상태",
+      "knownDefect": "--lemon 에는 짝이 되는 고정 글자색(--on-lemon)이 없어, 레몬 지면이 다크에서 --ink 를 받아 1.16:1 로 파손된다. 영향: 홈 티커, 헤더 워드마크 'in', 도시·다음행동 칩 6곳, .hl-under 히어로 밑줄."
+    }
   },
   "components": [
     {
-      "name": "잉크 칩",
+      "name": "홈 CTA 버튼",
+      "kind": "button",
+      "refersTo": "button-cta",
+      "description": "홈 히어로의 유일한 주 행동. 잉크 필 + 페이퍼 텍스트. 그림자 없음 — 누름은 scale 로 말한다.",
+      "html": "<a class=\"ds-cta\" href=\"#\">채널 고르러 가기 <svg aria-hidden width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.5 8h11M9 3.5 13.5 8 9 12.5\"/></svg></a>",
+      "css": ".ds-cta{display:inline-flex;align-items:center;gap:8px;height:48px;padding:0 24px;border-radius:9999px;background:var(--ink);color:var(--paper);font-size:15px;font-weight:800;line-height:1;text-decoration:none;transition:opacity .16s,transform .12s}.ds-cta:hover{opacity:.85}.ds-cta:active{transform:scale(.97)}.ds-cta:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
+    },
+    {
+      "name": "영상 보기 필 (주 행동)",
+      "kind": "button",
+      "refersTo": "pill-video",
+      "description": "장소 행의 주 행동. 잉크 채움 — 셋 중 유일하게 지면이 잉크다. 모든 핀의 종착지.",
+      "html": "<a class=\"ds-pill-video\" href=\"#\"><svg aria-hidden width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M5 3.5v9l7-4.5z\"/></svg><span class=\"ds-tnum\">영상 12:40</span></a>",
+      "css": ".ds-pill-video{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:none;border-radius:9999px;font-size:13px;line-height:1;cursor:pointer;font-family:inherit;transition:background .16s,opacity .16s,transform .12s;background:var(--ink);color:var(--paper);font-weight:600;text-decoration:none}.ds-pill-video:hover{opacity:.85}.ds-pill-video:active{transform:scale(.97)}.ds-pill-video:focus-visible{outline:2px solid var(--ink);outline-offset:2px}.ds-tnum{font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "지도 열기 필 (보조)",
+      "kind": "button",
+      "refersTo": "pill-map",
+      "description": "보조 행동. 베이지 필 지면. hover 는 밝기가 아니라 지면 전환(--fill → --line).",
+      "html": "<a class=\"ds-pill-map\" href=\"#\">지도 열기</a>",
+      "css": ".ds-pill-map{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:none;border-radius:9999px;font-size:13px;line-height:1;cursor:pointer;font-family:inherit;transition:background .16s,opacity .16s,transform .12s;background:var(--fill);color:var(--ink);font-weight:700;text-decoration:none}.ds-pill-map:hover{background:var(--line)}.ds-pill-map:active{transform:scale(.97)}.ds-pill-map:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
+    },
+    {
+      "name": "담기 필 — 미담김",
+      "kind": "button",
+      "refersTo": "pill-pick",
+      "description": "담기 전 상태. 지도 열기와 같은 베이지 지면 — 아직 아무 일도 일어나지 않았다.",
+      "html": "<button class=\"ds-pill-pick\" type=\"button\" aria-pressed=\"false\"><svg aria-hidden width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.6\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M4 2.5h8v11l-4-3-4 3z\"/></svg>담기</button>",
+      "css": ".ds-pill-pick{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:none;border-radius:9999px;font-size:13px;line-height:1;cursor:pointer;font-family:inherit;transition:background .16s,opacity .16s,transform .12s;background:var(--fill);color:var(--ink);font-weight:700}.ds-pill-pick:hover{background:var(--line)}.ds-pill-pick:active{transform:scale(.97)}.ds-pill-pick:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
+    },
+    {
+      "name": "담기 필 — 담김",
+      "kind": "button",
+      "refersTo": "pill-pick-active",
+      "description": "담은 뒤. 코랄 채움 + --on-brand 텍스트 + 채워진 북마크. 코랄이 '담은 것'을 뜻하는 유일한 자리.",
+      "html": "<button class=\"ds-pill-picked\" type=\"button\" aria-pressed=\"true\"><svg aria-hidden width=\"12\" height=\"12\" viewBox=\"0 0 16 16\" fill=\"currentColor\"><path d=\"M4 2.5h8v11l-4-3-4 3z\"/></svg>담음</button>",
+      "css": ".ds-pill-picked{display:inline-flex;align-items:center;gap:6px;min-height:36px;padding:0 14px;border:none;border-radius:9999px;font-size:13px;line-height:1;cursor:pointer;font-family:inherit;transition:background .16s,opacity .16s,transform .12s;background:var(--brand);color:var(--on-brand);font-weight:700}.ds-pill-picked:active{transform:scale(.97)}.ds-pill-picked:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
+    },
+    {
+      "name": "필터 칩 — 활성",
       "kind": "chip",
-      "refersTo": "chip-ink",
-      "description": "도시 링크·타입 필터 등 모든 인터랙티브 사각 요소. hover 시 잉크 반전.",
-      "html": "<a class=\"ds-chip-ink\">도쿄 <svg width=\"10\" height=\"10\" viewBox=\"0 0 10 10\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"1.8\" stroke-linecap=\"square\"><path d=\"M1.5 8.5 8.5 1.5M3 1.5h5.5V7\"/></svg></a>",
-      "css": ".ds-chip-ink { display: inline-flex; align-items: center; gap: 6px; border: 2px solid #111111; padding: 6px 14px; font-size: 14px; font-weight: 700; color: #111111; background: transparent; border-radius: 0; cursor: pointer; transition: background .15s, color .15s; } .ds-chip-ink:hover { background: #111111; color: #ffffff; } .ds-chip-ink:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+      "refersTo": "chip-filter-active",
+      "description": "활성은 밝기 조절이 아니라 잉크 반전이다 (The Inverted State Rule). Link 로 구현돼 JS 없이 동작한다.",
+      "html": "<a class=\"ds-chip-on\" href=\"#\">전체</a>",
+      "css": ".ds-chip-on{display:inline-flex;align-items:center;padding:8px 14px;border-radius:9999px;background:var(--ink);color:var(--paper);font-size:13px;font-weight:700;line-height:1.4;text-decoration:none}.ds-chip-on:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
     },
     {
-      "name": "타임코드 칩",
+      "name": "레몬 도시 칩",
       "kind": "chip",
-      "refersTo": "chip-timecode",
-      "description": "출처 영상 아웃링크 — 타임스탬프가 곧 버튼이다.",
-      "html": "<a class=\"ds-chip-timecode\">1:55 ▸</a>",
-      "css": ".ds-chip-timecode { display: inline-flex; align-items: center; gap: 4px; background: #111111; color: #ffffff; font-family: 'Spline Sans Mono', monospace; font-variant-numeric: tabular-nums; font-size: 12px; line-height: 1; padding: 5px 8px; border-radius: 4px; cursor: pointer; white-space: nowrap; transition: opacity .15s; } .ds-chip-timecode:hover { opacity: .8; }"
+      "refersTo": "chip-lemon",
+      "description": "다음 행동. hover 시 색을 바꾸는 게 아니라 지면과 글자를 통째로 뒤집는다.",
+      "html": "<a class=\"ds-chip-lemon\" href=\"#\">도쿄</a>",
+      "css": ".ds-chip-lemon{display:inline-flex;align-items:center;padding:10px 16px;border-radius:9999px;background:var(--lemon);color:var(--ink);font-size:13px;font-weight:800;line-height:1;text-decoration:none;transition:background .16s,color .16s,transform .12s}.ds-chip-lemon:hover{background:var(--ink);color:var(--lemon)}.ds-chip-lemon:active{transform:scale(.97)}.ds-chip-lemon:focus-visible{outline:2px solid var(--ink);outline-offset:2px}"
     },
     {
-      "name": "형광펜 하이라이트",
+      "name": "크리에이터 카드",
+      "kind": "card",
+      "refersTo": "card-creator",
+      "description": "1px 괘선으로 선다 — 그림자 없음. 이니셜 뱃지(액센트)가 프로필 사진을 대신하는 서명 자리. hover 는 지면 전환.",
+      "html": "<article class=\"ds-card\"><span class=\"ds-card-arrow\"><svg aria-hidden width=\"16\" height=\"16\" viewBox=\"0 0 16 16\" fill=\"none\" stroke=\"currentColor\" stroke-width=\"2\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><path d=\"M2.5 8h11M9 3.5 13.5 8 9 12.5\"/></svg></span><span class=\"ds-badge-initial\">곽</span><h3 class=\"ds-card-title\">곽튜브</h3><p class=\"ds-card-meta\"><span class=\"ds-tnum\">24</span>곳 · 영상 <span class=\"ds-tnum\">8</span></p></article>",
+      "css": ".ds-card{position:relative;border:1px solid var(--line);border-radius:16px;background:var(--card);padding:24px;transition:background .16s}.ds-card:hover{background:var(--fill)}.ds-card-arrow{position:absolute;top:24px;right:24px;display:grid;place-items:center;width:44px;height:44px;border-radius:9999px;background:var(--brand);color:var(--on-brand)}.ds-badge-initial{display:grid;place-items:center;width:64px;height:64px;border:1px solid var(--line);border-radius:9999px;background:#ff5a3c;color:var(--ink);font-size:24px;font-weight:900}.ds-card-title{margin:16px 0 0;font-size:20px;font-weight:700;line-height:1.25;color:var(--ink)}.ds-card-meta{margin:6px 0 0;font-size:13px;color:var(--ink-soft)}.ds-tnum{font-variant-numeric:tabular-nums}"
+    },
+    {
+      "name": "장소 행 — 선택됨",
       "kind": "custom",
-      "refersTo": "hl-pen",
-      "description": "고유명사(채널명·도시명·장소명) 전용 하이라이트. --hl 로 문맥색 주입.",
-      "html": "<h2 class=\"ds-subtitle\"><span class=\"ds-hl-pen\">추성훈의 도쿄</span></h2>",
-      "css": ".ds-subtitle { font-family: 'Black Han Sans', 'Apple SD Gothic Neo', sans-serif; font-size: 28px; letter-spacing: -0.01em; line-height: 1.15; color: #111111; } .ds-hl-pen { --hl: #ffd400; background-image: linear-gradient(to top, transparent 6%, color-mix(in srgb, var(--hl) 55%, white) 6%, color-mix(in srgb, var(--hl) 55%, white) 52%, transparent 52%); -webkit-box-decoration-break: clone; box-decoration-break: clone; padding-inline: 0.06em; }"
+      "refersTo": "row-place-active",
+      "description": "리스트는 카드가 아니라 괘선 행이다. 선택된 행만 레몬 32% 틴트 + 12px 라운드 블록으로 승격한다 — 반전하기엔 면적이 너무 크다.",
+      "html": "<div class=\"ds-row-on\"><span class=\"ds-badge-num ds-tnum\">3</span><div><p class=\"ds-place\">아사쿠사 멘치카츠</p><p class=\"ds-row-meta\">도쿄 다이토구 · <span class=\"ds-tag\">음식</span></p></div></div>",
+      "css": ".ds-row-on{display:flex;gap:12px;align-items:flex-start;padding:20px 16px;border-radius:12px;background:color-mix(in srgb, var(--lemon) 32%, var(--card))}.ds-badge-num{display:grid;place-items:center;min-width:28px;height:28px;border-radius:9999px;background:var(--hl);color:var(--paper);font-size:13px;font-weight:700}.ds-place{margin:0;font-size:17px;font-weight:700;line-height:1.375;color:var(--ink)}.ds-row-meta{margin:4px 0 0;font-size:13px;color:var(--ink-soft)}.ds-tag{display:inline-block;padding:2px 6px;border-radius:6px;background:var(--fill);color:var(--ink-soft);font-size:11px;font-weight:600}.ds-tnum{font-variant-numeric:tabular-nums}"
     },
     {
-      "name": "대괄호 라벨",
+      "name": "담은 목록 바 (시그니처)",
       "kind": "custom",
-      "refersTo": "meta-label",
-      "description": "메타 정보 라벨 — 대괄호는 CSS가 부착.",
-      "html": "<span class=\"ds-meta-label\">맛집</span>",
-      "css": ".ds-meta-label { font-family: 'Spline Sans Mono', monospace; font-size: 11.2px; letter-spacing: 0.02em; color: #55524a; white-space: nowrap; } .ds-meta-label::before { content: '['; } .ds-meta-label::after { content: ']'; }"
-    },
-    {
-      "name": "이니셜 뱃지",
-      "kind": "custom",
-      "refersTo": "initials-badge",
-      "description": "크리에이터 프로필 대체(법적 제약) — 액센트 원 + 잉크 보더.",
-      "html": "<span class=\"ds-initials\">추</span>",
-      "css": ".ds-initials { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; border-radius: 9999px; border: 2px solid #111111; background: #3b5fe0; color: #ffffff; font-family: 'Black Han Sans', sans-serif; font-size: 18px; }"
-    },
-    {
-      "name": "챕터 바",
-      "kind": "nav",
-      "refersTo": "chapter-bar",
-      "description": "장소 수만큼 나뉜 세그먼트 — 지도 핀·리스트 번호와 1:1 연동.",
-      "html": "<div class=\"ds-chapter-bar\"><button class=\"ds-chapter-seg is-active\"></button><button class=\"ds-chapter-seg\"></button><button class=\"ds-chapter-seg\"></button><button class=\"ds-chapter-seg\"></button></div>",
-      "css": ".ds-chapter-bar { display: flex; gap: 4px; } .ds-chapter-seg { height: 8px; flex: 1; border: none; background: color-mix(in srgb, #ffd400 60%, #111111); cursor: pointer; transition: background .15s; } .ds-chapter-seg.is-active { background: #111111; } .ds-chapter-seg:focus-visible { outline: 2px solid #111111; outline-offset: 2px; }"
+      "refersTo": "bar-picked",
+      "description": "담기 순간 하단에서 rise-in 으로 떠오르는 완전한 필. URL(?picked=)이 곧 저장본이라 '링크 복사'가 공유·재방문 동작이다. 코랄 버튼의 포커스 링은 잉크 지면 위라 반전한다.",
+      "html": "<div class=\"ds-bar\"><p class=\"ds-bar-label\">내 목록 <span class=\"ds-tnum\">5</span>곳</p><button class=\"ds-bar-copy\" type=\"button\">링크 복사</button></div>",
+      "css": ".ds-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;border-radius:9999px;background:var(--ink);color:var(--paper);padding:12px 10px 12px 20px}.ds-bar-label{margin:0;font-size:14px;font-weight:600}.ds-bar-copy{min-height:40px;padding:0 16px;border:none;border-radius:9999px;background:var(--brand);color:var(--on-brand);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer;transition:opacity .16s,transform .12s}.ds-bar-copy:hover{opacity:.9}.ds-bar-copy:active{transform:scale(.97)}.ds-bar-copy:focus-visible{outline:2px solid var(--paper);outline-offset:2px}.ds-tnum{font-variant-numeric:tabular-nums}"
     }
   ],
   "narrative": {
-    "northStar": "여행 영상 편집자막",
-    "overview": "한국 여행 유튜브의 편집자막 그래픽 — 초굵은 자막체, 형광펜 키워드 하이라이트, 좌하단 타임코드, [대괄호] 상황 라벨, 챕터 바 — 를 흰 정보 지면 위의 UI 언어로 쓴다. \"모든 장소는 영상에서 왔다\"는 제품 진실이 곧 시각 문법이다. 지면은 밝고 평평하며, 색은 문맥이 주입한다: 브랜드·홈은 형광 옐로, 채널×도시 조각은 그 크리에이터의 액센트색.",
+    "northStar": "캐논 — 한국형 정보 서비스 표준",
+    "overview": "Tripin의 지면은 조용하다. 웜 화이트(#fffdf8) 위에 잉크 텍스트와 1px 괘선만 있고, 위계는 **여백과 타이포 크기**가 혼자 만든다. 품질 기준선은 토스·카카오맵·당근·트리플 — 한국 사용자가 \"잘 만든 서비스\"라고 인식하는 그 밀도와 절제다.\n\n이 월드는 두 가지를 명시적으로 거부한다. 첫째, **회색 정보 대시보드** — 저채도 파랑과 소프트 블러 그림자로 만든 \"믿음직해 보이는\" 관리도구는 이 제품이 파는 감정과 무관하다. 둘째, **편집자막 월드** — 유튜브의 트레이드 드레스(빨강 주조, 재생버튼 클론, 자막 박스, 썸네일 문법)를 흉내 내면 비공식 디렉터리라는 법적·인지적 포지션이 무너진다. Tripin은 유튜브의 껍데기가 아니라 유튜브로 나가는 **출구**다.\n\n색은 아껴 쓴다. 지면의 대부분은 웜 화이트와 잉크 텍스트이고, 코랄은 담은 것에, 레몬은 눈이 멈춰야 할 곳에, 크리에이터 액센트는 인덱스에만 찍힌다. 셋은 섞이지 않는다.",
     "keyCharacteristics": [
-      "잉크 블랙 자막체가 화면의 목소리, 형광펜이 화면의 색",
-      "숫자는 전부 모노(타임코드) — 통계·번호·타임스탬프",
-      "인터랙티브 요소는 radius 0 + 2px 잉크 보더, hover 시 잉크 반전",
-      "지면은 평평 — 그림자는 지도 핀 하나뿐"
+      "`--paper` 지면(라이트 = 웜 화이트 `#fffdf8` / 다크 = `#0b0d10`) + 1px `--line` 괘선 — 형태는 획이 아니라 여백이 만든다",
+      "그림자는 모바일 시트 하나뿐 (`--shadow-sheet`) — 그 외 전부 없음",
+      "Pretendard 단일 서체, 위계는 크기와 웨이트(400–900)로만",
+      "코랄 = 담은 것, 레몬 = 하이라이트, 크리에이터 액센트 = 인덱스",
+      "누를 수 있는 것은 필(pill), 담고 있는 것은 12~24px 라운드 카드",
+      "라이트/다크 2테마 — 토큰 **이름**을 공유하고 값만 갈린다. 프로필 사진 없음, 사진·일러스트·그라디언트 없음",
+      "authored 모션은 화면당 하나"
     ],
     "rules": [
-      { "name": "The Pen Rule", "body": "형광펜은 고유명사에만 긋는다 — 채널명, 도시명, 선택된 장소명. 칠할 때는 항상 --hl 55% + 흰색 혼합으로 밝게 유지한다.", "section": "colors" },
-      { "name": "The Context Ink Rule", "body": "크리에이터 액센트색은 --hl 주입으로만 쓴다. 버튼·텍스트·배경을 액센트색으로 직접 칠하지 않는다.", "section": "colors" },
-      { "name": "The Timecode Rule", "body": "화면의 모든 숫자는 Spline Sans Mono tabular로.", "section": "typography" },
-      { "name": "The Bracket Rule", "body": "메타 정보는 [대괄호] 모노 라벨로 — 대괄호는 CSS가 붙인다.", "section": "typography" },
-      { "name": "The Flat Paper Rule", "body": "지면 위 요소에 box-shadow를 주지 않는다. 유일한 예외는 지도 핀.", "section": "elevation" },
-      { "name": "The Two-Face Mono Rule", "body": "모노 계열 스택은 항상 var(--font-timecode), var(--font-body), Apple SD Gothic Neo, monospace — 숫자·라틴은 모노, 한글은 본문 얼굴.", "section": "typography" },
-      { "name": "The Click-Select Rule", "body": "지도↔리스트↔챕터 바 선택은 클릭으로만. 호버는 상태를 만들지 않고, 선택 시 다른 항목을 dim 처리하지 않는다.", "section": "colors" }
+      {
+        "name": "The Fixed-Ink-On-Color Rule",
+        "body": "코랄처럼 두 테마에서 같은 중간톤을 유지하는 색 위에서는 글자색도 **테마와 무관하게 고정**한다. 그래서 `--on-brand`(`#23120c`)가 존재한다. `--ink`를 쓰면 다크 테마에서 밝은 글자가 밝은 코랄 위에 얹혀 2.30:1로 무너진다. 코랄 위 **아이콘**(화살표 뱃지 등)은 비텍스트 요소라 3:1 기준을 통과하므로 반전색을 허용한다.",
+        "section": "colors"
+      },
+      {
+        "name": "The Weight Carries Hierarchy Rule",
+        "body": "위계는 크기와 웨이트가 만든다. 색으로 제목을 강조하지 않고, 대문자·자간 확장 라벨을 쓰지 않는다.",
+        "section": "typography"
+      },
+      {
+        "name": "The Keep-All Rule",
+        "body": "한국어는 어절 단위로만 줄바꿈한다(`word-break: keep-all` 전역). 히어로처럼 줄 구성이 의미를 만드는 곳은 `<br>`로 직접 끊는다.",
+        "section": "typography"
+      },
+      {
+        "name": "The Korean Measure Rule",
+        "body": "줄길이는 **한국어 글자수로 센다 — 라틴 ch가 아니다.** 한글은 전각이라 1자 ≈ 1em이고, 영문 기준 \"65–75ch\"를 그대로 적용하면 실제로는 두 배 가까이 긴 줄이 나온다. 편안한 범위는 **한 줄 35–45자**이며, 폰트 크기별 상한은 이렇게 계산한다:",
+        "section": "typography"
+      },
+      {
+        "name": "The Two-Step Rule",
+        "body": "히어로(36/48)와 페이지 타이틀(30) 사이에 최소 한 단계가 유지돼야 한다. 히어로를 30px대로 내리면 홈의 위계가 무너진다.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Typeface Rule — 그리고 그 단 하나의 예외",
+        "body": "화면에서는 Pretendard 하나만 쓴다. 대비가 필요하면 웨이트(400–900)로 해결한다.",
+        "section": "typography"
+      },
+      {
+        "name": "The One Shadow Rule",
+        "body": "모바일 시트 외에 그림자를 도입하지 않는다. 하드 오프셋 그림자(`4px 4px 0`)는 이전 월드의 것이며 **삭제됐다**. 카드가 떠 보여야 한다고 느껴지면 그림자가 아니라 여백이나 지면 대비를 조정한다.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Move-Not-Glow Rule",
+        "body": "상태 변화는 밝기가 아니라 배경 전환과 눌림으로 말한다 — hover는 `bg-fill` → `bg-line`, active는 `active:scale-[0.97]`. 색만 바뀌고 반응이 없는 인터랙션은 죽은 것처럼 보인다.",
+        "section": "elevation"
+      },
+      {
+        "name": "The One Motion Per Screen Rule",
+        "body": "authored 모션은 화면당 하나다 — 홈은 티커, 조각 화면은 담기 바의 rise-in. 나머지 움직임은 전부 사용자 입력에 대한 즉각 반응(transform 0.12–0.2s)이다. 모든 authored 모션은 `prefers-reduced-motion`에서 멈춘다(지도 스켈레톤의 `animate-pulse` 포함).",
+        "section": "components"
+      },
+      {
+        "name": "The Inverted State Rule",
+        "body": "활성 상태는 밝기 조절이 아니라 반전이다 — 필터 칩·지도 핀·레몬 칩 모두 활성 시 잉크와 지면이 뒤집힌다. 유일한 예외가 선택된 장소 행의 레몬 32% 틴트이며, 그것은 행이 통째로 반전되기엔 면적이 너무 크기 때문이다.",
+        "section": "components"
+      },
+      {
+        "name": "The Publish Gate Rule",
+        "body": "확정 핀 8개 미만 조각은 공개하지 않는다(`src/shared/config/publish.ts`의 `MIN_CONFIRMED_PINS`). 홈·허브 목록과 사이트맵에서 제외되고, 조각 페이지는 `noindex` + \"준비 중\" 화면을 렌더한다(404가 아니다 — 운영자 미리보기는 살린다). **밀도가 신뢰다.** 빈 지도를 보여주면 서비스 전체가 비어 보인다.",
+        "section": "components"
+      }
     ],
     "dos": [
-      "Do 새 화면의 액센트는 --hl 변수 주입으로 — 컴포넌트는 색을 모른 채 형광펜·챕터 바·핀에 반영되게 한다.",
-      "Do 숫자가 나오면 .timecode-face, 메타 정보면 .meta-label — 먼저 이 둘을 검토한다.",
-      "Do 인터랙티브 사각 요소는 radius 0 + 2px 잉크 보더 + hover 잉크 반전으로 통일."
+      "카드는 1px `--line` 보더나 지면 대비로 세운다.",
+      "리스트는 괘선으로 나누고, 선택된 항목만 라운드 틴트 블록으로 승격시킨다.",
+      "코랄 위 텍스트는 `--on-brand`로 쓴다 (라이트 5.83:1 / 다크 6.56:1). 코랄 위 아이콘만 반전색을 허용한다.",
+      "코랄은 담은 것과 주 행동에만 쓴다.",
+      "레몬은 읽어야 할 곳에 쓴다 (히어로 밑줄·티커·도시 칩·선택 틴트).",
+      "크리에이터 액센트(`--hl`)는 번호 뱃지·지도 핀·선택 강조 세 표면에만 주입한다.",
+      "활성 상태는 잉크 반전으로 표현한다.",
+      "숫자에는 `.tnum`을 붙인다.",
+      "확정되지 않은 것은 대시 보더로 감싼다.",
+      "프로필 사진 자리에는 액센트 이니셜 뱃지를 쓴다 (법적 제약이자 시각적 서명).",
+      "읽어야 하는 모든 문단에 폭 캡을 명시한다 — 한국어 한 줄 35–45자 (The Korean Measure Rule 표 참조). 캡이 없으면 컨테이너 폭을 그대로 받는다.",
+      "빈 상태에서도 형태로 말한다 — 지도 스켈레톤, \"준비 중\" 대시 카드, \"위치 확인 중\" 섹션."
     ],
     "donts": [
-      "Don't 유튜브 크롬을 차용하지 않는다 — 빨강 주조, 썸네일 그리드, 원형 재생버튼.",
-      "Don't 다크 모드·회색 카드·중간 라운드(8~16px)를 들이지 않는다.",
-      "Don't 형광펜을 문장·버튼·라벨에 긋지 않는다 (The Pen Rule).",
-      "Don't authored 모션을 추가하지 않는다 — pen-sweep 하나가 이 시스템의 전부다."
+      "하드 오프셋 그림자(`4px 4px 0`, `6px 7px 0`)를 쓰지 않는다. 이전 월드의 것이며 삭제됐다.",
+      "2px 잉크 보더를 쓰지 않는다. 획은 1px `--line`이다.",
+      "요소를 회전시키지 않는다.",
+      "히어로를 30px대로 내리지 않는다 — 페이지 타이틀과 충돌한다.",
+      "코랄 위에 `--ink`나 흰 텍스트를 쓰지 않는다 (다크에서 2.30:1, 라이트에서 3.10:1 — 각각 미달). 언제나 `--on-brand`다.",
+      "코랄로 정보 텍스트·헤드라인·구분선을 칠하지 않는다.",
+      "크리에이터 액센트로 카드 배경·버튼·보더를 칠하지 않는다.",
+      "유튜브의 트레이드 드레스(빨강 주조, 재생버튼 클론, 자막 박스, 썸네일 그리드, 채널 아트)를 흉내 내지 않는다.",
+      "크리에이터 프로필 사진·채널 로고를 쓰지 않는다.",
+      "컴포넌트 안에 `dark:` 분기나 하드코딩 색(`white`, `#fff`)을 쓰지 않는다. 테마 값은 `globals.css`의 토큰에서만 갈린다 — 컴포넌트는 `bg-card`처럼 이름만 참조한다.",
+      "사진·일러스트·그라디언트·텍스처를 배경에 깔지 않는다.",
+      "한 화면에 두 번째 authored 애니메이션을 추가하지 않는다.",
+      "서체를 추가하지 않는다. 대비가 필요하면 Pretendard의 웨이트(400–900)로 해결한다. 유일한 예외는 OG 카드의 `KR`(Noto Sans KR)이며, 그 경계는 `opengraph-image.tsx` 두 파일뿐이다 — The One Typeface Rule 참조.",
+      "대문자 + 자간 확장 라벨(`uppercase tracking-widest`)을 쓰지 않는다.",
+      "본문 텍스트를 가운데 정렬하지 않는다.",
+      "감탄사·과장 카피를 쓰지 않는다. \"인생 맛집!\"이 아니라 \"돈카츠. 도쿄 고토구. 영상 12:40.\""
     ]
   }
 }
