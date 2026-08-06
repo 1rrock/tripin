@@ -1,0 +1,16 @@
+{
+  "surface": "src/app/(public)/c/[creator]/[city]/Explorer.tsx",
+  "viewport": "375x812 portrait (모바일 우선 표면)",
+  "world": "공항 사인 시스템 (wayfinding-cartography-signage-terminal-yellow-wayfinding)",
+  "seedKey": "21af9ba1",
+  "medium": "Figma (이 세션에 이미지 생성 도구 없음 — use_figma 로 작화)",
+  "figmaFile": "https://www.figma.com/design/cEj6GoBcFrhGQeeEOnphd8",
+  "fixed": "팔레트(#ffcc00 / #0d0d0d / #e5e5e5 / #ffffff), Noto Sans KR, 검정 사각 인셋 픽토그램, 2px 라운드 사각 패널, 기념비적 번호 — 3안 공통 고정",
+  "approved": false,
+  "id": "B",
+  "name": "게이트 스택",
+  "figmaNodeId": "2:5",
+  "structuralQuestion": "기념비적 게이트 번호가 행을 지배해도 장소명이 첫 번째로 읽히는가?",
+  "prompt": "조각 화면 첫 뷰포트. 얇은 노란 밴드 한 줄('곽튜브 → 도쿄' 19px + '12곳' 우측 정렬) → 큰 지도 318px(활성 핀은 검정 지면+노란 숫자로 반전, 비활성은 노란 지면+검정 숫자) → 게이트 행 3개(좌측 74px 검정 정사각 패널 안에 46px Black 노란 번호, 우측에 장소명 19px + 메타 + 액션 버튼 2개[검정 채움 영상 타임코드 / 흰 지면 검정 보더 지도]) → 부유 담은목록 바. 밀도 낮음, 초점은 번호.",
+  "tests": "번호-지배 초점 구성 · 낮은 밀도 · 큰 지도 · 행 내부 액션 버튼"
+}

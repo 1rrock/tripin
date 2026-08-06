@@ -1,0 +1,36 @@
+{
+  "surface": "src/app/(public)/c/[creator]/[city]/Explorer.tsx",
+  "viewport": "1440x1000 (데스크톱 웹)",
+  "world": "공항 사인 시스템 (wayfinding-cartography-signage-terminal-yellow-wayfinding)",
+  "seedKey": "21af9ba1",
+  "figmaFile": "https://www.figma.com/design/cEj6GoBcFrhGQeeEOnphd8",
+  "figmaNodeId": "29:2",
+  "revision": "v7",
+  "colorStrategy": {
+    "ground": "콘크리트 #e5e5e2 — 터미널 환경",
+    "yellow": "사인 층에만: 매달린 밴드 · 활성 카드 · 게이트 번호 · 주 행동. 실측 16.6%",
+    "rationale": "공항에서 노랑은 바닥·벽이 아니라 콘크리트 위에 매달린 사인 층이다. v5(91.3%)는 터미널 전체를 칠한 오역이었다.",
+    "surfaceBudget": {
+      "home(Persuade)": "40~60%",
+      "explorer(Operate)": "15~20%",
+      "hub(Persuade)": "30~40%",
+      "timeline(Operate)": "15~20%"
+    }
+  },
+  "legal": {
+    "썸네일": "허용 — YouTube 정책이 오히려 요구: 'thumbnail and title must be visible to the viewer and unmodified'. 재생 트리거 최소 120x70 (컴프 150x84 ✓)",
+    "영상제목": "허용, 변형 금지",
+    "채널프로필사진": "금지 — 부경법 타목 MEDIUM (LEGAL.md 1.3). 이니셜 뱃지 + accent_color 로 대체",
+    "조회수·구독자수": "금지 — YouTube API §III.E.2",
+    "보관": "제목·썸네일은 Non-Authorized Data → 30일 초과 보관 금지. 렌더 시점 조회(ISR) 또는 월 1회 갱신 배치",
+    "트레이드드레스": "썸네일 그리드 금지. 썸네일은 장소 카드 내부의 '출처 증거'로만 배치 — 장소가 주어, 영상이 출처",
+    "경쟁사": "youtubeplace.co.kr 은 프로필 사진·조회수·좋아요를 전부 사용. LEGAL.md:104 — 분쟁 공개기록 부재는 안전의 근거가 아니다"
+  },
+  "mapStyle": "src/shared/config/map-style.ts (Google Maps styling). mapId 사용 시 인라인 styles 무시되므로 Cloud 스타일로 업로드 필요",
+  "type": {
+    "latin": "Noto Sans",
+    "korean": "Noto Sans KR",
+    "tracking": 0
+  },
+  "approved": false
+}

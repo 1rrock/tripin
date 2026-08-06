@@ -1,0 +1,14 @@
+{
+  "approved": true,
+  "approvedAt": "2026-08-06",
+  "comp": ".impeccable/mocks/mobile-v4-structure.png",
+  "figma": "https://www.figma.com/design/cEj6GoBcFrhGQeeEOnphd8?node-id=44-2",
+  "world": "공항 사인 시스템 (wayfinding-cartography-signage-terminal-yellow-wayfinding)",
+  "seedKey": "21af9ba1",
+  "primary": "모바일 375 기준. 데스크톱은 같은 시스템의 반응형 확장 (별도 대시보드 레이아웃 아님)",
+  "openItems": [
+    "아이콘 크기 — 사용자가 코드에서 조정 예정 (토큰 --icon-* 로 노출)",
+    "서체 — Frutiger Next(유료) 대체 불가. Noto Sans / Noto Sans KR 사용",
+    "채널 프로필 사진 사용 결정 — PRODUCT.md·LEGAL.md 갱신 필요"
+  ]
+}
