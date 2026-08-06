@@ -280,28 +280,46 @@ export function Action({
 export function Chip({
   active = false,
   href,
+  onClick,
   children,
 }: {
   active?: boolean;
-  href: string;
+  /** 라우팅 필터면 href, 클라이언트 필터면 onClick — 둘 중 하나만 준다 */
+  href?: string;
+  onClick?: () => void;
   children: ReactNode;
 }) {
+  const className = "inline-flex shrink-0 items-center px-4 py-2.5 font-medium";
+  const style: CSSProperties = {
+    background: active ? "var(--ink)" : "transparent",
+    color: active ? "var(--sign)" : "var(--ink)",
+    border: `var(--stroke-card) solid ${active ? "var(--ink)" : "var(--hairline)"}`,
+    borderRadius: "var(--r-field)",
+    fontSize: "var(--t-chip)",
+  };
+  if (href) {
+    return (
+      <Link
+        href={href}
+        // 필터 칩은 스크롤 위치를 유지해야 한다 — 훑던 자리에서 걸러야 과업이 안 끊긴다
+        scroll={false}
+        aria-current={active ? "true" : undefined}
+        className={className}
+        style={style}
+      >
+        {children}
+      </Link>
+    );
+  }
   return (
-    <Link
-      href={href}
-      // 필터 칩은 스크롤 위치를 유지해야 한다 — 훑던 자리에서 걸러야 과업이 안 끊긴다
-      scroll={false}
-      aria-current={active ? "true" : undefined}
-      className="inline-flex shrink-0 items-center px-4 py-2.5 font-medium"
-      style={{
-        background: active ? "var(--ink)" : "transparent",
-        color: active ? "var(--sign)" : "var(--ink)",
-        border: `var(--stroke-card) solid ${active ? "var(--ink)" : "var(--hairline)"}`,
-        borderRadius: "var(--r-field)",
-        fontSize: "var(--t-chip)",
-      }}
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className={`${className} cursor-pointer`}
+      style={style}
     >
       {children}
-    </Link>
+    </button>
   );
 }

@@ -6,7 +6,7 @@ import { VideoList } from "./VideoList";
 import { supabase } from "@/shared/api/supabase";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
-import { isDarkHex } from "@/shared/lib/color";
+import { Box, Card, Chip, DataRow, Divider, Icon } from "@/shared/ui/sign";
 import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
 /**
@@ -113,118 +113,132 @@ export default async function CreatorHubPage({
 
   return (
     <main
-      className="mx-auto w-full max-w-6xl px-6 md:px-8"
+      className="flex flex-col gap-(--stack) px-(--gutter) pt-6 pb-16"
       style={{ "--hl": creator.accent_color } as React.CSSProperties}
     >
-      <section className="pt-12 pb-8">
-        <nav className="flex items-center text-xs text-ink-soft">
-          <Link href="/" className="font-medium transition hover:text-ink">
-            홈
-          </Link>
-          <svg
-            aria-hidden
-            width="10"
-            height="10"
-            viewBox="0 0 16 16"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="2"
-            strokeLinecap="round"
-            strokeLinejoin="round"
-            className="mx-1 inline text-line"
-          >
-            <path d="m6 3.5 4.5 4.5L6 12.5" />
-          </svg>
-          <span className="text-ink">{creator.display_name}</span>
-        </nav>
+      <nav className="flex items-center gap-1.5" style={{ fontSize: "var(--t-meta)" }}>
+        <Link href="/" className="underline-offset-4 hover:underline">
+          홈
+        </Link>
+        <Icon.chevron aria-hidden style={{ width: 9, height: 9, fill: "var(--hairline)" }} />
+        <span className="font-medium">{creator.display_name}</span>
+      </nav>
 
-        <div className="mt-5 flex items-center gap-5">
-          <span
-            aria-hidden
-            className="grid h-20 w-20 shrink-0 place-items-center rounded-full border border-line text-3xl font-black"
-            style={{
-              backgroundColor: creator.accent_color,
-              color: isDarkHex(creator.accent_color) ? "#ffffff" : "var(--ink-fixed)",
-            }}
-          >
-            {creator.initials}
-          </span>
-          <div>
-            <h1 className="text-3xl font-black tracking-tight">{creator.display_name}</h1>
-            <p className="tnum mt-2 text-[15px] text-ink-soft">
-              간 곳 {totalPlaces} · 도시 {groups.length} · 영상 {videos.length}
-            </p>
-          </div>
+      <div className="flex items-center gap-4">
+        {/* 프로필 사진 자리 — accent_color 가 채널 식별자다 */}
+        <span
+          aria-hidden
+          className="ds-box ds-box--card grid place-items-center font-bold"
+          style={{
+            background: creator.accent_color,
+            color: "#fff",
+            fontSize: "calc(var(--box-card) * 0.34)",
+          }}
+        >
+          {creator.initials}
+        </span>
+        <h1
+          className="min-w-0 flex-1 font-bold"
+          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.2 }}
+        >
+          {creator.display_name}
+        </h1>
+      </div>
+
+      <Card>
+        <DataRow
+          items={[
+            { label: "간 곳", value: String(totalPlaces) },
+            { label: "도시", value: String(groups.length) },
+            { label: "영상", value: String(videos.length) },
+          ]}
+        />
+      </Card>
+
+      <section className="flex flex-col gap-(--stack)">
+        <div>
+          <h2 className="font-bold" style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}>
+            도시로 보기
+          </h2>
+          <p className="mt-1" style={{ fontSize: "var(--t-meta)" }}>
+            도시를 고르면 지도가 열립니다.
+          </p>
         </div>
+        <ul className="flex flex-col gap-(--stack) md:grid md:grid-cols-2">
+          {groups.map((g) => (
+            <Card as="li" key={g.slug} className="flex flex-col gap-(--card-pad)">
+              <Link
+                href={`/c/${creatorSlug}/${g.slug}`}
+                className="flex items-center gap-4"
+                aria-label={`${g.name} 지도 열기`}
+              >
+                <Box icon="pin" size="card" />
+                <span className="min-w-0 flex-1">
+                  <span className="block" style={{ fontSize: "var(--t-body)" }}>
+                    도시
+                  </span>
+                  <span
+                    className="block font-bold"
+                    style={{
+                      fontSize: "var(--t-title)",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.28,
+                    }}
+                  >
+                    {g.name}
+                  </span>
+                </span>
+                <Icon.chevron
+                  aria-hidden
+                  style={{
+                    width: "var(--icon-chevron)",
+                    height: "var(--icon-chevron)",
+                    fill: "var(--ink)",
+                    flex: "none",
+                  }}
+                />
+              </Link>
+
+              <Divider />
+
+              <DataRow
+                items={[
+                  { label: "간 곳", value: String(g.placeCount) },
+                  { label: "유형", value: String(g.types.length) },
+                ]}
+              />
+
+              {/* 유형별 바로 진입 — 도시 카드 안에서 한 단계 더 좁힌다 */}
+              <div className="no-scrollbar -mx-(--card-pad) flex gap-2 overflow-x-auto px-(--card-pad)">
+                <Chip href={`/c/${creatorSlug}/${g.slug}`}>전체</Chip>
+                {g.types.map(({ type, count }) => (
+                  <Chip key={type} href={`/c/${creatorSlug}/${g.slug}?type=${type}`}>
+                    {PLACE_TYPE_LABELS[type]}
+                    <span className="tnum ml-1.5 opacity-60">{count}</span>
+                  </Chip>
+                ))}
+              </div>
+            </Card>
+          ))}
+        </ul>
       </section>
 
       {videos.length > 0 ? (
-        <section className="pb-14">
-          <h2 className="text-xl font-bold tracking-tight sm:text-2xl">영상으로 보기</h2>
-          <p className="mt-1.5 mb-6 text-[15px] text-ink-soft">
-            영상을 고르면 그 안에서 장소가 나온 시각으로 이동합니다.
-          </p>
+        <section className="flex flex-col gap-(--stack)">
+          <div>
+            <h2
+              className="font-bold"
+              style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
+            >
+              영상으로 보기
+            </h2>
+            <p className="mt-1" style={{ fontSize: "var(--t-meta)" }}>
+              영상을 고르면 그 안에서 장소가 나온 시각으로 이동합니다.
+            </p>
+          </div>
           <VideoList videos={videos} creatorSlug={creatorSlug} />
         </section>
       ) : null}
-
-      <h2 className="mb-6 text-xl font-bold tracking-tight sm:text-2xl">도시로 보기</h2>
-      <section className="grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5 pb-16">
-        {groups.map((g) => (
-          <article
-            key={g.slug}
-            className="group relative rounded-2xl border border-line bg-card p-6 transition hover:bg-fill"
-          >
-            <Link
-              href={`/c/${creatorSlug}/${g.slug}`}
-              className="absolute inset-0 rounded-2xl"
-              aria-label={`${g.name} 지도 열기`}
-            />
-            <div className="flex items-start justify-between gap-3">
-              <h2 className="text-xl font-bold">{g.name}</h2>
-              <span
-                aria-hidden
-                className="grid h-11 w-11 shrink-0 place-items-center rounded-full bg-brand text-on-brand"
-              >
-                <svg
-                  width="16"
-                  height="16"
-                  viewBox="0 0 16 16"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                >
-                  <path d="M2.5 8h11M9 3.5 13.5 8 9 12.5" />
-                </svg>
-              </span>
-            </div>
-            <p className="tnum mt-2 text-[13px] text-ink-soft">간 곳 {g.placeCount}</p>
-
-            {/* 카테고리 바로 선택 — 카드 오버레이 링크 위에 떠 있는 실제 링크들.
-                칩 간격을 벌리고 min-height 로 터치 타깃을 확보한다 */}
-            <div className="relative mt-5 flex flex-wrap gap-2.5">
-              <Link
-                href={`/c/${creatorSlug}/${g.slug}`}
-                className="inline-flex min-h-10 items-center rounded-full bg-lemon px-4 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
-              >
-                전체
-              </Link>
-              {g.types.map(({ type, count }) => (
-                <Link
-                  key={type}
-                  href={`/c/${creatorSlug}/${g.slug}?type=${type}`}
-                  className="inline-flex min-h-10 items-center gap-1 rounded-full bg-fill px-3.5 text-[13px] font-bold transition hover:bg-line active:scale-[0.97]"
-                >
-                  {PLACE_TYPE_LABELS[type]}
-                  <span className="tnum text-ink-soft">{count}</span>
-                </Link>
-              ))}
-            </div>
-          </article>
-        ))}
-      </section>
     </main>
   );
 }
