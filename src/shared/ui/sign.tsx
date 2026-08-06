@@ -218,7 +218,7 @@ export function Chip({
         color: active ? "var(--sign)" : "var(--ink)",
         border: `var(--stroke-card) solid ${active ? "var(--ink)" : "var(--hairline)"}`,
         borderRadius: "var(--r-field)",
-        fontSize: "13px",
+        fontSize: "var(--t-chip)",
       }}
     >
       {children}

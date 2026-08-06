@@ -1,102 +1,39 @@
 "use client";
 
 /**
- * 홈 디렉터리 클라이언트 셸 — 검색 상태를 히어로 검색창과 목록이 공유한다.
- * 서버 페이지가 히어로·티커·3단계 사이에 검색창을 끼울 수 있게 분리했다.
+ * 홈 — 공항 사인 시스템 (승인 컴프: .impeccable/mocks/m-home.png)
+ *
+ * 시안 홈 패턴을 그대로 따른다: 맥락 → 검색 → 퀵액션 → 목록 → 하단 내비.
+ * 퀵액션은 **실제 있는 목적지만** 넣는다 — 도시 필터는 이 화면에서 바로 동작하고,
+ * 없는 라우트로 가는 버튼은 만들지 않는다.
+ *
+ * 치수·색은 globals.css 토큰에서만 온다. 여기서 px 를 직접 쓰지 않는다.
  */
 
-import { useId, useMemo, useState, type ReactNode } from "react";
+import { useId, useMemo, useState } from "react";
 import Link from "next/link";
-import { isDarkHex } from "@/shared/lib/color";
-import type { CreatorCard } from "./CreatorSearch";
+import { Box, Card, Chip, DataRow, Divider, Icon } from "@/shared/ui/sign";
 
-function ArrowIcon() {
-  return (
-    <svg
-      aria-hidden
-      width="16"
-      height="16"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <path d="M2.5 8h11M9 3.5 13.5 8 9 12.5" />
-    </svg>
-  );
-}
-
-function SearchIcon({ size = 18 }: { size?: number }) {
-  return (
-    <svg
-      aria-hidden
-      width={size}
-      height={size}
-      viewBox="0 0 18 18"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="1.8"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <circle cx="8" cy="8" r="5.5" />
-      <path d="M12.5 12.5 16 16" />
-    </svg>
-  );
-}
-
-function SearchField({
-  id,
-  q,
-  setQ,
-  size = "lg",
-}: {
-  id: string;
-  q: string;
-  setQ: (v: string) => void;
-  size?: "lg" | "md";
-}) {
-  const large = size === "lg";
-  return (
-    <label htmlFor={id} className="relative block w-full max-w-xl">
-      <span className="sr-only">채널 검색</span>
-      <span
-        aria-hidden
-        className={`pointer-events-none absolute top-1/2 left-4 -translate-y-1/2 text-ink-soft ${
-          large ? "left-4" : "left-3.5"
-        }`}
-      >
-        <SearchIcon size={large ? 18 : 16} />
-      </span>
-      <input
-        id={id}
-        type="search"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-        placeholder="채널 이름이나 도시로 찾기"
-        autoComplete="off"
-        enterKeyHint="search"
-        className={`w-full rounded-full border border-line bg-card text-ink outline-none transition placeholder:text-ink-soft focus:border-ink ${
-          large ? "h-14 pr-5 pl-12 text-[16px]" : "h-12 pr-5 pl-11 text-[15px]"
-        }`}
-      />
-    </label>
-  );
+export interface CreatorCard {
+  slug: string;
+  displayName: string;
+  initials: string;
+  accentColor: string;
+  placeCount: number;
+  videoCount: number;
+  cities: { slug: string; name: string }[];
 }
 
 export function HomeBrowse({
   creators,
-  middle,
+  totals,
 }: {
   creators: CreatorCard[];
-  /** 검색창과 목록 사이 — 티커·3단계 등 서버 HTML 을 그대로 끼운다 */
-  middle?: ReactNode;
+  /** 규모 증명 — 첫 화면에서 "빈 서비스가 아니다"를 숫자로 말한다 */
+  totals: { places: number; cities: number; videos: number };
 }) {
   const [q, setQ] = useState("");
-  const heroId = useId();
-  const listId = useId();
+  const inputId = useId();
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
@@ -109,154 +46,236 @@ export function HomeBrowse({
     );
   }, [creators, q]);
 
+  /** 도시 축 — 채널 하나뿐이던 진입 경로를 늘린다. 장소 수 많은 순으로 4개. */
+  const topCities = useMemo(() => {
+    const byCity = new Map<string, { name: string; creators: number }>();
+    for (const c of creators) {
+      for (const city of c.cities) {
+        const hit = byCity.get(city.slug);
+        if (hit) hit.creators += 1;
+        else byCity.set(city.slug, { name: city.name, creators: 1 });
+      }
+    }
+    return [...byCity.values()]
+      .sort((a, b) => b.creators - a.creators)
+      .slice(0, 4);
+  }, [creators]);
+
   return (
     <>
-      {/* 히어로 검색 — 첫 화면의 주 행동. 페이지 히어로와 같은 max-w·패딩 정렬 */}
-      <div className="mx-auto w-full max-w-6xl px-6 pb-10 md:px-8">
-        <div className="mt-7">
-          <SearchField id={heroId} q={q} setQ={setQ} size="lg" />
-          {q.trim() ? (
-            <p className="tnum mt-3 text-[13px] text-ink-soft">
-              <a href="#creators" className="font-bold text-ink underline-offset-4 hover:underline">
-                결과 {shown.length}개 보기
-              </a>
-            </p>
-          ) : (
-            <p className="mt-3 text-[13px] text-ink-soft">
-              등록된 채널·도시 이름만 검색됩니다. 유튜브 전체가 아닙니다.
-            </p>
-          )}
+      {/* 맥락 + 고지 — 고지 뱃지는 장식이 아니라 전 페이지 법적 고지의 일부다 */}
+      <header className="flex items-center gap-3 px-(--gutter) pt-2 pb-4">
+        <div className="min-w-0 flex-1">
+          <p style={{ fontSize: "var(--t-body)" }}>여행 유튜버가 간 곳</p>
+          <h1
+            className="font-bold"
+            style={{
+              fontSize: "var(--t-screen)",
+              letterSpacing: "-0.02em",
+              lineHeight: 1.2,
+            }}
+          >
+            어디부터 볼까요
+          </h1>
         </div>
-      </div>
+        <a href="#notice" aria-label="이 사이트에 대하여">
+          <Box icon="person" size="avatar" />
+        </a>
+      </header>
 
-      {middle}
+      <div className="flex flex-col gap-(--stack) px-(--gutter)">
+        {/* 규모 증명 — 시안의 GATE / BOARDING / SEAT 문법 */}
+        <Card>
+          <DataRow
+            items={[
+              { label: "채널", value: String(creators.length) },
+              { label: "도시", value: String(totals.cities) },
+              { label: "간 곳", value: String(totals.places) },
+              { label: "영상", value: String(totals.videos) },
+            ]}
+          />
+        </Card>
 
-      <div className="mx-auto w-full max-w-6xl px-6 md:px-8">
-        <section id="creators" className="pt-14 pb-8">
-          <div className="flex flex-wrap items-end justify-between gap-4">
-            <div>
-              <h2 className="text-3xl font-black tracking-tight">채널로 시작하세요</h2>
-              <p className="mt-2 text-[15px] text-ink-soft">
-                구독하는 그 사람의 발자국이 곧 지도가 됩니다
-              </p>
-            </div>
-            {/* 목록 구간에서도 같은 검색 상태 — 스크롤 후 다시 찾을 수 있다 */}
-            <div className="w-full max-w-sm sm:w-auto sm:min-w-[16rem]">
-              <SearchField id={listId} q={q} setQ={setQ} size="md" />
-            </div>
+        {/* 검색 */}
+        <label
+          htmlFor={inputId}
+          className="flex items-center gap-3 p-(--card-pad)"
+          style={{
+            border: "var(--stroke-card) solid var(--hairline)",
+            borderRadius: "var(--r-field)",
+          }}
+        >
+          <span className="sr-only">채널·도시 검색</span>
+          <Icon.search
+            aria-hidden
+            style={{
+              width: "var(--icon-field)",
+              height: "var(--icon-field)",
+              fill: "var(--ink)",
+              flex: "none",
+            }}
+          />
+          <input
+            id={inputId}
+            type="search"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            placeholder="채널·도시 검색"
+            autoComplete="off"
+            enterKeyHint="search"
+            className="w-full bg-transparent text-ink outline-none placeholder:opacity-50"
+            style={{ fontSize: "var(--t-body)" }}
+          />
+        </label>
+
+        {/* 퀵액션 = 도시 축. 누르면 이 화면에서 바로 걸러진다 */}
+        {topCities.length > 0 ? (
+          <nav aria-label="도시로 찾기" className="flex justify-between gap-2">
+            {topCities.map((city) => {
+              const on = q.trim() === city.name;
+              return (
+                <button
+                  key={city.name}
+                  type="button"
+                  aria-pressed={on}
+                  onClick={() => setQ(on ? "" : city.name)}
+                  className="flex flex-1 cursor-pointer flex-col items-center gap-2"
+                >
+                  <Box icon="pin" size="quick" />
+                  <span
+                    className="truncate"
+                    style={{ fontSize: "var(--t-meta)", fontWeight: 500 }}
+                  >
+                    {city.name}
+                  </span>
+                </button>
+              );
+            })}
+          </nav>
+        ) : null}
+
+        {/* 채널 목록 */}
+        <section
+          aria-labelledby="creators-h"
+          className="flex flex-col gap-(--stack)"
+        >
+          <div className="flex items-center justify-between gap-3 pt-1">
+            <h2
+              id="creators-h"
+              className="font-bold"
+              style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
+            >
+              채널
+            </h2>
+            {q.trim() ? (
+              <button
+                type="button"
+                onClick={() => setQ("")}
+                className="tnum cursor-pointer underline underline-offset-4"
+                style={{ fontSize: "var(--t-meta)" }}
+              >
+                {shown.length}개 · 전체 보기
+              </button>
+            ) : (
+              <span className="tnum" style={{ fontSize: "var(--t-meta)" }}>
+                전체 {creators.length}
+              </span>
+            )}
           </div>
 
-          {q.trim() ? (
-            <p className="tnum mt-5 text-[13px] text-ink-soft">
-              검색 결과 <b className="font-bold text-ink">{shown.length}</b>
-              {shown.length !== creators.length ? ` / ${creators.length}` : ""}
-            </p>
-          ) : null}
-
           {shown.length === 0 ? (
-            <div className="mt-8 rounded-2xl border border-dashed border-line py-16 text-center">
-              <p className="text-sm text-ink-soft">
+            <Card>
+              <p style={{ fontSize: "var(--t-body)" }}>
                 &lsquo;{q}&rsquo; 에 맞는 채널이 아직 없어요.
               </p>
               <button
                 type="button"
                 onClick={() => setQ("")}
-                className="mt-3 cursor-pointer text-[13px] font-bold text-ink underline underline-offset-4"
+                className="mt-3 cursor-pointer font-medium underline underline-offset-4"
+                style={{ fontSize: "var(--t-meta)" }}
               >
                 전체 채널 보기
               </button>
-            </div>
+            </Card>
           ) : (
-            <div
-              className={`grid grid-cols-[repeat(auto-fill,minmax(300px,1fr))] gap-5 ${
-                q.trim() ? "mt-5" : "mt-8"
-              }`}
-            >
-              {shown.map((creator) => {
-                const single = creator.cities.length === 1;
-                const card = (
-                  <article className="relative h-full rounded-2xl border border-line bg-card p-6 transition group-hover:bg-fill">
-                    {single ? (
-                      <span
-                        aria-hidden
-                        className="absolute top-6 right-6 grid h-11 w-11 place-items-center rounded-full bg-brand text-on-brand"
-                      >
-                        <ArrowIcon />
-                      </span>
-                    ) : (
-                      <Link
-                        href={`/c/${creator.slug}`}
-                        aria-label={`${creator.displayName} 채널 열기`}
-                        className="absolute top-6 right-6 grid h-11 w-11 place-items-center rounded-full bg-brand text-on-brand transition hover:opacity-85 active:scale-[0.97]"
-                      >
-                        <ArrowIcon />
-                      </Link>
-                    )}
+            <ul className="flex flex-col gap-(--stack) md:grid md:grid-cols-2 xl:grid-cols-3">
+              {shown.map((creator) => (
+                <Card
+                  as="li"
+                  key={creator.slug}
+                  className="flex flex-col gap-(--card-pad)"
+                >
+                  <Link
+                    href={`/c/${creator.slug}`}
+                    className="flex items-center gap-4"
+                    aria-label={`${creator.displayName} 채널 열기`}
+                  >
+                    {/* 프로필 사진 자리 — accent_color 로 채널을 구분한다 */}
                     <span
                       aria-hidden
-                      className="grid h-16 w-16 place-items-center rounded-full border border-line text-2xl font-black"
+                      className="ds-box ds-box--card grid place-items-center font-bold"
                       style={{
-                        backgroundColor: creator.accentColor,
-                        color: isDarkHex(creator.accentColor) ? "#ffffff" : "var(--ink-fixed)",
+                        background: creator.accentColor,
+                        color: "#fff",
+                        fontSize: "calc(var(--box-card) * 0.34)",
                       }}
                     >
                       {creator.initials}
                     </span>
-                    <h3 className="mt-4 pr-12 text-xl font-bold">{creator.displayName}</h3>
-                    <p className="tnum mt-1.5 text-[13px] text-ink-soft">
-                      간 곳 {creator.placeCount} · 도시 {creator.cities.length} · 영상{" "}
-                      {creator.videoCount}
-                    </p>
-                    <div className="mt-5 flex flex-wrap gap-2.5">
-                      {creator.cities.map((city) =>
-                        single ? (
-                          <span
-                            key={city.slug}
-                            className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon"
-                          >
-                            {city.name}
-                          </span>
-                        ) : (
-                          <Link
-                            key={city.slug}
-                            href={`/c/${creator.slug}/${city.slug}`}
-                            className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
-                          >
-                            {city.name}
-                          </Link>
-                        ),
-                      )}
-                    </div>
-                  </article>
-                );
-                return single ? (
-                  <Link key={creator.slug} href={`/c/${creator.slug}`} className="group">
-                    {card}
-                  </Link>
-                ) : (
-                  <div key={creator.slug} className="group">
-                    {card}
-                  </div>
-                );
-              })}
-
-              {creators.length < 4 && !q ? (
-                <article className="rounded-2xl border border-dashed border-line bg-fill p-6 opacity-90">
-                  <span className="grid h-16 w-16 place-items-center rounded-full border border-line bg-card text-2xl font-black text-ink-soft">
-                    ?
-                  </span>
-                  <h3 className="mt-4 text-xl font-bold text-ink-soft">다음 채널</h3>
-                  <p className="mt-1.5 text-[13px] text-ink-soft">
-                    준비 중이에요. 영상에서 장소를 확인하는 대로 열립니다.
-                  </p>
-                  <div className="mt-5">
-                    <span className="rounded-full bg-card px-4 py-2.5 text-[13px] font-extrabold text-ink-soft">
-                      Coming soon
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block truncate font-bold"
+                        style={{
+                          fontSize: "var(--t-title)",
+                          letterSpacing: "-0.02em",
+                        }}
+                      >
+                        {creator.displayName}
+                      </span>
+                      <span
+                        className="block truncate"
+                        style={{ fontSize: "var(--t-body)" }}
+                      >
+                        {creator.cities.map((c) => c.name).join(" · ")}
+                      </span>
                     </span>
-                  </div>
-                </article>
-              ) : null}
-            </div>
+                    <Icon.chevron
+                      aria-hidden
+                      style={{
+                        width: "var(--icon-chevron)",
+                        height: "var(--icon-chevron)",
+                        fill: "var(--ink)",
+                        flex: "none",
+                      }}
+                    />
+                  </Link>
+
+                  <Divider />
+
+                  <DataRow
+                    items={[
+                      { label: "간 곳", value: String(creator.placeCount) },
+                      { label: "도시", value: String(creator.cities.length) },
+                      { label: "영상", value: String(creator.videoCount) },
+                    ]}
+                  />
+
+                  {creator.cities.length > 1 ? (
+                    /* 도시 칩은 카드 패딩을 뚫고 가로 스크롤한다 — 잘린 칩이 "더 있다"를 말한다 */
+                    <div className="no-scrollbar -mx-(--card-pad) flex gap-2 overflow-x-auto px-(--card-pad)">
+                      {creator.cities.map((city) => (
+                        <Chip
+                          key={city.slug}
+                          href={`/c/${creator.slug}/${city.slug}`}
+                        >
+                          {city.name}
+                        </Chip>
+                      ))}
+                    </div>
+                  ) : null}
+                </Card>
+              ))}
+            </ul>
           )}
         </section>
       </div>
