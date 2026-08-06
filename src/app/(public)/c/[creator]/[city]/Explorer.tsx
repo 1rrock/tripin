@@ -1,17 +1,21 @@
 "use client";
 
 /**
- * 채널×도시 탐색 화면 — 지도↔리스트 양방향 연동 (CONCEPT.md 4.3), 공항 사인 시스템.
+ * 채널×도시 탐색 화면 — 지도↔리스트 양방향 연동 (CONCEPT.md 4.3). 콘택트 시트.
  *
  *   · 모바일: 지도가 상부를 잡고 장소 리스트가 그 아래로 올라탄다 (지도 앱 문법)
  *   · 데스크톱: 좌 리스트 패널 + 우 sticky 지도
- *   · 지도 핀 번호 ↔ 카드 "핀" 값 연동 — 선택은 클릭으로만, 재클릭 시 해제
+ *   · 지도 핀 번호 ↔ 행 번호 연동 — 선택은 클릭으로만, 재클릭 시 해제
  *   · candidate 는 지도에 없고 "위치 확인 중" 섹션에 격리 (P3 원칙)
  *   · 모든 항목의 종착지는 아웃링크 2개: 타임스탬프 영상 / 지도 열기 (P4 원칙)
  *   · 담기(?picked=) — 선택을 URL에 남겨 공유·재방문. 담기 시 하단 고정 "내 목록" 바 등장
  *
- * 크리에이터 액센트(--hl)는 **지도 핀에만** 남긴다. 카드까지 액센트를 칠하면
- * 노랑·검정 두 색으로 버티는 이 월드에 세 번째 색이 들어와 사인이 무너진다.
+ * 지도는 이 월드에서 **라이트박스**다 — 암실(어두운 지면)에 놓인 유일하게 밝은 면.
+ * 낮에 길 위에서 지도를 봐야 한다는 사용 장면과 어두운 지면이 충돌하는데,
+ * 월드 자신의 물건으로 그 충돌을 해소한다. 테마 분기가 아니라 재료의 차이다.
+ *
+ * 크리에이터 액센트(--hl)는 **지도 핀에만** 남긴다. 목록까지 액센트를 칠하면
+ * 왁스(선택 표시)와 액센트가 같은 층에서 싸운다.
  */
 
 import { useMemo, useRef, useState } from "react";
@@ -19,7 +23,7 @@ import Link from "next/link";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
-import { Action, Box, Card, Chip, DataRow, Divider, Icon, placeGlyph } from "@/shared/ui/sign";
+import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
 import { FILTERABLE_TYPES, PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
 export interface PublicPlace {
@@ -159,7 +163,7 @@ export function Explorer({
   };
 
   /**
-   * 선택의 단일 진입점 — 카드 헤더·지도 핀 어디서 눌러도 같은 결과.
+   * 선택의 단일 진입점 — 행 헤더·지도 핀 어디서 눌러도 같은 결과.
    * 같은 항목을 다시 누르면 해제(토글), 이미 화면 안에 있으면 스크롤 생략.
    */
   const selectPlace = (id: string) => {
@@ -195,8 +199,8 @@ export function Explorer({
 
   return (
     <main style={{ "--hl": accentColor } as React.CSSProperties}>
-      <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-6 lg:px-(--gutter) lg:pt-4">
-        {/* 지도 — 모바일은 상부, 데스크톱은 우측 sticky 카드 */}
+      <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7 lg:px-(--gutter) lg:pt-4">
+        {/* 지도 = 라이트박스. 모바일은 상부, 데스크톱은 우측 sticky */}
         <div className="lg:sticky lg:top-4 lg:order-2">
           <MapView
             className="h-[38dvh] w-full lg:h-[calc(100dvh-2rem)]"
@@ -207,38 +211,37 @@ export function Explorer({
         </div>
 
         <section className="lg:order-1">
-          <header className="flex flex-col gap-3 px-(--gutter) pt-6 pb-4 lg:px-0 lg:pt-0">
-            <nav className="flex items-center gap-1.5" style={{ fontSize: "var(--t-meta)" }}>
+          <header className="flex flex-col gap-3.5 px-(--gutter) pt-6 pb-5 lg:px-0 lg:pt-0">
+            <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
               <Link href="/" className="underline-offset-4 hover:underline">
                 홈
               </Link>
-              <Icon.chevron aria-hidden style={{ width: 9, height: 9, fill: "var(--hairline)" }} />
+              <Icon.chevron className="size-2.5" />
               <Link href={`/c/${creatorSlug}`} className="underline-offset-4 hover:underline">
                 {creatorName}
               </Link>
-              <Icon.chevron aria-hidden style={{ width: 9, height: 9, fill: "var(--hairline)" }} />
-              <span className="font-medium">{cityName}</span>
+              <Icon.chevron className="size-2.5" />
+              <span style={{ color: "var(--paper)" }}>{cityName}</span>
             </nav>
 
             <h1
-              className="font-bold"
-              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.2 }}
+              className="font-black"
+              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
             >
-              {creatorName} → {cityName}
+              {creatorName}가 간 {cityName}
             </h1>
 
-            <Card>
-              <DataRow
-                items={[
-                  { label: "확정", value: String(confirmed.length) },
-                  { label: "확인 중", value: String(candidates.length) },
-                  { label: "유형", value: String(presentTypes.length) },
-                ]}
-              />
-            </Card>
+            <p className="index tnum" style={{ color: "var(--dim)" }}>
+              확정 {confirmed.length}
+              {candidates.length > 0 ? ` · 확인 중 ${candidates.length}` : ""} · 유형{" "}
+              {presentTypes.length}
+            </p>
 
             {introText ? (
-              <p className="max-w-[42ch]" style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}>
+              <p
+                className="max-w-[42ch]"
+                style={{ fontSize: "var(--t-body)", lineHeight: 1.7, color: "var(--dim)" }}
+              >
                 {introText}
               </p>
             ) : null}
@@ -257,183 +260,179 @@ export function Explorer({
             ) : null}
           </header>
 
-          <div className="flex flex-col gap-(--stack) px-(--gutter) pb-8 lg:px-0">
+          <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
             {confirmed.length === 0 ? (
-              <Card>
-                <p style={{ fontSize: "var(--t-body)" }}>
-                  {activeType
-                    ? "이 카테고리의 확정 장소가 아직 없어요."
-                    : "확정된 장소가 아직 없어요."}
-                </p>
-              </Card>
+              <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
+                {activeType
+                  ? "이 카테고리의 확정 장소가 아직 없어요."
+                  : "확정된 장소가 아직 없어요."}
+              </p>
             ) : (
-              <ol className="flex flex-col gap-(--stack)">
+              <ol>
                 {confirmed.map((place, index) => {
                   const active = place.id === visibleActiveId;
                   const isPicked = picked.has(place.slug);
                   const mapHref = mapsUrl(place);
                   return (
-                    <Card
-                      as="li"
+                    <li
                       key={place.id}
-                      active={active}
-                      className="flex flex-col gap-(--card-pad)"
                       ref={(el: HTMLLIElement | null) => {
                         if (el) listRef.current.set(place.id, el);
                         else listRef.current.delete(place.id);
                       }}
                     >
-                      {/* 헤더 전체가 선택 트리거 — 지도 핀과 같은 selectPlace 하나로 통일 */}
-                      <button
-                        type="button"
-                        onClick={() => selectPlace(place.id)}
-                        aria-pressed={active}
-                        className="flex w-full cursor-pointer items-center gap-4 text-left"
+                      <Rule />
+                      <div
+                        className="-mx-2.5 flex flex-col gap-3 px-2.5 py-4 transition-colors"
+                        style={{
+                          background: active ? "var(--sheet)" : undefined,
+                          borderRadius: active ? "var(--r-control)" : undefined,
+                        }}
                       >
-                        <Box icon={placeGlyph(PLACE_TYPE_LABELS[place.placeType])} size="card" />
-                        <span className="min-w-0 flex-1">
-                          <span className="block" style={{ fontSize: "var(--t-body)" }}>
-                            {PLACE_TYPE_LABELS[place.placeType]}
-                          </span>
-                          <span
-                            className="block font-bold"
-                            style={{
-                              fontSize: "var(--t-title)",
-                              letterSpacing: "-0.02em",
-                              lineHeight: 1.28,
-                            }}
-                          >
-                            {place.name}
-                          </span>
-                          {place.nameLocal ? (
+                        {/* 헤더 전체가 선택 트리거 — 지도 핀과 같은 selectPlace 하나로 통일 */}
+                        <button
+                          type="button"
+                          onClick={() => selectPlace(place.id)}
+                          aria-pressed={active}
+                          className="flex w-full cursor-pointer items-start gap-3 text-left"
+                        >
+                          <FrameNo n={index + 1} active={active} />
+                          <span className="min-w-0 flex-1">
                             <span
-                              lang="ja"
-                              className="block"
-                              style={{ fontSize: "var(--t-meta)", opacity: 0.75 }}
+                              className="block font-bold"
+                              style={{
+                                fontSize: "var(--t-title)",
+                                letterSpacing: "-0.025em",
+                                lineHeight: 1.3,
+                              }}
                             >
-                              {place.nameLocal}
+                              {place.name}
                             </span>
-                          ) : null}
-                          {place.address ? (
-                            <span className="block" style={{ fontSize: "var(--t-meta)" }}>
-                              {place.address}
+                            <span
+                              className="mt-1 block"
+                              style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                            >
+                              {PLACE_TYPE_LABELS[place.placeType]}
+                              {place.nameLocal ? (
+                                <>
+                                  {" · "}
+                                  <span lang="ja">{place.nameLocal}</span>
+                                </>
+                              ) : null}
                             </span>
-                          ) : null}
-                        </span>
-                        <Icon.chevron
-                          aria-hidden
-                          style={{
-                            width: "var(--icon-chevron)",
-                            height: "var(--icon-chevron)",
-                            fill: "var(--ink)",
-                            flex: "none",
-                            transform: active ? "rotate(90deg)" : undefined,
-                          }}
-                        />
-                      </button>
-
-                      {place.summaryBullets.length > 0 ? (
-                        <ul
-                          className="flex flex-col gap-1.5"
-                          style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
-                        >
-                          {place.summaryBullets.map((b, i) => (
-                            <li key={i} className="flex gap-2">
-                              <span aria-hidden style={{ opacity: 0.5 }}>
-                                ·
+                            {place.address ? (
+                              <span
+                                className="mt-0.5 block"
+                                style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                              >
+                                {place.address}
                               </span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : place.summary ? (
-                        <p style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}>
-                          {place.summary}
-                        </p>
-                      ) : null}
-                      {place.priceHint ? (
-                        <p style={{ fontSize: "var(--t-meta)" }}>{place.priceHint}</p>
-                      ) : null}
+                            ) : null}
+                          </span>
+                          <Icon.chevron
+                            className="mt-1 size-4 shrink-0 transition-transform"
+                            style={{
+                              color: "var(--dim)",
+                              transform: active ? "rotate(90deg)" : undefined,
+                            }}
+                          />
+                        </button>
 
-                      <Divider />
-
-                      {/* 핀 번호가 GATE 자리에 앉는다 — 지도 핀과 1:1 */}
-                      <DataRow
-                        items={[
-                          { label: "핀", value: String(index + 1) },
-                          {
-                            label: "영상",
-                            value:
-                              place.timestampSec !== null
-                                ? formatTimestamp(place.timestampSec)
-                                : "—",
-                          },
-                          { label: "상태", value: isPicked ? "담음" : "—" },
-                        ]}
-                      />
-
-                      <div className="flex flex-wrap items-center gap-2">
-                        {place.youtubeVideoId ? (
-                          <Action
-                            icon="play"
-                            primary
-                            href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
-                            title={place.videoTitle ?? "출처 영상"}
+                        {place.summaryBullets.length > 0 ? (
+                          <ul
+                            className="flex flex-col gap-1.5 pl-10"
+                            style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
                           >
-                            {place.timestampSec !== null
-                              ? `영상 ${formatTimestamp(place.timestampSec)}`
-                              : "영상 보기"}
-                          </Action>
+                            {place.summaryBullets.map((b, i) => (
+                              <li key={i} className="flex gap-2">
+                                <span aria-hidden style={{ color: "var(--dim)" }}>
+                                  ·
+                                </span>
+                                <span>{b}</span>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : place.summary ? (
+                          <p
+                            className="pl-10"
+                            style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
+                          >
+                            {place.summary}
+                          </p>
                         ) : null}
-                        {mapHref ? (
-                          <Action icon="pin" href={mapHref}>
-                            지도 열기
-                          </Action>
+                        {place.priceHint ? (
+                          <p
+                            className="pl-10"
+                            style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                          >
+                            {place.priceHint}
+                          </p>
                         ) : null}
-                        <Action
-                          icon="bookmark"
-                          pressed={isPicked}
-                          onClick={() => togglePick(place.slug)}
-                        >
-                          {isPicked ? "담음" : "담기"}
-                        </Action>
+
+                        <div className="flex flex-wrap items-center gap-2 pl-10">
+                          {place.youtubeVideoId ? (
+                            <Act
+                              icon="play"
+                              href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
+                              title={place.videoTitle ?? "출처 영상"}
+                            >
+                              {place.timestampSec !== null
+                                ? `영상 ${formatTimestamp(place.timestampSec)}`
+                                : "영상 보기"}
+                            </Act>
+                          ) : null}
+                          {mapHref ? (
+                            <Act icon="out" href={mapHref}>
+                              지도 열기
+                            </Act>
+                          ) : null}
+                          <Act
+                            icon="pin"
+                            pressed={isPicked}
+                            onClick={() => togglePick(place.slug)}
+                          >
+                            {isPicked ? "담음" : "담기"}
+                          </Act>
+                        </div>
                       </div>
-                    </Card>
+                    </li>
                   );
                 })}
+                <Rule />
               </ol>
             )}
 
             {/* candidate 격리 — 지도 핀 없음. 확정된 것과 획의 종류로 구분한다 */}
             {candidates.length > 0 ? (
               <section
-                className="flex flex-col gap-3 p-(--card-pad)"
+                className="flex flex-col gap-3 p-4"
                 style={{
-                  border: "var(--stroke-card) dashed var(--hairline)",
-                  borderRadius: "var(--r-card)",
+                  border: "1px dashed var(--hairline)",
+                  borderRadius: "var(--r-control)",
                 }}
               >
-                <h2 className="ds-label">위치 확인 중 {candidates.length}</h2>
+                <h2 className="index" style={{ color: "var(--dim)" }}>
+                  위치 확인 중 {candidates.length}
+                </h2>
                 <ul className="flex flex-col gap-2">
                   {candidates.map((place) => (
                     <li
                       key={place.id}
                       className="flex flex-wrap items-baseline gap-x-2"
-                      style={{ fontSize: "var(--t-meta)" }}
+                      style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                     >
-                      <span className="font-bold">{place.name}</span>
-                      {place.nameLocal ? (
-                        <span lang="ja" style={{ opacity: 0.7 }}>
-                          {place.nameLocal}
-                        </span>
-                      ) : null}
-                      <span style={{ opacity: 0.7 }}>{PLACE_TYPE_LABELS[place.placeType]}</span>
+                      <span className="font-bold" style={{ color: "var(--paper)" }}>
+                        {place.name}
+                      </span>
+                      {place.nameLocal ? <span lang="ja">{place.nameLocal}</span> : null}
+                      <span>{PLACE_TYPE_LABELS[place.placeType]}</span>
                       {place.youtubeVideoId ? (
                         <a
                           href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="font-bold underline underline-offset-4"
+                          className="font-medium underline underline-offset-4"
+                          style={{ color: "var(--paper)" }}
                         >
                           영상 보기
                         </a>
@@ -449,7 +448,9 @@ export function Explorer({
               <section className="flex flex-col gap-(--stack)">
                 {otherCities.length > 0 ? (
                   <div className="flex flex-col gap-3">
-                    <h2 className="ds-label">{creatorName}의 다른 도시</h2>
+                    <h2 className="index" style={{ color: "var(--dim)" }}>
+                      {creatorName}의 다른 도시
+                    </h2>
                     <div className="flex flex-wrap gap-2">
                       {otherCities.map((c) => (
                         <Chip key={c.slug} href={`/c/${creatorSlug}/${c.slug}`}>
@@ -461,7 +462,9 @@ export function Explorer({
                 ) : null}
                 {otherCreators.length > 0 ? (
                   <div className="flex flex-col gap-3">
-                    <h2 className="ds-label">{cityName}에 간 다른 채널</h2>
+                    <h2 className="index" style={{ color: "var(--dim)" }}>
+                      {cityName}에 간 다른 채널
+                    </h2>
                     <div className="flex flex-wrap gap-2">
                       {otherCreators.map((c) => (
                         <Chip key={c.slug} href={`/c/${c.slug}/${citySlug}`}>
@@ -477,31 +480,42 @@ export function Explorer({
         </section>
       </div>
 
-      {/* 담은 목록 바 — URL 이 곧 저장본이라 "링크 복사"가 공유·재방문 동작이다 */}
+      {/* 담은 목록 바 — URL 이 곧 저장본이라 "링크 복사"가 공유·재방문 동작이다.
+          어두운 지면 위에서 가장 강한 강조는 반전(밝은 면)이다 */}
       {picked.size > 0 ? (
         <>
           <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
-            <div className="mx-auto w-full max-w-3xl px-(--gutter) xl:max-w-6xl">
+            <div className="mx-auto w-full max-w-2xl px-(--gutter) xl:max-w-6xl">
               {/* lg 에서는 리스트 컬럼 폭에 맞춘다 — 지도를 가리지 않는다 */}
               <div className="lg:max-w-[30rem]">
                 <div
-                  className="rise-in pointer-events-auto flex items-center justify-between gap-3 py-2.5 pr-2.5 pl-5"
-                  style={{ background: "var(--ink)", borderRadius: "var(--r-nav)" }}
+                  className="rise-in pointer-events-auto flex items-center justify-between gap-3 py-2.5 pr-2.5 pl-4"
+                  style={{
+                    background: "var(--paper)",
+                    borderRadius: "var(--r-control)",
+                    boxShadow: "var(--lift)",
+                  }}
                 >
-                  <p style={{ color: "var(--on-ink)", fontSize: "var(--t-body)", fontWeight: 500 }}>
+                  <p
+                    style={{
+                      color: "var(--ground)",
+                      fontSize: "var(--t-body)",
+                      fontWeight: 700,
+                    }}
+                  >
                     내 목록 <span className="tnum">{picked.size}</span>곳
                   </p>
-                  {/* 전역 포커스 링이 잉크색인데 이 버튼이 앉은 바도 잉크 지면이라
-                      링이 지면과 1:1 로 같아져 안 보인다 (WCAG 2.4.7) — 반전 링을 쓴다 */}
+                  {/* 전역 포커스 링이 왁스인데 이 바는 밝은 면이라 왁스 링이 묻는다 —
+                      지면 색 링으로 반전한다 (WCAG 2.4.7) */}
                   <button
                     type="button"
                     onClick={copyPickedLink}
-                    className="focus-ring-invert cursor-pointer px-4 py-2.5 font-medium"
+                    className="cursor-pointer px-3.5 py-2 font-bold focus-visible:outline-[color:var(--ground)]"
                     style={{
-                      background: "var(--sign)",
-                      color: "var(--ink)",
-                      borderRadius: "var(--r-field)",
-                      fontSize: "var(--t-chip)",
+                      background: "var(--ground)",
+                      color: "var(--paper)",
+                      borderRadius: "var(--r-frame)",
+                      fontSize: "var(--t-meta)",
                     }}
                   >
                     {copied ? "복사됨" : "링크 복사"}

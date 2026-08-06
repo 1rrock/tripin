@@ -4,7 +4,7 @@ import { notFound } from "next/navigation";
 import { supabase } from "@/shared/api/supabase";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
-import { Card, Chip, DataRow, Divider, Icon } from "@/shared/ui/sign";
+import { Chip, Icon } from "@/shared/ui/frame";
 import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
 
 /**
@@ -192,15 +192,9 @@ export async function generateMetadata({
   };
 }
 
-/** 브레드크럼 구분자 — Explorer 와 같은 SVG 획. */
+/** 브레드크럼 구분자 — Explorer 와 같은 획. */
 function CrumbIcon() {
-  return (
-    <Icon.chevron
-      aria-hidden
-      className="mx-1 inline"
-      style={{ width: 9, height: 9, fill: "var(--hairline)" }}
-    />
-  );
+  return <Icon.chevron className="mx-1 inline size-2.5" />;
 }
 
 /**
@@ -217,36 +211,32 @@ function PendingPiece({
   confirmedCount: number;
 }) {
   return (
-    <main className="flex flex-col gap-(--stack) px-(--gutter) pt-6 pb-16">
-      <nav className="flex items-center" style={{ fontSize: "var(--t-meta)" }}>
+    <main className="flex flex-col gap-4 px-(--gutter) pt-2 pb-20">
+      <nav className="index flex items-center" style={{ color: "var(--dim)" }}>
         <Link href="/" className="underline-offset-4 hover:underline">
           홈
         </Link>
         <CrumbIcon />
         <span>{creatorName}</span>
         <CrumbIcon />
-        <span className="font-medium">{cityName}</span>
+        <span style={{ color: "var(--paper)" }}>{cityName}</span>
       </nav>
       <h1
-        className="font-bold"
-        style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.2 }}
+        className="font-black"
+        style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
       >
-        {creatorName} → {cityName}
+        {creatorName}가 간 {cityName}
       </h1>
-      <Card className="flex flex-col gap-(--card-pad)">
-        <p style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}>이 조각은 아직 준비 중이에요.</p>
-        <Divider />
-        {/* 게이트 문법 — 몇 개를 채워야 열리는지 숫자로 말한다 */}
-        <DataRow
-          items={[
-            { label: "확정", value: String(confirmedCount) },
-            { label: "공개 기준", value: String(MIN_CONFIRMED_PINS) },
-          ]}
-        />
-        <div>
-          <Chip href="/">공개된 조각 보기</Chip>
-        </div>
-      </Card>
+      <p style={{ fontSize: "var(--t-body)", color: "var(--dim)", lineHeight: 1.7 }}>
+        이 조각은 아직 준비 중이에요.
+      </p>
+      {/* 몇 개를 채워야 열리는지 숫자로 말한다 */}
+      <p className="index tnum" style={{ color: "var(--dim)" }}>
+        확정 {confirmedCount} · 공개 기준 {MIN_CONFIRMED_PINS}
+      </p>
+      <div>
+        <Chip href="/">공개된 조각 보기</Chip>
+      </div>
     </main>
   );
 }

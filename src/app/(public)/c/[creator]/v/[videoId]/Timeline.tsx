@@ -1,24 +1,27 @@
 "use client";
 
 /**
- * 영상 타임라인 — 공항 사인 시스템.
+ * 영상 타임라인 — 콘택트 시트에서 롤을 펼친 것, 즉 **필름 스트립**.
  *
  * 이 서비스에서 가장 고유한 물건은 지도가 아니라 타임코드다. 모든 장소가 영상의
- * 한 순간으로 되돌아가므로, 화면의 주인공을 드래그 가능한 재생 헤드로 둔다.
- * 사인 월드에서 이 축은 **출발 안내판의 진행 바** 문법으로 읽힌다 —
- * 검정 트랙 위를 지나온 만큼 채우고, 정거장은 게이트 번호판처럼 각진 마커로 선다.
+ * 한 순간으로 되돌아가므로 화면의 주인공을 드래그 가능한 재생 헤드로 둔다.
+ * 이 월드에서 시간축은 스트립이고, 정거장은 그 위의 컷 표시이며, 헤드는 지금
+ * 라이트박스에 올려 둔 프레임이다.
+ *
+ * 위계는 색 세 단계로만 만든다: 정거장 dim → 활성 정거장 paper → 재생 헤드 wax.
+ * 왁스가 여기서 면적을 먹지 않는 이유는 홈·조각과 같다 — 표시이지 채움이 아니다.
  *
  *   · 헤드를 끌면 현재 시각이 실시간으로 갱신되고 그 구간의 정거장이 활성화된다
  *   · 마우스·터치·키보드(←/→, Home/End) 전부 동작 — 포인터 캡처로 트랙 밖 드래그도 안 끊긴다
- *   · **클립 선택**은 스크러버 마커만이 아니라 가로 칩 스트립 + 카드 헤더 탭으로도 가능
+ *   · **클립 선택**은 스크러버 마커만이 아니라 가로 칩 스트립 + 행 헤더 탭으로도 가능
  *     (마커끼리 붙으면 손가락으로 고르기 어려워 이중 UI 가 필요)
- *   · 정거장이 1개뿐인 영상은 타임라인 대신 카드 단독 레이아웃으로 자동 전환한다
+ *   · 정거장이 1개뿐인 영상은 타임라인 대신 목록 단독 레이아웃으로 자동 전환한다
  *   · 종착 행동은 둘: 유튜브 타임스탬프(&t=) / 지도 열기
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoDetail, VideoStop } from "@/shared/api/videos";
-import { Action, Box, Card, Chip, DataRow, Divider, Icon, placeGlyph } from "@/shared/ui/sign";
+import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
 import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
 function fmt(sec: number | null): string {
@@ -35,8 +38,8 @@ function youtubeUrl(videoId: string, sec: number | null): string {
   return `https://www.youtube.com/watch?v=${videoId}${sec !== null ? `&t=${Math.floor(sec)}s` : ""}`;
 }
 
-/** 정거장 카드 — 타임라인이 있든 없든 같은 카드를 쓴다. 헤더 전체가 선택 타깃. */
-function StopCard({
+/** 정거장 행 — 조각 화면의 장소 행과 같은 문법이라 두 화면이 서로를 알아본다. */
+function StopRow({
   stop,
   videoId,
   index,
@@ -53,25 +56,31 @@ function StopCard({
 }) {
   const header = (
     <>
-      <Box icon={placeGlyph(PLACE_TYPE_LABELS[stop.placeType])} size="card" />
+      <FrameNo n={index} active={active} />
       <span className="min-w-0 flex-1">
-        <span className="block" style={{ fontSize: "var(--t-body)" }}>
-          {PLACE_TYPE_LABELS[stop.placeType]}
-          {!stop.confirmed ? " · 위치 확인 중" : ""}
-        </span>
         <span
           className="block font-bold"
-          style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em", lineHeight: 1.28 }}
+          style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em", lineHeight: 1.3 }}
         >
           {stop.name}
         </span>
-        {stop.nameLocal ? (
-          <span lang="ja" className="block" style={{ fontSize: "var(--t-meta)", opacity: 0.75 }}>
-            {stop.nameLocal}
-          </span>
-        ) : null}
+        <span className="mt-1 block" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+          <span className="tnum">{fmt(stop.timestampSec)}</span>
+          {" · "}
+          {PLACE_TYPE_LABELS[stop.placeType]}
+          {!stop.confirmed ? " · 위치 확인 중" : ""}
+          {stop.nameLocal ? (
+            <>
+              {" · "}
+              <span lang="ja">{stop.nameLocal}</span>
+            </>
+          ) : null}
+        </span>
         {stop.address ? (
-          <span className="block" style={{ fontSize: "var(--t-meta)" }}>
+          <span
+            className="mt-0.5 block"
+            style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+          >
             {stop.cityName ? `${stop.cityName} · ` : ""}
             {stop.address}
           </span>
@@ -79,42 +88,42 @@ function StopCard({
       </span>
       {selectable ? (
         <Icon.chevron
-          aria-hidden
-          style={{
-            width: "var(--icon-chevron)",
-            height: "var(--icon-chevron)",
-            fill: "var(--ink)",
-            flex: "none",
-            transform: active ? "rotate(90deg)" : undefined,
-          }}
+          className="mt-1 size-4 shrink-0 transition-transform"
+          style={{ color: "var(--dim)", transform: active ? "rotate(90deg)" : undefined }}
         />
       ) : null}
     </>
   );
 
   return (
-    <Card active={active} className="flex flex-col gap-(--card-pad)">
+    <div
+      className="-mx-2.5 flex flex-col gap-3 px-2.5 py-4 transition-colors"
+      style={{
+        background: active ? "var(--sheet)" : undefined,
+        borderRadius: active ? "var(--r-control)" : undefined,
+      }}
+    >
       {selectable ? (
         <button
           type="button"
           onClick={onSelect}
           aria-pressed={active}
-          className="flex w-full cursor-pointer items-center gap-4 text-left"
+          className="flex w-full cursor-pointer items-start gap-3 text-left"
         >
           {header}
         </button>
       ) : (
-        <div className="flex items-center gap-4">{header}</div>
+        <div className="flex items-start gap-3">{header}</div>
       )}
 
       {stop.summaryBullets.length > 0 ? (
         <ul
-          className="flex flex-col gap-1.5"
-          style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
+          className="flex flex-col gap-1.5 pl-10"
+          style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
         >
           {stop.summaryBullets.map((b, i) => (
             <li key={i} className="flex gap-2">
-              <span aria-hidden style={{ opacity: 0.5 }}>
+              <span aria-hidden style={{ color: "var(--dim)" }}>
                 ·
               </span>
               <span>{b}</span>
@@ -122,31 +131,28 @@ function StopCard({
           ))}
         </ul>
       ) : stop.summary ? (
-        <p style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}>{stop.summary}</p>
+        <p className="pl-10" style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}>
+          {stop.summary}
+        </p>
       ) : null}
-      {stop.priceHint ? <p style={{ fontSize: "var(--t-meta)" }}>{stop.priceHint}</p> : null}
+      {stop.priceHint ? (
+        <p className="pl-10" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+          {stop.priceHint}
+        </p>
+      ) : null}
 
-      <Divider />
-
-      <DataRow
-        items={[
-          { label: "클립", value: String(index) },
-          { label: "영상", value: fmt(stop.timestampSec) },
-        ]}
-      />
-
-      <div className="flex flex-wrap items-center gap-2">
-        <Action icon="play" primary href={youtubeUrl(videoId, stop.timestampSec)}>
+      <div className="flex flex-wrap items-center gap-2 pl-10">
+        <Act icon="play" href={youtubeUrl(videoId, stop.timestampSec)}>
           {stop.timestampSec !== null ? `영상 ${fmt(stop.timestampSec)}` : "영상 보기"}
-        </Action>
+        </Act>
         {stop.mapUrl ? (
-          <Action icon="pin" href={stop.mapUrl}>
+          <Act icon="out" href={stop.mapUrl}>
             {/* 확정만 검수된 딥링크다 — 후보는 이름 검색이라 라벨로 정직하게 구분한다 */}
             {stop.confirmed ? "지도 열기" : "지도에서 검색"}
-          </Action>
+          </Act>
         ) : null}
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -221,7 +227,7 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
     setHead(sec);
   }, []);
 
-  // 활성 정거장 카드로 스크롤 — 사용자가 스크럽할 때만
+  // 활성 정거장 행으로 스크롤 — 사용자가 스크럽할 때만
   const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
   const lastActive = useRef(-1);
   useEffect(() => {
@@ -246,25 +252,18 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
     }
   }, [activeIdx]);
 
-  /* 정거장이 1개거나 시각이 하나도 없으면 축이 의미를 못 만든다 — 카드 단독으로 간다 */
+  /* 정거장이 1개거나 시각이 하나도 없으면 축이 의미를 못 만든다 — 목록 단독으로 간다 */
   const soloLayout = timed.length <= 1;
+  const headPct = (head / axisEnd) * 100;
 
   return (
-    <div className="flex flex-col gap-(--stack)">
+    <div className="flex flex-col gap-(--block)">
       {!soloLayout ? (
         <section className="flex flex-col gap-3">
-          <Card>
-            <DataRow
-              items={[
-                { label: "클립", value: String(timed.length) },
-                { label: "현재", value: fmt(head) },
-                {
-                  label: video.durationSec ? "길이" : "길이(추정)",
-                  value: fmt(axisEnd),
-                },
-              ]}
-            />
-          </Card>
+          <p className="index tnum" style={{ color: "var(--dim)" }}>
+            클립 {timed.length} · 현재 {fmt(head)} · {video.durationSec ? "길이" : "길이(추정)"}{" "}
+            {fmt(axisEnd)}
+          </p>
 
           {/* 1차 선택 UI — 가로 칩. 스크러버 마커끼리 붙어도 손가락으로 고를 수 있다 */}
           <div
@@ -291,9 +290,14 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
             ))}
           </div>
 
-          {/* 스크러버 — 출발 안내판의 진행 바. 정밀 선택은 위 칩이 담당 */}
+          {/* 스트립 — 롤을 펼친 축.
+              상자가 아니라 **레일**이다. 높이가 있는 박스로 그리면 대부분이 빈 면이라
+              화면이 비어 보이고, 지나온 구간이 회색 덩어리로 읽힌다.
+
+              바깥(패딩)이 터치 영역이고 안쪽(trackRef)이 실제 축이다. 좌표 계산은
+              안쪽 rect 로 하므로 0%·100% 에서도 마커와 헤드가 바깥 패딩으로 넘칠 뿐
+              잘리지 않는다 — overflow-hidden 을 걸면 끝에서 헤드가 반토막 난다. */}
           <div
-            ref={trackRef}
             role="slider"
             tabIndex={0}
             aria-label={`${creatorName} 영상 타임라인 — 좌우 화살표로 이동`}
@@ -304,81 +308,78 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onKeyDown={onKeyDown}
-            className="relative h-16 cursor-ew-resize touch-none select-none"
-            style={{
-              border: "var(--stroke-card) solid var(--hairline)",
-              borderRadius: "var(--r-card)",
-            }}
+            className="relative h-12 cursor-ew-resize touch-none px-3 select-none"
           >
-            {/* 지나온 구간 — 검정 척추선이 여기까지 왔다는 표시 */}
-            <div
-              aria-hidden
-              className="absolute inset-y-0 left-0"
-              style={{
-                width: `${(head / axisEnd) * 100}%`,
-                background: "var(--ink)",
-                opacity: 0.12,
-                borderTopLeftRadius: "var(--r-card)",
-                borderBottomLeftRadius: "var(--r-card)",
-              }}
-            />
-            {/* 정거장 마커 — 게이트 번호판처럼 각진 사각. 히트 영역 44px */}
-            {timed.map((s, i) => {
-              const pct = (s.timestampSec / axisEnd) * 100;
-              const on = i === activeIdx;
-              return (
-                <button
-                  key={s.placeId}
-                  type="button"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    selectStop(s.timestampSec);
-                  }}
-                  aria-label={`${fmt(s.timestampSec)} ${s.name} 로 이동`}
-                  className="absolute top-0 bottom-0 w-11 -translate-x-1/2 cursor-pointer"
-                  style={{ left: `${pct}%`, zIndex: on ? 3 : 1 }}
-                >
-                  <span
-                    aria-hidden
-                    className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition"
-                    style={{
-                      width: on ? 16 : 11,
-                      height: on ? 16 : 11,
-                      borderRadius: 4,
-                      background: on ? "var(--sign)" : "var(--ink)",
-                      border: on ? "2.5px solid var(--ink)" : "none",
-                      opacity: on ? 1 : 0.55,
-                    }}
-                  />
-                </button>
-              );
-            })}
-            {/* 재생 헤드 */}
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-y-0 z-[2] w-[2.5px] -translate-x-1/2"
-              style={{ left: `${(head / axisEnd) * 100}%`, background: "var(--ink)" }}
-            >
-              <span
-                className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2"
-                style={{
-                  width: 22,
-                  height: 22,
-                  borderRadius: 6,
-                  background: "var(--ink)",
-                  border: "2.5px solid var(--sign)",
-                }}
+            <div ref={trackRef} className="relative h-full">
+              {/* 레일 */}
+              <div
+                aria-hidden
+                className="absolute top-1/2 right-0 left-0 h-[3px] -translate-y-1/2 rounded-full"
+                style={{ background: "var(--hairline)" }}
               />
-            </span>
+              {/* 지나온 구간 */}
+              <div
+                aria-hidden
+                className="absolute top-1/2 left-0 h-[3px] -translate-y-1/2 rounded-full"
+                style={{ width: `${headPct}%`, background: "var(--dim)" }}
+              />
+              {/* 정거장 마커 — 각진 컷 표시. 히트 영역 44px */}
+              {timed.map((s, i) => {
+                const pct = (s.timestampSec / axisEnd) * 100;
+                const on = i === activeIdx;
+                return (
+                  <button
+                    key={s.placeId}
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      selectStop(s.timestampSec);
+                    }}
+                    aria-label={`${fmt(s.timestampSec)} ${s.name} 로 이동`}
+                    className="absolute top-0 bottom-0 w-11 -translate-x-1/2 cursor-pointer"
+                    style={{ left: `${pct}%`, zIndex: on ? 3 : 1 }}
+                  >
+                    <span
+                      aria-hidden
+                      className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 transition-all"
+                      style={{
+                        width: on ? 13 : 9,
+                        height: on ? 13 : 9,
+                        borderRadius: 2,
+                        background: on ? "var(--paper)" : "var(--dim)",
+                        boxShadow: "0 0 0 3px var(--ground)",
+                      }}
+                    />
+                  </button>
+                );
+              })}
+              {/* 재생 헤드 — 지금 라이트박스에 올려 둔 프레임 */}
+              <span
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-0 z-[2] -translate-x-1/2 -translate-y-1/2"
+                style={{ left: `${headPct}%` }}
+              >
+                <span
+                  className="block"
+                  style={{
+                    width: 16,
+                    height: 16,
+                    borderRadius: "var(--r-frame)",
+                    background: "var(--wax)",
+                    boxShadow: "0 0 0 3px var(--ground)",
+                  }}
+                />
+              </span>
+            </div>
           </div>
 
-          <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.6 }}>
+          <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.6, color: "var(--dim)" }}>
             위 클립을 누르거나 바를 드래그하세요. 화살표 키로도 시간을 옮길 수 있습니다.
           </p>
         </section>
       ) : null}
 
-      <div className="flex flex-col gap-(--stack)">
+      <div className="flex flex-col">
         {timed.map((s, i) => (
           <div
             key={s.placeId}
@@ -386,7 +387,8 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
               cardRefs.current[i] = el;
             }}
           >
-            <StopCard
+            <Rule />
+            <StopRow
               stop={s}
               videoId={video.youtubeId}
               index={i + 1}
@@ -396,17 +398,18 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
             />
           </div>
         ))}
+        {timed.length > 0 ? <Rule /> : null}
+
         {untimed.length > 0 ? (
           <div
-            className="flex flex-col gap-(--stack) p-(--card-pad)"
-            style={{
-              border: "var(--stroke-card) dashed var(--hairline)",
-              borderRadius: "var(--r-card)",
-            }}
+            className="mt-(--block) flex flex-col gap-2 p-4"
+            style={{ border: "1px dashed var(--hairline)", borderRadius: "var(--r-control)" }}
           >
-            <p className="ds-label">시각 미확인 {untimed.length}</p>
+            <p className="index" style={{ color: "var(--dim)" }}>
+              시각 미확인 {untimed.length}
+            </p>
             {untimed.map((s, i) => (
-              <StopCard
+              <StopRow
                 key={s.placeId}
                 stop={s}
                 videoId={video.youtubeId}

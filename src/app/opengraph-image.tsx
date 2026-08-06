@@ -26,7 +26,7 @@ const FOOT = "Tripin · 비공식 디렉터리";
 async function loadKoreanFont(text: string, weight: number): Promise<ArrayBuffer | null> {
   try {
     const css = await fetch(
-      `https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@${weight}&text=${encodeURIComponent(text)}`,
+      `https://fonts.googleapis.com/css2?family=Gothic+A1:wght@${weight}&text=${encodeURIComponent(text)}`,
       { headers: { "User-Agent": "Mozilla/4.0" } },
     );
     if (!css.ok) return null;
@@ -73,7 +73,7 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#fffdf8",
+          background: "#0b0b0c",
           padding: "76px 84px",
           fontFamily: "KR",
           letterSpacing: "-0.035em",
@@ -89,23 +89,23 @@ export default async function OpengraphImage() {
               alignItems: "flex-start",
             }}
           >
-            <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#141414" }}>
+            <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#f5f3ef" }}>
               {HEAD_A}
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", marginTop: 10 }}>
               {/* 키 프레이즈 — 레몬 밑줄 바 (홈의 .hl-under 와 같은 장치) */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-                <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#141414" }}>
+                <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#f5f3ef" }}>
                   {HEAD_B}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#ffd43a", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: "#ff3d14", marginTop: 4 }} />
               </div>
               <div
                 style={{
                   display: "flex",
                   fontSize: 82,
                   fontWeight: 800,
-                  color: "#141414",
+                  color: "#f5f3ef",
                   marginLeft: 22,
                 }}
               >
@@ -113,7 +113,7 @@ export default async function OpengraphImage() {
               </div>
             </div>
             <div
-              style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "#5d5a52", marginTop: 34 }}
+              style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "#9a9892", marginTop: 34 }}
             >
               {SUB}
             </div>
@@ -130,12 +130,12 @@ export default async function OpengraphImage() {
             }}
           >
             <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-              <div style={{ display: "flex", fontSize: 108, fontWeight: 800, color: "#141414" }}>
+              <div style={{ display: "flex", fontSize: 108, fontWeight: 800, color: "#f5f3ef" }}>
                 Tripin
               </div>
-              <div style={{ display: "flex", height: 20, background: "#ffd43a", marginTop: 6 }} />
+              <div style={{ display: "flex", height: 20, background: "#ff3d14", marginTop: 6 }} />
             </div>
-            <div style={{ display: "flex", fontSize: 34, color: "#5d5a52", marginTop: 34 }}>
+            <div style={{ display: "flex", fontSize: 34, color: "#9a9892", marginTop: 34 }}>
               Maps from travel YouTubers
             </div>
           </div>
@@ -147,7 +147,7 @@ export default async function OpengraphImage() {
             alignItems: "center",
             fontSize: 26,
             fontWeight: 500,
-            color: "#5d5a52",
+            color: "#9a9892",
           }}
         >
           {bold ? FOOT : "Tripin"}

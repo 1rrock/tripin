@@ -42,6 +42,11 @@ export interface VideoSummary {
   /** 이 영상에 등장하는 도시·타입 — 목록 필터의 근거. */
   cities: string[];
   types: PlaceType[];
+  /**
+   * 등장 상호명 — 목록 카드의 헤드라인이 된다.
+   * "나온 곳 3"은 주장이고 상호명은 증명이라, 시트 문법에서는 이쪽이 제목 자리에 온다.
+   */
+  placeNames: string[];
   /** 타임라인의 마지막 정거장 시각 — duration 이 없을 때 축의 끝으로 쓴다. */
   lastStopSec: number | null;
 }
@@ -118,7 +123,7 @@ export async function loadCreatorVideos(
   const { data: places } = placeIds.length
     ? await supabase
         .from("places")
-        .select("id, place_type, city_id, map_status")
+        .select("id, name, place_type, city_id, map_status")
         .in("id", placeIds)
     : { data: [] };
 
@@ -147,6 +152,7 @@ export async function loadCreatorVideos(
         ...new Set(stops.map((p) => cityName.get(p!.city_id)).filter((n): n is string => Boolean(n))),
       ],
       types: [...new Set(stops.map((p) => p!.place_type))],
+      placeNames: stops.map((p) => p!.name),
       lastStopSec: times.length ? Math.max(...times) : null,
     });
   }
@@ -243,6 +249,7 @@ export async function loadVideoDetail(
       stopCount: stops.length,
       cities: [...new Set(stops.map((s) => s.cityName).filter((n): n is string => Boolean(n)))],
       types: [...new Set(stops.map((s) => s.placeType))],
+      placeNames: stops.map((s) => s.name),
       lastStopSec: times.length ? Math.max(...times) : null,
       stops,
     },

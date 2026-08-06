@@ -6,13 +6,16 @@ import { VideoList } from "./VideoList";
 import { supabase } from "@/shared/api/supabase";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
-import { Box, Card, Chip, DataRow, Divider, Icon } from "@/shared/ui/sign";
+import { Avatar, Chip, Icon, Index, Rule } from "@/shared/ui/frame";
 import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
 /**
- * 채널 허브 — 홈 카드의 화살표가 도착하는 곳 (캐논 월드, Explorer 와 같은 규범).
- * 도시를 고르고, 도시 안에서 카테고리(장소 유형)까지 바로 골라 들어갈 수 있다.
- * 도시가 1개뿐이면 그 조각으로 즉시 리다이렉트 — 고를 게 없는 화면은 보여주지 않는다.
+ * 채널 허브 — 콘택트 시트의 "롤" 한 통.
+ *
+ * 두 축이 있다: 도시(→ 지도)와 영상(→ 타임라인).
+ * 도시에는 이미지가 없으므로 프레임이 아니라 **라벨 행**으로 놓는다. 없는 그림을
+ * 픽토그램으로 대신 채우려던 것이 직전 월드가 무너진 자리다.
+ *
  * anon 클라이언트 → RLS 가 is_published=true 만 내려준다.
  */
 export const revalidate = 3600;
@@ -32,10 +35,7 @@ async function loadCreatorHub(creatorSlug: string) {
     .single();
   if (!creator) return null;
 
-  const { data: videos } = await supabase
-    .from("videos")
-    .select("id")
-    .eq("creator_id", creator.id);
+  const { data: videos } = await supabase.from("videos").select("id").eq("creator_id", creator.id);
   const videoIds = (videos ?? []).map((v) => v.id);
   const { data: links } = videoIds.length
     ? await supabase.from("video_places").select("video_id, place_id").in("video_id", videoIds)
@@ -70,7 +70,7 @@ async function loadCreatorHub(creatorSlug: string) {
           .sort((a, b) => b.count - a.count),
       };
     })
-    // 공개 게이트 — 확정 핀이 모자란 조각은 허브 그리드에서도 뺀다
+    // 공개 게이트 — 확정 핀이 모자란 조각은 허브 목록에서도 뺀다
     .filter((g) => g.placeCount >= MIN_CONFIRMED_PINS)
     .sort((a, b) => b.placeCount - a.placeCount);
   // 남은 조각이 하나도 없으면 이 채널은 아직 공개되지 않은 것 → 호출부에서 notFound()
@@ -104,138 +104,83 @@ export default async function CreatorHubPage({
     loadCreatorVideos(creatorSlug),
   ]);
   if (!data) notFound();
-  // 예전엔 도시가 하나면 조각으로 직행했다. 이제는 영상 축이 생겨서
-  // 도시가 하나여도 이 화면에 볼 것(영상 목록)이 있으므로 리다이렉트하지 않는다.
+  // 도시가 하나여도 리다이렉트하지 않는다 — 영상 축이 생겨서 이 화면에 볼 것이 있다.
 
   const { creator, groups } = data;
   const videos = videoData?.videos ?? [];
   const totalPlaces = groups.reduce((sum, g) => sum + g.placeCount, 0);
 
   return (
-    <main
-      className="flex flex-col gap-(--stack) px-(--gutter) pt-6 pb-16"
-      style={{ "--hl": creator.accent_color } as React.CSSProperties}
-    >
-      <nav className="flex items-center gap-1.5" style={{ fontSize: "var(--t-meta)" }}>
+    <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+      <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
         <Link href="/" className="underline-offset-4 hover:underline">
           홈
         </Link>
-        <Icon.chevron aria-hidden style={{ width: 9, height: 9, fill: "var(--hairline)" }} />
-        <span className="font-medium">{creator.display_name}</span>
+        <Icon.chevron className="size-2.5" />
+        <span style={{ color: "var(--paper)" }}>{creator.display_name}</span>
       </nav>
 
-      <div className="flex items-center gap-4">
-        {/* 프로필 사진 자리 — accent_color 가 채널 식별자다 */}
-        <span
-          aria-hidden
-          className="ds-box ds-box--card grid place-items-center font-bold"
-          style={{
-            background: creator.accent_color,
-            color: "#fff",
-            fontSize: "calc(var(--box-card) * 0.34)",
-          }}
-        >
-          {creator.initials}
-        </span>
-        <h1
-          className="min-w-0 flex-1 font-bold"
-          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.2 }}
-        >
-          {creator.display_name}
-        </h1>
-      </div>
-
-      <Card>
-        <DataRow
-          items={[
-            { label: "간 곳", value: String(totalPlaces) },
-            { label: "도시", value: String(groups.length) },
-            { label: "영상", value: String(videos.length) },
-          ]}
-        />
-      </Card>
-
-      <section className="flex flex-col gap-(--stack)">
-        <div>
-          <h2 className="font-bold" style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}>
-            도시로 보기
-          </h2>
-          <p className="mt-1" style={{ fontSize: "var(--t-meta)" }}>
-            도시를 고르면 지도가 열립니다.
+      <header className="flex items-center gap-4">
+        <Avatar initials={creator.initials} accent={creator.accent_color} size={54} />
+        <div className="min-w-0 flex-1">
+          <h1
+            className="font-black"
+            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+          >
+            {creator.display_name}
+          </h1>
+          <p className="index tnum mt-1.5" style={{ color: "var(--dim)" }}>
+            간 곳 {totalPlaces} · 도시 {groups.length} · 검수한 영상 {videos.length}
           </p>
         </div>
-        <ul className="flex flex-col gap-(--stack) md:grid md:grid-cols-2">
+      </header>
+
+      {/* 도시 축 — 지도로 가는 문. 이미지가 없으므로 라벨 행으로 놓는다 */}
+      <section aria-labelledby="city-h" className="flex flex-col gap-(--stack)">
+        <h2 id="city-h" className="index" style={{ color: "var(--dim)" }}>
+          도시 {groups.length} — 지도로 열기
+        </h2>
+        <ul className="md:grid md:grid-cols-2 md:gap-x-(--block)">
           {groups.map((g) => (
-            <Card as="li" key={g.slug} className="flex flex-col gap-(--card-pad)">
+            <li key={g.slug}>
+              <Rule />
               <Link
                 href={`/c/${creatorSlug}/${g.slug}`}
-                className="flex items-center gap-4"
-                aria-label={`${g.name} 지도 열기`}
+                className="flex items-center gap-3 py-3.5"
+                aria-label={`${g.name} 지도 열기 — 확정 ${g.placeCount}곳`}
               >
-                <Box icon="pin" size="card" />
-                <span className="min-w-0 flex-1">
-                  <span className="block" style={{ fontSize: "var(--t-body)" }}>
-                    도시
-                  </span>
-                  <span
-                    className="block font-bold"
-                    style={{
-                      fontSize: "var(--t-title)",
-                      letterSpacing: "-0.02em",
-                      lineHeight: 1.28,
-                    }}
-                  >
-                    {g.name}
-                  </span>
+                <Icon.pin className="size-[18px] shrink-0" style={{ color: "var(--wax)" }} />
+                <span
+                  className="min-w-0 flex-1 truncate font-bold"
+                  style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
+                >
+                  {g.name}
                 </span>
-                <Icon.chevron
-                  aria-hidden
-                  style={{
-                    width: "var(--icon-chevron)",
-                    height: "var(--icon-chevron)",
-                    fill: "var(--ink)",
-                    flex: "none",
-                  }}
-                />
+                <Index className="tnum shrink-0">{g.placeCount}곳</Index>
+                <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
               </Link>
 
-              <Divider />
-
-              <DataRow
-                items={[
-                  { label: "간 곳", value: String(g.placeCount) },
-                  { label: "유형", value: String(g.types.length) },
-                ]}
-              />
-
-              {/* 유형별 바로 진입 — 도시 카드 안에서 한 단계 더 좁힌다 */}
-              <div className="no-scrollbar -mx-(--card-pad) flex gap-2 overflow-x-auto px-(--card-pad)">
-                <Chip href={`/c/${creatorSlug}/${g.slug}`}>전체</Chip>
-                {g.types.map(({ type, count }) => (
-                  <Chip key={type} href={`/c/${creatorSlug}/${g.slug}?type=${type}`}>
-                    {PLACE_TYPE_LABELS[type]}
-                    <span className="tnum ml-1.5 opacity-60">{count}</span>
-                  </Chip>
-                ))}
-              </div>
-            </Card>
+              {/* 유형별 바로 진입 — 지도를 미리 걸러 연다 */}
+              {g.types.length > 1 ? (
+                <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-3.5 md:mx-0 md:flex-wrap md:px-0">
+                  {g.types.map(({ type, count }) => (
+                    <Chip key={type} href={`/c/${creatorSlug}/${g.slug}?type=${type}`}>
+                      {PLACE_TYPE_LABELS[type]}
+                      <span className="tnum ml-1.5 opacity-60">{count}</span>
+                    </Chip>
+                  ))}
+                </div>
+              ) : null}
+            </li>
           ))}
         </ul>
       </section>
 
       {videos.length > 0 ? (
-        <section className="flex flex-col gap-(--stack)">
-          <div>
-            <h2
-              className="font-bold"
-              style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
-            >
-              영상으로 보기
-            </h2>
-            <p className="mt-1" style={{ fontSize: "var(--t-meta)" }}>
-              영상을 고르면 그 안에서 장소가 나온 시각으로 이동합니다.
-            </p>
-          </div>
+        <section aria-labelledby="video-h" className="flex flex-col gap-(--stack)">
+          <h2 id="video-h" className="index" style={{ color: "var(--dim)" }}>
+            영상 {videos.length} — 나온 시각으로 열기
+          </h2>
           <VideoList videos={videos} creatorSlug={creatorSlug} />
         </section>
       ) : null}

@@ -195,6 +195,98 @@ export function Meta({
 /* ── 컨트롤 ──────────────────────────────────────────────────────────── */
 
 /**
+ * 프레임 인덱스 — 콘택트 시트의 컷 번호. 여기서는 지도 핀 번호와 1:1 이다.
+ * 번호가 장식이 아니라 데이터인 유일한 자리라, 이 월드에서 숫자를 각진 칸에 넣는다.
+ * 활성은 왁스 링 — "이 컷"이라고 연필로 두른 자국.
+ */
+export function FrameNo({ n, active = false }: { n: number; active?: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="index tnum grid size-7 shrink-0 place-items-center"
+      style={{
+        borderRadius: "var(--r-frame)",
+        color: active ? "var(--wax)" : "var(--dim)",
+        boxShadow: `inset 0 0 0 ${active ? "1.5px var(--wax)" : "1px var(--hairline)"}`,
+      }}
+    >
+      {n}
+    </span>
+  );
+}
+
+/**
+ * 액션 — 영상 열기 / 지도 열기 / 담기.
+ *
+ * 외부로 나가는 링크(http…)는 새 탭으로 연다. 유튜브로 돌아가는 링크를 막거나
+ * 가리는 것은 정책 위반이라(LEGAL.md 4.5-(3)) 이 컨트롤은 항상 보이게 둔다.
+ * 눌린 상태(담김)는 채움이 아니라 왁스 링으로 말한다.
+ */
+export function Act({
+  icon,
+  children,
+  href,
+  onClick,
+  pressed = false,
+  title,
+}: {
+  icon: IconName;
+  children: ReactNode;
+  href?: string;
+  onClick?: () => void;
+  pressed?: boolean;
+  title?: string;
+}) {
+  const Glyph = Icon[icon];
+  const cls = "inline-flex items-center gap-1.5 px-2.5 py-1.5 transition-colors";
+  const style: React.CSSProperties = {
+    fontSize: "var(--t-meta)",
+    fontWeight: 500,
+    borderRadius: "var(--r-control)",
+    color: pressed ? "var(--paper)" : "var(--dim)",
+    boxShadow: `inset 0 0 0 1px ${pressed ? "var(--wax)" : "var(--hairline)"}`,
+  };
+  const body = (
+    <>
+      <Glyph className="size-4 shrink-0" />
+      <span>{children}</span>
+    </>
+  );
+
+  if (href) {
+    const external = href.startsWith("http");
+    return external ? (
+      <a
+        href={href}
+        title={title}
+        target="_blank"
+        rel="noopener noreferrer"
+        className={cls}
+        style={style}
+      >
+        {body}
+      </a>
+    ) : (
+      <Link href={href} title={title} className={cls} style={style}>
+        {body}
+      </Link>
+    );
+  }
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={pressed}
+      title={title}
+      className={`${cls} cursor-pointer`}
+      style={style}
+    >
+      {body}
+    </button>
+  );
+}
+
+/**
  * 칩 — 필터·바로가기. href 면 링크, onClick 이면 버튼.
  * 활성은 채움이 아니라 왁스 링이다(왁스가 면적을 먹으면 월드가 무너진다).
  */
