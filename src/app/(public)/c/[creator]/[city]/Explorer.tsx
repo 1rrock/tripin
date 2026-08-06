@@ -331,7 +331,7 @@ export function Explorer({
                       }`}
                       style={
                         active
-                          ? { background: "color-mix(in srgb, var(--lemon) 32%, white)" }
+                          ? { background: "color-mix(in srgb, var(--lemon) 32%, var(--card))" }
                           : undefined
                       }
                     >
@@ -341,7 +341,7 @@ export function Explorer({
                           className="tnum mt-0.5 flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-[13px] font-bold"
                           style={{
                             backgroundColor: "var(--hl)",
-                            color: isDarkHex(accentColor) ? "#ffffff" : "var(--ink)",
+                            color: isDarkHex(accentColor) ? "#ffffff" : "var(--ink-fixed)",
                           }}
                         >
                           {index + 1}
@@ -484,7 +484,7 @@ export function Explorer({
                         <Link
                           key={c.slug}
                           href={`/c/${creatorSlug}/${c.slug}`}
-                          className="inline-flex items-baseline gap-1.5 rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold transition hover:bg-ink hover:text-lemon active:scale-[0.97]"
+                          className="inline-flex items-baseline gap-1.5 rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
                         >
                           {c.name}
                           <span className="tnum opacity-60">{c.count}</span>
@@ -501,7 +501,7 @@ export function Explorer({
                         <Link
                           key={c.slug}
                           href={`/c/${c.slug}/${citySlug}`}
-                          className="inline-flex items-baseline gap-1.5 rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold transition hover:bg-ink hover:text-lemon active:scale-[0.97]"
+                          className="inline-flex items-baseline gap-1.5 rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
                         >
                           {c.name}
                           <span className="tnum opacity-60">{c.count}</span>

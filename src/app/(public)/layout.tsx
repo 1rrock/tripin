@@ -15,7 +15,7 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             className="flex items-center gap-1 text-[22px] font-black tracking-tight"
           >
             Trip
-            <em className="inline-block rounded-md bg-lemon px-1.5 not-italic">in</em>
+            <em className="inline-block rounded-md bg-lemon text-on-lemon px-1.5 not-italic">in</em>
           </Link>
           <div className="flex items-center gap-2.5">
             <span className="hidden rounded-full bg-ink px-3.5 py-1.5 text-xs font-bold text-paper sm:inline">

@@ -115,7 +115,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
           {video.cities.length === 1 && video.stops[0]?.citySlug ? (
             <Link
               href={`/c/${ch.slug}/${video.stops[0].citySlug}`}
-              className="inline-flex items-center rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-ink transition hover:bg-ink hover:text-lemon active:scale-[0.97]"
+              className="inline-flex items-center rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
             >
               {video.cities[0]} 지도로 보기
             </Link>

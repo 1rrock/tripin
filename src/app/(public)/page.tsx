@@ -205,7 +205,7 @@ export default async function HomePage() {
       {tickerLoop.length > 0 ? (
         <div
           aria-hidden
-          className="mt-12 overflow-hidden border-y border-line bg-lemon py-3.5 text-[15px] font-extrabold sm:mt-14"
+          className="mt-12 overflow-hidden border-y border-line bg-lemon py-3.5 text-[15px] font-extrabold text-on-lemon sm:mt-14"
         >
           <div className="ticker-track">
             {tickerLoop.map((t, i) => (

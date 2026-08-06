@@ -54,8 +54,8 @@ function markerContent(pin: MapPin, active: boolean): HTMLElement {
   const el = document.createElement("div");
   const color = pin.accentColor ?? "#3f8cff";
   el.style.cssText = [
-    `background:${active ? "var(--ink)" : color}`,
-    `color:${active || isDarkHex(color) ? "#ffffff" : "var(--ink)"}`,
+    `background:${active ? "var(--ink-fixed)" : color}`,
+    `color:${active || isDarkHex(color) ? "#ffffff" : "var(--ink-fixed)"}`,
     "border-radius:9999px",
     "min-width:28px",
     "height:28px",

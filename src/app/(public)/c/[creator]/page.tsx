@@ -144,7 +144,7 @@ export default async function CreatorHubPage({
             className="grid h-20 w-20 shrink-0 place-items-center rounded-full border border-line text-3xl font-black"
             style={{
               backgroundColor: creator.accent_color,
-              color: isDarkHex(creator.accent_color) ? "#ffffff" : "var(--ink)",
+              color: isDarkHex(creator.accent_color) ? "#ffffff" : "var(--ink-fixed)",
             }}
           >
             {creator.initials}
@@ -207,7 +207,7 @@ export default async function CreatorHubPage({
             <div className="relative mt-5 flex flex-wrap gap-2.5">
               <Link
                 href={`/c/${creatorSlug}/${g.slug}`}
-                className="inline-flex min-h-10 items-center rounded-full bg-lemon px-4 text-[13px] font-extrabold transition hover:bg-ink hover:text-lemon active:scale-[0.97]"
+                className="inline-flex min-h-10 items-center rounded-full bg-lemon px-4 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
               >
                 전체
               </Link>

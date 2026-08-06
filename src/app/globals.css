@@ -28,6 +28,22 @@
   /* 코랄 지면 위 글자색. 코랄은 두 테마에서 같은 중간톤이라 이 값도 고정이다.
      --ink 를 쓰면 다크에서 밝은 글자 위 코랄이 되어 3.1:1 로 AA 미달한다. */
   --on-brand: #23120c;
+
+  /* 레몬 지면 위 글자색 — 코랄과 같은 이유로 고정이다.
+     레몬은 두 테마 모두 밝은 노랑이라 --ink 를 쓰면 다크에서 1.16:1 로 글자가 사라진다.
+     반전 상태(hover)는 이 값을 지면으로, --lemon 을 글자로 쓴다 — 12:1 이상으로 양쪽 다 성립한다. */
+  --on-lemon: #231a00;
+
+  /* 테마와 무관한 고정 잉크. **테마 밖 지면** 위에서 쓴다 — 크리에이터 액센트(DB 값)와
+     지도 타일은 라이트/다크를 따라가지 않으므로, 그 위의 글자·지면도 따라가면 안 된다.
+     var(--ink) 를 쓰면 밝은 액센트 + 다크 테마에서 1.16:1 같은 파손이 난다.
+     어두운 액센트 위에는 흰색을 쓴다 (isDarkHex 분기). */
+  --ink-fixed: #141414;
+
+  /* 레몬 형광 밑줄의 띠 높이. 라이트는 글자를 관통하는 형광펜(글자가 잉크라 읽힌다),
+     다크는 글자가 밝으므로 겹치지 않게 baseline 아래로 내려 밑줄로 만든다. */
+  --hl-under: inset 0 -0.32em var(--lemon);
+
   --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
   color-scheme: light;
 }
@@ -46,6 +62,7 @@
     --mint: #3fbfa6;
     --sky: #7d9bff;
     --hl: var(--sky);
+    --hl-under: inset 0 -0.12em var(--lemon);
     --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
     color-scheme: dark;
   }
@@ -64,6 +81,7 @@
   --mint: #25d0a0;
   --sky: #3f8cff;
   --hl: var(--sky);
+  --hl-under: inset 0 -0.32em var(--lemon);
   --shadow-sheet: 0 -10px 30px rgba(20, 20, 20, 0.1);
   color-scheme: light;
 }
@@ -79,6 +97,7 @@
   --mint: #3fbfa6;
   --sky: #7d9bff;
   --hl: var(--sky);
+  --hl-under: inset 0 -0.12em var(--lemon);
   --shadow-sheet: 0 -10px 30px rgba(0, 0, 0, 0.5);
   color-scheme: dark;
 }
@@ -93,6 +112,7 @@
   --color-brand: var(--brand);
   --color-on-brand: var(--on-brand);
   --color-lemon: var(--lemon);
+  --color-on-lemon: var(--on-lemon);
   --color-mint: var(--mint);
   --color-sky: var(--sky);
   --font-sans:
@@ -137,9 +157,10 @@ body {
   box-shadow: var(--shadow-sheet);
 }
 
-/* 레몬 형광 밑줄 — 히어로 키워드 전용 */
+/* 레몬 형광 밑줄 — 히어로 키워드 전용.
+   띠 높이는 테마 토큰이다 (--hl-under 정의부 주석 참조) — 여기서 값을 분기하지 않는다. */
 .hl-under {
-  box-shadow: inset 0 -0.32em var(--lemon);
+  box-shadow: var(--hl-under);
 }
 
 /* 티커(장소 흐름) — 홈의 유일한 authored 모션 */

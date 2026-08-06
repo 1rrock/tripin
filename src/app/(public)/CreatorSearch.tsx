@@ -147,7 +147,7 @@ export function CreatorSearch({ creators }: { creators: CreatorCard[] }) {
                   className="grid h-16 w-16 place-items-center rounded-full border border-line text-2xl font-black"
                   style={{
                     backgroundColor: creator.accentColor,
-                    color: isDarkHex(creator.accentColor) ? "#ffffff" : "var(--ink)",
+                    color: isDarkHex(creator.accentColor) ? "#ffffff" : "var(--ink-fixed)",
                   }}
                 >
                   {creator.initials}
@@ -162,7 +162,7 @@ export function CreatorSearch({ creators }: { creators: CreatorCard[] }) {
                     single ? (
                       <span
                         key={city.slug}
-                        className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-ink"
+                        className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon"
                       >
                         {city.name}
                       </span>
@@ -170,7 +170,7 @@ export function CreatorSearch({ creators }: { creators: CreatorCard[] }) {
                       <Link
                         key={city.slug}
                         href={`/c/${creator.slug}/${city.slug}`}
-                        className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-ink transition hover:bg-ink hover:text-lemon active:scale-[0.97]"
+                        className="rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
                       >
                         {city.name}
                       </Link>
