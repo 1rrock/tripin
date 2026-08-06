@@ -138,7 +138,11 @@ export function ThemeToggle() {
       onClick={next}
       aria-label={`화면 테마: ${LABEL[mode]} — 눌러서 변경`}
       title={LABEL[mode]}
-      className="grid h-9 w-9 shrink-0 cursor-pointer place-items-center rounded-full border border-line text-ink-soft transition hover:bg-fill hover:text-ink active:scale-[0.95]"
+      className="grid h-11 w-11 shrink-0 cursor-pointer place-items-center text-ink"
+      style={{
+        border: "var(--stroke-card) solid var(--hairline)",
+        borderRadius: "var(--r-field)",
+      }}
     >
       <Icon />
     </button>

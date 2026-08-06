@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadVideoDetail } from "@/shared/api/videos";
+import { Box, Card, Chip, DataRow, Icon } from "@/shared/ui/sign";
 import { Timeline } from "./Timeline";
 
 /**
@@ -37,20 +38,11 @@ export async function generateMetadata({
 
 function Crumb() {
   return (
-    <svg
+    <Icon.chevron
       aria-hidden
-      width="10"
-      height="10"
-      viewBox="0 0 16 16"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className="mx-1 inline text-line"
-    >
-      <path d="m6 3.5 4.5 4.5L6 12.5" />
-    </svg>
+      className="mx-1 inline"
+      style={{ width: 9, height: 9, fill: "var(--hairline)" }}
+    />
   );
 }
 
@@ -63,64 +55,61 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
   return (
     <main
-      className="mx-auto w-full max-w-3xl px-6 pt-8 pb-16 md:px-8"
+      className="flex flex-col gap-(--stack) px-(--gutter) pt-6 pb-16"
       style={{ "--hl": ch.accentColor } as React.CSSProperties}
     >
-      <nav className="flex flex-wrap items-center text-xs text-ink-soft">
-        <Link href="/" className="font-medium transition hover:text-ink">
+      <nav className="flex flex-wrap items-center" style={{ fontSize: "var(--t-meta)" }}>
+        <Link href="/" className="underline-offset-4 hover:underline">
           홈
         </Link>
         <Crumb />
-        <Link href={`/c/${ch.slug}`} className="font-medium transition hover:text-ink">
+        <Link href={`/c/${ch.slug}`} className="underline-offset-4 hover:underline">
           {ch.displayName}
         </Link>
         <Crumb />
-        <span className="text-ink">영상</span>
+        <span className="font-medium">영상</span>
       </nav>
 
-      <header className="mt-4">
-        <h1 className="text-2xl leading-snug font-black tracking-tight sm:text-3xl">
-          {video.title}
-        </h1>
-        {/* 제목은 유튜브 원본 그대로여야 한다 — 우리가 요약·의역하면 약관 위반이다
-            (YouTube API Developer Policies §III.E.3 "title must be unmodified") */}
-        <p className="mt-2.5 flex flex-wrap items-center gap-x-2 gap-y-1 text-[13px] text-ink-soft">
-          <span>{ch.displayName}</span>
-          <span aria-hidden>·</span>
-          <span className="tnum">
-            나온 곳 <b className="font-bold text-ink">{video.stopCount}</b>곳
-          </span>
-          {video.cities.length ? (
-            <>
-              <span aria-hidden>·</span>
-              <span>{video.cities.join(", ")}</span>
-            </>
-          ) : null}
+      <header className="flex flex-col gap-3">
+        <div className="flex items-center gap-4">
+          <Box icon="play" size="card" />
+          <div className="min-w-0 flex-1">
+            <p style={{ fontSize: "var(--t-body)" }}>{ch.displayName}</p>
+            {/* 제목은 유튜브 원본 그대로여야 한다 — 우리가 요약·의역하면 약관 위반이다
+                (YouTube API Developer Policies §III.E.3 "title must be unmodified") */}
+            <h1
+              className="font-bold"
+              style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em", lineHeight: 1.28 }}
+            >
+              {video.title}
+            </h1>
+          </div>
+        </div>
+
+        <Card>
+          <DataRow
+            items={[
+              { label: "나온 곳", value: String(video.stopCount) },
+              { label: "도시", value: String(video.cities.length) },
+            ]}
+          />
+        </Card>
+
+        <p style={{ fontSize: "var(--t-meta)", opacity: 0.8 }}>
+          영상 제목은 유튜브 원본 표기 그대로입니다.
         </p>
-        <p className="mt-1 text-[12px] text-ink-soft">영상 제목은 유튜브 원본 표기 그대로입니다.</p>
       </header>
 
-      <div className="mt-7">
-        <Timeline video={video} creatorName={ch.displayName} />
-      </div>
+      <Timeline video={video} creatorName={ch.displayName} />
 
-      <section className="mt-10 border-t border-line pt-6">
-        <div className="flex flex-wrap gap-2">
-          <Link
-            href={`/c/${ch.slug}`}
-            className="inline-flex items-center rounded-full bg-fill px-4 py-2.5 text-[13px] font-bold transition hover:bg-line active:scale-[0.97]"
-          >
-            {ch.displayName}의 다른 영상
-          </Link>
-          {video.cities.length === 1 && video.stops[0]?.citySlug ? (
-            <Link
-              href={`/c/${ch.slug}/${video.stops[0].citySlug}`}
-              className="inline-flex items-center rounded-full bg-lemon px-4 py-2.5 text-[13px] font-extrabold text-on-lemon transition hover:bg-on-lemon hover:text-lemon active:scale-[0.97]"
-            >
-              {video.cities[0]} 지도로 보기
-            </Link>
-          ) : null}
-        </div>
+      {/* 다음 행동 — 1페이지 이탈을 막는 조각 간 연결 */}
+      <section className="flex flex-wrap gap-2">
+        <Chip href={`/c/${ch.slug}`}>{ch.displayName}의 다른 영상</Chip>
+        {video.cities.length === 1 && video.stops[0]?.citySlug ? (
+          <Chip href={`/c/${ch.slug}/${video.stops[0].citySlug}`}>
+            {video.cities[0]} 지도로 보기
+          </Chip>
+        ) : null}
       </section>
     </main>
   );
