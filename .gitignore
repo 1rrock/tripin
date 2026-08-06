@@ -55,3 +55,5 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+# QUALITY BAR 참조 이미지 — 외부 URL 에서 받은 것이라 재취득 가능
+/.impeccable/refs/
