@@ -22,30 +22,6 @@ import { isProduction, publicEnv } from "@/shared/config/env";
 /** 타일이 이 시간 안에 안 그려지면 실패로 판정 — 조용한 회색 박스를 만들지 않는다. */
 const TILES_TIMEOUT_MS = 8000;
 
-/**
- * WebGL 가용성 — mapId 지도는 **항상 벡터 렌더러**라 WebGL 이 없으면 그릴 수 없다.
- * (AdvancedMarker 가 mapId 를 요구하므로 우리는 벡터를 벗어날 수 없다)
- *
- * 이걸 미리 보지 않으면 WebGL 없는 브라우저에서 지도 객체는 생성되는데 tilesloaded 가
- * 영영 안 와서, 8초 스켈레톤 → "다시 시도" 로 떨어진다. 눌러도 결과가 같으니
- * 고쳐지지 않을 행동을 계속 권하는 화면이 된다. 실제로 그런 환경에서 확인했다.
- */
-let webglSupport: boolean | null = null;
-
-function hasWebGL(): boolean {
-  if (typeof window === "undefined") return true; // 서버 렌더에서는 판단하지 않는다
-  // 한 번만 재고 캐시한다 — 컨텍스트 생성은 공짜가 아니고, 결과가 도중에 바뀌지도 않는다.
-  // 캐시가 있어야 effect 안에서 상태를 읽지 않고 이 함수만 부를 수 있다(의존성 없음).
-  if (webglSupport !== null) return webglSupport;
-  try {
-    const canvas = document.createElement("canvas");
-    webglSupport = Boolean(canvas.getContext("webgl2") ?? canvas.getContext("webgl"));
-  } catch {
-    webglSupport = false;
-  }
-  return webglSupport;
-}
-
 export interface MapPin {
   id: string;
   name: string;
@@ -130,17 +106,8 @@ export function MapView({
   // 핀 배열은 호출부에서 매 렌더 새로 만들어진다 — 내용이 같으면 마커 재생성·뷰포트
   // 리셋을 건너뛰기 위한 시그니처 (리스트 선택이 지도를 되돌리는 버그 방지)
   const pinsSigRef = useRef<string>("");
-  // 키 부재·WebGL 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생.
-  // 셋 중 무엇이냐에 따라 사용자에게 할 말이 다르다:
-  //   "config" 키 미설정 — 운영자 문제. 사용자가 할 수 있는 게 없다
-  //   "webgl"  이 브라우저가 WebGL 을 못 쓴다 — **재시도해도 절대 안 된다**
-  //   "load"   네트워크·쿼터 등 일시적 실패 — 재시도가 의미 있다
-  const [failure, setFailure] = useState<null | "config" | "webgl" | "load">(() => {
-    if (!publicEnv.googleMapsKey) return "config";
-    return hasWebGL() ? null : "webgl";
-  });
-  const failed = failure !== null;
-  const setFailed = (v: boolean) => setFailure(v ? "load" : null);
+  // 키 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생
+  const [failed, setFailed] = useState(() => !publicEnv.googleMapsKey);
   const [loaded, setLoaded] = useState(false);
   // 재시도 카운터 — 실패 후 "다시 시도"가 지도 생성 effect 를 다시 돌린다
   const [attempt, setAttempt] = useState(0);
@@ -149,8 +116,7 @@ export function MapView({
 
   // 지도 생성 (재시도 전까지 1회)
   useEffect(() => {
-    // WebGL 이 없으면 지도 객체를 만들어 봐야 벡터 렌더러가 못 돈다 — SDK 도 부르지 않는다
-    if (!publicEnv.googleMapsKey || !hasWebGL()) return;
+    if (!publicEnv.googleMapsKey) return;
     const usingDemoMapId = publicEnv.googleMapsId === "DEMO_MAP_ID";
     if (usingDemoMapId && !isProduction) {
       console.warn(
@@ -314,18 +280,12 @@ export function MapView({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
           <p className="font-bold" style={{ fontSize: "var(--t-body)", color: "var(--lightbox-ink)" }}>
-            {failure === "webgl"
-              ? "이 브라우저에서는 지도를 띄울 수 없어요"
-              : "지도를 잠시 불러오지 못했어요"}
+            지도를 잠시 불러오지 못했어요
           </p>
           <p style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}>
-            {failure === "webgl"
-              ? "그래픽 가속(WebGL)이 꺼져 있습니다. 목록만으로도 모든 장소를 확인할 수 있어요"
-              : "목록만으로도 모든 장소를 확인할 수 있어요"}
+            목록만으로도 모든 장소를 확인할 수 있어요
           </p>
-          {/* "다시 시도"는 재시도가 실제로 통할 때만 보여준다.
-              WebGL 부재는 눌러도 결과가 같아서, 버튼을 두면 고쳐지지 않을 행동을 권하는 셈이다 */}
-          {failure === "load" ? (
+          {publicEnv.googleMapsKey ? (
             <button
               type="button"
               onClick={retry}
