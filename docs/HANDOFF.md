@@ -1,91 +1,212 @@
-# Tripin 핸드오프 — 2026-08-04 상태 스냅샷
+# Tripin 핸드오프 (2026-08-07)
 
-> ⚠️ **디자인은 이 문서가 최신이 아니다.** 2026-08-06 부터 시각 월드를 캐논 →
-> **공항 사인 시스템**으로 교체 중이며, 아래 "공개 웹 디자인" 절은 그 이전 상태다.
-> 디자인 관련은 → **[`HANDOFF-REDESIGN.md`](HANDOFF-REDESIGN.md)** (브랜치 `redesign-world-v2`)
-> 수집 파이프라인·어드민·데이터는 이 문서가 여전히 유효하다.
-
-> 이 문서는 "지금 어디까지 됐고, 무엇이 어떤 규칙으로 돌아가며, 다음에 뭘 해야 하는가"의
-> 단일 진입점이다. 상세는 각 링크 문서가 갖고 있다.
-> 선행 문서: `PRODUCT.md`(제품) · `CONCEPT.md`(화면 기획) · `LEGAL.md`(법적 제약) ·
-> `INGEST.md`(수집 파이프라인) · `DESIGN.md`(디자인 시스템) · `docs/ADMIN.md` · `docs/DATABASE.md`
+> 브랜치 `redesign-world-v2` 의 현재 상태. 새 세션은 이 문서부터 읽으면 된다.
+> 선행: `PRODUCT.md`(제품 진실) · `LEGAL.md`(약관·법) · `CONCEPT.md`(화면 기획) · `INGEST.md`(수집)
+> ⚠️ `DESIGN.md` 는 **아직 옛 월드를 기술한다** — §6 참조. 믿지 말 것.
 
 ---
 
-## 1. 지금 상태 (한 줄씩)
+## 0. 30초 요약
 
-- **공개 웹**: 홈 + 채널×도시 탐색 화면 완성 — "여행 영상 편집자막" 디자인 월드 적용, 리뷰 통과
-- **어드민**: 대시보드 / 장소 확정(`/admin/confirm`, 수정 포함) / 요약 에디터(`/admin/place`) 가동
-- **수집 파이프라인**: `tripin-ingest` 스킬로 자동화 완료, 첫 실전(추성훈) 완료
-- **콘텐츠**: 추성훈 — 영상 16편, 장소 20곳(도쿄 확정·공개 3곳 / 후보 17곳), 요약 20/20 작성
-- **도시**: tokyo, osaka, kobe, fukuoka, sapporo, busan, los-angeles (7곳)
-- ⚠️ **git 커밋이 아직 하나도 없다** — 전부 워킹트리 상태. 첫 커밋부터 하는 것을 권장
+- 시각 월드를 **두 번** 갈아엎었고, 지금은 세 번째인 **콘택트 시트(다크)** 다. 공개 화면 전부 이 월드로 옮겨졌다.
+- 진입점을 3축으로 열었다: **지역 / 채널 / 지도**. 도시 교차 페이지(`/city/[city]`)가 새로 생겼다.
+- 채널명·프로필 사진이 실제 유튜브 값으로 들어갔다(마이그레이션 `0004`).
+- 30일 갱신 배치는 **코드만 있고 안 돈다** — `YOUTUBE_API_KEY` 가 없다.
+- 지도 스타일은 Cloud 에 올렸는데 **아직 화면에 안 먹었다** — POI 아이콘이 그대로 보인다.
 
-## 2. 이번 사이클에서 만든 것
+---
 
-### 수집 파이프라인 (상세: `INGEST.md` ★ 섹션, `.claude/skills/tripin-ingest/SKILL.md`)
-- 스킬 `tripin-ingest`: 채널 덤프/영상 URL → 파싱 → 필터 → 자막(로컬, IOS 클라이언트 우회)
-  → 장소 식별 → 웹검색 검증 → 후보 등록 → 좌표 백필
-- 스크립트 6종 (`scripts/ingest/`): parse-innertube / fetch-transcript / ensure-cities /
-  insert-candidates / backfill-coords / apply-summaries — 전부 로컬 전용·재실행 안전
+## 1. 왜 월드를 두 번이나 갈아엎었나 — 이게 제일 중요하다
 
-### 어드민
-- `/admin` 대시보드: 내비게이션 + 할 일 링크(좌표 미등록·요약 미작성 큐 진입)
-- `/admin/confirm`: 장소 행/핀 클릭 → 상세 카드 → **수정 폼**(`updatePlace`) — 확정 잠금
-  (좌표 또는 구글 링크 + 근거) 동일 적용
-- `/admin/place/[id]` 요약 에디터: 7.3 템플릿 + 불릿 3~5 + 금지어/글자수 실시간 검사 +
-  **자막 복붙 검사**(12자 연속 일치, 자막은 대조 후 폐기) + "저장 후 다음" 큐 흐름
-- 구글 공유 링크(maps.app.goo.gl) 붙여넣으면 저장 시 **좌표 자동 해석**
-  (`src/shared/lib/resolve-google-place.ts`)
+두 번 다 같은 이유로 실패했다. **재료 없이 월드를 골랐다.**
 
-### 공개 웹 디자인 (상세: `DESIGN.md` + `.impeccable/design.json`)
-- impeccable 정식 플로우: 방향 배정(seed fda20065) → 사용자 선택 → 빌드 → 피니시 리뷰
-  (P0 2건 수정) → 판정 "조건부 출시" → 조건 3건 반영 완료
-- 월드: 자막체(Black Han Sans) + 크리에이터 액센트 형광펜(`--hl` 주입) + 타임코드 칩 +
-  [대괄호] 라벨 + 챕터 바. Named Rules는 DESIGN.md 참조 (Pen/Timecode/Flat Paper/
-  Two-Face Mono/Click-Select)
-- 리뷰가 잡아준 핵심 수리: 홈 카운트를 익명 시야 기준으로, 지도 핀 시그니처 가드
-  (리스트 조작 시 뷰포트 리셋 방지), 키보드 접근 + 전역 포커스 링, 모노 폰트 한글 폴백
+이 제품이 가진 시각 재료를 실제로 세어 보면:
 
-## 3. 운영 규칙 (이번에 확정된 결정들)
+| | 상태 |
+|---|---|
+| `creators.avatar_url` | 컬럼 자체가 없었다 (초상 리스크 회피, LEGAL 1.3) |
+| `places` 사진 | 컬럼 없음 |
+| `videos.thumbnail_url` | 컬럼은 있는데 **전 레코드 NULL** |
 
-| 규칙 | 내용 | 근거 위치 |
-|------|------|-----------|
-| **확정 = 공개** | `map_status=confirmed` 저장 시 `is_published=true` 자동 동기화, 보류는 비공개. `/admin/publish` 조각 게이트가 생기기 전까지의 임시 운영 규칙 | `src/app/admin/confirm/actions.ts` |
-| 자동 확정 금지 | 파이프라인은 candidate까지만, 확정은 사람이 | SKILL.md, LEGAL.md 4.6 |
-| mentionNote ≠ 공개 요약 | 자막 파생물 — 확정 근거 참고용만, 공개 요약은 템플릿으로 새로 작성 | SKILL.md 규칙 3 |
-| 도시는 자동 생성 OK | `ensure-cities.mjs`, 생성 내역 보고. 크리에이터는 수동(어드민) | SKILL.md 규칙 4 |
-| 홈 숫자·도시 칩 | 익명 방문자가 실제 볼 수 있는 것(공개·확정)만 센다/노출한다 | `(public)/page.tsx` |
-| 가격 표기 | price_hint 저장 시 "(영상 촬영 시점 기준)" 자동 부착 | 요약 에디터·apply-summaries |
+이미지가 0개라 화면을 채울 게 텍스트와 픽토그램뿐이었고, 뭘 씌워도 "90년대 HTML 표"가 됐다.
+색이나 보더의 문제가 아니었다. **Figma 컴프를 7번 돌려도 안 나왔고, 실데이터를 코드에 띄우고서야 보였다.**
 
-## 4. 미해결 / 다음 단계 (우선순위순)
+해결: 썸네일 URL 을 `youtube_video_id` 에서 유도한다(`shared/lib/youtube.ts`).
+API 호출도 저장도 없어서 30일 보관 제한을 애초에 건드리지 않는다. 수집된 영상 전부 `maxresdefault` 존재 확인.
 
-1. **git 첫 커밋** — 전체가 무보호 워킹트리 상태
-2. **후보 17곳 확정** — `/admin/confirm`에서 검수. 특히 sourceNote에 표시된 2건 주의:
-   나가하마 넘버원(기온점 추정), 쿠시카츠 다나카(체인 지점 확인)
-3. **`/admin/publish` 조각 공개 체크리스트** (docs/ADMIN.md 7장) — 8핀 게이트·요약 경고
-   해소 조건을 조각 단위로. 생기면 "확정=공개" 임시 규칙을 대체
-4. **영상 메타 30일 갱신 배치** (LEGAL.md §III.E.4.d) — 대시보드에 경고만 뜨는 상태
-5. **삭제 요청 창구** — 푸터에 "준비 중" 문구인 상태 (LEGAL.md 임시조치 의무)
-6. `GOOGLE_PLACES_API_KEY`(서버용) 채우면 가게명만으로 좌표+링크 자동화 확장 가능
-7. 디자인 이관 항목: introText 붙는 조각의 모바일 재측정 / 홈 `loadCreators` 전량 조인 →
-   장소 수백 개 규모에서 DB 뷰·트리거 집계로
-8. 다음 채널 온보딩: INGEST.md ★ 섹션 절차 그대로 (크리에이터 생성 → 덤프 붙여넣기)
+**교훈: 새 화면을 설계하기 전에 그 화면에 실제로 들어갈 데이터를 먼저 세어라.**
 
-## 5. 알려진 제약 (막히면 여기부터)
+---
 
-- **유튜브 자막**: 웹 클라이언트는 pot 토큰으로 빈 응답 → IOS 클라이언트 우회 중.
-  막히면 `fetch-transcript.mjs`·`admin/place/[id]/actions.ts` 상단 클라이언트 버전 갱신
-- **네이버 place ID**: 자동 검색이 ncaptcha 차단(우회 금지) — 확정 폼에 URL 붙여넣으면 ID 추출
-- **카카오**: 해외 미커버 — 일본/미국 장소 null 정상
-- **브라우저 지도 키**: 리퍼러 제한(localhost:3000 허용) — 서버에서 못 씀
-- **폐업 이력**: 카메하메하 베이커리(구 마라사다, qVLEo8WKKxY) 폐업 확인으로 삭제됨
+## 2. 지금 월드 — 콘택트 시트
 
-## 6. 데이터 흐름 요약
+암실 작업대 위의 **콘택트 시트**. 한 롤에서 뽑은 프레임을 검은 인화지에 늘어놓고,
+흰 인덱스로 번호를 매기고, 쓸 만한 컷에 왁스 연필로 표시하는 물건.
+→ 프레임 = 유튜브 썸네일, 롤 = 채널, 표시 = 내가 갈 곳.
+
+**방향 계약**은 `src/app/layout.tsx` 의 HTML 주석에 있다(빌드 산출물까지 살아남는다). 편집 전에 읽을 것.
+
+### 절대 하지 않는 것
+
+- **발광** — box-shadow 로 색 번짐, 네온 테두리. 이 어둠은 네온이 아니라 은염이다.
+- **왁스(`--wax`)를 버튼 배경으로** — 왁스는 *표시*다. 링·밑줄·활성 인덱스에만.
+  면적을 먹기 시작하면 "다크 + 네온 액센트"라는 AI 기본값으로 즉시 떨어진다.
+- **라이트 테마** — 다크 하나로 커밋했다. `ThemeToggle` 은 삭제됐다.
+  밝은 면은 지도(`--lightbox`) 하나뿐이고 그건 테마가 아니라 월드의 일부다.
+
+### 파일
+
+| 파일 | 역할 |
+|---|---|
+| `src/app/globals.css` | 토큰 전부. 컴포넌트에서 px 를 직접 쓰지 않는다 |
+| `src/shared/ui/frame.tsx` | 프리미티브 — Icon(스트로크 세트), Frame, Avatar, FrameNo, Act, Chip, Rule, Index, Meta |
+| `src/shared/ui/VideoSheet.tsx` | 시트 한 칸(썸네일 + 캡션). 홈·허브 공용 |
+| `src/shared/ui/PlaceSheet.tsx` | 핀 상세 (모바일 하단 / 데스크톱 지도 안쪽) |
+| `src/shared/ui/Thumb.tsx` | 유튜브 썸네일 (maxres → hq 폴백) |
+| `src/shared/ui/MapView.tsx` | 지도 = 라이트박스 |
+
+`src/shared/ui/sign.tsx`(구 월드)는 **삭제됐다.** 레거시 토큰 시임도 없다.
+
+### 캡션 위계 — 실데이터로 뒤집은 것
+
+처음엔 영상 제목이 헤드라인이었는데 틀렸다. 방문자의 질문은 "그 가게 어디야"이고 답은 **상호명**이다.
+게다가 썸네일에 이미 큰 글자가 박혀 있어 제목을 크게 쓰면 같은 말이 두 번 나온다.
 
 ```
-[수집] 덤프/URL → tripin-ingest → videos + places(candidate, 비공개)
-[확정] /admin/confirm 수정 폼 → confirmed + 공개 + 통계 재계산 → 웹 노출
-[요약] /admin/place 큐 → summary_bullets(+price_hint) → 공개 카드 완성
-[노출] 익명 RLS(is_published) → 홈 카운트·도시 칩·조각 페이지 전부 이 시야 기준
+[썸네일]
+추성훈 ChooSungHoon · 도쿄     ← 출처
+📍 돈카츠 마루시치 …            ← 답 (헤드라인)
+맛잘알 워뇨도 먹은 도쿄 1등…     ← 출처 영상 (원본 그대로)
 ```
+
+영상 제목은 **유튜브 원본 전문**을 쓴다. 작게 놓아도 "visible" 요건은 충족하고,
+요약·의역했다면 그때 §III.E.3 위반이다.
+
+---
+
+## 3. 화면 지도
+
+| 라우트 | 상태 | 비고 |
+|---|---|---|
+| `/` | ✅ | 영상 콘택트 시트. 상호명까지 검색 |
+| `/city` | ✅ | 지역 목록 |
+| `/city/[city]` | ✅ | **도시 교차** — 그 도시에 간 모든 채널. `CONCEPT.md 4.5` |
+| `/channels` | ✅ | 채널 목록 |
+| `/map` | ✅ | 나라별로 끊어 도시 고르기 |
+| `/c/[creator]` | ✅ | 채널 허브 (도시 + 영상) |
+| `/c/[creator]/[city]` | ✅ | 조각 — 핵심 페이지 |
+| `/c/[creator]/v/[videoId]` | ✅ | 타임라인. noindex |
+| `/admin/*` | 손대지 않음 | Tailwind neutral 팔레트, 우리 토큰 밖 |
+
+**전역 메뉴**: 모바일 햄버거 / 데스크톱 헤더 인라인 (`src/app/(public)/Nav.tsx`).
+사이드바를 안 쓴 이유는 항목이 3개뿐이고 이 월드의 주인공이 프레임과 지도라서다.
+
+**선택의 두 갈래** (조각·도시 지도 공통):
+- **핀** 클릭 → 상세 시트 (지도엔 이름 말고 들어갈 자리가 없다)
+- **목록 행** 클릭 → 지도만 이동 (행 자체가 이미 상세라 겹쳐 띄우지 않는다)
+
+---
+
+## 4. 열려 있는 것 — 우선순위 순
+
+### 🔴 1. 지도 스타일이 화면에 안 먹었다
+
+`NEXT_PUBLIC_GOOGLE_MAPS_ID` 는 설정됐고 요청에 실려 나가는 것도 확인했다
+(`StaticMapService...&7s<mapId>&...`). 그런데 **구글 기본 POI 아이콘이 그대로 보인다.**
+
+의심 순서:
+1. 넣은 값이 Map ID 가 아니라 **Style ID** 일 수 있다. 둘은 다른 값이고 콘솔 메뉴도 다르다
+   (Map Styles ↔ **Map Management**). 사용자가 처음 준 값이 명시적으로 styleId 였다.
+2. Map ID 는 맞는데 스타일이 **연결 안 됨**.
+
+명세는 `src/shared/config/lightbox-map-style.json` 이고, 콘솔 Import JSON 에 그대로 붙여넣는다.
+절차는 `.env.example` 의 `NEXT_PUBLIC_GOOGLE_MAPS_ID` 주석에 있다.
+
+> ⚠️ 코드로는 못 푼다. `AdvancedMarkerElement` 가 mapId 를 요구하고, mapId 가 있으면 구글이
+> 인라인 `styles` 를 무시한다. `DEMO_MAP_ID` 도 mapId 라서 로컬에서조차 안 먹는다.
+> 예전 코드가 "로컬 한정 인라인 스타일" 분기를 갖고 있었는데 **한 번도 동작한 적이 없었다.**
+
+### 🔴 2. 30일 갱신 배치가 안 돈다 (약관 위반 상태)
+
+`/api/cron/refresh-youtube-meta` 는 구현돼 있다. 없는 것:
+- `YOUTUBE_API_KEY` (`.env.local` 에 빈 값)
+- 스케줄러 연결 (`vercel.json` 에 크론 있음. Vercel 이 아니면 GitHub Actions·pg_cron)
+
+대상: `videos.title/published_at/duration_sec` + `creators.display_name/avatar_url`.
+임계값 25일(30일 한도에 5일 여유). `?purge=1` 일 때만 사라진 영상을 삭제한다.
+
+`LEGAL.md` 위험 #2 가 🟡 "구현됨, 미가동".
+
+### 🟡 3. 확장성 — 채널 20~30개면 두 화면이 깨진다
+
+측정 근거: 홈 HTML 고정 103KB + **영상당 ~2.2KB**(dev). `placeNames` 가 영상 수만큼 직렬화된다.
+
+| 문제 | 언제 |
+|---|---|
+| **로더가 테이블 전체를 매번 읽는다** (`cities.ts` 의 `loadGraph`) — PostgREST 행 상한에 걸리면 **조용히 잘린다** | **지금 고치는 게 싸다.** 모든 화면이 이 위에 얹혀 있다 |
+| 홈에 페이지네이션 없음 — 480편이면 ~1MB + `<img>` 480개 | 채널 5개 |
+| 지도 마커 클러스터링 없음 — 8개에서도 5·6번이 겹친다 | 도시당 30곳 |
+| 장소 상세 페이지 부재 — "이 가게에 다녀간 유튜버 7명"을 보여줄 자리가 없다 | 채널 10개 |
+
+장소 페이지는 **출처 2개 이상인 장소만** 만들어야 한다. 1개짜리는 얇은 페이지고,
+조각 페이지가 이미 그 상호명 질의를 먹고 있다(영상 페이지를 noindex 로 만든 것과 같은 이유).
+데이터는 준비돼 있다 — `places.slug` 가 있고 `loadCityDetail` 이 이미 장소별 `sources[]` 를 모은다.
+
+### 🟡 4. `DESIGN.md` 가 낡았다
+
+아직 **공항 사인 시스템**(삭제된 월드)을 기술한다.
+impeccable 마감 절차로 다시 써야 한다: `impeccable-finish-reviewer` → `impeccable-documenter`.
+`new-work.md` §5 에 따라 DESIGN.md 는 **빌드된 결과물로부터** 쓴다(의도가 아니라).
+
+### 🟢 5. 배포 전 반드시
+
+- `MIN_CONFIRMED_PINS` 가 **0** 이다(게이트 꺼짐). `PRODUCTION_MIN_CONFIRMED_PINS = 8` 로 되돌릴 것.
+- Maps 키에 콘솔 제한(API 제한 = Maps JavaScript API 만 / HTTP 리퍼러) 걸렸는지 확인.
+
+---
+
+## 5. 되풀이하면 안 되는 실수 (전부 이번에 실제로 한 것)
+
+1. **DOM 이 정상인데 화면이 검다** → 페인트/합성 버그를 의심하라.
+   전체화면 `fixed` + `mix-blend-mode` 레이어와 `filter: blur()` 애니메이션이 겹쳐 영역이
+   통째로 검게 래스터됐다. 둘 다 제거. `globals.css` 에 경고를 박아 뒀다.
+2. **라이브러리가 이미 우아하게 폴백하는데 앞에서 막지 마라.**
+   WebGL 없으면 지도가 안 뜬다고 보고 게이트를 세웠다가 **잘 되던 지도를 막았다**(revert `8f65f44`).
+   Google Maps JS 는 WebGL 이 없으면 스스로 래스터로 내려간다.
+3. **`.index` 에 `text-transform: uppercase` 를 넣지 마라.**
+   라벨용으로 넣었는데 채널명·도시명에도 붙는 클래스라 `ChooSungHoon` → `CHOOSUNGHOON` 이 됐다.
+   한글은 영향이 없어 라틴 이름이 들어오고서야 드러났다.
+4. **한국어 조사를 이름 뒤에 직접 붙이지 마라.** `{name}가` → 이름이 라틴이면 무너진다. `의` 는 안전하다.
+5. **헤드리스 캡처를 믿지 마라.** 이 머신에서 우측 ~8% 가 잘린다. 레이아웃 판단은 **DOM 실측**으로 하라
+   (`getBoundingClientRect`). 잘린 캡처를 보고 없는 버그를 두 번 쫓았다.
+6. **`perl -pi -e` 로 JSX 를 고쳤으면 `npx prettier --write` 를 돌려라.** 들여쓰기가 깨진다.
+7. **Tailwind v4 는 `px-(--gutter)`** 다. v3 의 `px-[--gutter]` 는 조용히 무시된다(패딩이 0 이 된다).
+
+---
+
+## 6. 검증
+
+```bash
+npx tsc --noEmit && npx eslint src --max-warnings=0 && npm run build
+
+# 라우트 스모크
+for p in / /city /city/tokyo /channels /map /c/chuseonghoon /c/chuseonghoon/tokyo; do
+  curl -s -o /dev/null -w "$p %{http_code}\n" "http://localhost:3000$p"; done
+
+# 방향 계약이 빌드에 살아있는지
+grep -rl "콘택트 시트(다크 시네마틱 계열)" .next/server
+```
+
+지도는 **브라우저에서 직접** 봐야 한다. 이 세션의 자동화 브라우저는 WebGL 이 없어
+지도가 항상 실패 상태로 나왔다 — 앱 문제가 아니다.
+
+---
+
+## 7. 다음 사람이 먼저 할 일
+
+1. `.env.local` 에 `NEXT_PUBLIC_GOOGLE_MAPS_ID` 가 **Map ID** 인지 확인 (§4-1)
+2. 로더 정리 — `cities.ts` 의 `loadGraph` 에 city/creator 필터를 SQL 로 내리기 (§4-3)
+3. `DESIGN.md` 마감 절차 (§4-4)
+
+> 이전 핸드오프 `docs/HANDOFF-REDESIGN.md` 는 **삭제됐다.** 거기 기술된 공항 사인 월드는
+> 더 이상 코드에 없어서, 남겨 두면 다음 사람을 오도한다. 필요하면 git 이력에 있다.
