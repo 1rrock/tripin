@@ -27,7 +27,11 @@ export default async function CityIndexPage() {
       <header className="flex flex-col gap-3.5">
         <h1
           className="font-black"
-          style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
+          style={{
+            fontSize: "var(--t-display)",
+            letterSpacing: "-0.045em",
+            lineHeight: 1.12,
+          }}
         >
           어디 가세요?
         </h1>
@@ -36,7 +40,11 @@ export default async function CityIndexPage() {
         </p>
         <p
           className="max-w-[42ch]"
-          style={{ fontSize: "var(--t-body)", color: "var(--dim)", lineHeight: 1.7 }}
+          style={{
+            fontSize: "var(--t-body)",
+            color: "var(--dim)",
+            lineHeight: 1.7,
+          }}
         >
           도시를 고르면 그 도시에 간 채널들의 장소가 한 지도에 모입니다.
         </p>
@@ -56,17 +64,23 @@ export default async function CityIndexPage() {
                 className="flex items-center gap-3 py-3.5"
                 aria-label={`${c.name} 지도 열기 — 간 곳 ${c.placeCount}곳, 채널 ${c.creatorCount}`}
               >
-                <Icon.pin className="size-[18px] shrink-0" style={{ color: "var(--wax)" }} />
+                <Icon.pin
+                  className="size-[18px] shrink-0"
+                  style={{ color: "var(--wax)" }}
+                />
                 <span className="min-w-0 flex-1">
                   <span
                     className="block truncate font-bold"
-                    style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}
+                    style={{
+                      fontSize: "var(--t-title)",
+                      letterSpacing: "-0.025em",
+                    }}
                   >
                     {c.name}
                   </span>
                   <span
                     className="index mt-1 block"
-                    style={{ color: "var(--dim)", textTransform: "none" }}
+                    style={{ color: "var(--dim)" }}
                   >
                     {c.nameEn}
                   </span>
@@ -74,7 +88,10 @@ export default async function CityIndexPage() {
                 <Index className="tnum shrink-0">
                   {c.placeCount}곳 · 채널 {c.creatorCount}
                 </Index>
-                <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
+                <Icon.chevron
+                  className="size-4 shrink-0"
+                  style={{ color: "var(--dim)" }}
+                />
               </Link>
 
               {c.types.length > 1 ? (

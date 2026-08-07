@@ -21,6 +21,7 @@ export interface FeedCreator {
   displayName: string;
   initials: string;
   accentColor: string;
+  avatarUrl: string | null;
   placeCount: number;
   cities: { slug: string; name: string }[];
 }
@@ -33,6 +34,7 @@ export interface FeedVideo {
   creatorName: string;
   initials: string;
   accentColor: string;
+  avatarUrl: string | null;
   stopCount: number;
   cities: string[];
   /** 미리보기용 상호명 — 화면에서 앞 3개만 쓴다 */
@@ -56,7 +58,7 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
 
   const { data: creators } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color")
+    .select("id, slug, display_name, initials, accent_color, avatar_url")
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
 
@@ -136,6 +138,7 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
       creatorName: creator.display_name,
       initials: creator.initials,
       accentColor: creator.accent_color,
+      avatarUrl: creator.avatar_url,
       stopCount: stops.length,
       cities: [
         ...new Set(
@@ -167,6 +170,7 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
       displayName: c.display_name,
       initials: c.initials,
       accentColor: c.accent_color,
+      avatarUrl: c.avatar_url,
       placeCount,
       cities: myCities,
     });

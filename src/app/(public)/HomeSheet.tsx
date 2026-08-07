@@ -143,7 +143,12 @@ export function HomeSheet({
                 href={`/c/${lead.creatorSlug}/v/${lead.youtubeId}`}
                 i={0}
                 large
-                channel={{ name: lead.creatorName, initials: lead.initials, accent: lead.accentColor }}
+                channel={{
+                  name: lead.creatorName,
+                  initials: lead.initials,
+                  accent: lead.accentColor,
+                  avatarUrl: lead.avatarUrl,
+                }}
               />
             ) : null}
           </ul>
@@ -159,7 +164,12 @@ export function HomeSheet({
                   href={`/c/${v.creatorSlug}/v/${v.youtubeId}`}
                   i={i + 1}
                   animate={i + 1 < DEVELOP_LIMIT}
-                  channel={{ name: v.creatorName, initials: v.initials, accent: v.accentColor }}
+                  channel={{
+                    name: v.creatorName,
+                    initials: v.initials,
+                    accent: v.accentColor,
+                    avatarUrl: v.avatarUrl,
+                  }}
                 />
               ))}
             </ul>
@@ -181,7 +191,12 @@ export function HomeSheet({
                   className="flex items-center gap-3 py-1"
                   aria-label={`${c.displayName} 채널 열기`}
                 >
-                  <Avatar initials={c.initials} accent={c.accentColor} size={38} />
+                  <Avatar
+                    initials={c.initials}
+                    accent={c.accentColor}
+                    src={c.avatarUrl}
+                    size={38}
+                  />
                   <span className="min-w-0 flex-1">
                     <span
                       className="block truncate font-bold"

@@ -40,9 +40,16 @@ export function WorldMap({ cities }: { cities: CityRow[] }) {
   const router = useRouter();
 
   const countries = useMemo(() => {
-    const by = new Map<string, { code: string; cities: number; places: number }>();
+    const by = new Map<
+      string,
+      { code: string; cities: number; places: number }
+    >();
     for (const c of cities) {
-      const hit = by.get(c.countryCode) ?? { code: c.countryCode, cities: 0, places: 0 };
+      const hit = by.get(c.countryCode) ?? {
+        code: c.countryCode,
+        cities: 0,
+        places: 0,
+      };
       hit.cities += 1;
       hit.places += c.placeCount;
       by.set(c.countryCode, hit);
@@ -50,7 +57,9 @@ export function WorldMap({ cities }: { cities: CityRow[] }) {
     return [...by.values()].sort((a, b) => b.places - a.places);
   }, [cities]);
 
-  const [country, setCountry] = useState<string>(() => countries[0]?.code ?? "");
+  const [country, setCountry] = useState<string>(
+    () => countries[0]?.code ?? "",
+  );
 
   const shown = useMemo(
     () => cities.filter((c) => c.countryCode === country),
@@ -74,7 +83,11 @@ export function WorldMap({ cities }: { cities: CityRow[] }) {
       {countries.length > 1 ? (
         <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter)">
           {countries.map((c) => (
-            <Chip key={c.code} active={country === c.code} onClick={() => setCountry(c.code)}>
+            <Chip
+              key={c.code}
+              active={country === c.code}
+              onClick={() => setCountry(c.code)}
+            >
               {countryName(c.code)}
               <span className="tnum ml-1.5 opacity-60">{c.places}</span>
             </Chip>
@@ -98,24 +111,36 @@ export function WorldMap({ cities }: { cities: CityRow[] }) {
         {shown.map((c) => (
           <li key={c.slug}>
             <Rule />
-            <Link href={`/city/${c.slug}`} className="flex items-center gap-3 py-3.5">
-              <Icon.pin className="size-[18px] shrink-0" style={{ color: "var(--wax)" }} />
+            <Link
+              href={`/city/${c.slug}`}
+              className="flex items-center gap-3 py-3.5"
+            >
+              <Icon.pin
+                className="size-[18px] shrink-0"
+                style={{ color: "var(--wax)" }}
+              />
               <span className="min-w-0 flex-1">
                 <span
                   className="block truncate font-bold"
-                  style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}
+                  style={{
+                    fontSize: "var(--t-title)",
+                    letterSpacing: "-0.025em",
+                  }}
                 >
                   {c.name}
                 </span>
                 <span
                   className="index mt-1 block"
-                  style={{ color: "var(--dim)", textTransform: "none" }}
+                  style={{ color: "var(--dim)" }}
                 >
                   {c.nameEn}
                 </span>
               </span>
               <Index className="tnum shrink-0">{c.placeCount}곳</Index>
-              <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
+              <Icon.chevron
+                className="size-4 shrink-0"
+                style={{ color: "var(--dim)" }}
+              />
             </Link>
           </li>
         ))}

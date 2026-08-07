@@ -225,7 +225,7 @@ function PendingPiece({
         className="font-black"
         style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
       >
-        {creatorName}가 간 {cityName}
+        {creatorName}의 {cityName}
       </h1>
       <p style={{ fontSize: "var(--t-body)", color: "var(--dim)", lineHeight: 1.7 }}>
         이 조각은 아직 준비 중이에요.
@@ -268,6 +268,7 @@ export default async function CreatorCityPage({
     <Explorer
       creatorName={data.creator.display_name}
       creatorInitials={data.creator.initials}
+      creatorAvatar={data.creator.avatar_url}
       accentColor={data.creator.accent_color}
       cityName={data.city.name}
       introText={data.introText}

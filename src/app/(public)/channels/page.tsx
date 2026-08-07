@@ -51,7 +51,12 @@ export default async function ChannelsPage() {
                 className="flex items-center gap-3.5 py-4"
                 aria-label={`${c.displayName} 채널 열기 — 간 곳 ${c.placeCount}곳`}
               >
-                <Avatar initials={c.initials} accent={c.accentColor} size={42} />
+                <Avatar
+                  initials={c.initials}
+                  accent={c.accentColor}
+                  src={c.avatarUrl}
+                  size={42}
+                />
                 <span className="min-w-0 flex-1">
                   <span
                     className="block truncate font-bold"

@@ -19,6 +19,7 @@ export interface PlaceSource {
   creatorName: string;
   initials: string;
   accentColor: string;
+  avatarUrl: string | null;
   youtubeId: string;
   videoTitle: string;
   timestampSec: number | null;
@@ -46,6 +47,7 @@ export interface CityCreator {
   displayName: string;
   initials: string;
   accentColor: string;
+  avatarUrl: string | null;
   placeCount: number;
 }
 
@@ -78,7 +80,7 @@ async function loadGraph() {
   const [{ data: cities }, { data: creators }, { data: videos }, { data: links }, { data: places }] =
     await Promise.all([
       supabase.from("cities").select("id, slug, name, name_en, country_code, lat, lng, default_zoom"),
-      supabase.from("creators").select("id, slug, display_name, initials, accent_color"),
+      supabase.from("creators").select("id, slug, display_name, initials, accent_color, avatar_url"),
       supabase.from("videos").select("id, youtube_video_id, title, creator_id"),
       supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
       supabase
@@ -168,6 +170,7 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
       creatorName: creator.display_name,
       initials: creator.initials,
       accentColor: creator.accent_color,
+      avatarUrl: creator.avatar_url,
       youtubeId: video.youtube_video_id,
       videoTitle: video.title,
       timestampSec: link.timestamp_sec,
@@ -216,6 +219,7 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
         displayName: s.creatorName,
         initials: s.initials,
         accentColor: s.accentColor,
+        avatarUrl: s.avatarUrl,
         placeCount: 0,
       });
     }

@@ -60,6 +60,7 @@ export interface CreatorHeader {
   displayName: string;
   initials: string;
   accentColor: string;
+  avatarUrl: string | null;
 }
 
 /** 지도 링크 — 검수된 URL 이 있으면 그것, 없으면 좌표 폴백. */
@@ -78,7 +79,7 @@ function mapUrlFor(p: {
 async function loadCreator(slug: string): Promise<CreatorHeader | null> {
   const { data } = await supabase
     .from("creators")
-    .select("slug, display_name, initials, accent_color")
+    .select("slug, display_name, initials, accent_color, avatar_url")
     .eq("slug", slug)
     .single();
   if (!data) return null;
@@ -87,6 +88,7 @@ async function loadCreator(slug: string): Promise<CreatorHeader | null> {
     displayName: data.display_name,
     initials: data.initials,
     accentColor: data.accent_color,
+    avatarUrl: data.avatar_url,
   };
 }
 

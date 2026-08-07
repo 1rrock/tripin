@@ -16,13 +16,14 @@
  * 데스크톱에서는 라이트박스(지도) 위에 놓이므로 지도와도 같은 층으로 읽힌다.
  */
 
-import { Icon } from "@/shared/ui/frame";
+import { Avatar, Icon } from "@/shared/ui/frame";
 
 export interface SheetSource {
   creatorSlug: string;
   creatorName: string;
   initials: string;
   accentColor: string;
+  avatarUrl?: string | null;
   youtubeId: string;
   videoTitle: string;
   timestampSec: number | null;
@@ -92,11 +93,18 @@ export function PlaceSheet({
         <div className="min-w-0 flex-1">
           <h2
             className="font-black"
-            style={{ fontSize: "var(--t-title)", letterSpacing: "-0.03em", lineHeight: 1.3 }}
+            style={{
+              fontSize: "var(--t-title)",
+              letterSpacing: "-0.03em",
+              lineHeight: 1.3,
+            }}
           >
             {place.name}
           </h2>
-          <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}>
+          <p
+            className="mt-1"
+            style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}
+          >
             {place.typeLabel}
             {place.nameLocal ? (
               <>
@@ -108,7 +116,10 @@ export function PlaceSheet({
           {place.address ? (
             <p
               className="mt-0.5"
-              style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}
+              style={{
+                fontSize: "var(--t-meta)",
+                color: "var(--lightbox-dim)",
+              }}
             >
               {place.address}
             </p>
@@ -125,7 +136,10 @@ export function PlaceSheet({
             boxShadow: "inset 0 0 0 1px var(--lightbox-edge)",
           }}
         >
-          <Icon.close className="size-4" style={{ color: "var(--lightbox-ink)" }} />
+          <Icon.close
+            className="size-4"
+            style={{ color: "var(--lightbox-ink)" }}
+          />
         </button>
       </div>
 
@@ -144,7 +158,10 @@ export function PlaceSheet({
           ))}
         </ul>
       ) : place.summary ? (
-        <p className="mt-3 pl-10" style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}>
+        <p
+          className="mt-3 pl-10"
+          style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
+        >
           {place.summary}
         </p>
       ) : null}
@@ -161,18 +178,16 @@ export function PlaceSheet({
           유튜브로 돌아가는 링크를 가리지 않는 것은 정책 요건이다(LEGAL.md 4.5-(3)) */}
       <div className="mt-4 flex flex-col gap-2 pl-10">
         {place.sources.map((s, i) => (
-          <div key={`${s.youtubeId}-${i}`} className="flex flex-wrap items-center gap-2">
-            <span
-              aria-hidden
-              className="grid size-5 shrink-0 place-items-center font-bold"
-              style={{
-                borderRadius: "var(--r-round)",
-                boxShadow: `inset 0 0 0 2px ${s.accentColor}`,
-                fontSize: 9,
-              }}
-            >
-              {s.initials}
-            </span>
+          <div
+            key={`${s.youtubeId}-${i}`}
+            className="flex flex-wrap items-center gap-2"
+          >
+            <Avatar
+              initials={s.initials}
+              accent={s.accentColor}
+              src={s.avatarUrl}
+              size={22}
+            />
             <span
               className="min-w-0 flex-1 truncate"
               style={{ fontSize: "var(--t-meta)", fontWeight: 500 }}
@@ -193,7 +208,9 @@ export function PlaceSheet({
               }}
             >
               <Icon.play className="size-3.5" />
-              {s.timestampSec !== null ? `영상 ${fmt(s.timestampSec)}` : "영상 보기"}
+              {s.timestampSec !== null
+                ? `영상 ${fmt(s.timestampSec)}`
+                : "영상 보기"}
             </a>
           </div>
         ))}

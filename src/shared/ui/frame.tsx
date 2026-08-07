@@ -12,6 +12,7 @@
 
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { channelAvatar } from "@/shared/lib/youtube";
 
 /* ── 아이콘 ──────────────────────────────────────────────────────────── */
 
@@ -121,38 +122,59 @@ export function Frame({
 /* ── 채널 표식 ───────────────────────────────────────────────────────── */
 
 /**
- * 채널 아바타 — 프로필 사진이 아니다.
+ * 채널 표식 — 프로필 사진이 있으면 사진, 없으면 이니셜.
  *
- * `creators` 에 avatar_url 컬럼이 없다(초상 사용 리스크 회피, LEGAL.md 1.3).
- * 그래서 이니셜을 쓰되, 채널 고유색은 **채움이 아니라 링**으로 준다.
- * accent_color 는 DB 에서 오는 임의의 hex 라 그 위 글자의 대비를 보장할 수 없다 —
- * 배경으로 쓰면 채널마다 가독성이 달라진다. 링이면 대비는 항상 paper/sheet 가
- * 책임지고 색은 식별만 한다.
+ * 채널 고유색(accent_color)은 **채움이 아니라 테두리 링**이다. DB 에서 오는 임의의
+ * hex 라 그 위 글자의 대비를 보장할 수 없어서, 배경으로 쓰면 채널마다 가독성이
+ * 달라진다. 링이면 대비는 항상 paper/sheet 가 책임지고 색은 식별만 한다.
+ * 사진이 들어와도 링은 남는다 — 어두운 지면에서 원형 사진의 경계를 잡아 준다.
+ *
+ * 링을 inset box-shadow 가 아니라 border 로 그리는 이유: inset 그림자는 콘텐츠
+ * 아래에 깔려서 사진이 덮어 버린다. border 는 콘텐츠 박스 바깥이라 안 가려진다.
  */
 export function Avatar({
   initials,
   accent,
   size = 34,
+  src,
+  alt = "",
 }: {
   initials: string;
   accent: string;
   size?: number;
+  /** 채널 프로필 이미지 URL. 없으면 이니셜로 떨어진다 */
+  src?: string | null;
+  alt?: string;
 }) {
   return (
     <span
-      aria-hidden
-      className="grid shrink-0 place-items-center font-bold"
+      aria-hidden={alt ? undefined : true}
+      className="grid shrink-0 place-items-center overflow-hidden font-bold"
       style={{
         width: size,
         height: size,
+        boxSizing: "border-box",
         borderRadius: "var(--r-round)",
         background: "var(--sheet)",
-        boxShadow: `inset 0 0 0 2px ${accent}`,
+        border: `2px solid ${accent}`,
         fontSize: Math.round(size * 0.4),
         lineHeight: 1,
       }}
     >
-      {initials}
+      {src ? (
+        // eslint-disable-next-line @next/next/no-img-element -- yt3 CDN 원본을 크기 접미사만 바꿔 쓴다 (Thumb.tsx 와 같은 이유)
+        <img
+          src={channelAvatar(src, size * 2)}
+          alt={alt}
+          width={size}
+          height={size}
+          loading="lazy"
+          decoding="async"
+          className="size-full object-cover"
+        />
+      ) : (
+        initials
+      )}
     </span>
   );
 }

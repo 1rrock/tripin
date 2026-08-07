@@ -30,7 +30,7 @@ interface CityGroup {
 async function loadCreatorHub(creatorSlug: string) {
   const { data: creator } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color")
+    .select("id, slug, display_name, initials, accent_color, avatar_url")
     .eq("slug", creatorSlug)
     .single();
   if (!creator) return null;
@@ -121,7 +121,12 @@ export default async function CreatorHubPage({
       </nav>
 
       <header className="flex items-center gap-4">
-        <Avatar initials={creator.initials} accent={creator.accent_color} size={54} />
+        <Avatar
+          initials={creator.initials}
+          accent={creator.accent_color}
+          src={creator.avatar_url}
+          size={54}
+        />
         <div className="min-w-0 flex-1">
           <h1
             className="font-black"

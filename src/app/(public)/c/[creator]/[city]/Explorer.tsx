@@ -60,6 +60,7 @@ interface ExplorerProps {
   creatorName: string;
   /** 핀 상세 시트의 출처 표식용 */
   creatorInitials: string;
+  creatorAvatar: string | null;
   accentColor: string;
   cityName: string;
   introText: string | null;
@@ -103,6 +104,7 @@ function mapsUrl(place: PublicPlace): string | null {
 export function Explorer({
   creatorName,
   creatorInitials,
+  creatorAvatar,
   accentColor,
   cityName,
   introText,
@@ -228,6 +230,7 @@ export function Explorer({
                 creatorName,
                 initials: creatorInitials,
                 accentColor,
+                avatarUrl: creatorAvatar,
                 youtubeId: sheetSource.youtubeVideoId,
                 videoTitle: sheetSource.videoTitle ?? "출처 영상",
                 timestampSec: sheetSource.timestampSec,
@@ -287,7 +290,7 @@ export function Explorer({
               className="font-black"
               style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
             >
-              {creatorName}가 간 {cityName}
+              {creatorName}의 {cityName}
             </h1>
 
             <p className="index tnum" style={{ color: "var(--dim)" }}>

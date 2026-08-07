@@ -34,8 +34,16 @@ export type Creator = {
   country: string | null;
   languages: string[];
   tags: string[];
-  /** ⚠️ avatar_url 이 아니다 — 초상 사용 리스크 회피(LEGAL.md 1.3). */
+  /** 아바타가 없을 때의 폴백. 사진을 못 받은 채널도 화면에서 구분되어야 한다. */
   initials: string;
+  /**
+   * YouTube 채널 프로필 이미지. 2026-08-07 사용자 요청으로 노출 방침을 바꿨다
+   * (그전에는 초상 사용 리스크 회피로 컬럼 자체를 두지 않았다 — LEGAL.md 1.3).
+   * ⚠️ YouTube 유래 메타라 30일 초과 보관 시 정책 위반 — api_fetched_at 로 추적한다.
+   */
+  avatar_url: string | null;
+  /** display_name / avatar_url 을 마지막으로 갱신한 시각 (LEGAL.md 4.5). */
+  api_fetched_at: string;
   accent_color: string;
   bio: string | null;
   /** 삭제 요청 시 이 값만 false 로 내리면 RLS 가 즉시 차단한다. */

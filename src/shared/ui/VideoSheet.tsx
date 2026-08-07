@@ -28,6 +28,7 @@ export interface SheetChannel {
   name: string;
   initials: string;
   accent: string;
+  avatarUrl?: string | null;
 }
 
 export function VideoSheet({
@@ -52,7 +53,10 @@ export function VideoSheet({
   const source = [channel?.name, video.cities[0]].filter(Boolean).join(" · ");
 
   return (
-    <li className={animate ? "develop" : undefined} style={{ "--i": i } as React.CSSProperties}>
+    <li
+      className={animate ? "develop" : undefined}
+      style={{ "--i": i } as React.CSSProperties}
+    >
       <Link
         href={href}
         className={
@@ -72,7 +76,12 @@ export function VideoSheet({
           {source ? (
             <div className="flex items-center gap-2">
               {channel ? (
-                <Avatar initials={channel.initials} accent={channel.accent} size={22} />
+                <Avatar
+                  initials={channel.initials}
+                  accent={channel.accent}
+                  src={channel.avatarUrl}
+                  size={22}
+                />
               ) : null}
               <span className="index truncate" style={{ color: "var(--dim)" }}>
                 {source}
@@ -89,11 +98,17 @@ export function VideoSheet({
               lineHeight: 1.3,
             }}
           >
-            <Icon.pin className="mt-[0.18em] size-[0.82em] shrink-0" style={{ color: "var(--wax)" }} />
+            <Icon.pin
+              className="mt-[0.18em] size-[0.82em] shrink-0"
+              style={{ color: "var(--wax)" }}
+            />
             <span>
               {first ?? video.title}
               {more.length > 0 ? (
-                <span className="tnum font-medium" style={{ color: "var(--dim)" }}>
+                <span
+                  className="tnum font-medium"
+                  style={{ color: "var(--dim)" }}
+                >
                   {" "}
                   +{more.length}곳
                 </span>
@@ -101,7 +116,13 @@ export function VideoSheet({
             </span>
           </h3>
 
-          <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.55 }}>
+          <p
+            style={{
+              fontSize: "var(--t-meta)",
+              color: "var(--dim)",
+              lineHeight: 1.55,
+            }}
+          >
             {video.title}
           </p>
         </div>

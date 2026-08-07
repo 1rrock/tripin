@@ -23,6 +23,19 @@ export function thumbHq(youtubeId: string): string {
   return `https://i.ytimg.com/vi/${youtubeId}/hqdefault.jpg`;
 }
 
+/**
+ * 채널 프로필 이미지 — 저장된 URL 의 크기 접미사만 바꿔 쓴다.
+ *
+ * yt3 URL 은 `…=s900-c-k-c0x00ffffff-no-rj` 형태라 s 뒤 숫자가 한 변 픽셀이다.
+ * 원본(s900, 약 170KB)을 아바타 자리에 그대로 쓰면 34px 짜리에 900px 을 내려받는다.
+ *
+ * ⚠️ 썸네일과 달리 이 URL 은 채널 ID 에서 유도할 수 없어(해시) DB 에 저장한다.
+ *    그래서 30일 갱신 대상이다 — creators.api_fetched_at (LEGAL.md 4.5).
+ */
+export function channelAvatar(url: string, px: number): string {
+  return url.replace(/=s\d+-/, `=s${Math.max(48, Math.round(px))}-`);
+}
+
 /** 타임스탬프가 있으면 그 시각에서 재생되는 시청 링크. */
 export function watchUrl(youtubeId: string, atSec?: number | null): string {
   const base = `https://www.youtube.com/watch?v=${youtubeId}`;
