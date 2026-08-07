@@ -97,4 +97,14 @@ export const serverEnv = {
 
   /** /admin 접근 보호. */
   adminSecret: () => requireServer("ADMIN_SECRET"),
+
+  /**
+   * /api/cron/* 접근 보호.
+   *
+   * 크론 라우트는 proxy.ts 의 matcher(`/admin`, `/api/admin`) 밖이라 인증이 안 걸린다.
+   * 스케줄러(Vercel Cron 등)가 `Authorization: Bearer <이 값>` 으로 부르고,
+   * 라우트가 직접 대조한다. 값이 없으면 라우트가 throw 해서 **열린 채로 뜨지 않는다** —
+   * 이게 기본값을 주지 않는 이유다.
+   */
+  cronSecret: () => requireServer("CRON_SECRET"),
 } as const;

@@ -432,7 +432,7 @@ CONCEPT.md 4.8의 `/takedown`은 단순 폼이 아니라 **법정 요건을 갖�
 | # | 항목 | 근거 | 위험도 | 성격 |
 |---|------|------|--------|------|
 | 1 | Places 데이터 → 비구글 지도 | Maps Platform ToS | 🔴 **확정 위반** | 계약 |
-| 2 | **영상 메타 무기한 보관** | YouTube API Policies §III.E.4.d | 🔴 **확정 위반** — 2026-08-07 `creators.display_name`·`avatar_url` 도 같은 범주로 편입(추적: `creators.api_fetched_at`). 갱신 배치는 아직 없음 | 계약 |
+| 2 | **영상 메타 무기한 보관** | YouTube API Policies §III.E.4.d | 🟡 **배치 구현됨, 미가동** — `/api/cron/refresh-youtube-meta` (영상 + 채널 메타). `YOUTUBE_API_KEY`·`CRON_SECRET` 주입과 스케줄러 연결 전까지는 여전히 위반 상태 | 계약 |
 | 3 | 조회수·구독자수 등 교차 집계 | YouTube API Policies §III.E.2 | 🟡 MEDIUM | 계약 |
 | 4 | 채널 전체 체계적·반복 수집 | 저작권법 §93② | 🟡 MEDIUM | 법률 |
 | 4b | **성과물 도용 (별도 트랙)** | 부경법 일반조항(파목류) | 🟡 MEDIUM | 법률 |

@@ -1,3 +1,5 @@
+import styleJson from "./lightbox-map-style.json";
+
 /**
  * 지도 스타일 — 라이트박스.
  *
@@ -9,37 +11,21 @@
  * 그래서 POI·교통·행정경계 라벨을 끄고, 도로는 흰 지면 위 회색 선으로만 남긴다.
  * 색이 하나라도 살아 있으면 왁스 핀이 배경과 경쟁한다.
  *
- * ⚠️ mapId 가 설정되면 구글은 이 인라인 styles 를 **무시하고** Cloud 콘솔의
- *    맵 스타일을 쓴다. 그런데 AdvancedMarkerElement 는 mapId 를 요구한다.
- *    따라서 배포에서 이 월드를 보려면 아래 값과 같은 스타일을 Cloud 콘솔에
- *    업로드하고 그 Map ID 를 NEXT_PUBLIC_GOOGLE_MAPS_ID 로 주입해야 한다.
- *    (미설정 시 DEMO_MAP_ID 폴백 → 로컬에서만 이 인라인 스타일이 적용된다)
+ * ── ⚠️ 이 값은 런타임에 쓰이지 않는다 ────────────────────────────────
+ * AdvancedMarkerElement 는 mapId 를 **요구**하고, mapId 가 있으면 구글은 인라인
+ * styles 를 무시한다("A Map's styles property cannot be set when a mapId is
+ * present"). DEMO_MAP_ID 폴백도 mapId 라서 로컬에서조차 적용되지 않는다.
+ *
+ * 그래서 이 파일은 코드가 아니라 **Cloud 콘솔에 올릴 명세**다.
+ * 실제 원본은 옆의 `lightbox-map-style.json` 이고, 콘솔의 "Import JSON" 에
+ * 그 파일을 그대로 붙여넣으면 된다. TS 배열을 따로 두면 둘이 갈라지므로
+ * 여기서는 JSON 을 읽어 타입만 입힌다.
+ *
+ * 적용 절차 (Google Cloud Console)
+ *   1. Google Maps Platform → Map Styles → Create Map Style
+ *   2. "Import JSON" 에 lightbox-map-style.json 내용을 붙여넣기
+ *   3. 저장 → Map Management → 새 Map ID 생성(JavaScript) → 위 스타일 연결
+ *   4. 그 Map ID 를 NEXT_PUBLIC_GOOGLE_MAPS_ID 로 주입
+ * 이걸 하기 전까지 지도는 구글 기본 스타일 + POI 아이콘으로 나온다.
  */
-export const LIGHTBOX_MAP_STYLE: google.maps.MapTypeStyle[] = [
-  // 라벨은 지명만 남기고 전부 끈다 — 핀 번호가 유일한 숫자여야 한다
-  { featureType: "poi", stylers: [{ visibility: "off" }] },
-  { featureType: "transit", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.land_parcel", stylers: [{ visibility: "off" }] },
-  { featureType: "administrative.neighborhood", stylers: [{ visibility: "off" }] },
-
-  // 지면 — 라이트박스의 흰 면
-  { elementType: "geometry", stylers: [{ color: "#f6f5f1" }] },
-  { featureType: "landscape", elementType: "geometry", stylers: [{ color: "#f6f5f1" }] },
-  { featureType: "landscape.man_made", elementType: "geometry", stylers: [{ color: "#efeee9" }] },
-
-  // 물 — 지면보다 한 단만 어둡게. 파랑을 쓰면 왁스 핀과 색이 싸운다
-  { featureType: "water", elementType: "geometry", stylers: [{ color: "#dedcd5" }] },
-  { featureType: "water", elementType: "labels.text", stylers: [{ visibility: "off" }] },
-
-  // 도로 — 흰 선 + 회색 윤곽. 위계는 굵기로만 준다
-  { featureType: "road", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road", elementType: "geometry.stroke", stylers: [{ color: "#e2e0d9" }] },
-  { featureType: "road", elementType: "labels", stylers: [{ visibility: "off" }] },
-  { featureType: "road.highway", elementType: "geometry", stylers: [{ color: "#ffffff" }] },
-  { featureType: "road.highway", elementType: "geometry.stroke", stylers: [{ color: "#d5d2c9" }] },
-
-  // 지명 — 아주 조용하게. 지면 대비는 유지하되 핀보다 앞서지 않는다
-  { elementType: "labels.text.fill", stylers: [{ color: "#6d6a63" }] },
-  { elementType: "labels.text.stroke", stylers: [{ color: "#f6f5f1" }] },
-  { elementType: "labels.icon", stylers: [{ visibility: "off" }] },
-];
+export const LIGHTBOX_MAP_STYLE = styleJson as google.maps.MapTypeStyle[];

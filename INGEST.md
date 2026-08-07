@@ -294,7 +294,9 @@ playlistItems.list(part=snippet, playlistId=위 ID, maxResults=50)
 - [ ] 장소 데이터는 Overture/Foursquare, Google Places는 `place_id` 딥링크 전용
 - [ ] 후보 2개 이상이면 candidate 강제
 - [ ] 확정 시 `sourceNote` 근거 입력 강제
-- [ ] `Video.apiFetchedAt` + 월 1회 갱신 배치
+- [x] `Video.apiFetchedAt` + 월 1회 갱신 배치 — `src/app/api/cron/refresh-youtube-meta/route.ts`
+      (스케줄: `vercel.json`, 매월 1일 03:00 UTC. `YOUTUBE_API_KEY` + `CRON_SECRET` 필요)
+      `creators.display_name`/`avatar_url` 도 같은 배치가 함께 갱신한다
 - [ ] `confidence: low`는 공개 후보에서 제외
 
 **절대 안 됨**
