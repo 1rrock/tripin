@@ -13,6 +13,7 @@
 - 채널명·프로필 사진이 실제 유튜브 값으로 들어갔다(마이그레이션 `0004`).
 - 30일 갱신 배치는 **코드만 있고 안 돈다** — `YOUTUBE_API_KEY` 가 없다.
 - 지도 스타일은 Cloud 에 올렸는데 **아직 화면에 안 먹었다** — POI 아이콘이 그대로 보인다.
+- 세션 인계가 자동화됐다 — `CLAUDE.md`(새로 만듦) + `/handoff` 스킬 + auto memory. §8 참조.
 
 ---
 
@@ -115,9 +116,15 @@ API 호출도 저장도 없어서 30일 보관 제한을 애초에 건드리지 
 (`StaticMapService...&7s<mapId>&...`). 그런데 **구글 기본 POI 아이콘이 그대로 보인다.**
 
 의심 순서:
-1. 넣은 값이 Map ID 가 아니라 **Style ID** 일 수 있다. 둘은 다른 값이고 콘솔 메뉴도 다르다
-   (Map Styles ↔ **Map Management**). 사용자가 처음 준 값이 명시적으로 styleId 였다.
-2. Map ID 는 맞는데 스타일이 **연결 안 됨**.
+1. Map ID 는 맞는데 스타일이 **연결 안 됨** (콘솔 Map Management 에서 스타일을 고르는 단계).
+2. 넣은 값이 Map ID 가 아니라 **Style ID** 일 수 있다. 둘은 다른 값이고 콘솔 메뉴도 다르다
+   (Map Styles ↔ **Map Management**). 사용자가 처음 준 값은 명시적으로 styleId 였고,
+   두 번째 값도 같은 24자 hex 형태였다.
+3. **미확인 — 래스터 폴백에서는 Cloud 스타일이 안 먹을 수 있다.**
+   사용자 브라우저와 자동화 브라우저 **둘 다 WebGL 이 없어서**(§5-2) 지도가 벡터가 아니라
+   래스터/정적 경로로 돈다. 요청은 `StaticMapService.GetMapImage` 였다.
+   Cloud 스타일이 이 경로에도 적용되는지 확인하지 못했다. WebGL 되는 기기에서 한 번 열어 보면
+   1·2번인지 3번인지 바로 갈린다 — **이걸 먼저 하라.** 콘솔을 다시 뒤지기보다 싸다.
 
 명세는 `src/shared/config/lightbox-map-style.json` 이고, 콘솔 Import JSON 에 그대로 붙여넣는다.
 절차는 `.env.example` 의 `NEXT_PUBLIC_GOOGLE_MAPS_ID` 주석에 있다.
@@ -173,6 +180,8 @@ impeccable 마감 절차로 다시 써야 한다: `impeccable-finish-reviewer` �
 2. **라이브러리가 이미 우아하게 폴백하는데 앞에서 막지 마라.**
    WebGL 없으면 지도가 안 뜬다고 보고 게이트를 세웠다가 **잘 되던 지도를 막았다**(revert `8f65f44`).
    Google Maps JS 는 WebGL 이 없으면 스스로 래스터로 내려간다.
+   덤으로 알게 된 사실: **사용자 브라우저에도 WebGL 이 없다.** 자동화 환경만의 문제가 아니다.
+   즉 지금 이 지도는 양쪽 다 래스터로 돌고 있고, 그게 §4-1 의 세 번째 가설이다.
 3. **`.index` 에 `text-transform: uppercase` 를 넣지 마라.**
    라벨용으로 넣었는데 채널명·도시명에도 붙는 클래스라 `ChooSungHoon` → `CHOOSUNGHOON` 이 됐다.
    한글은 영향이 없어 라틴 이름이 들어오고서야 드러났다.
@@ -204,9 +213,40 @@ grep -rl "콘택트 시트(다크 시네마틱 계열)" .next/server
 
 ## 7. 다음 사람이 먼저 할 일
 
-1. `.env.local` 에 `NEXT_PUBLIC_GOOGLE_MAPS_ID` 가 **Map ID** 인지 확인 (§4-1)
+1. **WebGL 되는 기기에서 지도를 한 번 열어라** (§4-1). 스타일이 나오면 래스터 폴백 문제였고,
+   그대로 POI 가 보이면 Map ID/연결 문제다. 콘솔을 뒤지기 전에 이걸 먼저 하는 게 싸다.
 2. 로더 정리 — `cities.ts` 의 `loadGraph` 에 city/creator 필터를 SQL 로 내리기 (§4-3)
 3. `DESIGN.md` 마감 절차 (§4-4)
 
 > 이전 핸드오프 `docs/HANDOFF-REDESIGN.md` 는 **삭제됐다.** 거기 기술된 공항 사인 월드는
 > 더 이상 코드에 없어서, 남겨 두면 다음 사람을 오도한다. 필요하면 git 이력에 있다.
+
+---
+
+## 8. 세션 인계 — 이제 손으로 복붙하지 않는다
+
+이 프로젝트에는 원래 `CLAUDE.md` 가 **없었다.** 전역 `~/.claude/CLAUDE.md` 는 통째로 다른
+프로젝트(OptiSearch PayApp) 내용이라, tripin 세션마다 무관한 결제 지침이 로드되고 이 프로젝트
+정보는 0이었다. 매번 핸드오프를 손으로 복붙하게 된 원인이 그것이다. 셋 다 채웠다:
+
+| | 무엇 | 언제 로드 |
+|---|---|---|
+| `CLAUDE.md` (프로젝트 루트) | "이 문서부터 읽어라" + 자주 틀리는 것 + 법적 제약 | 매 세션 + **압축 후 재주입** |
+| `.claude/skills/handoff/SKILL.md` | `/handoff` — 이 문서를 갱신하는 절차 | 부를 때만 |
+| `~/.claude/projects/<project>/memory/` | auto memory. 리포에 없는 것만(작업 방식·환경 함정) | 매 세션 (MEMORY.md 첫 200줄) |
+
+**압축 후에 살아남는 것**은 프로젝트 루트 `CLAUDE.md` 와 스킬 본문뿐이다.
+하위 디렉터리 `CLAUDE.md`, `paths:` 스코프 룰, **대화로만 준 지시**는 안 남는다.
+→ 다음 세션이 알아야 할 것은 대화가 아니라 **이 문서나 `CLAUDE.md` 에 적어라.**
+
+쓸 만한 명령:
+
+```
+/handoff              이 문서 갱신 (컨텍스트 차기 전)
+/compact <지시>       예: /compact 지도 스타일과 로더 위주로
+/autocompact 500k     자동 압축 임계값 조정
+/context              지금 무엇이 로드됐는지
+/memory               메모리 파일 열람·편집
+```
+
+세션 재개: `claude -c` (최근) / `claude -r` (골라서).
