@@ -267,6 +267,7 @@ export default async function CreatorCityPage({
   return (
     <Explorer
       creatorName={data.creator.display_name}
+      creatorInitials={data.creator.initials}
       accentColor={data.creator.accent_color}
       cityName={data.city.name}
       introText={data.introText}

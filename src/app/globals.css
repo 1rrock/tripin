@@ -35,6 +35,7 @@
   --lightbox: #f6f5f1;
   --lightbox-ink: #16161a;
   --lightbox-dim: #3a3a40;  /* lightbox 대비 10.35:1 */
+  --lightbox-edge: #d3d0c8; /* 밝은 면 위의 경계선 — 어두운 면의 --hairline 에 대응 */
 
   /* 프레임 — 콘택트 시트는 각져 있다. 라운드가 커지면 앱 카드 문법이 된다 */
   --r-frame: 4px;

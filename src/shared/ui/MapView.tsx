@@ -29,6 +29,8 @@ export interface MapPin {
   lng: number;
   /** 리스트와 일치하는 1-기반 번호. 없으면 점 마커. */
   index?: number;
+  /** 번호 대신 글자를 다는 마커 — 전체 지도의 도시 칩("도쿄 8")에 쓴다. */
+  label?: string;
   accentColor?: string;
 }
 
@@ -86,7 +88,7 @@ function markerContent(pin: MapPin, active: boolean): HTMLElement {
     active ? "transform:scale(1.2)" : "",
     "transition:transform .12s ease-out",
   ].join(";");
-  el.textContent = pin.index !== undefined ? String(pin.index) : "•";
+  el.textContent = pin.label ?? (pin.index !== undefined ? String(pin.index) : "•");
   el.title = pin.name;
   return el;
 }
@@ -188,7 +190,7 @@ export function MapView({
 
         // 내용이 같은 배열(호출부의 매 렌더 재생성)이면 아무것도 하지 않는다 —
         // 재생성·fitBounds 를 다시 돌리면 사용자가 옮긴 뷰포트가 튕긴다
-        const sig = pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}`).join("|");
+        const sig = pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}`).join("|");
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
 

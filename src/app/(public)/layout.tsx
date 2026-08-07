@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { Nav } from "./Nav";
 
 /**
  * 유저 화면 공통 골격 — 콘택트 시트.
@@ -43,13 +44,16 @@ export default function PublicLayout({ children }: { children: React.ReactNode }
             }}
           />
         </Link>
-        <a
-          href="#notice"
-          className="index underline-offset-4 hover:underline"
-          style={{ color: "var(--dim)" }}
-        >
-          고지
-        </a>
+        <div className="flex items-center gap-2 md:gap-3">
+          <Nav />
+          <a
+            href="#notice"
+            className="index hidden underline-offset-4 hover:underline md:inline"
+            style={{ color: "var(--dim)" }}
+          >
+            고지
+          </a>
+        </div>
       </header>
 
       <div className="flex-1">{children}</div>

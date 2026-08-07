@@ -78,6 +78,21 @@ export const Icon = {
     </>,
   ),
   close: stroke(<path d="m6 6 12 12M18 6 6 18" />),
+  menu: stroke(<path d="M4 7h16M4 12h16M4 17h16" />),
+  /** 채널 — 사람이 아니라 '재생 목록'으로 그린다. 이 서비스에서 채널은 롤이다 */
+  channel: stroke(
+    <>
+      <path d="M4 6h11M4 12h11M4 18h7" />
+      <path d="m17 11 4 2.5-4 2.5v-5Z" />
+    </>,
+  ),
+  globe: stroke(
+    <>
+      <circle cx="12" cy="12" r="8.5" />
+      <path d="M3.5 12h17" />
+      <path d="M12 3.5c2.2 2.4 3.3 5.4 3.3 8.5s-1.1 6.1-3.3 8.5c-2.2-2.4-3.3-5.4-3.3-8.5S9.8 5.9 12 3.5Z" />
+    </>,
+  ),
 } as const;
 
 export type IconName = keyof typeof Icon;

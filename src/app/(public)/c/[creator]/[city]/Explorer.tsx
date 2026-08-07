@@ -23,6 +23,7 @@ import Link from "next/link";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
+import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
 import { FILTERABLE_TYPES, PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
@@ -57,6 +58,8 @@ export interface RelatedPiece {
 
 interface ExplorerProps {
   creatorName: string;
+  /** 핀 상세 시트의 출처 표식용 */
+  creatorInitials: string;
   accentColor: string;
   cityName: string;
   introText: string | null;
@@ -99,6 +102,7 @@ function mapsUrl(place: PublicPlace): string | null {
 
 export function Explorer({
   creatorName,
+  creatorInitials,
   accentColor,
   cityName,
   introText,
@@ -110,6 +114,9 @@ export function Explorer({
   otherCreators = [],
 }: ExplorerProps) {
   const [activeId, setActiveId] = useState<string | null>(null);
+  // 핀을 눌렀을 때만 상세 시트를 띄운다. 목록 행은 그 자체가 이미 상세라
+  // 행을 눌렀다고 시트까지 겹쳐 띄우면 같은 내용이 두 번 나온다.
+  const [sheetOpen, setSheetOpen] = useState(false);
   // 담기 — 여행 직전 사용자의 실제 과업은 "훑기"가 아니라 "내 목록 만들기".
   // URL(?picked=slug,slug)에 남겨 공유·재방문이 가능하게 한다 (slug 는 공개 식별자).
   // ?picked= 는 사용자가 손댈 수 있는 입력 — 이 조각에 실제로 있는 slug 만 통과시킨다.
@@ -162,19 +169,33 @@ export function Explorer({
     return qs ? `${basePath}?${qs}` : basePath;
   };
 
-  /**
-   * 선택의 단일 진입점 — 행 헤더·지도 핀 어디서 눌러도 같은 결과.
-   * 같은 항목을 다시 누르면 해제(토글), 이미 화면 안에 있으면 스크롤 생략.
-   */
-  const selectPlace = (id: string) => {
-    const next = visibleActiveId === id ? null : id;
-    setActiveId(next);
-    if (next === null) return;
+  /** 선택된 행이 화면 밖이면 끌어온다. 이미 보이면 건드리지 않는다 */
+  const revealRow = (id: string) => {
     const el = listRef.current.get(id);
     if (!el) return;
     const rect = el.getBoundingClientRect();
     const fullyVisible = rect.top >= 0 && rect.bottom <= window.innerHeight;
     if (!fullyVisible) el.scrollIntoView({ behavior: "smooth", block: "center" });
+  };
+
+  /** 목록 행 — 지도만 그 핀으로 옮긴다. 행이 이미 상세라 시트는 띄우지 않는다 */
+  const selectPlace = (id: string) => {
+    setSheetOpen(false);
+    const next = visibleActiveId === id ? null : id;
+    setActiveId(next);
+    if (next !== null) revealRow(next);
+  };
+
+  /** 지도 핀 — 상세 시트를 연다. 지도에는 이름 말고 들어갈 자리가 없다 */
+  const openFromPin = (id: string) => {
+    if (visibleActiveId === id && sheetOpen) {
+      setSheetOpen(false);
+      setActiveId(null);
+      return;
+    }
+    setActiveId(id);
+    setSheetOpen(true);
+    revealRow(id);
   };
 
   const togglePick = (slug: string) => {
@@ -185,6 +206,36 @@ export function Explorer({
     // RSC 왕복 없이 URL 만 동기화 — Next 가 지원하는 얕은 히스토리 갱신
     window.history.replaceState(null, "", buildUrl(activeType, next));
   };
+
+  /* 시트에 넘길 모양으로 옮긴다. 이 화면은 채널이 하나라 출처도 항상 하나다 —
+     도시 페이지에서만 한 장소에 여러 채널이 붙는다 */
+  const sheetIndex = confirmed.findIndex((p) => p.id === visibleActiveId);
+  const sheetSource = sheetIndex >= 0 ? confirmed[sheetIndex]! : null;
+  const sheetPlace: SheetPlace | null = sheetSource
+    ? {
+        name: sheetSource.name,
+        nameLocal: sheetSource.nameLocal,
+        typeLabel: PLACE_TYPE_LABELS[sheetSource.placeType],
+        address: sheetSource.address,
+        summary: sheetSource.summary,
+        summaryBullets: sheetSource.summaryBullets,
+        priceHint: sheetSource.priceHint,
+        mapUrl: mapsUrl(sheetSource),
+        sources: sheetSource.youtubeVideoId
+          ? [
+              {
+                creatorSlug,
+                creatorName,
+                initials: creatorInitials,
+                accentColor,
+                youtubeId: sheetSource.youtubeVideoId,
+                videoTitle: sheetSource.videoTitle ?? "출처 영상",
+                timestampSec: sheetSource.timestampSec,
+              },
+            ]
+          : [],
+      }
+    : null;
 
   const copyPickedLink = async () => {
     try {
@@ -200,14 +251,22 @@ export function Explorer({
   return (
     <main style={{ "--hl": accentColor } as React.CSSProperties}>
       <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7 lg:px-(--gutter) lg:pt-4">
-        {/* 지도 = 라이트박스. 모바일은 상부, 데스크톱은 우측 sticky */}
-        <div className="lg:sticky lg:top-4 lg:order-2">
+        {/* 지도 = 라이트박스. 모바일은 상부, 데스크톱은 우측 sticky.
+            시트가 데스크톱에서 이 안에 절대배치되므로 relative 가 필요하다 */}
+        <div className="relative lg:sticky lg:top-4 lg:order-2">
           <MapView
             className="h-[38dvh] w-full lg:h-[calc(100dvh-2rem)]"
             pins={pins}
             activeId={visibleActiveId}
-            onPinClick={selectPlace}
+            onPinClick={openFromPin}
           />
+          {sheetOpen && sheetPlace ? (
+            <PlaceSheet
+              index={sheetIndex + 1}
+              place={sheetPlace}
+              onClose={() => setSheetOpen(false)}
+            />
+          ) : null}
         </div>
 
         <section className="lg:order-1">
