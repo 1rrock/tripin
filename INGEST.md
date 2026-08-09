@@ -13,11 +13,19 @@
 (`.claude/skills/tripin-ingest/SKILL.md` + `scripts/ingest/*.mjs`).
 첫 실전: 추성훈 채널 16편 → 장소 20곳 (2026-08-04).
 
+### Orca 신작 자동 동기화 (크론 대신)
+
+- 채널 목록: `docs/channels.md` (`enabled: yes` 만)
+- 자동화 프롬프트: `docs/ORCA_CHANNEL_SYNC_PROMPT.md` 복붙 → Orca 스케줄
+- 동작: MD 읽기 → 채널 최근 영상 → DB에 없는 것만 → 자막 → 장소 → **candidate**
+- 확정·요약·공개는 여전히 사람 (`/admin/confirm`, `/admin/place`)
+
 ### 새 채널 등록 절차
 
 ```
 1. [수동] /admin/confirm → "+ 크리에이터"로 채널 생성
    (슬러그·이니셜·컬러는 사람이 정한다 — 자동 생성 금지)
+   → docs/channels.md 표에도 행 추가 (enabled: yes)
 
 2. [입력] Claude Code 세션에 아래 중 하나를 준다:
    · 채널 영상탭 InnerTube JSON 덤프 붙여넣기

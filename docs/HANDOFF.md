@@ -183,7 +183,7 @@ impeccable 마감 절차로 다시 써야 한다: `impeccable-finish-reviewer` �
 
 ### 🟢 5. 배포 전 반드시
 
-- `MIN_CONFIRMED_PINS` 가 **0** 이다(게이트 꺼짐). `PRODUCTION_MIN_CONFIRMED_PINS = 8` 로 되돌릴 것.
+- `MIN_CONFIRMED_PINS = 1` (2026-08-10). 확정 1곳이면 조각 공개. 예전 8핀 완성형 폐기.
 - Maps 키에 콘솔 제한(API 제한 = Maps JavaScript API 만 / HTTP 리퍼러) 걸렸는지 확인.
 
 ---

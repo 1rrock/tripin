@@ -16,6 +16,8 @@
 | `CONCEPT.md` | 화면 기획 |
 | `INGEST.md` | 수집 파이프라인·쿼터 |
 | `docs/I18N.md` | **ko/en 공개 화면.** 새 UI·링크·문구는 여기 규칙 필수 |
+| `docs/channels.md` | **등록 채널 목록** — Orca 신작 동기화 대상 |
+| `docs/ORCA_CHANNEL_SYNC_PROMPT.md` | Orca 자동화 프롬프트 (신작 → candidate) |
 | `DESIGN.md` | ⚠️ **낡음** — 삭제된 옛 월드를 기술한다. 믿지 말 것 |
 
 ## 이 프로젝트에서 자주 틀리는 것
