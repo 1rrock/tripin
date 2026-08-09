@@ -24,7 +24,9 @@ import type { CityCreator, CityPlace } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
-import { FILTERABLE_TYPES, PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
+import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 
 function fmt(sec: number | null): string {
   if (sec === null) return "—";
@@ -55,6 +57,7 @@ export function CityExplorer({
   initialType: PlaceType | null;
   initialChannel: string | null;
 }) {
+  const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
   const [type, setType] = useState<PlaceType | null>(initialType);
@@ -162,9 +165,9 @@ export function CityExplorer({
           <PlaceSheet
             index={activeIndex + 1}
             place={{
-              name: activePlace.name,
+              name: displayPlaceName(activePlace, locale),
               nameLocal: activePlace.nameLocal,
-              typeLabel: PLACE_TYPE_LABELS[activePlace.placeType],
+              typeLabel: m.placeTypes[activePlace.placeType],
               address: activePlace.address,
               summary: activePlace.summary,
               summaryBullets: activePlace.summaryBullets,
@@ -182,7 +185,7 @@ export function CityExplorer({
           {presentTypes.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
               <Chip active={type === null} onClick={() => selectType(null)}>
-                전체
+                {m.cityDetail.allTypes}
               </Chip>
               {presentTypes.map((t) => (
                 <Chip
@@ -190,7 +193,7 @@ export function CityExplorer({
                   active={type === t}
                   onClick={() => selectType(type === t ? null : t)}
                 >
-                  {PLACE_TYPE_LABELS[t]}
+                  {m.placeTypes[t]}
                 </Chip>
               ))}
             </div>
@@ -200,7 +203,7 @@ export function CityExplorer({
           {creators.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
               <Chip active={channel === null} onClick={() => selectChannel(null)}>
-                전체 채널
+                {m.cityDetail.allChannels}
               </Chip>
               {creators.map((c) => (
                 <Chip
@@ -218,17 +221,17 @@ export function CityExplorer({
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="index tnum" style={{ color: "var(--dim)" }}>
               {shown.length === places.length
-                ? `간 곳 ${places.length}`
-                : `${shown.length} / ${places.length}곳`}
-              {" · 핀을 누르면 상세가 열립니다"}
+                ? t(m.cityDetail.placesAll, { n: places.length })
+                : t(m.cityDetail.placesFiltered, { shown: shown.length, total: places.length })}
+              {m.cityDetail.pinHint}
             </p>
             {channel ? (
               <Link
-                href={`/c/${channel}/${citySlug}`}
+                href={href(`/c/${channel}/${citySlug}`)}
                 className="index underline-offset-4 hover:underline"
                 style={{ color: "var(--wax)" }}
               >
-                이 채널 지도만 보기
+                {m.cityDetail.onlyThisChannel}
               </Link>
             ) : null}
           </div>
@@ -238,7 +241,7 @@ export function CityExplorer({
           {shown.length === 0 ? (
             <div className="flex flex-col items-start gap-3">
               <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                조건에 맞는 장소가 없어요.
+                {m.cityDetail.noMatch}
               </p>
               <Chip
                 onClick={() => {
@@ -247,7 +250,7 @@ export function CityExplorer({
                   syncQuery(null, null);
                 }}
               >
-                필터 지우기
+                {m.cityDetail.clearFilters}
               </Chip>
             </div>
           ) : (
@@ -287,17 +290,19 @@ export function CityExplorer({
                               lineHeight: 1.3,
                             }}
                           >
-                            {place.name}
+                            {displayPlaceName(place, locale)}
                           </span>
                           <span
                             className="mt-1 block"
                             style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                           >
-                            {PLACE_TYPE_LABELS[place.placeType]}
-                            {place.nameLocal ? (
+                            {m.placeTypes[place.placeType]}
+                            {displayPlaceSecondary(place, locale) ? (
                               <>
                                 {" · "}
-                                <span lang="ja">{place.nameLocal}</span>
+                                <span lang={locale === "en" ? "ko" : "ja"}>
+                                  {displayPlaceSecondary(place, locale)}
+                                </span>
                               </>
                             ) : null}
                           </span>
@@ -354,7 +359,7 @@ export function CityExplorer({
                         ))}
                         {place.mapUrl ? (
                           <Act icon="out" href={place.mapUrl}>
-                            지도 열기
+                            {m.cityDetail.openMap}
                           </Act>
                         ) : null}
                       </div>
@@ -370,11 +375,11 @@ export function CityExplorer({
           {creators.length > 0 ? (
             <section className="flex flex-col gap-3">
               <h2 className="index" style={{ color: "var(--dim)" }}>
-                {cityName}에 간 채널
+                {t(m.cityDetail.channelsInCity, { city: cityName })}
               </h2>
               <div className="flex flex-wrap gap-2">
                 {creators.map((c) => (
-                  <Chip key={c.slug} href={`/c/${c.slug}/${citySlug}`}>
+                  <Chip key={c.slug} href={href(`/c/${c.slug}/${citySlug}`)}>
                     {c.displayName}
                     <span className="tnum ml-1.5 opacity-60">{c.placeCount}</span>
                   </Chip>
@@ -384,12 +389,12 @@ export function CityExplorer({
           ) : null}
 
           <Link
-            href="/city"
+            href={href("/city")}
             className="index inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
             style={{ color: "var(--dim)" }}
           >
             <Icon.back className="size-3.5" />
-            다른 도시 보기
+            {m.cityDetail.otherCities}
           </Link>
         </div>
       </section>

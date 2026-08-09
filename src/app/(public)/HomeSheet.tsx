@@ -1,11 +1,7 @@
 "use client";
 
 /**
- * 홈 = 영상 콘택트 시트 + 채널 진입.
- *
- * 멀티채널 전제: 도시 칩·채널 칩으로 좁히고, 영상은 페이지 단위로만 깐다.
- * 검색이 상호명까지 훑는 게 이 화면의 실질이다. "이치란 어디 나왔지"가
- * 방문자의 실제 질문이고, 제목만 훑으면 그 질문에 답하지 못한다.
+ * 홈 = 영상 콘택트 시트 + 채널 진입 (로케일 UI).
  */
 
 import { useId, useMemo, useState } from "react";
@@ -13,11 +9,9 @@ import Link from "next/link";
 import type { FeedCreator, FeedVideo } from "@/shared/api/home";
 import { Avatar, Chip, Icon, Index } from "@/shared/ui/frame";
 import { VideoSheet } from "@/shared/ui/VideoSheet";
+import { useLocale } from "@/shared/i18n/LocaleContext";
 
-/** 현상 애니메이션을 거는 프레임 수. 아래쪽까지 걸면 스크롤이 계속 흔들린다 */
 const DEVELOP_LIMIT = 6;
-
-/** 한 번에 까는 영상 수. 20~30 채널·수백 편 대비 전량 DOM 금지 */
 const PAGE_SIZE = 24;
 
 export function HomeSheet({
@@ -29,6 +23,7 @@ export function HomeSheet({
   creators: FeedCreator[];
   totals: { creators: number; cities: number; places: number; videos: number };
 }) {
+  const { messages: m, href, t } = useLocale();
   const [q, setQ] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [channel, setChannel] = useState<string | null>(null);
@@ -52,7 +47,6 @@ export function HomeSheet({
     });
   }, [videos, q, city, channel]);
 
-  /** 필터 변경 시 페이지를 1페이지로 — effect setState 금지 */
   const resetPage = () => setVisibleCount(PAGE_SIZE);
 
   const onQuery = (value: string) => {
@@ -88,13 +82,16 @@ export function HomeSheet({
           className="font-black"
           style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
         >
-          유튜브에서 본
-          <br />그 가게, 지도로.
+          {m.home.title}
+          <br />
+          {m.home.titleLine2}
         </h1>
-        {/* 규모 — 장소·도시는 우리 큐레이션 산출물이고, 영상 수는 API 유래라
-            "검수한"을 붙여 성격을 분명히 한다 (LEGAL.md 4.5-(2)) */}
         <p className="index tnum" style={{ color: "var(--dim)" }}>
-          간 곳 {totals.places} · 도시 {totals.cities} · 검수한 영상 {totals.videos}
+          {t(m.home.stats, {
+            places: totals.places,
+            cities: totals.cities,
+            videos: totals.videos,
+          })}
         </p>
       </header>
 
@@ -108,14 +105,14 @@ export function HomeSheet({
             boxShadow: "inset 0 0 0 1px var(--hairline)",
           }}
         >
-          <span className="sr-only">가게 이름·영상·도시·채널 검색</span>
+          <span className="sr-only">{m.home.searchAria}</span>
           <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
           <input
             id={searchId}
             type="search"
             value={q}
             onChange={(e) => onQuery(e.target.value)}
-            placeholder="가게 이름으로 찾기"
+            placeholder={m.home.searchPlaceholder}
             autoComplete="off"
             enterKeyHint="search"
             className="w-full bg-transparent outline-none placeholder:text-[color:var(--dim)]"
@@ -126,7 +123,7 @@ export function HomeSheet({
         {allCities.length > 1 ? (
           <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter)">
             <Chip active={city === null} onClick={() => onCity(null)}>
-              전체 도시
+              {m.home.allCities}
             </Chip>
             {allCities.map((c) => (
               <Chip key={c} active={city === c} onClick={() => onCity(city === c ? null : c)}>
@@ -136,11 +133,10 @@ export function HomeSheet({
           </div>
         ) : null}
 
-        {/* 채널 필터 — 지역 페이지와 같은 패턴. 2+ 일 때만 노출 */}
         {creators.length > 1 ? (
           <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter)">
             <Chip active={channel === null} onClick={() => onChannel(null)}>
-              전체 채널
+              {m.home.allChannels}
             </Chip>
             {creators.map((c) => (
               <Chip
@@ -158,18 +154,18 @@ export function HomeSheet({
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-start gap-3 py-6">
-          <p style={{ fontSize: "var(--t-body)" }}>찾는 곳이 아직 시트에 없어요.</p>
-          <Chip onClick={clearAll}>전체 보기</Chip>
+          <p style={{ fontSize: "var(--t-body)" }}>{m.home.empty}</p>
+          <Chip onClick={clearAll}>{m.home.showAll}</Chip>
         </div>
       ) : (
         <section aria-labelledby="sheet-h" className="flex flex-col gap-(--stack)">
           <div className="flex items-baseline justify-between gap-3">
             <h2 id="sheet-h" className="index" style={{ color: "var(--dim)" }}>
               {filtered
-                ? `찾은 영상 ${shown.length}`
+                ? t(m.home.foundVideos, { n: shown.length })
                 : hasMore
-                  ? `최근 영상 · ${visibleCount} / ${shown.length}`
-                  : "최근 영상"}
+                  ? t(m.home.recentPaged, { shown: visibleCount, total: shown.length })
+                  : m.home.recentVideos}
             </h2>
             {filtered ? (
               <button
@@ -178,17 +174,16 @@ export function HomeSheet({
                 className="cursor-pointer underline underline-offset-4"
                 style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
               >
-                전체 보기
+                {m.home.showAll}
               </button>
             ) : null}
           </div>
 
-          {/* 첫 프레임은 전폭 — key 에 필터를 물려 필터 변경 시 현상 연출을 다시 태운다 */}
           <ul key={`lead-${filterKey}`} className="flex flex-col">
             {lead ? (
               <VideoSheet
                 video={lead}
-                href={`/c/${lead.creatorSlug}/v/${lead.youtubeId}`}
+                href={href(`/c/${lead.creatorSlug}/v/${lead.youtubeId}`)}
                 i={0}
                 large
                 channel={{
@@ -209,7 +204,7 @@ export function HomeSheet({
                 <VideoSheet
                   key={v.youtubeId}
                   video={v}
-                  href={`/c/${v.creatorSlug}/v/${v.youtubeId}`}
+                  href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)}
                   i={i + 1}
                   animate={i + 1 < DEVELOP_LIMIT}
                   channel={{
@@ -226,7 +221,7 @@ export function HomeSheet({
           {hasMore ? (
             <div className="flex flex-col items-center gap-2 pt-2">
               <Chip onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
-                더 보기
+                {m.home.loadMore}
                 <span className="tnum ml-1.5 opacity-60">
                   +{Math.min(PAGE_SIZE, shown.length - visibleCount)}
                 </span>
@@ -239,20 +234,19 @@ export function HomeSheet({
         </section>
       )}
 
-      {/* 채널 디렉터리 — 멀티채널에서 실질 입구 */}
       {creators.length > 0 ? (
         <section aria-labelledby="ch-h" className="flex flex-col gap-(--stack)">
           <div className="flex items-baseline justify-between gap-3">
             <h2 id="ch-h" className="index" style={{ color: "var(--dim)" }}>
-              채널 {totals.creators}
+              {t(m.home.channels, { n: totals.creators })}
             </h2>
             {creators.length > 6 ? (
               <Link
-                href="/channels"
+                href={href("/channels")}
                 className="underline-offset-4 hover:underline"
                 style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
               >
-                전체 보기
+                {m.home.showAll}
               </Link>
             ) : null}
           </div>
@@ -260,9 +254,9 @@ export function HomeSheet({
             {creators.map((c) => (
               <li key={c.slug}>
                 <Link
-                  href={`/c/${c.slug}`}
+                  href={href(`/c/${c.slug}`)}
                   className="flex items-center gap-3 py-1"
-                  aria-label={`${c.displayName} 채널 열기`}
+                  aria-label={t(m.home.openChannel, { name: c.displayName })}
                 >
                   <Avatar
                     initials={c.initials}
@@ -284,7 +278,9 @@ export function HomeSheet({
                       {c.cities.map((x) => x.name).join(" · ")}
                     </span>
                   </span>
-                  <Index className="tnum shrink-0">{c.placeCount}곳</Index>
+                  <Index className="tnum shrink-0">
+                    {t(m.home.placesUnit, { n: c.placeCount })}
+                  </Index>
                   <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
                 </Link>
               </li>

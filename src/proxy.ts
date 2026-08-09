@@ -1,15 +1,26 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { ADMIN_COOKIE, getAdminSecret, verifyToken } from "@/shared/lib/admin-auth";
+import { LOCALE_HEADER } from "@/shared/i18n/paths";
 
 /**
- * /admin/* 과 /api/admin/* 보호 (docs/ADMIN.md 1장).
+ * 1) /en/* → 내부 경로 rewrite + x-tripin-locale
+ * 2) /admin/* · /api/admin/* 보호 (docs/ADMIN.md 1장)
  *
- * 규칙:
- *   · ADMIN_SECRET 미설정 → 프로덕션에서는 전체 404 (빈 비밀번호로 열리는 사고 방지)
- *   · 로그인 경로만 예외 (아니면 리다이렉트 루프)
- *   · 페이지는 로그인으로 redirect, API 는 401 JSON
+ * 기본 로케일(ko)은 URL 접두사 없음 — 기존 링크 유지.
  */
-export default async function proxy(request: NextRequest) {
+
+function withLocale(request: NextRequest, locale: "ko" | "en", rewritePath?: string) {
+  const requestHeaders = new Headers(request.headers);
+  requestHeaders.set(LOCALE_HEADER, locale);
+  if (rewritePath !== undefined) {
+    const url = request.nextUrl.clone();
+    url.pathname = rewritePath;
+    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
+  }
+  return NextResponse.next({ request: { headers: requestHeaders } });
+}
+
+async function protectAdmin(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApi = pathname.startsWith("/api/admin");
   const isLoginPath = pathname === "/admin/login" || pathname === "/api/admin/login";
@@ -18,10 +29,8 @@ export default async function proxy(request: NextRequest) {
 
   if (!secret) {
     if (process.env.NODE_ENV === "production") {
-      // 존재 자체를 숨긴다 — 로그인 경로 포함 전부 404.
       return new NextResponse(null, { status: 404 });
     }
-    // 개발 중에는 로그인 페이지가 안내 문구를 띄우도록 통과시킨다.
     if (pathname === "/admin/login") return NextResponse.next();
     const url = request.nextUrl.clone();
     url.pathname = "/admin/login";
@@ -40,11 +49,44 @@ export default async function proxy(request: NextRequest) {
 
   const url = request.nextUrl.clone();
   url.pathname = "/admin/login";
-  // 로그인 후 원래 가려던 곳으로 — 열린 리다이렉트 방지를 위해 pathname 만 넘긴다.
   url.search = `?next=${encodeURIComponent(pathname)}`;
   return NextResponse.redirect(url);
 }
 
+export default async function proxy(request: NextRequest) {
+  const { pathname } = request.nextUrl;
+
+  // 정적·API(어드민 제외)는 로케일 헤더만 필요한 경우 없음
+  if (
+    pathname.startsWith("/_next") ||
+    pathname.startsWith("/favicon") ||
+    pathname.includes(".")
+  ) {
+    return NextResponse.next();
+  }
+
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    return protectAdmin(request);
+  }
+
+  if (pathname.startsWith("/api")) {
+    return NextResponse.next();
+  }
+
+  // EN: /en → / , /en/city → /city
+  if (pathname === "/en" || pathname.startsWith("/en/")) {
+    const bare = pathname === "/en" ? "/" : pathname.slice(3) || "/";
+    return withLocale(request, "en", bare);
+  }
+
+  return withLocale(request, "ko");
+}
+
 export const config = {
-  matcher: ["/admin/:path*", "/api/admin/:path*"],
+  matcher: [
+    /*
+     * 정적 파일·이미지 제외. admin + 공개 페이지 + en 접두사.
+     */
+    "/((?!_next/static|_next/image|.*\\..*).*)",
+  ],
 };
