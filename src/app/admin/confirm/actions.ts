@@ -441,17 +441,5 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   return { ok: `"${d.name}" ${d.mapStatus === "confirmed" ? "확정·공개" : "보류(비공개)"}로 수정됨` };
 }
 
-export async function deletePlace(_: ActionResult, form: FormData): Promise<ActionResult> {
-  const placeId = String(form.get("placeId") ?? "");
-  const creatorId = String(form.get("creatorId") ?? "");
-  const cityId = String(form.get("cityId") ?? "");
-  if (!placeId) return fail("잘못된 요청");
-
-  const { error } = await getSupabaseAdmin().from("places").delete().eq("id", placeId);
-  if (error) return fail(error.message);
-
-  if (creatorId && cityId) await recountPiece(creatorId, cityId);
-  revalidatePath("/admin/confirm");
-  revalidatePath("/admin");
-  return { ok: "삭제됨" };
-}
+// deletePlace 는 `admin/actions.ts` 의 deletePlaceById 로 옮겼다 —
+// 목록 화면(/admin/places)에서 부르고, 통계 재계산도 recount_stats() 하나로 통일했다.

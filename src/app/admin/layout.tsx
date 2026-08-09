@@ -24,8 +24,17 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 Tripin 어드민
               </Link>
               <nav className="flex items-center gap-3 text-sm text-neutral-600">
+                <Link href="/admin/places" className="transition hover:text-neutral-900">
+                  장소
+                </Link>
+                <Link href="/admin/pieces" className="transition hover:text-neutral-900">
+                  조각
+                </Link>
                 <Link href="/admin/confirm" className="transition hover:text-neutral-900">
-                  장소 확정
+                  손입력
+                </Link>
+                <Link href="/admin/queue" className="transition hover:text-neutral-900">
+                  삭제 요청
                 </Link>
                 <Link
                   href="/"

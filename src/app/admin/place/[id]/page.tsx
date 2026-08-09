@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { PlaceEditForm } from "../../_ui/PlaceEditForm";
 import { SummaryEditor } from "./SummaryEditor";
 
 /**
@@ -60,6 +61,7 @@ async function loadEditorData(placeId: string) {
     cityName: city?.name ?? "",
     citySlug: city?.slug ?? "",
     creatorSlug: creator?.slug ?? "",
+    creatorId: video?.creator_id ?? null,
     videoTitle: video?.title ?? null,
     youtubeVideoId: video?.youtube_video_id ?? null,
     videoPublishedAt: video?.published_at ?? null,
@@ -88,8 +90,8 @@ export default async function PlaceSummaryPage({
     <main className="mx-auto max-w-3xl px-6 py-8">
       <div className="flex items-baseline justify-between">
         <nav className="text-sm text-neutral-500">
-          <Link href="/admin/confirm" className="hover:text-neutral-900 hover:underline">
-            ← 장소 확정으로
+          <Link href="/admin/places" className="hover:text-neutral-900 hover:underline">
+            ← 장소 목록으로
           </Link>
         </nav>
         <p className="text-sm tabular-nums text-neutral-500">
@@ -107,6 +109,36 @@ export default async function PlaceSummaryPage({
       <p className="mt-1 text-sm text-neutral-500">
         {data.cityName} · {data.place.address ?? "주소 미입력"}
       </p>
+
+      {data.creatorId ? (
+        <details className="mt-5 rounded-lg border border-neutral-200 bg-white p-4 shadow-sm">
+          <summary className="cursor-pointer text-sm font-semibold text-neutral-800">
+            장소 정보 수정 — 이름·타입·좌표·지도 링크·확정 상태
+          </summary>
+          <div className="mt-3">
+            <PlaceEditForm
+              creatorId={data.creatorId}
+              place={{
+                id: data.place.id,
+                cityId: data.place.city_id,
+                name: data.place.name,
+                nameLocal: data.place.name_local,
+                placeType: data.place.place_type,
+                mapStatus: data.place.map_status,
+                lat: data.place.lat,
+                lng: data.place.lng,
+                address: data.place.address,
+                googleMapsUrl: data.place.google_maps_url,
+                googlePlaceId: data.place.google_place_id,
+                kakaoPlaceId: data.place.kakao_place_id,
+                naverPlaceId: data.place.naver_place_id,
+                sourceNote: data.place.source_note,
+                timestampSec: data.timestampSec,
+              }}
+            />
+          </div>
+        </details>
+      ) : null}
 
       <SummaryEditor
         placeId={data.place.id}
