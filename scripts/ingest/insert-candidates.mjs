@@ -84,10 +84,14 @@ for (const v of payload.videos ?? []) {
     console.log(`  · 이미 있음: ${v.youtubeVideoId} ${v.title.slice(0, 30)}`);
     continue;
   }
+  // published_at·duration_sec 를 여기서 채운다. 안 채우면 갱신 배치가 돌 때까지
+  // 타임라인이 "길이(추정)"로 돌고 최신성 정렬도 안 된다 (HANDOFF.md §4-2)
   const r = await post("videos", {
     creator_id: creator.id,
     youtube_video_id: v.youtubeVideoId,
     title: v.title,
+    published_at: v.publishedAt ?? null,
+    duration_sec: v.durationSec ?? null,
   });
   if (r.ok) {
     existingIds.set(v.youtubeVideoId, r.body[0].id);
