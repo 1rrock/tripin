@@ -198,7 +198,7 @@ function CrumbIcon() {
 }
 
 /**
- * 준비 중 화면 — 확정 핀이 게이트에 못 미치는 조각.
+ * 준비 중 화면 — 확정 핀이 아직 0개인 조각.
  * 404 가 아니라 200 + noindex: 직접 링크(운영자 미리보기)는 살리고 검색에서만 뺀다.
  */
 function PendingPiece({
@@ -228,11 +228,10 @@ function PendingPiece({
         {creatorName}의 {cityName}
       </h1>
       <p style={{ fontSize: "var(--t-body)", color: "var(--dim)", lineHeight: 1.7 }}>
-        이 조각은 아직 준비 중이에요.
+        이 조각은 아직 확정된 장소가 없어요.
       </p>
-      {/* 몇 개를 채워야 열리는지 숫자로 말한다 */}
       <p className="index tnum" style={{ color: "var(--dim)" }}>
-        확정 {confirmedCount} · 공개 기준 {MIN_CONFIRMED_PINS}
+        확정 {confirmedCount} · 공개 기준 {MIN_CONFIRMED_PINS}곳 이상
       </p>
       <div>
         <Chip href="/">공개된 조각 보기</Chip>
