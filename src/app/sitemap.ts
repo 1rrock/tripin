@@ -4,7 +4,7 @@ import { publicEnv } from "@/shared/config/env";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 
 /**
- * 사이트맵 — 홈 + 진입점(지역·채널·지도) + 공개 게이트를 통과한 채널 허브·조각·도시.
+ * 사이트맵 — 홈 + 진입점(지역·채널·종류) + 공개 게이트를 통과한 채널 허브·조각·도시.
  *
  * 게이트 미달 조각은 페이지가 noindex 를 내보내므로(`[city]/page.tsx`),
  * 사이트맵도 같은 기준으로 잘라야 한다 — 광고해놓고 색인을 막는 모순을 만들지 않는다.
@@ -23,15 +23,36 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     { url: `${base}/`, lastModified: now, changeFrequency: "daily", priority: 1 },
     { url: `${base}/city`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
     { url: `${base}/channels`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
-    { url: `${base}/map`, lastModified: now, changeFrequency: "weekly", priority: 0.6 },
+    { url: `${base}/type`, lastModified: now, changeFrequency: "weekly", priority: 0.7 },
   ];
 
   const [{ data: creators }, { data: cities }, { data: places }] = await Promise.all([
     supabase.from("creators").select("id, slug, updated_at"),
     supabase.from("cities").select("id, slug"),
-    supabase.from("places").select("id, city_id").eq("map_status", "confirmed"),
+    supabase
+      .from("places")
+      .select("id, city_id, place_type")
+      .eq("map_status", "confirmed"),
   ]);
   if (!creators?.length || !cities?.length || !places?.length) return home;
+
+  // 종류 상세 — 확정 장소가 있는 유형
+  const typesWithPlaces = [
+    ...new Set(
+      places
+        .map((p) => p.place_type)
+        .filter((t) => t && t !== "unknown")
+        .map(String),
+    ),
+  ];
+  for (const t of typesWithPlaces) {
+    home.push({
+      url: `${base}/type/${t}`,
+      lastModified: now,
+      changeFrequency: "weekly",
+      priority: 0.75,
+    });
+  }
 
   const cityIdBySlug = new Map(cities.map((c) => [c.id, c.slug]));
   const cityByPlace = new Map(places.map((p) => [p.id, p.city_id]));

@@ -1,0 +1,29 @@
+{
+  "updatedAt": "2026-08-09T09:29:20.907Z",
+  "channel": "kwaktube",
+  "videosRegistered": 63,
+  "placesCandidate": 10,
+  "placeSlugs": [
+    "mugi-to-olive-ginza",
+    "kamenoi-hotel-nikko-yunishigawa",
+    "hwaguk-banjeom-nampo",
+    "kinosaki-onsen",
+    "steakman-okinawa-nago",
+    "american-village-chatan",
+    "climax-coffee-depot-island",
+    "nakasu-yatai-street",
+    "steak-lodge-ikebukuro",
+    "andong-dwaejigukbap-deokpo"
+  ],
+  "citiesCovered": [
+    "tokyo",
+    "busan",
+    "nikko",
+    "kinosaki",
+    "nago",
+    "chatan",
+    "fukuoka"
+  ],
+  "foodishTotal": 131,
+  "note": "확정은 /admin/confirm. place_count는 확정 후 갱신."
+}

@@ -12,12 +12,13 @@
  *   · **목록 행** 을 누르면 지도만 그 핀으로 옮긴다 — 행 자체가 이미 상세다
  * 둘 다 같은 activeId 를 쓰므로 지도와 목록의 강조는 항상 일치한다.
  *
- * 필터는 전부 클라이언트다. 지도 페이지에서 서버 왕복을 하면 사용자가 맞춰 둔
- * 뷰포트가 매번 초기화된다.
+ * 필터는 클라이언트. `?type=`·`?channel=` 은 replace 로 동기화해 공유·뒤로가기가 된다.
+ * 지도 뷰포트 초기화를 피하려고 풀 네비게이션은 쓰지 않는다.
  */
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { CityCreator, CityPlace } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
@@ -41,20 +42,48 @@ function youtubeUrl(videoId: string, sec: number | null): string {
 
 export function CityExplorer({
   cityName,
+  citySlug,
   places,
   creators,
   initialType,
+  initialChannel,
 }: {
   cityName: string;
+  citySlug: string;
   places: CityPlace[];
   creators: CityCreator[];
   initialType: PlaceType | null;
+  initialChannel: string | null;
 }) {
+  const router = useRouter();
+  const pathname = usePathname();
   const [type, setType] = useState<PlaceType | null>(initialType);
-  const [channel, setChannel] = useState<string | null>(null);
+  const [channel, setChannel] = useState<string | null>(initialChannel);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const rowRefs = useRef<globalThis.Map<string, HTMLLIElement>>(new globalThis.Map());
+
+  /** 지도 뷰포트 유지 — scroll:false replace */
+  const syncQuery = useCallback(
+    (nextType: PlaceType | null, nextChannel: string | null) => {
+      const params = new URLSearchParams();
+      if (nextType) params.set("type", nextType);
+      if (nextChannel) params.set("channel", nextChannel);
+      const qs = params.toString();
+      router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+    },
+    [pathname, router],
+  );
+
+  const selectType = (next: PlaceType | null) => {
+    setType(next);
+    syncQuery(next, channel);
+  };
+
+  const selectChannel = (next: string | null) => {
+    setChannel(next);
+    syncQuery(type, next);
+  };
 
   const shown = useMemo(
     () =>
@@ -115,6 +144,10 @@ export function CityExplorer({
   const activeIndex = shown.findIndex((p) => p.id === visibleActiveId);
   const activePlace = activeIndex >= 0 ? shown[activeIndex]! : null;
 
+  /** 채널 필터 중이면 출처도 그 채널만 — "이 사람이 간 장면"에 맞춤 */
+  const sourcesFor = (place: CityPlace) =>
+    channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
+
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7 lg:px-(--gutter) lg:pt-4">
       {/* 지도 — 이 화면의 본체. 시트가 데스크톱에서 이 안에 절대배치되므로 relative 필수 */}
@@ -137,7 +170,7 @@ export function CityExplorer({
               summaryBullets: activePlace.summaryBullets,
               priceHint: activePlace.priceHint,
               mapUrl: activePlace.mapUrl,
-              sources: activePlace.sources,
+              sources: sourcesFor(activePlace),
             }}
             onClose={() => setSheetOpen(false)}
           />
@@ -148,28 +181,32 @@ export function CityExplorer({
         <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:px-0 lg:pt-0">
           {presentTypes.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-              <Chip active={type === null} onClick={() => setType(null)}>
+              <Chip active={type === null} onClick={() => selectType(null)}>
                 전체
               </Chip>
               {presentTypes.map((t) => (
-                <Chip key={t} active={type === t} onClick={() => setType(type === t ? null : t)}>
+                <Chip
+                  key={t}
+                  active={type === t}
+                  onClick={() => selectType(type === t ? null : t)}
+                >
                   {PLACE_TYPE_LABELS[t]}
                 </Chip>
               ))}
             </div>
           ) : null}
 
-          {/* 채널 필터 — 이 도시에 간 사람이 둘 이상일 때만 의미가 있다 */}
+          {/* 채널 필터 — 2명 이상일 때. URL ?channel= 과 동기화 */}
           {creators.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-              <Chip active={channel === null} onClick={() => setChannel(null)}>
+              <Chip active={channel === null} onClick={() => selectChannel(null)}>
                 전체 채널
               </Chip>
               {creators.map((c) => (
                 <Chip
                   key={c.slug}
                   active={channel === c.slug}
-                  onClick={() => setChannel(channel === c.slug ? null : c.slug)}
+                  onClick={() => selectChannel(channel === c.slug ? null : c.slug)}
                 >
                   {c.displayName}
                   <span className="tnum ml-1.5 opacity-60">{c.placeCount}</span>
@@ -178,12 +215,23 @@ export function CityExplorer({
             </div>
           ) : null}
 
-          <p className="index tnum" style={{ color: "var(--dim)" }}>
-            {shown.length === places.length
-              ? `간 곳 ${places.length}`
-              : `${shown.length} / ${places.length}곳`}
-            {" · 핀을 누르면 상세가 열립니다"}
-          </p>
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <p className="index tnum" style={{ color: "var(--dim)" }}>
+              {shown.length === places.length
+                ? `간 곳 ${places.length}`
+                : `${shown.length} / ${places.length}곳`}
+              {" · 핀을 누르면 상세가 열립니다"}
+            </p>
+            {channel ? (
+              <Link
+                href={`/c/${channel}/${citySlug}`}
+                className="index underline-offset-4 hover:underline"
+                style={{ color: "var(--wax)" }}
+              >
+                이 채널 지도만 보기
+              </Link>
+            ) : null}
+          </div>
         </div>
 
         <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
@@ -196,6 +244,7 @@ export function CityExplorer({
                 onClick={() => {
                   setType(null);
                   setChannel(null);
+                  syncQuery(null, null);
                 }}
               >
                 필터 지우기
@@ -205,6 +254,7 @@ export function CityExplorer({
             <ol>
               {shown.map((place, index) => {
                 const active = place.id === visibleActiveId;
+                const rowSources = sourcesFor(place);
                 return (
                   <li
                     key={place.id}
@@ -289,9 +339,9 @@ export function CityExplorer({
                         </p>
                       ) : null}
 
-                      {/* 출처 — 이 도시 페이지의 존재 이유. 여러 채널이 갔으면 전부 보인다 */}
+                      {/* 출처 — 채널 필터 중이면 그 채널만 */}
                       <div className="flex flex-wrap items-center gap-2 pl-10">
-                        {place.sources.map((s, i) => (
+                        {rowSources.map((s, i) => (
                           <Act
                             key={`${s.youtubeId}-${i}`}
                             icon="play"
@@ -316,7 +366,7 @@ export function CityExplorer({
             </ol>
           )}
 
-          {/* 다음 행동 — 이 도시에 간 채널의 조각으로 내려간다 */}
+          {/* 다음 행동 — 채널×도시 조각으로 */}
           {creators.length > 0 ? (
             <section className="flex flex-col gap-3">
               <h2 className="index" style={{ color: "var(--dim)" }}>
@@ -324,7 +374,7 @@ export function CityExplorer({
               </h2>
               <div className="flex flex-wrap gap-2">
                 {creators.map((c) => (
-                  <Chip key={c.slug} href={`/c/${c.slug}`}>
+                  <Chip key={c.slug} href={`/c/${c.slug}/${citySlug}`}>
                     {c.displayName}
                     <span className="tnum ml-1.5 opacity-60">{c.placeCount}</span>
                   </Chip>

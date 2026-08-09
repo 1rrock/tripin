@@ -1,17 +1,15 @@
 "use client";
 
 /**
- * 전역 진입점 — 지역 / 채널 / 지도.
+ * 전역 진입점 — 지역 / 채널 / 종류.
  *
- * 이 서비스는 홈 → 채널 → 조각으로 내려가는 드릴다운이었다. 그 길 하나만으로는
- * "도쿄 가는데 뭐 있지"로 온 사람이 채널을 먼저 골라야 해서 막힌다. 그래서 축을 셋으로 연다:
+ * 축을 셋으로 연다:
  *   · 지역 — 도시부터. 그 도시에 간 **모든 채널**의 장소가 한 지도에 뜬다
- *   · 채널 — 기존 축. 한 사람이 간 곳만 본다
- *   · 지도 — 도시를 지도 위에서 고른다. 어디에 뭐가 있는지부터 보고 싶은 사람용
+ *   · 채널 — 유튜버부터. 그 사람이 간 곳만 본다
+ *   · 종류 — 맛집·카페·숙소·명소 등 유형부터. 도시·채널을 몰라도 들어온다
  *
- * 모바일은 햄버거(전체 화면 패널), 데스크톱은 헤더 인라인이다.
- * 사이드바를 쓰지 않는 이유: 항목이 3개뿐이라 상시 점유할 만한 밀도가 아니고,
- * 이 월드의 주인공은 프레임과 지도라 좌측 기둥이 그걸 좁힌다.
+ * 전역 `/map` 은 메뉴에서 뺐다 — 도시·조각 화면에 이미 지도가 있다.
+ * 모바일은 햄버거, 데스크톱은 헤더 인라인.
  */
 
 import { useEffect, useState } from "react";
@@ -22,7 +20,12 @@ import { Icon, type IconName } from "@/shared/ui/frame";
 const ITEMS: { href: string; label: string; icon: IconName; hint: string }[] = [
   { href: "/city", label: "지역", icon: "pin", hint: "도시별로 — 여러 채널이 간 곳을 한 지도에" },
   { href: "/channels", label: "채널", icon: "channel", hint: "유튜버별로 — 그 사람이 간 곳만" },
-  { href: "/map", label: "지도", icon: "globe", hint: "지도에서 도시 고르기" },
+  {
+    href: "/type",
+    label: "종류",
+    icon: "menu",
+    hint: "맛집·카페·숙소·명소 — 유형부터 고르기",
+  },
 ];
 
 function isActive(pathname: string, href: string) {

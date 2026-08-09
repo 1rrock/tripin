@@ -25,6 +25,14 @@ function parseType(v: string | undefined): PlaceType | null {
   return v && (FILTERABLE_TYPES as string[]).includes(v) ? (v as PlaceType) : null;
 }
 
+function parseChannel(
+  v: string | undefined,
+  creators: { slug: string }[],
+): string | null {
+  if (!v) return null;
+  return creators.some((c) => c.slug === v) ? v : null;
+}
+
 export async function generateMetadata({
   params,
 }: {
@@ -48,7 +56,7 @@ export default async function CityPage({
   searchParams,
 }: {
   params: Promise<Params>;
-  searchParams: Promise<{ type?: string }>;
+  searchParams: Promise<{ type?: string; channel?: string }>;
 }) {
   const [{ city }, sp] = await Promise.all([params, searchParams]);
   const data = await loadCityDetail(city);
@@ -84,9 +92,11 @@ export default async function CityPage({
 
       <CityExplorer
         cityName={data.name}
+        citySlug={data.slug}
         places={data.places}
         creators={data.creators}
         initialType={parseType(sp.type)}
+        initialChannel={parseChannel(sp.channel, data.creators)}
       />
     </main>
   );
