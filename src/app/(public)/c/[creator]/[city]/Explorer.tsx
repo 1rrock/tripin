@@ -262,6 +262,7 @@ export function Explorer({
             pins={pins}
             activeId={visibleActiveId}
             onPinClick={openFromPin}
+            cluster
           />
           {sheetOpen && sheetPlace ? (
             <PlaceSheet

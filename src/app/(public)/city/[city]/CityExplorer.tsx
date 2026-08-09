@@ -160,6 +160,7 @@ export function CityExplorer({
           pins={pins}
           activeId={visibleActiveId}
           onPinClick={onPinClick}
+          cluster
         />
         {sheetOpen && activePlace ? (
           <PlaceSheet

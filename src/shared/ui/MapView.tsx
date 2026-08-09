@@ -15,12 +15,21 @@
 
 import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
+import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from "@googlemaps/markerclusterer";
 import { isProduction, publicEnv } from "@/shared/config/env";
 // map-style.ts 의 LIGHTBOX_MAP_STYLE 은 여기서 import 하지 않는다 — 런타임에 쓸 수
 // 없기 때문이다(아래 Map 생성부 주석 참조). 그 파일은 Cloud 콘솔에 올릴 **명세**다.
 
 /** 타일이 이 시간 안에 안 그려지면 실패로 판정 — 조용한 회색 박스를 만들지 않는다. */
 const TILES_TIMEOUT_MS = 8000;
+
+/**
+ * 이 줌을 넘으면 더 이상 묶지 않는다. 활성 핀이 묶여 있을 때 이 값보다 한 단계
+ * 더 들어가면 반드시 낱개로 풀린다는 보장이 필요해서 상수로 둔다.
+ */
+const CLUSTER_MAX_ZOOM = 16;
+/** 픽셀 반경 — 이 안에 든 핀이 한 덩어리가 된다. 마커 폭(30px)의 두 배 남짓. */
+const CLUSTER_RADIUS_PX = 64;
 
 export interface MapPin {
   id: string;
@@ -42,6 +51,12 @@ interface MapViewProps {
   className?: string;
   /** 핀 1개일 때 줌 (기본 15 — CONCEPT.md 4.3). */
   singlePinZoom?: number;
+  /**
+   * 가까운 핀을 묶는다. **개별 장소를 찍는 지도에서만 켠다.**
+   * 전체 지도(`/map`)처럼 핀이 이미 도시 단위로 집계된 화면에서는 켜면 안 된다 —
+   * 집계를 두 번 하게 되어 "도쿄 8"이 다시 "2"로 접힌다.
+   */
+  cluster?: boolean;
 }
 
 let optionsSet = false;
@@ -93,16 +108,68 @@ function markerContent(pin: MapPin, active: boolean): HTMLElement {
   return el;
 }
 
+/**
+ * 묶인 핀 — **겹쳐 쌓인 프레임**. 낱개 마커와 같은 각진 칩인데 뒤에 한 장이
+ * 어긋나게 깔려 "여러 컷"임을 형태로 말한다. 색을 바꾸거나 크기를 키워서
+ * 구분하지 않는 이유는, 이 월드에서 왁스는 *표시*이고 발광은 금지이기 때문이다.
+ *
+ * 숫자는 묶인 장소 수다. 리스트의 번호와 다른 값이라 tabular-nums 로만 맞추고
+ * 왁스를 쓰지 않는다 — 왁스를 쓰면 "내가 고른 컷"과 같은 층으로 읽힌다.
+ */
+function clusterContent(count: number): HTMLElement {
+  const wrap = document.createElement("div");
+  wrap.style.cssText = "position:relative;cursor:pointer";
+
+  // 뒤에 깔리는 한 장 — 스택의 두께
+  const back = document.createElement("div");
+  back.style.cssText = [
+    "position:absolute",
+    "inset:0",
+    "transform:translate(3px,3px)",
+    "background:var(--ground)",
+    "opacity:0.55",
+    "border-radius:var(--r-frame)",
+  ].join(";");
+
+  const face = document.createElement("div");
+  face.style.cssText = [
+    "position:relative",
+    "background:var(--ground)",
+    "color:var(--paper)",
+    "border-radius:var(--r-frame)",
+    "min-width:34px",
+    "height:34px",
+    "padding:0 8px",
+    "display:flex",
+    "align-items:center",
+    "justify-content:center",
+    "font-family:inherit",
+    "font-weight:700",
+    "font-size:14px",
+    "line-height:1",
+    "font-variant-numeric:tabular-nums",
+    "letter-spacing:0.02em",
+    "box-shadow:var(--lift-pin)",
+  ].join(";");
+  face.textContent = String(count);
+
+  wrap.append(back, face);
+  wrap.title = `이 자리에 장소 ${count}곳 — 누르면 펼쳐집니다`;
+  return wrap;
+}
+
 export function MapView({
   pins,
   activeId,
   onPinClick,
   className,
   singlePinZoom = 15,
+  cluster = false,
 }: MapViewProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
+  const clustererRef = useRef<MarkerClusterer | null>(null);
   // 핀 배열은 호출부에서 매 렌더 새로 만들어진다 — 내용이 같으면 마커 재생성·뷰포트
   // 리셋을 건너뛰기 위한 시그니처 (리스트 선택이 지도를 되돌리는 버그 방지)
   const pinsSigRef = useRef<string>("");
@@ -171,6 +238,8 @@ export function MapView({
 
   const retry = () => {
     mapRef.current = null;
+    clustererRef.current?.setMap(null);
+    clustererRef.current = null;
     markersRef.current.clear();
     pinsSigRef.current = "";
     setFailed(false);
@@ -190,17 +259,23 @@ export function MapView({
 
         // 내용이 같은 배열(호출부의 매 렌더 재생성)이면 아무것도 하지 않는다 —
         // 재생성·fitBounds 를 다시 돌리면 사용자가 옮긴 뷰포트가 튕긴다
-        const sig = pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}`).join("|");
+        const sig =
+          `${cluster}#` + pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}`).join("|");
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
 
         // 기존 마커 제거 후 다시 그림 — 핀 수십 개 수준이라 diff 불필요
+        clustererRef.current?.setMap(null);
+        clustererRef.current = null;
         for (const m of markersRef.current.values()) m.map = null;
         markersRef.current.clear();
 
+        const made: google.maps.marker.AdvancedMarkerElement[] = [];
         for (const pin of pins) {
           const m = new AdvancedMarkerElement({
-            map,
+            // 묶을 때는 map 을 클러스터러가 붙였다 뗐다 한다 — 여기서 붙이면
+            // 묶인 핀이 낱개로도 같이 남아 이중으로 보인다
+            ...(cluster ? {} : { map }),
             position: { lat: pin.lat, lng: pin.lng },
             content: markerContent(pin, pin.id === activeId),
             zIndex: pin.id === activeId ? 1000 : (pin.index ?? 0),
@@ -211,6 +286,27 @@ export function MapView({
             m.addEventListener("gmp-click", () => onPinClick(pin.id));
           }
           markersRef.current.set(pin.id, m);
+          made.push(m);
+        }
+
+        if (cluster && made.length > 0) {
+          clustererRef.current = new MarkerClusterer({
+            map,
+            markers: made,
+            algorithm: new SuperClusterAlgorithm({
+              radius: CLUSTER_RADIUS_PX,
+              maxZoom: CLUSTER_MAX_ZOOM,
+            }),
+            renderer: {
+              render: (c: Cluster) =>
+                new AdvancedMarkerElement({
+                  position: c.position,
+                  content: clusterContent(c.count),
+                  // 묶음은 항상 낱개 위에 — 낱개 zIndex 는 pin.index(수십 단위)다
+                  zIndex: 900,
+                }),
+            },
+          });
         }
 
         // 뷰포트: 전체 bounds + 패딩 / 핀 1개면 고정 줌 (CONCEPT.md 4.3)
@@ -234,7 +330,7 @@ export function MapView({
     };
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pins, failed]);
+  }, [pins, failed, cluster]);
 
   // activeId 하이라이트 — 마커 콘텐츠만 교체 (재생성/뷰포트 리셋 없음)
   useEffect(() => {
@@ -247,9 +343,25 @@ export function MapView({
       // .content 는 deprecated — 커스텀 엘리먼트의 children 교체로 동일 효과
       m.replaceChildren(markerContent(pin, active));
       m.zIndex = active ? 1000 : (pin.index ?? 0);
-      if (active) map.panTo({ lat: pin.lat, lng: pin.lng });
+      if (!active) continue;
+      map.panTo({ lat: pin.lat, lng: pin.lng });
+      // 묶여 있으면 클러스터러가 map 을 떼어 둔 상태다. 리스트에서 고른 핀이
+      // 지도에 안 보이면 선택이 먹지 않은 것처럼 읽히므로, 풀릴 때까지 들어간다.
+      if (cluster && !m.map) {
+        const z = map.getZoom() ?? 0;
+        if (z <= CLUSTER_MAX_ZOOM) map.setZoom(CLUSTER_MAX_ZOOM + 1);
+      }
     }
-  }, [activeId, pins]);
+  }, [activeId, pins, cluster]);
+
+  // 언마운트 시 클러스터러가 잡고 있는 지도 리스너를 놓아준다
+  useEffect(
+    () => () => {
+      clustererRef.current?.setMap(null);
+      clustererRef.current = null;
+    },
+    [],
+  );
 
   /**
    * 라이트박스의 액자 — 밝은 면이 어두운 지면 위에 얹힌다.
