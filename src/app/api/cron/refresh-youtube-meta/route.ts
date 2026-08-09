@@ -35,7 +35,12 @@ import { serverEnv } from "@/shared/config/env";
 export const dynamic = "force-dynamic";
 export const maxDuration = 60;
 
-/** 30일 한도에 5일 여유를 둔다 — 크론이 한 번 밀려도 위반이 되지 않게. */
+/**
+ * 30일 한도에 5일 여유를 둔다 — 크론이 며칠 밀려도 위반이 되지 않게.
+ *
+ * 이 여유는 **크론이 매일 돌 때만** 여유다(`vercel.json`). 월 1회로 두면 31일인 달마다
+ * 한도를 넘는다: 1/1 03:05 에 갱신한 행이 2/1 03:00 실행 시점에 이미 30일 23시간이다.
+ */
 const STALE_DAYS = 25;
 /** videos.list 가 한 번에 받는 id 개수 상한. */
 const ID_BATCH = 50;
