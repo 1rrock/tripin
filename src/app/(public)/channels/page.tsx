@@ -65,7 +65,7 @@ export default async function ChannelsPage() {
                   />
                   <span className="min-w-0 flex-1">
                     <span
-                      className="block truncate font-bold group-hover:[box-shadow:inset_0_-2px_0_var(--wax)]"
+                      className="block truncate font-bold"
                       style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}
                     >
                       {c.displayName}
@@ -85,7 +85,10 @@ export default async function ChannelsPage() {
 
                 <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
                   {c.recentVideos.map((v) => (
-                    <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
+                    <Frame
+                      key={v.youtubeId}
+                      className="w-[46%] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)] sm:w-auto"
+                    >
                       <Thumb youtubeId={v.youtubeId} alt={v.title} />
                     </Frame>
                   ))}

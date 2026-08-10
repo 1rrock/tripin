@@ -103,7 +103,7 @@ function CityRoll({
             {String(n).padStart(2, "0")}
           </Index>
           <span
-            className="font-black group-hover:[box-shadow:inset_0_-3px_0_var(--wax)]"
+            className="font-black"
             style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.1 }}
           >
             {label}
@@ -120,7 +120,10 @@ function CityRoll({
 
         <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
           {city.recentVideos.map((v) => (
-            <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
+            <Frame
+              key={v.youtubeId}
+              className="w-[46%] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)] sm:w-auto"
+            >
               <Thumb youtubeId={v.youtubeId} alt={v.title} />
             </Frame>
           ))}
@@ -156,13 +159,13 @@ function CityMinorRow({
         })}
       >
         {cut ? (
-          <Frame className="w-[92px] shrink-0">
+          <Frame className="w-[92px] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)]">
             <Thumb youtubeId={cut.youtubeId} alt={cut.title} />
           </Frame>
         ) : null}
         <span className="min-w-0 flex-1 truncate">
           <span
-            className="font-bold group-hover:[box-shadow:inset_0_-2px_0_var(--wax)]"
+            className="font-bold"
             style={{ fontSize: "var(--t-body)", letterSpacing: "-0.02em" }}
           >
             {label}
