@@ -60,7 +60,7 @@ fa19d25 docs: 핸드오프 갱신
 
 ### 1-3. 적대적 검증에서 나온 **우리가 만든 회귀** 6건 (전부 수정)
 
-병렬 에이전트가 만든 것들이다. 이 목록 자체가 §3-6 의 근거다.
+병렬 에이전트가 만든 것들이다. 이 목록 자체가 §3-7 의 근거다.
 
 - `PlaceSheet` 가 **리렌더마다 포커스를 뺏음** — `onClose` 인라인 화살표가 이펙트 의존성이라
   "담기" 누를 때마다 발동. 이펙트 분리 + ref 로 해소.
@@ -268,7 +268,35 @@ RSC 직렬화로 **EN 페이지 HTML 안에 한국어 원문이 통째로 들어
    다음 요청에서 화면이 고쳐진다. 그러면 코드는 처음부터 멀쩡했던 것이다
 3. 캐시 바깥(예: `loadGraph`)에 넣은 로그는 **캐시 히트에서도 찍힌다** — 둘을 구분 못 한다
 
-### 3-4. ⚠️ 낡은 서버가 포트를 잡고 있으면 **옛 빌드를 측정하게 된다**
+### 3-4. ⚠️ `"use server"` 파일에서 **타입을 re-export 하지 마라** — 그 파일의 액션이 전부 죽는다
+
+    // ✗ 절대 하지 마라 ("use server" 파일 안에서)
+    import type { ActionResult } from "./_lib/action-result";
+    export type { ActionResult };
+
+Turbopack 이 이걸 **값 export 로 보고** `registerServerReference(ActionResult, …)` 를
+내보낸다. 타입은 런타임에 없으니 **모듈 평가에서** `ReferenceError: ActionResult is not
+defined` 로 터지고, **그 파일의 모든 액션이 같이 죽는다.**
+
+무서운 지점은 여기다 — **`tsc` · `eslint --max-warnings=0` · `npm run build` 가 전부
+통과한다.** 타입 수준에서는 합법이기 때문이다. 배포 검증을 다 통과한 상태로 어드민
+전체가 500 이었고, 우리는 그걸 모른 채 "배포 준비됐다"고 판단했다.
+
+실제로 4개 파일이 이 상태였다(`admin`·`confirm`·`queue`·`translations`의 `actions.ts`).
+증상은 제각각으로 보였다 — "공개 전환이 안 된다", "주소를 고칠 방법이 없다"(수정 폼이
+`confirm/actions.ts` 를 쓴다). 원인은 하나였다.
+
+`"use client"` 파일의 같은 구문은 무해하다(`_ui/form.tsx`). 서버 액션 변환을 안 거친다.
+
+**확인법** — 빌드 산출물에서 직접 본다. 타입이 값으로 등록되면 여기 잡힌다:
+```bash
+npm run build && grep -rl "registerServerReference(ActionResult" .next/server || echo "깨끗함"
+```
+
+**교훈**: 어드민은 **타입 검사로 검증되지 않는다.** 화면이 200 이어도 액션은 죽어 있을
+수 있다. 액션 하나를 실제로 호출해 봐야 안다(§4 에 서버 액션 직접 호출법을 적어 뒀다).
+
+### 3-5. ⚠️ 낡은 서버가 포트를 잡고 있으면 **옛 빌드를 측정하게 된다**
 
 `pkill -f "next start"` 가 실제 프로세스를 못 죽여서, 새 서버가 `EADDRINUSE` 로 조용히 죽고
 **옛 서버가 계속 응답했다.** "수정이 반영 안 됐다"고 한참 헤맸다.
@@ -278,7 +306,7 @@ kill -9 $(lsof -nP -iTCP:3000 -sTCP:LISTEN -t) 2>/dev/null   # 이렇게 죽여�
 tail -5 /tmp/*.log                                            # EADDRINUSE 없는지 확인
 ```
 
-### 3-5. ⚠️ `.env.local` 은 **키 이름이 아니라 값**을 확인하라
+### 3-6. ⚠️ `.env.local` 은 **키 이름이 아니라 값**을 확인하라
 
 `grep -oE '^[A-Z_]+' .env.local` 로 `ANTHROPIC_API_KEY` 를 보고 "키가 있다"고 사용자에게
 보고했는데, 실제로는 `ANTHROPIC_API_KEY=` — **값이 빈 줄**이었다. 번역 스크립트를 다 만들고
@@ -292,7 +320,7 @@ tail -5 /tmp/*.log                                            # EADDRINUSE 없�
 node -e 'const l=require("fs").readFileSync(".env.local","utf8").split("\n").find(x=>x.includes("ANTHROPIC"));console.log("값 길이:",(l.split("=")[1]||"").length)'
 ```
 
-### 3-6. ⚠️ 병렬 에이전트는 **같은 파일을 덮어쓰고, 서로의 의도를 오해한다**
+### 3-7. ⚠️ 병렬 에이전트는 **같은 파일을 덮어쓰고, 서로의 의도를 오해한다**
 
 11개를 동시에 돌렸더니:
 - `type/[type]/page.tsx` 에서 SEO 작업과 무게 경감 작업이 **충돌**해 `revalidate` 줄이 유실됐다.
@@ -303,13 +331,13 @@ node -e 'const l=require("fs").readFileSync(".env.local","utf8").split("\n").fin
 **교훈**: 파일 단위로 스코프를 나누고, 겹치면 순차로. 그리고 **작업 중에는 측정하지 마라** —
 에이전트가 전부 idle 이 된 뒤에 한 번에 검증한다.
 
-### 3-7. ⚠️ "가장 가까운 기존 키를 재사용하라"는 지시가 **카피를 죽인다**
+### 3-8. ⚠️ "가장 가까운 기존 키를 재사용하라"는 지시가 **카피를 죽인다**
 
 i18n 위임에서 이렇게 지시했더니 `/channels` 의 헤드라인이 `m.channels.title`("채널")로
 바뀌었다. 형제 화면은 "어디 가세요?" / "뭐 볼래요?" 인데 여기만 한 단어가 `--t-display`
 900 웨이트로 박혔다. **메타 title 용 키와 화면 헤드라인 키는 별개로 둬라.**
 
-### 3-8. 이전 세션에서 이어지는 것 (여전히 유효)
+### 3-9. 이전 세션에서 이어지는 것 (여전히 유효)
 
 1. **DOM 이 정상인데 화면이 검다** → 페인트/합성 버그. `mix-blend-mode` + `filter: blur()`.
 2. **라이브러리가 이미 폴백하는데 앞에서 막지 마라** (revert `8f65f44`).
@@ -359,6 +387,36 @@ curl -s -H "Authorization: Bearer $CRON_SECRET" \
 psql "$SUPABASE_DB_URL" -c \
   "select max(now()::date - api_fetched_at::date) as oldest_days from videos;"
 ```
+
+### 어드민 서버 액션을 **실제로 호출해서** 검증하기
+
+화면이 200 이어도 액션은 죽어 있을 수 있다(§3-4). 타입 검사로는 절대 안 잡힌다.
+
+```bash
+# 1) 로그인 — base64 시크릿에 '+' 가 있어 --data-urlencode 가 필수다(-d 면 공백이 된다)
+PW=$(grep '^ADMIN_SECRET=' .env.local | cut -d= -f2-)
+curl -s -c /tmp/adm.jar -o /dev/null \
+  -X POST --data-urlencode "password=$PW" --data-urlencode "next=/admin" \
+  http://localhost:3000/api/admin/login
+curl -s -b /tmp/adm.jar -o /dev/null -w "admin %{http_code}\n" http://localhost:3000/admin
+
+# 2) 액션 ID 찾기 — 페이지가 로드하는 청크에 {"name":"<액션명>"} 으로 박혀 있다
+curl -s -b /tmp/adm.jar http://localhost:3000/admin/places -o /tmp/p.html
+for c in $(grep -oE '/_next/static/chunks/[^"]+\.js' /tmp/p.html | sort -u); do
+  curl -s -b /tmp/adm.jar "http://localhost:3000$c" \
+    | grep -oE '"[0-9a-f]{40,64}":\{"name":"togglePlacePublished' | head -1
+done
+
+# 3) 호출 — 인자가 단순 값이면 JSON 배열로 보낸다
+curl -s -b /tmp/adm.jar -X POST http://localhost:3000/admin/places \
+  -H 'Next-Action: <위에서 찾은 ID>' \
+  -H 'Content-Type: text/plain;charset=UTF-8' \
+  --data-raw '["<place-id>",true]' | grep -oE '\{"ok":"[^"]*"\}|"name":"ReferenceError"'
+```
+
+⚠️ 인자가 `FormData` 인 액션(`useActionState` 를 쓰는 폼)은 이 방법으로 호출하기
+어렵다 — React 가 이전 상태까지 함께 인코딩한다. **같은 파일의 단순 인자 액션을 하나
+호출해 모듈이 평가되는지만 보면 충분하다.** §3-4 버그는 파일 단위로 터진다.
 
 ```bash
 npm run translate:en -- --dry-run    # 번역 대상·분량 (키 없이 동작)
