@@ -10,7 +10,7 @@
 
 - 배포 전 **UI/UX 전면 감사**를 돌렸고, 나온 **P0 7건을 전부 닫았다.** 법정 정적 페이지 4종,
   `<html lang>` 로케일, `/c/*` 트리 i18n, 채널 유튜브 아웃링크, 영상 제목 가시화 등.
-- **EN 이 실제로 영어가 됐다.** UI 크롬뿐 아니라 도시명·장소명까지. 산문(요약)은 번역 컬럼과
+- **EN 이 대체로 영어가 됐다.** UI 크롬·도시명·장소명·산문까지. **채널명은 아직 한국어다**(§2-4). 산문(요약)은 번역 컬럼과
   스크립트까지 만들어 뒀고 **API 키만 넣으면 채워진다.**
 - **ISR 이 죽어 있었다**(레이아웃이 `headers()` 를 읽어 전 페이지 동적). 데이터 계층 캐싱으로
   바꿔 TTFB 0.19~0.35s → **0.009~0.017s**.
@@ -76,14 +76,14 @@ fa19d25 docs: 핸드오프 갱신
   나갔고, `max-w-[42ch]` 의 `ch` 는 "0" 글리프 폭(≈7px) 기준이라 실제 294px — **전각 한글이
   한 줄 22자에서 끊겨** 국수 가락 컬럼이 됐다. `34rem` 직접 지정으로 교체.
 - 문구 전면 재작성(한 문장에 사실 3개 → 한 줄에 한 가지), 정책 링크 행, 브랜드 마감 추가.
-- 브랜드 `Tripin → Greatripin` 은 **코드에선 완결**. 문서에는 미반영(§2-5).
+- 브랜드 `Tripin → Greatripin` 은 **코드에선 완결**. 문서에는 미반영(§2-6).
 
 ### 1-5. EN 산문 번역 (⚠️ 미완 — 키 대기)
 
 - 마이그레이션 **`0007` 적용 완료**: `places` 에 `summary_en`·`summary_bullets_en`·
   `address_en`·`price_hint_en`·**`en_source`**(`null`/`machine`/`human`)·`en_translated_at`,
   `creator_cities` 에 `intro_text_en`.
-- **`scripts/translate-en.mjs`** (`npm run translate:en`) — Claude API 초벌 번역.
+- **`scripts/translate-en.mjs`** (`npm run translate:en`) — OpenAI 호환 API 초벌 번역.
   `--dry-run`(키 없이 분량만) / `--limit N` / `--redo`.
 - **공개 화면 표시 규칙 구현·검증됨** (`src/shared/ui/SummaryBlock.tsx`):
 
@@ -125,19 +125,25 @@ HTTP 리퍼러**를 넣어야 프로덕션에서 지도가 뜬다(콘솔 작업 
 확인 못 했다. 라우트는 이 헤더를 엄격히 대조한다. **배포 후 첫 크론 실행 로그를 눈으로
 확인해야 한다** — 401 이면 매일 조용히 실패하면서 시계는 계속 간다.
 
-### 🔴 2. EN 번역 배치 — 키가 없다
+### 🟡 2. EN 번역 — 초벌은 돌았다. **남은 건 사람 검수다**
 
-**상태**: 스키마·스크립트·공개 UI·어드민 검수 화면까지 **전부 준비 완료. 실행만 남았다.**
+**상태**: 배치 실행 완료. 전부 `en_source='machine'` 이라 공개 화면에 "자동 번역" 표시와
+원문 보기가 붙어 나간다. `/admin/translations` 에서 확인하면 `human` 으로 올라가고 표시가
+사라진다. → **판단이 필요한 일이라 사용자 몫이다.**
 
-**막고 있는 것**: `.env.local` 의 `ANTHROPIC_API_KEY` 에 **값이 없다**(`ANTHROPIC_API_KEY=`).
-키 이름만 있다. `ant` CLI 도 미설치라 OAuth 폴백도 없다. → **사용자만 할 수 있다.**
+**모델**: Anthropic 이 아니라 **OpenAI 호환 엔드포인트**를 쓴다. `.env.local` 의
+`OPENAI_API_KEY` / `OPENAI_BASE_URL` / `AI_MODEL` 세 개로 제공자를 갈아끼운다
+(현재 Gemini 무료 티어 `gemini-3.1-flash-lite`). `OPENAI_BASE_URL` 을 비우면 진짜 OpenAI 다.
+규약은 `optisearch` 의 `src/shared/lib/openai.ts` 와 같다.
 
-키를 넣은 뒤:
 ```bash
+npm run translate:en -- --dry-run    # 키 없이 분량만
 npm run translate:en -- --limit 3    # 품질 먼저 확인
-npm run translate:en                 # 전체 133곳 (약 15,822자)
+npm run translate:en                 # 미번역분만 (en_source is null)
+npm run translate:en -- --redo       # machine 을 다시 번역
 ```
-분량이 작아 비용은 몇 십 원 수준이다. 전부 `en_source='machine'` 으로 들어가고,
+재실행이 안전하다 — 성공한 건만 `machine` 이 되므로 실패분만 다시 잡는다. 전부
+`en_source='machine'` 으로 들어가고,
 `/admin/translations` 에서 검수하면 `human` 이 된다.
 
 ### 🟡 3. 이 작업이 **이 머신에만 있다**
@@ -148,7 +154,29 @@ npm run translate:en                 # 전체 133곳 (약 15,822자)
 즉 지금 이 디스크가 유일한 사본이다. §2-1 의 도메인 결정이 나면 GitHub 원격 → Vercel
 연결이 어차피 필요하니, 그때 `master` 병합까지 같이 처리하는 게 순서다.
 
-### 🟡 4. 남은 P1 — 감사에서 나왔지만 안 고친 것
+### 🟡 4. EN 페이지의 **채널명이 아직 한국어다**
+
+`/en/c/fukuoka-ajo/fukuoka` 가 `Home 후쿠오카 아저씨 Fukuoka … by 후쿠오카 아저씨` 로 나온다.
+도시명(`name_en`)은 고쳤는데 **같은 부류인 채널명을 놓쳤다.**
+
+**원인**: `creators.display_name_en` 컬럼에 10개 중 9개가 이미 채워져 있는데
+(`후쿠오카 아저씨` → `Fukuoka Ajosshi`, `성시경 SUNG SI KYUNG` → `Sung Si Kyung` …)
+**어느 로더도 이 컬럼을 select 하지 않는다.** `displayCreatorName` 함수 자체가 없다.
+데이터가 준비돼 있는데 배선만 빠진 것이라 의도적 보류가 아니라 누락이다.
+
+**범위** — `displayCityName` 과 똑같은 모양으로 8~12 파일:
+`shared/i18n/display.ts`(함수 신설) · 로더 4개(`home.ts` `cities.ts` `place-types.ts`
+`videos.ts`) · 페이지 3개(`c/[creator]/page.tsx`, `c/[creator]/[city]/page.tsx`,
+`opengraph-image.tsx`) · 그 값을 받는 클라이언트 컴포넌트들.
+
+⚠️ **§3-2 를 반드시 지켜라.** 로더는 `creatorName` + `creatorNameEn` 둘 다 싣고,
+**서버 컴포넌트가 골라서** 클라이언트에는 하나만 넘긴다. 둘 다 넘기면 EN HTML 에
+한국어가 다시 샌다.
+
+⚠️ `kwaktube` 만 `display_name_en` 이 **null** 이다. 실존 인물의 채널명 로마자 표기라
+임의로 정하지 않았다 — 사용자 확인이 필요하다(번역 배치는 본문에서 "Kwaktube" 로 쓴다).
+
+### 🟡 5. 남은 P1 — 감사에서 나왔지만 안 고친 것
 
 - **월드의 서명이 핵심 화면에 없다.** `Explorer`·`CityExplorer`·`/type/[type]` 에
   `Frame`/`Thumb`/`VideoSheet` import 가 **0건**. 방향 계약은 "썸네일을 늘어놓는 물건"인데
@@ -161,7 +189,7 @@ npm run translate:en                 # 전체 133곳 (약 15,822자)
 - 채널 허브 통계 한 줄에서 "검수한 영상"은 `map_status` 무필터, "간 곳"은 confirmed 만 —
   **한 줄에서 두 숫자의 기준이 다르다.** 지금은 candidate 가 0이라 안 드러난다.
 
-### 🟢 5. 나중
+### 🟢 6. 나중
 
 - `cities.ts` 의 `loadGraph` 가 필터 없이 풀테이블 스캔. PostgREST 1000행 상한에 걸리면
   **조용히 잘린다.** 현재 places 133 / videos 116 이라 여유. 채널 20~30개에서 터진다.
@@ -302,11 +330,10 @@ npm run translate:en -- --dry-run    # 번역 대상·분량 (키 없이 동작)
 
 ## 5. 다음 사람이 먼저 할 일
 
-1. **커밋한다** (§2-3). 73개 파일이 워킹 트리에만 있다 — 이 상태로 세션이 하나 더 지나가면
-   무엇이 왜 바뀌었는지 복원할 수 없다. §1 의 구분대로 쪼개라.
-2. **도메인을 정한다** (§2-1). 크론·OG·삭제요청 창구 셋이 여기 묶여 있고, YouTube 30일
+1. **도메인을 정한다** (§2-1). 크론·OG·삭제요청 창구 셋이 여기 묶여 있고, YouTube 30일
    한도가 **2026-09-08** 이다. 배포가 늦어지면 최소한 갱신 배치라도 손으로 돌려라(§4).
-3. **`ANTHROPIC_API_KEY` 를 넣고 번역을 돌린다** (§2-2). 나머지는 다 준비돼 있다.
+2. **번역을 검수한다** (§2-2). `/admin/translations`. 초벌은 이미 들어가 있다.
+3. **원격을 붙인다** (§2-3). 지금 이 디스크가 유일한 사본이다.
 
 > 이전 핸드오프의 "지도 스타일" 항목은 **해결됐다** — 원인은 WebGL 없는 브라우저의 래스터
 > 폴백이었고 코드 문제가 아니었다. 다시 파지 마라.

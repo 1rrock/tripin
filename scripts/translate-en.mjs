@@ -13,17 +13,24 @@
  *     검색 유입)가 통째로 무효가 된다. 번역문이 HTML 에 들어가야 색인된다
  *   · 전체 분량이 2만 자 남짓이라 1회 배치로 끝난다. 런타임 비용·지연이 0
  *
+ * 어떤 모델인가:
+ *   OPENAI_API_KEY / OPENAI_BASE_URL / AI_MODEL 세 개로 **아무 OpenAI 호환 제공자나**
+ *   가리킬 수 있다. 현재는 Gemini 무료 티어의 OpenAI 호환 엔드포인트를 쓴다
+ *   (optisearch 의 src/shared/lib/openai.ts 와 같은 규약).
+ *   BASE_URL 을 비우면 진짜 OpenAI 로 간다.
+ *
  * 검수 흐름 (docs/I18N.md §7 "기계번역 일괄 공개 금지"에 대한 대응):
  *   이 스크립트는 en_source='machine' 으로만 쓴다. 공개 화면은 machine 이면
  *   "자동 번역" 표시와 원문 보기를 함께 내보내고, 어드민에서 검수하면 'human' 이 된다.
  *
  * ⚠️ 원문(한국어 컬럼)은 절대 건드리지 않는다. 되돌리려면 영문 컬럼만 비우면 된다.
  */
-import Anthropic from "@anthropic-ai/sdk";
+import OpenAI from "openai";
 import { createClient } from "@supabase/supabase-js";
 import { existsSync, readFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { setTimeout as sleep } from "node:timers/promises";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 
@@ -54,7 +61,7 @@ const LIMIT = Number(value("limit", "0")) || null;
    키를 넣을지 판단할 수 있어야 하기 때문이다. */
 const required = DRY_RUN
   ? ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
-  : ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "ANTHROPIC_API_KEY"];
+  : ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY", "OPENAI_API_KEY"];
 for (const key of required) {
   if (!env[key]) {
     console.error(`✖ ${key} 가 .env.local 에 없거나 값이 비어 있습니다.`);
@@ -62,21 +69,39 @@ for (const key of required) {
   }
 }
 
+/* `||` 이지 `??` 가 아니다 — 빈 값으로 선언된 환경변수는 폴백해야지 model:"" 을 보내면 안 된다 */
+const MODEL = env.AI_MODEL || "gpt-4o-mini";
+
 const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_KEY, {
   auth: { persistSession: false },
 });
-const anthropic = env.ANTHROPIC_API_KEY ? new Anthropic({ apiKey: env.ANTHROPIC_API_KEY }) : null;
+const ai = env.OPENAI_API_KEY
+  ? new OpenAI({
+      apiKey: env.OPENAI_API_KEY,
+      baseURL: env.OPENAI_BASE_URL || undefined,
+      maxRetries: 0, // 재시도는 아래 callJSON 이 백오프까지 포함해 직접 한다
+    })
+  : null;
 
-/* 구조화 출력 — 파싱 실패를 애초에 없앤다. 불릿 개수는 원문과 1:1 로 맞춘다. */
+/* 구조화 출력 — 파싱 실패를 애초에 없앤다. 불릿 개수는 원문과 1:1 로 맞춘다.
+   ⚠️ 없는 값을 null 이 아니라 **빈 문자열**로 받는다. type:["string","null"] 유니온을
+   호환 레이어(특히 Gemini)가 거부하는 경우가 있어서다. "" → null 변환은 코드가 한다. */
 const PLACE_SCHEMA = {
   type: "object",
   properties: {
-    summary_en: { type: ["string", "null"] },
+    summary_en: { type: "string" },
     summary_bullets_en: { type: "array", items: { type: "string" } },
-    address_en: { type: ["string", "null"] },
-    price_hint_en: { type: ["string", "null"] },
+    address_en: { type: "string" },
+    price_hint_en: { type: "string" },
   },
   required: ["summary_en", "summary_bullets_en", "address_en", "price_hint_en"],
+  additionalProperties: false,
+};
+
+const INTRO_SCHEMA = {
+  type: "object",
+  properties: { intro_en: { type: "string" } },
+  required: ["intro_en"],
   additionalProperties: false,
 };
 
@@ -91,46 +116,99 @@ Rules:
 - Prices, times, distances, and counts stay exactly as given. Keep the original currency (¥, ₩) and unit.
 - Where the Korean says information is as of filming ("영상 촬영 시점 기준"), keep that qualifier — it is a legal disclosure, not a stylistic choice.
 - Addresses: give the conventional English postal form for that country, keeping the original script in parentheses only if the Korean did.
-- If a field is null or empty in the input, return null (or an empty array for bullets). Do not invent content.`;
+- If a field is empty in the input, return an empty string "" (or an empty array for bullets). Do not invent content.
+
+Reply with JSON only — no prose, no markdown fence.`;
+
+/* 제공자마다 구조화 출력 방언이 다르다. json_schema 를 먼저 시도하고, 거부하면 한 번만
+   json_object 로 내려앉은 뒤 그 판정을 기억한다 — 133건마다 400 을 맞을 이유가 없다. */
+let jsonMode = "json_schema";
+
+function parseJSON(raw) {
+  const text = raw.replace(/^\s*```(?:json)?\s*|\s*```\s*$/g, "").trim();
+  return JSON.parse(text);
+}
+
+const RETRYABLE = /rate.?limit|429|quota|timeout|ECONNRESET|502|503|504|overloaded/i;
+
+async function callJSON(schemaName, schema, userContent) {
+  let lastErr;
+  for (let attempt = 0; attempt < 5; attempt += 1) {
+    try {
+      const res = await ai.chat.completions.create({
+        model: MODEL,
+        temperature: 0,
+        messages: [
+          { role: "system", content: SYSTEM },
+          { role: "user", content: userContent },
+        ],
+        response_format:
+          jsonMode === "json_schema"
+            ? { type: "json_schema", json_schema: { name: schemaName, strict: true, schema } }
+            : { type: "json_object" },
+      });
+      const text = res.choices?.[0]?.message?.content;
+      if (!text) throw new Error("빈 응답");
+      return parseJSON(text);
+    } catch (e) {
+      lastErr = e;
+      const msg = String(e?.message ?? e);
+
+      /* 스키마 방언 거부는 재시도가 아니라 모드 전환이다 — 같은 요청을 즉시 다시 보낸다 */
+      if (jsonMode === "json_schema" && /response_format|json_schema|schema/i.test(msg)) {
+        console.log(`  ↩ 이 제공자는 json_schema 를 거부합니다 — json_object 로 전환합니다.`);
+        jsonMode = "json_object";
+        continue;
+      }
+      if (!RETRYABLE.test(msg) || attempt === 4) throw e;
+
+      const waitMs = 2000 * 2 ** attempt; // 2s, 4s, 8s, 16s — 무료 티어 분당 한도 회복용
+      console.log(`  … ${Math.round(waitMs / 1000)}s 대기 후 재시도 (${msg.slice(0, 80)})`);
+      await sleep(waitMs);
+    }
+  }
+  throw lastErr;
+}
+
+/* 빈 문자열은 "번역 결과가 없다"는 뜻이므로 컬럼에는 null 로 넣는다 — ""과 null 이
+   섞이면 어드민의 "미번역" 필터(en_source is null)와 별개로 표시 분기가 어긋난다. */
+const orNull = (s) => {
+  const v = typeof s === "string" ? s.trim() : "";
+  return v === "" ? null : v;
+};
+
+/* 채널명·도시명은 **이미 DB 에 확정된 영문 표기**가 있다. 안 알려주면 모델이 매번
+   새로 지어내고("Sung Si Kyung" vs "Sung Si-kyung") 같은 화면 안에서 표기가 갈린다.
+   run() 이 채운다. */
+let GLOSSARY = "";
 
 function buildPrompt(p) {
   return `Translate the Korean fields for this place.
-
+${GLOSSARY}
 Place: ${p.name}${p.name_local ? ` (${p.name_local})` : ""}
 Type: ${p.place_type}
 City: ${p.city_name ?? "unknown"}
 
-summary: ${JSON.stringify(p.summary)}
+summary: ${JSON.stringify(p.summary ?? "")}
 summary_bullets: ${JSON.stringify(p.summary_bullets ?? [])}
-address: ${JSON.stringify(p.address)}
-price_hint: ${JSON.stringify(p.price_hint)}`;
+address: ${JSON.stringify(p.address ?? "")}
+price_hint: ${JSON.stringify(p.price_hint ?? "")}`;
 }
 
 async function translatePlace(p) {
-  const res = await anthropic.messages.create({
-    model: "claude-opus-5",
-    max_tokens: 4000,
-    thinking: { type: "adaptive" },
-    output_config: {
-      effort: "low", // 짧고 사실적인 번역 — 깊은 추론이 필요한 작업이 아니다
-      format: { type: "json_schema", schema: PLACE_SCHEMA },
-    },
-    system: SYSTEM,
-    messages: [{ role: "user", content: buildPrompt(p) }],
-  });
-
-  if (res.stop_reason === "refusal") {
-    throw new Error(`거절됨 (${res.stop_details?.category ?? "unknown"})`);
-  }
-  const text = res.content.find((b) => b.type === "text")?.text;
-  if (!text) throw new Error("빈 응답");
-  const out = JSON.parse(text);
+  const out = await callJSON("place_translation", PLACE_SCHEMA, buildPrompt(p));
 
   const srcCount = (p.summary_bullets ?? []).length;
-  if (out.summary_bullets_en.length !== srcCount) {
-    throw new Error(`불릿 수 불일치: 원문 ${srcCount} → 번역 ${out.summary_bullets_en.length}`);
+  const bullets = Array.isArray(out.summary_bullets_en) ? out.summary_bullets_en : [];
+  if (bullets.length !== srcCount) {
+    throw new Error(`불릿 수 불일치: 원문 ${srcCount} → 번역 ${bullets.length}`);
   }
-  return out;
+  return {
+    summary_en: orNull(out.summary_en),
+    summary_bullets_en: bullets.map((b) => String(b)),
+    address_en: orNull(out.address_en),
+    price_hint_en: orNull(out.price_hint_en),
+  };
 }
 
 async function run() {
@@ -144,8 +222,19 @@ async function run() {
   const { data: places, error } = await q;
   if (error) throw error;
 
-  const { data: cities } = await db.from("cities").select("id, name");
+  const { data: cities } = await db.from("cities").select("id, name, name_en");
   const cityName = new Map((cities ?? []).map((c) => [c.id, c.name]));
+
+  const { data: creators } = await db.from("creators").select("display_name, display_name_en");
+  const fixed = [
+    ...(creators ?? []).map((c) => [c.display_name, c.display_name_en]),
+    ...(cities ?? []).map((c) => [c.name, c.name_en]),
+  ].filter(([ko, en]) => ko && en && ko !== en);
+  if (fixed.length) {
+    GLOSSARY = `\nUse exactly these established English forms wherever the Korean appears — do not re-romanize them:\n${fixed
+      .map(([ko, en]) => `  ${ko} → ${en}`)
+      .join("\n")}\n`;
+  }
 
   /* 번역할 산문이 아무것도 없는 장소는 건너뛴다 — 빈 값에 API 를 쓰지 않는다 */
   const targets = places.filter(
@@ -165,6 +254,8 @@ async function run() {
   console.log(`원문 분량 약 ${chars.toLocaleString()}자`);
   if (DRY_RUN) return console.log("(--dry-run: API 호출 없이 종료)");
 
+  console.log(`모델 ${MODEL}${env.OPENAI_BASE_URL ? ` @ ${env.OPENAI_BASE_URL}` : ""}\n`);
+
   let ok = 0;
   const failed = [];
   for (const [i, p] of targets.entries()) {
@@ -174,10 +265,7 @@ async function run() {
       const { error: upErr } = await db
         .from("places")
         .update({
-          summary_en: out.summary_en,
-          summary_bullets_en: out.summary_bullets_en,
-          address_en: out.address_en,
-          price_hint_en: out.price_hint_en,
+          ...out,
           en_source: "machine",
           en_translated_at: new Date().toISOString(),
         })
@@ -189,6 +277,8 @@ async function run() {
       failed.push({ name: p.name, reason: e.message });
       console.log(`  ✖ ${label} — ${e.message}`);
     }
+    /* 무료 티어는 분당 요청 수로 끊는다. 순차 + 짧은 간격이면 백오프까지 갈 일이 거의 없다 */
+    await sleep(1200);
   }
 
   /* 도시 인트로 — 같은 화면에 나오므로 여기만 한국어로 남으면 안 된다 */
@@ -201,35 +291,16 @@ async function run() {
   for (const [i, row] of introTargets.entries()) {
     const label = `[인트로 ${i + 1}/${introTargets.length}] ${cityName.get(row.city_id) ?? row.city_id}`;
     try {
-      const res = await anthropic.messages.create({
-        model: "claude-opus-5",
-        max_tokens: 2000,
-        thinking: { type: "adaptive" },
-        output_config: {
-          effort: "low",
-          format: {
-            type: "json_schema",
-            schema: {
-              type: "object",
-              properties: { intro_en: { type: "string" } },
-              required: ["intro_en"],
-              additionalProperties: false,
-            },
-          },
-        },
-        system: SYSTEM,
-        messages: [
-          {
-            role: "user",
-            content: `Translate this short intro for a channel's city page.\n\nCity: ${cityName.get(row.city_id) ?? "unknown"}\nintro_text: ${JSON.stringify(row.intro_text)}`,
-          },
-        ],
-      });
-      if (res.stop_reason === "refusal") throw new Error("거절됨");
-      const out = JSON.parse(res.content.find((b) => b.type === "text").text);
+      const out = await callJSON(
+        "intro_translation",
+        INTRO_SCHEMA,
+        `Translate this short intro for a channel's city page.\n${GLOSSARY}\nCity: ${cityName.get(row.city_id) ?? "unknown"}\nintro_text: ${JSON.stringify(row.intro_text)}`,
+      );
+      const intro = orNull(out.intro_en);
+      if (!intro) throw new Error("빈 번역");
       const { error: upErr } = await db
         .from("creator_cities")
-        .update({ intro_text_en: out.intro_en })
+        .update({ intro_text_en: intro })
         .eq("creator_id", row.creator_id)
         .eq("city_id", row.city_id);
       if (upErr) throw upErr;
@@ -238,6 +309,7 @@ async function run() {
       failed.push({ name: label, reason: e.message });
       console.log(`  ✖ ${label} — ${e.message}`);
     }
+    await sleep(1200);
   }
 
   console.log(`\n완료: 장소 ${ok}/${targets.length} · 인트로 ${introTargets.length}건 시도`);
