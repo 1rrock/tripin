@@ -12,7 +12,8 @@ import { useActionState, useState, useTransition } from "react";
 import { buttonCls, inputCls, ResultNotice } from "../_ui/form";
 import { Pill } from "../_ui/kit";
 import type { AdminTranslationRow } from "../_lib/shared";
-import { approvePlaceTranslation, savePlaceTranslation, type ActionResult } from "./actions";
+import { approvePlaceTranslation, savePlaceTranslation } from "./actions";
+import type { ActionResult } from "../_lib/action-result";
 
 const roCls =
   "whitespace-pre-wrap rounded-md border border-neutral-200 bg-neutral-50 px-2.5 py-1.5 text-sm text-neutral-700";

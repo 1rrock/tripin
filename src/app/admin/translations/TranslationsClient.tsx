@@ -14,7 +14,8 @@ import type { AdminCityIntroRow, AdminTranslationRow } from "../_lib/shared";
 import { Card, Pill } from "../_ui/kit";
 import { inputCls, buttonCls, ResultNotice } from "../_ui/form";
 import { TranslationEditor } from "./TranslationEditor";
-import { saveCityIntroTranslation, type ActionResult } from "./actions";
+import { saveCityIntroTranslation } from "./actions";
+import type { ActionResult } from "../_lib/action-result";
 
 type Filter = "machine" | "human" | "none";
 

@@ -16,7 +16,6 @@ import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 
 import type { ActionResult } from "../_lib/action-result";
-export type { ActionResult };
 
 /**
  * 대상을 즉시 비공개로 내리고 임시조치로 표시한다.

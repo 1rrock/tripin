@@ -15,7 +15,6 @@ import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { purgePublicData } from "@/shared/api/cache";
 import type { ActionResult } from "./_lib/action-result";
 
-export type { ActionResult };
 
 /**
  * 통계 캐시 재계산.

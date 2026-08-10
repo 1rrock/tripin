@@ -17,7 +17,6 @@ import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import type { ActionResult } from "../_lib/action-result";
 
-export type { ActionResult };
 
 function afterWrite() {
   revalidatePath("/admin/translations");

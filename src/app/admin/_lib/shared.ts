@@ -86,11 +86,26 @@ export interface AdminCityIntroRow {
   introTextEn: string | null;
 }
 
-/** 주소가 "인근·추정" 같은 얼버무림을 담고 있으면 검수 대상이다. */
-const VAGUE_ADDRESS = /인근|추정|근처|일대|부근|\(/;
+/** "인근·추정" 처럼 장소를 특정하지 못하겠다고 말하는 표현. */
+const VAGUE_HEDGE = /인근|근처|주변|부근|일대|추정|미상|불명|미특정|어딘가|확인\s*필요/;
 
-export function isVagueAddress(address: string | null): boolean {
-  return Boolean(address && VAGUE_ADDRESS.test(address));
+/**
+ * 주소가 가게를 특정하지 못하면 검수 대상이다.
+ *
+ * ⚠️ 예전 규칙은 `\(` 를 얼버무림으로 쳤다. 한국 주소는 지번을 괄호로 병기하는 게
+ *    표준이라(`… 수영로594번길 28-2 (광안2동 146-17)`) **정확한 주소 9건이 모호로
+ *    표시됐다.** 괄호는 신호가 아니다.
+ *
+ * 대신 두 가지를 본다:
+ *   1. 얼버무리는 표현이 들어 있다
+ *   2. **숫자가 하나도 없다** — 번지가 없으면 동/구 수준이라 가게를 못 찾는다.
+ *      단 `attraction` 은 구역·거리 자체가 대상이라(아메리칸 빌리지, 나카스 포장마차
+ *      거리) 번지가 없는 게 정상이므로 제외한다.
+ */
+export function isVagueAddress(address: string | null, placeType?: string | null): boolean {
+  if (!address) return false;
+  if (VAGUE_HEDGE.test(address)) return true;
+  return placeType !== "attraction" && !/\d/.test(address);
 }
 
 export function hasSummary(p: { summary: string | null; summaryBullets: string[] }): boolean {

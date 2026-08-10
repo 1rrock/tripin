@@ -48,7 +48,7 @@ export default async function AdminDashboardPage() {
   const summaryMissing = places.filter((p) => !hasSummary(p));
   const coordsMissing = places.filter((p) => p.lat === null);
   const typeUnknown = places.filter((p) => p.placeType === "unknown");
-  const vagueAddress = places.filter((p) => p.isPublished && isVagueAddress(p.address));
+  const vagueAddress = places.filter((p) => p.isPublished && isVagueAddress(p.address, p.placeType));
   const hidden = places.filter((p) => !p.isPublished && p.mapStatus === "confirmed");
   const cacheDrift = pieces.filter((p) => p.cachedCount !== null && p.cachedCount !== p.published);
 

@@ -16,7 +16,6 @@ import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { resolveGoogleCoords } from "@/shared/lib/resolve-google-place";
 import type { ActionResult } from "../_lib/action-result";
 
-export type { ActionResult };
 
 const slugSchema = z
   .string()
