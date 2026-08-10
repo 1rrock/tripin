@@ -1,24 +1,21 @@
 "use server";
 
 /**
- * /admin/confirm 서버 액션 — 수동 입력 모드 (docs/ADMIN.md 10장 3번).
+ * /admin/confirm 서버 액션 — 손입력·후보 수정 보조 경로.
  *
- * 파이프라인(INGEST.md)이 붙기 전까지 손으로 조각을 만드는 경로다.
+ * 대량 수집은 scripts/ingest·Orca 동기화. 여기는 수동 보정·확정.
  * 보호: proxy.ts 가 /admin/* POST(서버 액션 포함)에 쿠키를 요구한다.
  *
- * 확정 잠금 규칙(docs/ADMIN.md 5장)은 서버에서 최종 검증한다:
- *   confirmed 는 좌표 + 근거(source_note) 없이는 저장되지 않는다.
+ * 확정 잠금(docs/ADMIN.md 5장): confirmed 는 좌표 + 근거(source_note) 없이 저장 불가.
  */
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { resolveGoogleCoords } from "@/shared/lib/resolve-google-place";
+import type { ActionResult } from "../_lib/action-result";
 
-export interface ActionResult {
-  ok?: string;
-  error?: string;
-}
+export type { ActionResult };
 
 const slugSchema = z
   .string()
@@ -163,51 +160,10 @@ export async function createVideo(_: ActionResult, form: FormData): Promise<Acti
 }
 
 // ── 조각 통계 재계산 ────────────────────────────────────
+// 정의는 SQL `recount_stats`(공개 is_published 기준) 한 곳. TS 로컬 재계산은 쓰지 않는다.
 
-/** creator×city 의 place_count 를 재계산하고 creator_cities 를 upsert 한다. */
-async function recountPiece(creatorId: string, cityId: string): Promise<void> {
-  const db = getSupabaseAdmin();
-  const { data: videos } = await db.from("videos").select("id").eq("creator_id", creatorId);
-  const videoIds = (videos ?? []).map((v) => v.id);
-
-  let placeIds: string[] = [];
-  if (videoIds.length > 0) {
-    const { data: links } = await db
-      .from("video_places")
-      .select("place_id")
-      .in("video_id", videoIds);
-    placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
-  }
-
-  let count = 0;
-  if (placeIds.length > 0) {
-    const { count: c } = await db
-      .from("places")
-      .select("id", { count: "exact", head: true })
-      .in("id", placeIds)
-      .eq("city_id", cityId);
-    count = c ?? 0;
-  }
-
-  await db
-    .from("creator_cities")
-    .upsert({ creator_id: creatorId, city_id: cityId, place_count: count });
-
-  // 크리에이터 전체 통계 캐시 갱신 — 홈 카드가 이 값을 읽는다 (런타임 집계 금지 원칙)
-  const { data: pieces } = await db
-    .from("creator_cities")
-    .select("place_count")
-    .eq("creator_id", creatorId);
-  const totalPlaces = (pieces ?? []).reduce((sum, p) => sum + p.place_count, 0);
-  const cityCount = (pieces ?? []).filter((p) => p.place_count > 0).length;
-  const { count: videoCount } = await db
-    .from("videos")
-    .select("id", { count: "exact", head: true })
-    .eq("creator_id", creatorId);
-  await db
-    .from("creators")
-    .update({ place_count: totalPlaces, city_count: cityCount, video_count: videoCount ?? 0 })
-    .eq("id", creatorId);
+async function recountStats(): Promise<void> {
+  await getSupabaseAdmin().rpc("recount_stats");
 }
 
 // ── 장소 ───────────────────────────────────────────────
@@ -329,9 +285,10 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
     return fail(`영상 연결 실패: ${linkError.message}`);
   }
 
-  await recountPiece(d.creatorId, d.cityId);
+  await recountStats();
   revalidatePath("/admin/confirm");
   revalidatePath("/admin");
+  revalidatePath("/", "layout");
   return { ok: `"${d.name}" ${d.mapStatus === "confirmed" ? "확정" : "보류"} 저장됨` };
 }
 
@@ -405,6 +362,22 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   }
 
   const db = getSupabaseAdmin();
+  // 기존 공개 플래그 유지 — confirmed→confirmed 수정이 "내리기/임시조치"를 되돌리면 안 된다.
+  // 승격(candidate→confirmed) 또는 신규 확정 저장 시에만 is_published=true.
+  const { data: prev } = await db
+    .from("places")
+    .select("map_status, is_published")
+    .eq("id", d.placeId)
+    .single();
+  let nextPublished: boolean;
+  if (d.mapStatus === "candidate") {
+    nextPublished = false;
+  } else if (prev?.map_status === "confirmed") {
+    nextPublished = prev.is_published; // 이미 확정이면 수동 비공개 유지
+  } else {
+    nextPublished = true; // 후보 → 확정 승격
+  }
+
   const { error } = await db
     .from("places")
     .update({
@@ -419,9 +392,7 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
       kakao_place_id: kakaoPlaceId,
       naver_place_id: naverPlaceId,
       map_status: d.mapStatus,
-      // 확정 = 공개 — 조각 단위 공개 게이트(/admin/publish)가 생기기 전까지의 운영 규칙.
-      // RLS 가 is_published 만 익명에 노출하므로 이 동기화가 없으면 확정해도 웹에 안 뜬다.
-      is_published: d.mapStatus === "confirmed",
+      is_published: nextPublished,
       source_note: sourceNote,
     })
     .eq("id", d.placeId);
@@ -432,13 +403,18 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
     await db.from("video_places").update({ timestamp_sec: timestampSec }).eq("place_id", d.placeId);
   }
 
-  // 조각·크리에이터 통계 갱신 (홈 카드·도시 칩이 이 값을 읽는다)
-  await recountPiece(d.creatorId, d.cityId);
+  await recountStats();
 
   revalidatePath("/admin/confirm");
   revalidatePath("/admin");
-  revalidatePath("/", "layout"); // 공개 화면(홈·조각) ISR 즉시 갱신
-  return { ok: `"${d.name}" ${d.mapStatus === "confirmed" ? "확정·공개" : "보류(비공개)"}로 수정됨` };
+  revalidatePath("/", "layout");
+  const label =
+    d.mapStatus === "confirmed"
+      ? nextPublished
+        ? "확정·공개"
+        : "확정(비공개 유지)"
+      : "보류(비공개)";
+  return { ok: `"${d.name}" ${label}로 수정됨` };
 }
 
 // deletePlace 는 `admin/actions.ts` 의 deletePlaceById 로 옮겼다 —

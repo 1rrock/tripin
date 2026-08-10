@@ -12,20 +12,9 @@
  * ⛔ 이 스크립트는 로컬 조사용이다. 조회수·구독자수는 요청도 출력도 하지 않는다
  *    (YouTube API §III.E.2 — LEGAL.md). 결과를 DB 에 저장하지 않는다.
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { loadEnv } from "./_lib/env.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 
 const KEY = loadEnv().YOUTUBE_API_KEY;
 if (!KEY) {

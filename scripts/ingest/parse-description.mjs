@@ -24,20 +24,9 @@
  *    `backfill-coords.mjs` 가 공유링크 → 좌표를 처리한다(1순위 경로).
  * ⛔ 전부 candidate 로 들어간다. 확정은 /admin/confirm 에서 사람이 한다.
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { loadEnv } from "./_lib/env.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 
 const KEY = loadEnv().YOUTUBE_API_KEY;
 if (!KEY) {

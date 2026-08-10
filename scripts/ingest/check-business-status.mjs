@@ -21,20 +21,9 @@
  * 약관: `LEGAL.md` §4 — A안(Google Maps) 채택으로 Places 사용이 허용되고,
  *       `place_id` 는 캐싱 제한에서 명시적으로 면제된다(무기한 저장 가능).
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { loadEnv } from "./_lib/env.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 
 const env = loadEnv();
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;

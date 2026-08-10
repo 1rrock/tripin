@@ -9,6 +9,7 @@ import {
   loadAdminPieces,
   loadAdminPlaces,
 } from "./_lib/queries";
+import { canRepublishPiece, hasConfirmableStock, isPieceLive } from "./_lib/piece-visibility";
 import { RecountButton } from "./_ui/RecountButton";
 import { Card, Num, Pill } from "./_ui/kit";
 
@@ -27,13 +28,14 @@ export default async function AdminDashboardPage() {
   let dbError: string | null = null;
 
   try {
-    const [p, pc, stale, takedowns] = await Promise.all([
+    const [p, stale, takedowns] = await Promise.all([
       loadAdminPlaces(),
-      loadAdminPieces(PRODUCTION_MIN_CONFIRMED_PINS),
       countStaleVideos(STALE_DAYS),
       countOpenTakedowns(),
     ]);
     places = p;
+    // places 한 번만 읽고 조각 집계에 재사용 (이중 fetch 방지)
+    const pc = await loadAdminPieces(PRODUCTION_MIN_CONFIRMED_PINS, places);
     pieces = pc.pieces;
     staleVideos = stale;
     openTakedowns = takedowns;
@@ -50,12 +52,9 @@ export default async function AdminDashboardPage() {
   const hidden = places.filter((p) => !p.isPublished && p.mapStatus === "confirmed");
   const cacheDrift = pieces.filter((p) => p.cachedCount !== null && p.cachedCount !== p.published);
 
-  // 확정 핀은 있는데 전부 비공개(내리기) 상태 — 다시 올릴 수 있는 조각
-  const readyToPublish = pieces.filter(
-    (p) =>
-      p.published < PRODUCTION_MIN_CONFIRMED_PINS &&
-      p.published + p.confirmedHidden >= PRODUCTION_MIN_CONFIRMED_PINS,
-  );
+  const gate = PRODUCTION_MIN_CONFIRMED_PINS;
+  // 확정 핀은 있는데 비공개(내리기) 상태 — 다시 올릴 수 있는 조각
+  const readyToPublish = pieces.filter((p) => canRepublishPiece(p, gate));
 
   const todo = [
     { label: "검수 대기 후보", n: candidates.length, href: "/admin/places?status=candidate" },
@@ -193,10 +192,8 @@ export default async function AdminDashboardPage() {
               </thead>
               <tbody>
                 {pieces.slice(0, 10).map((p) => {
-                  // 유저 화면과 동일: places.is_published 핀 ≥ 게이트
-                  const isLive = p.published >= PRODUCTION_MIN_CONFIRMED_PINS;
-                  const canShow =
-                    p.published + p.confirmedHidden >= PRODUCTION_MIN_CONFIRMED_PINS;
+                  const isLive = isPieceLive(p, gate);
+                  const canShow = hasConfirmableStock(p, gate);
                   return (
                     <tr key={`${p.creatorSlug}|${p.citySlug}`} className="border-b border-neutral-100 last:border-0">
                       <td className="py-2">

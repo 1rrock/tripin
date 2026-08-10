@@ -3,17 +3,15 @@
 /** 어드민 폼 공용 조각 — 손입력 화면과 장소 수정 화면이 같이 쓴다. */
 
 import { useEffect, useRef } from "react";
+import type { ActionResult } from "../_lib/action-result";
+
+export type { ActionResult } from "../_lib/action-result";
 
 export const inputCls =
   "mt-0.5 w-full rounded-md border border-neutral-300 px-2.5 py-1.5 text-sm outline-none focus:border-neutral-500";
 export const labelCls = "text-xs text-neutral-500";
 export const buttonCls =
   "rounded-md bg-neutral-900 px-4 py-2 text-sm font-semibold text-white transition hover:bg-neutral-700 disabled:opacity-50";
-
-export interface ActionResult {
-  ok?: string;
-  error?: string;
-}
 
 export function ResultNotice({ result }: { result: ActionResult }) {
   if (result.error) {
@@ -53,17 +51,8 @@ export function useResettingForm(result: ActionResult) {
   return ref;
 }
 
-export const PLACE_TYPE_LABELS: Record<string, string> = {
-  restaurant: "식당",
-  cafe: "카페",
-  bar: "주점",
-  shop: "쇼핑",
-  attraction: "명소",
-  hotel: "숙소",
-  viewpoint: "뷰포인트",
-  other: "기타",
-  unknown: "미지정",
-};
+/** 공개 UI 와 동일 — `shared/ui/place-types` 단일 소스. */
+export { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 
 /** "760" → "12:40" */
 export function formatTs(sec: number): string {

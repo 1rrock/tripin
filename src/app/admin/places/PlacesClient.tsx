@@ -216,7 +216,9 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
                         <span className="text-neutral-300">×</span>
                         <span>{p.cityName}</span>
                         <span className="text-neutral-300">·</span>
-                        <span>{TYPE_LABEL[p.placeType] ?? p.placeType}</span>
+                        <span>
+                          {TYPE_LABEL[p.placeType as keyof typeof TYPE_LABEL] ?? p.placeType}
+                        </span>
                         {p.sourceDate ? (
                           <>
                             <span className="text-neutral-300">·</span>
@@ -298,19 +300,26 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
                         >
                           요약 편집
                         </Link>
-                        <button
-                          type="button"
-                          disabled={pending}
-                          onClick={() =>
-                            start(async () => {
-                              const r = await togglePlacePublished(p.id, !p.isPublished);
-                              setToast(r.ok ?? r.error ?? null);
-                            })
-                          }
-                          className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 disabled:opacity-50"
-                        >
-                          {p.isPublished ? "비공개로" : "공개로"}
-                        </button>
+                        {p.mapStatus === "confirmed" || p.isPublished ? (
+                          <button
+                            type="button"
+                            disabled={pending}
+                            title={
+                              p.mapStatus !== "confirmed"
+                                ? "후보 장소는 확정 후에만 공개할 수 있습니다"
+                                : undefined
+                            }
+                            onClick={() =>
+                              start(async () => {
+                                const r = await togglePlacePublished(p.id, !p.isPublished);
+                                setToast(r.ok ?? r.error ?? null);
+                              })
+                            }
+                            className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-100 disabled:opacity-50"
+                          >
+                            {p.isPublished ? "비공개로" : "공개로"}
+                          </button>
+                        ) : null}
                         <a
                           href={`/c/${p.creatorSlug}/${p.citySlug}`}
                           target="_blank"

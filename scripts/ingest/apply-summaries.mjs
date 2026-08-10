@@ -11,19 +11,9 @@
  *   · 최종 검수·수정은 /admin/place 에서 사람이 한다 (금지어·자막 복붙 검사 포함)
  */
 import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { loadEnv } from "./_lib/env.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 
 const env = loadEnv();
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;

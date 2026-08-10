@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import Link from "next/link";
 import type { AdminPiece } from "../_lib/shared";
+import { canRepublishPiece, hasConfirmableStock, isPieceLive } from "../_lib/piece-visibility";
 import { setPiecePublished } from "../actions";
 import { Pill } from "../_ui/kit";
 
@@ -18,9 +19,7 @@ export function PiecesClient({ pieces, gate }: { pieces: AdminPiece[]; gate: num
   const [busy, setBusy] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
 
-  const hidden = pieces.filter(
-    (p) => p.published < gate && p.published + p.confirmedHidden >= gate,
-  );
+  const hidden = pieces.filter((p) => canRepublishPiece(p, gate));
 
   return (
     <main className="mx-auto max-w-6xl px-6 py-8">
@@ -57,8 +56,8 @@ export function PiecesClient({ pieces, gate }: { pieces: AdminPiece[]; gate: num
           <tbody>
             {pieces.map((p) => {
               const key = `${p.creatorSlug}|${p.citySlug}`;
-              const isLive = p.published >= gate;
-              const canShow = p.published + p.confirmedHidden >= gate;
+              const isLive = isPieceLive(p, gate);
+              const canShow = hasConfirmableStock(p, gate);
               const drift = p.cachedCount !== null && p.cachedCount !== p.published;
               const waiting = p.candidates + p.confirmedHidden;
               return (

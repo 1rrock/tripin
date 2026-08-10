@@ -115,14 +115,20 @@ export async function countOpenTakedowns(): Promise<number> {
   return count ?? 0;
 }
 
-/** 조각(채널×도시) 현황. 노출 핀 수·대기·비공개 확정 수를 한 줄에 모은다. */
-export async function loadAdminPieces(minPins: number): Promise<{
+/**
+ * 조각(채널×도시) 현황. 노출 핀 수·대기·비공개 확정 수를 한 줄에 모은다.
+ * @param places 이미 로드한 행을 넘기면 places 테이블을 다시 안 읽는다 (대시보드 이중 fetch 방지).
+ */
+export async function loadAdminPieces(
+  minPins: number,
+  places?: AdminPlaceRow[],
+): Promise<{
   pieces: AdminPiece[];
   gate: number;
 }> {
   const db = getSupabaseAdmin();
   const [rows, { data: cc }] = await Promise.all([
-    loadAdminPlaces(),
+    places ? Promise.resolve(places) : loadAdminPlaces(),
     db.from("creator_cities").select("creator_id, city_id, place_count, published_at"),
   ]);
   const [{ data: creators }, { data: cities }] = await Promise.all([
@@ -162,12 +168,14 @@ export async function loadAdminPieces(minPins: number): Promise<{
     byKey.set(key, piece);
   }
 
-  for (const row of cc ?? []) {
-    for (const piece of byKey.values()) {
-      if (piece.creatorId === row.creator_id && piece.cityId === row.city_id) {
-        piece.cachedCount = row.place_count;
-        piece.publishedAt = row.published_at;
-      }
+  const ccByKey = new Map(
+    (cc ?? []).map((row) => [`${row.creator_id}|${row.city_id}`, row] as const),
+  );
+  for (const piece of byKey.values()) {
+    const row = ccByKey.get(`${piece.creatorId}|${piece.cityId}`);
+    if (row) {
+      piece.cachedCount = row.place_count;
+      piece.publishedAt = row.published_at;
     }
   }
 

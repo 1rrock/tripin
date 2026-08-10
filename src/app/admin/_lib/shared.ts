@@ -65,14 +65,5 @@ export function hasSummary(p: { summary: string | null; summaryBullets: string[]
   return Boolean(p.summary?.trim()) || p.summaryBullets.length > 0;
 }
 
-export const PLACE_TYPE_LABEL: Record<string, string> = {
-  restaurant: "식당",
-  cafe: "카페",
-  bar: "주점",
-  shop: "쇼핑",
-  attraction: "명소",
-  hotel: "숙소",
-  viewpoint: "뷰포인트",
-  other: "기타",
-  unknown: "미지정",
-};
+/** 공개 UI 와 동일 라벨 — `shared/ui/place-types` 단일 소스. */
+export { PLACE_TYPE_LABELS as PLACE_TYPE_LABEL } from "@/shared/ui/place-types";

@@ -7,21 +7,10 @@
  *
  * 사용: node scripts/ingest/fix-bad-coords.mjs [--dry]
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { loadEnv } from "./_lib/env.mjs";
+import { fromGsi, fromShareLink, inJP, inKR } from "./_lib/geocode.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const DRY = process.argv.includes("--dry");
-
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
 const env = loadEnv();
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -30,36 +19,18 @@ if (!URL_ || !KEY) {
   process.exit(1);
 }
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
-const UA = "tripin-admin-fix-coords/1.0";
 
-const inJP = (lat, lng) => lat > 30 && lat < 46 && lng > 129 && lng < 146;
-const inKR = (lat, lng) => lat > 33 && lat < 39 && lng > 124 && lng < 132;
 const okFor = (cc, lat, lng) =>
   cc === "KR" ? inKR(lat, lng) : cc === "JP" ? inJP(lat, lng) : true;
 
 async function gsi(q) {
-  try {
-    const res = await fetch(
-      `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(q)}`,
-      { headers: { "user-agent": UA } },
-    );
-    const data = await res.json();
-    const [lng, lat] = data?.[0]?.geometry?.coordinates ?? [];
-    if (typeof lat === "number") return { lat, lng, title: data[0]?.properties?.title };
-  } catch {}
-  return null;
+  const hit = await fromGsi(q);
+  return hit ? { lat: hit.lat, lng: hit.lng, title: hit.title } : null;
 }
 
 async function fromShare(url) {
-  try {
-    const res = await fetch(url, { redirect: "follow", headers: { "user-agent": "Mozilla/5.0" } });
-    const final = res.url;
-    const d34 = final.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (d34) return { lat: +d34[1], lng: +d34[2] };
-    const at = final.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (at) return { lat: +at[1], lng: +at[2] };
-  } catch {}
-  return null;
+  const hit = await fromShareLink(url);
+  return hit ? { lat: hit.lat, lng: hit.lng } : null;
 }
 
 const NAME_GSI = {

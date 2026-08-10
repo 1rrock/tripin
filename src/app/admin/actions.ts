@@ -8,11 +8,9 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import type { ActionResult } from "./_lib/action-result";
 
-export interface ActionResult {
-  ok?: string;
-  error?: string;
-}
+export type { ActionResult };
 
 /**
  * 통계 캐시 재계산.
@@ -114,17 +112,33 @@ export async function deletePlaceById(placeId: string): Promise<ActionResult> {
   return { ok: `"${place?.name ?? "장소"}" 삭제됨` };
 }
 
-/** 장소 하나의 공개 여부만 뒤집는다 — 목록에서 바로 쓰는 경로. */
+/**
+ * 장소 하나의 공개 여부만 뒤집는다 — 목록에서 바로 쓰는 경로.
+ * 공개 전환은 map_status=confirmed 인 장소만 허용 (미확정 핀이 RLS 로 새는 것 방지).
+ */
 export async function togglePlacePublished(
   placeId: string,
   publish: boolean,
 ): Promise<ActionResult> {
   const db = getSupabaseAdmin();
+  const { data: place } = await db
+    .from("places")
+    .select("map_status, name")
+    .eq("id", placeId)
+    .single();
+  if (!place) return { error: "장소를 찾을 수 없습니다" };
+  if (publish && place.map_status !== "confirmed") {
+    return {
+      error: `"${place.name}" 은(는) 아직 후보입니다. 확정한 뒤에만 공개할 수 있습니다`,
+    };
+  }
+
   const { error } = await db
     .from("places")
     .update({ is_published: publish, updated_at: new Date().toISOString() })
     .eq("id", placeId);
   if (error) return { error: error.message };
+
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");

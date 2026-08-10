@@ -14,10 +14,8 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 
-export interface ActionResult {
-  ok?: string;
-  error?: string;
-}
+import type { ActionResult } from "../_lib/action-result";
+export type { ActionResult };
 
 /**
  * 대상을 즉시 비공개로 내리고 임시조치로 표시한다.

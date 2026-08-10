@@ -11,78 +11,23 @@
  *
  * 자동 확정은 하지 않는다 — 좌표만 채우고 map_status 는 그대로 둔다.
  */
-import { readFileSync } from "node:fs";
-import { fileURLToPath } from "node:url";
-import { dirname, join } from "node:path";
+import { requireEnv } from "./_lib/env.mjs";
+import {
+  fromGsi,
+  fromNominatim,
+  fromShareLink,
+  isGoogleShareLink,
+} from "./_lib/geocode.mjs";
 
-const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 const DRY = process.argv.includes("--dry");
-
-function loadEnv() {
-  const env = {};
-  for (const line of readFileSync(join(ROOT, ".env.local"), "utf8").split("\n")) {
-    const m = line.match(/^\s*([A-Z0-9_]+)\s*=\s*(.*?)\s*$/);
-    if (m) env[m[1]] = m[2];
-  }
-  return env;
-}
-
-const env = loadEnv();
+const env = requireEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY;
-if (!URL_ || !KEY) {
-  console.error("✖ .env.local 에 Supabase 키가 없습니다");
-  process.exit(1);
-}
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
 const UA = "tripin-admin-backfill/1.0 (local tool)";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
-
-/** 구글 공유 링크 → 최종 URL 의 좌표. !3d!4d(장소 핀)가 @(지도 중심)보다 정확하다. */
-async function fromShareLink(url) {
-  try {
-    const res = await fetch(url, { redirect: "follow", headers: { "user-agent": "Mozilla/5.0" } });
-    const final = res.url;
-    const d34 = final.match(/!3d(-?\d+\.\d+)!4d(-?\d+\.\d+)/);
-    if (d34) return { lat: Number(d34[1]), lng: Number(d34[2]), via: "구글 공유링크(핀)" };
-    const at = final.match(/@(-?\d+\.\d+),(-?\d+\.\d+)/);
-    if (at) return { lat: Number(at[1]), lng: Number(at[2]), via: "구글 공유링크(중심)" };
-  } catch {}
-  return null;
-}
-
-/** 국토지리원 주소 검색 — 일본 주소 전용. */
-async function fromGsi(address) {
-  try {
-    const res = await fetch(
-      `https://msearch.gsi.go.jp/address-search/AddressSearch?q=${encodeURIComponent(address)}`,
-      { headers: { "user-agent": UA } },
-    );
-    const data = await res.json();
-    const [lng, lat] = data?.[0]?.geometry?.coordinates ?? [];
-    if (typeof lat === "number" && typeof lng === "number") return { lat, lng, via: "GSI 주소" };
-  } catch {}
-  return null;
-}
-
-/** OSM Nominatim — JP 외 지역 폴백. */
-async function fromNominatim(query) {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/search?format=json&limit=1&q=${encodeURIComponent(query)}`,
-      { headers: { "user-agent": UA } },
-    );
-    const data = await res.json();
-    const hit = data?.[0];
-    if (hit) return { lat: Number(hit.lat), lng: Number(hit.lon), via: "Nominatim" };
-  } catch {}
-  return null;
-}
-
-function isShareLink(url) {
-  return /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url ?? "");
-}
+const isShareLink = isGoogleShareLink;
 
 const places = await (
   await fetch(
