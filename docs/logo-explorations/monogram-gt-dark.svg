@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="GT">
+  <title>GREATRIPIN monogram GT (dark)</title>
+  <desc>Square G + T. T-stem is wax (shared fold). Not a pin icon.</desc>
+  <rect width="512" height="512" fill="#0b0b0c"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#2c2c31" stroke-width="2"/>
+
+  <!--
+    G = square C open on the right, with a chin (vertical on lower-right)
+    and an inward spur. Must not read as E (no full mid-bar from the left).
+  -->
+  <g fill="none" stroke="#f5f3ef" stroke-width="40" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- top -->
+    <path d="M 140 160 H 292"/>
+    <!-- left -->
+    <path d="M 140 160 V 352"/>
+    <!-- bottom -->
+    <path d="M 140 352 H 292"/>
+    <!-- chin: rise on open right, then spur inward -->
+    <path d="M 292 352 V 256 H 220"/>
+  </g>
+
+  <!-- T top bar (paper) — sits to the right of G -->
+  <path d="M 260 160 H 380" fill="none" stroke="#f5f3ef" stroke-width="40" stroke-linecap="square"/>
+  <!-- T stem = shared fold, wax -->
+  <path d="M 328 160 V 352" fill="none" stroke="#ff3d14" stroke-width="40" stroke-linecap="square"/>
+</svg>

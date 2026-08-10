@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" role="img" aria-label="GT">
+  <title>GREATRIPIN favicon 32</title>
+  <rect width="32" height="32" fill="#0b0b0c"/>
+  <rect x="1" y="1" width="30" height="30" fill="none" stroke="#2c2c31" stroke-width="1"/>
+  <!-- G -->
+  <rect x="5" y="7" width="11" height="3" fill="#f5f3ef"/>
+  <rect x="5" y="7" width="3" height="18" fill="#f5f3ef"/>
+  <rect x="5" y="22" width="11" height="3" fill="#f5f3ef"/>
+  <rect x="13" y="15" width="3" height="10" fill="#f5f3ef"/>
+  <rect x="9" y="14" width="7" height="3" fill="#f5f3ef"/>
+  <!-- T bar -->
+  <rect x="14" y="7" width="13" height="3" fill="#f5f3ef"/>
+  <!-- shared stem -->
+  <rect x="21" y="7" width="3" height="18" fill="#ff3d14"/>
+</svg>

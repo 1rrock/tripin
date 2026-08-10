@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>GREATRIPIN logo explorations</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #0b0b0c;
+      --sheet: #141416;
+      --hairline: #2c2c31;
+      --paper: #f5f3ef;
+      --dim: #9a9892;
+      --wax: #ff3d14;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--paper);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 40px 28px 80px;
+    }
+    header {
+      max-width: 1100px;
+      margin: 0 auto 40px;
+      border-bottom: 1px solid var(--hairline);
+      padding-bottom: 24px;
+    }
+    header h1 {
+      margin: 0 0 8px;
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+    }
+    header p {
+      margin: 0;
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.5;
+      max-width: 52em;
+    }
+    header code {
+      color: var(--paper);
+      font-family: inherit;
+      letter-spacing: 0.06em;
+    }
+    .warn {
+      margin-top: 14px;
+      color: var(--wax);
+      font-size: 12px;
+      letter-spacing: 0.04em;
+    }
+    .grid {
+      max-width: 1100px;
+      margin: 0 auto;
+      display: grid;
+      gap: 20px;
+    }
+    .cell {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .cell header {
+      margin: 0;
+      padding: 12px 16px;
+      border: 0;
+      border-bottom: 1px solid var(--hairline);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .cell header strong {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      font-weight: 700;
+    }
+    .cell header span {
+      font-size: 11px;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 160px;
+      padding: 28px 20px;
+    }
+    .stage.light { background: var(--paper); }
+    .stage.pad { padding: 40px; }
+
+    /* ── Live wordmarks (font-rendered, exact spelling) ── */
+    .wm {
+      font-weight: 700;
+      font-size: clamp(28px, 6vw, 56px);
+      letter-spacing: 0.22em;
+      line-height: 1;
+      white-space: nowrap;
+      margin: 0;
+      padding-right: 0.22em; /* optical end of tracking */
+    }
+    .wm .fold { color: var(--wax); }
+    .wm-light { color: #0b0b0c; }
+    .wm-light .fold { color: var(--wax); }
+
+    .wm-boxed {
+      display: flex;
+      gap: 0;
+      font-weight: 700;
+      font-size: clamp(28px, 5.5vw, 52px);
+      letter-spacing: 0.22em;
+      line-height: 1;
+      color: var(--paper);
+    }
+    .wm-boxed .ch {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.15em;
+      height: 1.35em;
+      box-sizing: content-box;
+    }
+    .wm-boxed .fold-box {
+      outline: 1px solid var(--hairline);
+      outline-offset: -1px;
+    }
+
+    .wm-mono { color: var(--paper); }
+    .wm-mono .fold { color: var(--paper); font-weight: 800; }
+    .wm-mono .rest { font-weight: 500; }
+
+    /* 공유 글자 뒤에만 아주 미세한 공기 — 단어가 갈라지면 실패 */
+    .wm-track { letter-spacing: 0.18em; }
+    .wm-track .fold {
+      color: var(--paper);
+      letter-spacing: 0.18em;
+      margin-right: 0.1em;
+    }
+
+    .row-icons {
+      display: flex;
+      gap: 24px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .icon {
+      width: 96px;
+      height: 96px;
+      display: block;
+    }
+    .icon.sm { width: 32px; height: 32px; image-rendering: pixelated; }
+    .icon.xs { width: 16px; height: 16px; image-rendering: pixelated; }
+
+    .scale-row {
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      align-items: flex-start;
+      width: 100%;
+      max-width: 900px;
+    }
+    .scale-row .wm { font-size: 48px; }
+    .scale-row .s32 { font-size: 18px; letter-spacing: 0.18em; }
+    .scale-row .s16 { font-size: 11px; letter-spacing: 0.14em; opacity: 0.9; }
+
+    .checklist {
+      max-width: 1100px;
+      margin: 48px auto 0;
+      border-top: 1px solid var(--hairline);
+      padding-top: 28px;
+      color: var(--dim);
+      font-size: 13px;
+      line-height: 1.7;
+    }
+    .checklist h2 {
+      margin: 0 0 10px;
+      color: var(--paper);
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .checklist li { list-style: none; }
+    .checklist ul { margin: 0; padding: 0; }
+    .checklist li::before { content: "☐ "; color: var(--wax); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>GREATRIPIN · logo explorations</h1>
+    <p>
+      코드로 그린 시안. 철자는 항상 <code>GREATRIPIN</code>
+      (great+trip+pin, t·p 각 1). AI 이미지 생성은 여기서 자주 틀리므로
+      워드마크는 이 시트 / SVG 를 기준으로 본다. 파일: <code>docs/logo-explorations/</code>
+    </p>
+    <p class="warn">공유 글자 T·P 의 겹침은 오타가 아니다. 고치지 말 것.</p>
+  </header>
+
+  <div class="grid">
+    <section class="cell">
+      <header>
+        <strong>01 · Wax accent · dark</strong>
+        <span>권장 기본 · wordmark-wax-dark.svg</span>
+      </header>
+      <div class="stage">
+        <p class="wm" aria-label="GREATRIPIN">
+          GREA<span class="fold">T</span>RI<span class="fold">P</span>IN
+        </p>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>02 · Wax accent · light</strong>
+        <span>wordmark-wax-light.svg</span>
+      </header>
+      <div class="stage light">
+        <p class="wm wm-light" aria-label="GREATRIPIN">
+          GREA<span class="fold">T</span>RI<span class="fold">P</span>IN
+        </p>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>03 · Boxed shared letters</strong>
+        <span>색 없이 접힘 · wordmark-boxed-dark.svg</span>
+      </header>
+      <div class="stage">
+        <div class="wm-boxed" aria-label="GREATRIPIN">
+          <span class="ch">G</span><span class="ch">R</span><span class="ch">E</span><span class="ch">A</span>
+          <span class="ch fold-box">T</span>
+          <span class="ch">R</span><span class="ch">I</span>
+          <span class="ch fold-box">P</span>
+          <span class="ch">I</span><span class="ch">N</span>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>04 · Monochrome weight</strong>
+        <span>1도 인쇄 · wordmark-mono-dark.svg</span>
+      </header>
+      <div class="stage">
+        <p class="wm wm-mono" aria-label="GREATRIPIN">
+          <span class="rest">GREA</span><span class="fold">T</span><span class="rest">RI</span><span class="fold">P</span><span class="rest">IN</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>05 · Tracking fold only</strong>
+        <span>가장 절제 · wordmark-tracking-dark.svg</span>
+      </header>
+      <div class="stage">
+        <p class="wm wm-track" aria-label="GREATRIPIN">
+          <span class="a">GREA</span><span class="fold">T</span><span class="a">RI</span><span class="fold">P</span><span class="a">IN</span>
+        </p>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>06 · Scale test (wax)</strong>
+        <span>48 · 18 · 11px — 워드마크 한계 확인</span>
+      </header>
+      <div class="stage pad">
+        <div class="scale-row">
+          <p class="wm">GREA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          <p class="wm s32">GREA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          <p class="wm s16">GREA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>07 · GT monogram</strong>
+        <span>앱 아이콘 · monogram-gt-*.svg</span>
+      </header>
+      <div class="stage">
+        <div class="row-icons">
+          <img class="icon" src="monogram-gt-dark.svg" alt="GT dark" />
+          <img class="icon" src="monogram-gt-light.svg" alt="GT light" />
+          <img class="icon" src="monogram-gt-mono.svg" alt="GT mono" />
+        </div>
+      </div>
+    </section>
+
+    <section class="cell">
+      <header>
+        <strong>08 · Favicon sizes</strong>
+        <span>16 · 32 — favicon-16/32.svg</span>
+      </header>
+      <div class="stage">
+        <div class="row-icons">
+          <img class="icon xs" src="favicon-16.svg" width="16" height="16" alt="16" />
+          <img class="icon sm" src="favicon-32.svg" width="32" height="32" alt="32" />
+          <img class="icon" src="monogram-gt-dark.svg" width="96" height="96" alt="96" />
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="checklist">
+    <h2>검수</h2>
+    <ul>
+      <li>철자가 GREATRIPIN 인가 (t·p 각 하나)</li>
+      <li>글자 겹침 장치가 설명 없이 읽히는가</li>
+      <li>16px 로 줄여도 뭉개지지 않는가 (워드마크 안 되면 모노그램)</li>
+      <li>색을 빼도 장치가 살아 있는가 (03·04·mono monogram)</li>
+      <li>왁스가 면적을 먹고 있지 않은가</li>
+      <li>유튜브·지도앱 클리셰가 섞이지 않았는가</li>
+    </ul>
+  </div>
+</body>
+</html>

@@ -1,0 +1,33 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 980 180" role="img" aria-label="GREATRIPIN">
+  <title>GREATRIPIN — boxed shared letters (dark)</title>
+  <desc>Shared T and P framed by thin hairline boxes instead of color</desc>
+  <rect width="980" height="180" fill="#0b0b0c"/>
+  <!-- Layout measured for Archivo-ish 700 @ 68px, tracking ~0.22em.
+       Boxes sit on T (index 5) and P (index 8). -->
+  <g
+    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="700"
+    font-size="68"
+    letter-spacing="0.22em"
+    fill="#f5f3ef"
+  >
+    <!-- Using tspans with absolute x so boxes can align to shared glyphs -->
+    <text y="108">
+      <tspan x="48">G</tspan>
+      <tspan x="132">R</tspan>
+      <tspan x="216">E</tspan>
+      <tspan x="300">A</tspan>
+      <!-- T shared -->
+      <tspan x="384">T</tspan>
+      <tspan x="468">R</tspan>
+      <tspan x="552">I</tspan>
+      <!-- P shared -->
+      <tspan x="636">P</tspan>
+      <tspan x="720">I</tspan>
+      <tspan x="804">N</tspan>
+    </text>
+  </g>
+  <!-- hairline boxes around T and P -->
+  <rect x="372" y="48" width="72" height="84" fill="none" stroke="#2c2c31" stroke-width="1.25"/>
+  <rect x="624" y="48" width="72" height="84" fill="none" stroke="#2c2c31" stroke-width="1.25"/>
+</svg>

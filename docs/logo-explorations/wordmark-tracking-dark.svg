@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 160" role="img" aria-label="GREATRIPIN">
+  <title>GREATRIPIN — tracking fold only (dark)</title>
+  <desc>All paper color. After shared T and P, only a micro air gap — not a word break.</desc>
+  <rect width="960" height="160" fill="#0b0b0c"/>
+  <text
+    y="96"
+    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="700"
+    font-size="72"
+    fill="#f5f3ef"
+    letter-spacing="0.18em"
+  >
+    <tspan x="48">GREA</tspan>
+    <tspan dx="2">T</tspan>
+    <tspan dx="10">RI</tspan>
+    <tspan dx="2">P</tspan>
+    <tspan dx="10">IN</tspan>
+  </text>
+</svg>
