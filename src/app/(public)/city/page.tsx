@@ -12,7 +12,7 @@ import { Thumb } from "@/shared/ui/Thumb";
 /**
  * 지역 인덱스 — 필름 스트립 행 (콘택트 시트의 선반).
  *
- * 도시 하나가 필름 한 롤이다: 왁스 번호 + 도시명 + 최근 컷 4장.
+ * 도시 하나가 필름 한 롤이다: 도시명 + 최근 컷 4장.
  * 균일 타일 그리드를 쓰지 않는 이유는 데이터 분포다 — 후쿠오카 75곳과 1곳짜리
  * 도시 6개가 같은 타일이면 무게가 거짓말이 된다. 분량이 있는 도시는 스트립 행,
  * 아직 한두 곳뿐인 도시는 컴팩트 행으로 **투티어**를 나눈다.
@@ -54,7 +54,7 @@ export default async function CityIndexPage() {
         <>
           <ul className="flex flex-col">
             {majors.map((c, i) => (
-              <CityRoll key={c.slug} city={c} n={i + 1} locale={locale} m={m} />
+              <CityRoll key={c.slug} city={c} i={i} locale={locale} m={m} />
             ))}
           </ul>
 
@@ -77,22 +77,29 @@ export default async function CityIndexPage() {
   );
 }
 
-/** 분량이 있는 도시 — 왁스 번호 + 큰 도시명 + 최근 컷 스트립 */
+/**
+ * 분량이 있는 도시 — 큰 도시명 + 최근 컷 스트립.
+ *
+ * ⚠️ 왁스 번호(01·02…)를 붙이지 않는다. 이 월드에서 숫자를 매기는 자리는
+ *    지도 핀과 1:1로 대응하는 `FrameNo` 뿐이다 — 거기서는 번호가 데이터다.
+ *    여기서는 그냥 정렬 순서라, 붙이면 순위표처럼 읽히면서 없는 뜻이 생긴다.
+ */
 function CityRoll({
   city,
-  n,
+  i,
   locale,
   m,
 }: {
   city: CityRow;
-  n: number;
+  /** 진입 애니메이션(`develop`) 계단 순서에만 쓴다 */
+  i: number;
   locale: Locale;
   m: ReturnType<typeof getDictionary>;
 }) {
   const label = displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
   const sub = locale === "en" ? city.name : city.nameEn;
   return (
-    <li className="develop" style={{ "--i": n - 1 } as CSSProperties}>
+    <li className="develop" style={{ "--i": i } as CSSProperties}>
       <Rule />
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
@@ -104,9 +111,6 @@ function CityRoll({
         })}
       >
         <span className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
-          <Index tone="wax" className="tnum">
-            {String(n).padStart(2, "0")}
-          </Index>
           <span
             className="font-black"
             style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.1 }}
