@@ -22,6 +22,12 @@ export type MapStatus = "confirmed" | "candidate" | "none";
 
 export type ConfidenceLevel = "high" | "medium" | "low";
 
+/**
+ * null=영문 없음(요약 숨김) / machine=기계 초벌(자동번역 표시+원문 제공) / human=검수 완료.
+ * 마이그레이션 `0007_en_content.sql` 참조.
+ */
+export type EnSource = "machine" | "human" | null;
+
 export type TakedownStatus = "received" | "blinded" | "resolved" | "rejected";
 
 export type Creator = {
@@ -108,6 +114,13 @@ export type Place = {
   price_hint: string | null;
   tips: string | null;
   is_published: boolean;
+  /** 영문 요약 — en_source 가 있을 때만 값이 있다(0007_en_content.sql). */
+  summary_en: string | null;
+  summary_bullets_en: string[];
+  address_en: string | null;
+  price_hint_en: string | null;
+  en_source: EnSource;
+  en_translated_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -128,6 +141,8 @@ export type CreatorCity = {
   city_id: string;
   place_count: number;
   intro_text: string | null;
+  /** 영문 인트로. 출처 컬럼이 없어 표시 규칙은 있음/없음 두 갈래뿐이다(0007_en_content.sql). */
+  intro_text_en: string | null;
   /** null 이면 미공개. */
   published_at: string | null;
 }
