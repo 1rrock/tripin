@@ -207,20 +207,24 @@ body > * { position: relative; z-index: 1; }
       (§III.E.3 · LEGAL.md 4.5). scale 을 이미지에 걸지 마라.
 
    ⚠️ 바닥에 --sheet 를 깔지 마라. 지면과 대비가 커서 행 하나가 흰 카드로
-      떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다. */
+      떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다.
+
+   ⚠️ 얹을 때와 뗄 때를 **비대칭**으로 둔다. 얹을 때는 빨라야 반응한 느낌이
+      나고(120~180ms), 뗄 때는 여유가 있어야 툭 끊기지 않는다(220ms).
+      뗄 때는 스태거도 없앤다 — 차례로 내려앉으면 미련이 남아 보인다. */
 .roll {
-  transition: background-color 0.2s ease;
+  transition: background-color 0.22s ease;
 }
 .cut {
+  /* 기본값 = 손을 뗄 때. 한꺼번에, 조금 여유 있게 */
   transition:
-    transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.34s cubic-bezier(0.16, 1, 0.3, 1);
-  transition-delay: calc(var(--f, 0) * 42ms);
+    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 /* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 들려 있으면 안 된다 */
 @media (hover: hover) {
-  .roll:hover { background: var(--hover); }
+  .roll:hover { background: var(--hover); transition-duration: 0.12s; }
   .roll:hover .cut { box-shadow: inset 0 0 0 1px var(--edge); }
 }
 
@@ -228,11 +232,18 @@ body > * { position: relative; z-index: 1; }
    overflow-x 컨테이너가 위아래를 함께 잘라 들린 컷의 그림자가 반토막 난다 */
 @media (hover: hover) and (min-width: 640px) {
   .roll:hover .cut {
-    transform: translateY(-4px);
+    transform: translateY(-5px);
     box-shadow: inset 0 0 0 1px var(--edge), var(--lift);
+    /* 얹을 때 = 빠르게, 왼쪽부터 차례로 */
+    transition-duration: 0.18s;
+    transition-delay: calc(var(--f, 0) * 42ms);
   }
   /* 누르는 순간 내려앉는다 — 종이를 짚는 감각 */
-  .roll:active .cut { transform: translateY(-1px); transition-duration: 0.09s; }
+  .roll:active .cut {
+    transform: translateY(-1px);
+    transition-duration: 0.09s;
+    transition-delay: 0s;
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
