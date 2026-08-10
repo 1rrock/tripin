@@ -50,7 +50,7 @@ export default async function ChannelsPage() {
               <Rule />
               <Link
                 href={localePath(`/c/${c.slug}`, locale)}
-                className="group block py-(--stack)"
+                className="group -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack) transition-[background-color,box-shadow] duration-150 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
                 aria-label={t(m.channels.openChannel, {
                   name: c.displayName,
                   places: c.placeCount,

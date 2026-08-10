@@ -91,7 +91,7 @@ function CityRoll({
       <Rule />
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="group block py-(--stack)"
+        className="group -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack) transition-[background-color,box-shadow] duration-150 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
         aria-label={t(m.cityIndex.openMap, {
           name: label,
           places: city.placeCount,
@@ -150,7 +150,7 @@ function CityMinorRow({
     <li>
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="group flex items-center gap-3.5 border-b py-2.5 last:border-b-0"
+        className="group -mx-2.5 flex items-center gap-3.5 rounded-(--r-control) border-b px-2.5 py-2.5 transition-[background-color,box-shadow] duration-150 last:border-b-0 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
         style={{ borderColor: "var(--hairline)" }}
         aria-label={t(m.cityIndex.openMap, {
           name: label,
