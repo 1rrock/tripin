@@ -291,11 +291,8 @@ export function CreatorExplorer({
                     <Rule />
                     <Link
                       href={placeHref(creatorSlug, place, href)}
-                      className="-mx-2.5 flex items-start gap-3 px-2.5 py-2.5 transition-colors"
-                      style={{
-                        background: active ? "var(--sheet)" : undefined,
-                        borderRadius: active ? "var(--r-control)" : undefined,
-                      }}
+                      className="roll -mx-2.5 flex items-start gap-3 rounded-(--r-control) px-2.5 py-2.5"
+                      style={{ background: active ? "var(--sheet)" : undefined }}
                       aria-label={t(m.hub.openVideoAria, {
                         name: displayPlaceName(place, locale),
                       })}

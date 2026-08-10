@@ -276,7 +276,7 @@ export function HomeSheet({
               <li key={c.slug}>
                 <Link
                   href={href(`/c/${c.slug}`)}
-                  className="flex items-center gap-3 py-1"
+                  className="roll -mx-2.5 flex items-center gap-3 rounded-(--r-control) px-2.5 py-1.5"
                   aria-label={t(m.home.openChannel, { name: c.displayName })}
                 >
                   <Avatar

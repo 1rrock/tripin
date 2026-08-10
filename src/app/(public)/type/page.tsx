@@ -42,7 +42,7 @@ export default async function TypeIndexPage() {
                 <Rule />
                 <Link
                   href={localePath(`/type/${row.type}`, locale)}
-                  className="flex items-center gap-3 py-3.5"
+                  className="roll -mx-2.5 flex items-center gap-3 rounded-(--r-control) px-2.5 py-3.5"
                   aria-label={t(m.typeIndex.openType, {
                     label,
                     places: row.placeCount,
