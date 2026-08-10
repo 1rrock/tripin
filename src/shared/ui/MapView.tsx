@@ -6,7 +6,7 @@
  * 렌더러: Google Maps JavaScript API (LEGAL.md 4장 A안 — 2026-08-04 채택).
  * 번호 마커가 리스트의 "핀" 값과 일치하는 것이 핵심 UX 다 (CONCEPT.md 4.3).
  *
- * 월드: 콘택트 시트 — 지도는 암실에 놓인 **라이트박스**, 화면에서 유일하게 밝은 면이다.
+ * 월드: 콘택트 시트 · 웜 페이퍼 — 지도는 같은 크림 축의 **라이트박스**.
  * 마커는 각진 인덱스 칩이고, 활성은 왁스 연필로 표시한 컷이다(리스트의 FrameNo 와 같은 문법).
  *
  * 지연 로드: SDK 스크립트는 이 컴포넌트가 마운트될 때 1회만 로드된다.
@@ -77,8 +77,9 @@ function loadSdk() {
  * 번호 핀 — 각진 인덱스 칩. 리스트의 FrameNo 와 같은 문법이라 눈이 1:1 로 잇는다.
  *
  * 대비: 라이트박스(밝은 지면) 위이므로 기본은 잉크 칩 + 인화지 숫자,
- * 활성은 왁스 칩 + 지면색 숫자다. 왁스 위에 흰 숫자를 얹으면 3.2:1 로 떨어져
- * 15px 굵은 글자 기준 AA 미달이라, 활성일 때 숫자를 어둡게 뒤집는다(5.56:1).
+ * 웜 페이퍼 월드: 지도(라이트박스) 위에 핀이 놓이므로 비활성은 **잉크 칩**
+ * (--paper 면 + --ground 숫자), 활성은 왁스 칩 + 지면색 숫자.
+ * (예전 다크 월드의 ground 칩은 라이트 지면에서 지도에 묻힌다.)
  *
  * 크리에이터 액센트는 여기서 쓰지 않는다. 임의의 hex 가 들어오면 왁스와 같은
  * 층에서 싸우고, 핀이 구글 기본 POI 와 구분되지 않는다.
@@ -86,8 +87,8 @@ function loadSdk() {
 function markerContent(pin: MapPin, active: boolean): HTMLElement {
   const el = document.createElement("div");
   el.style.cssText = [
-    `background:${active ? "var(--wax)" : "var(--ground)"}`,
-    `color:${active ? "var(--ground)" : "var(--paper)"}`,
+    `background:${active ? "var(--wax)" : "var(--paper)"}`,
+    `color:var(--ground)`,
     "border-radius:var(--r-frame)",
     "min-width:30px",
     "height:30px",
@@ -129,16 +130,16 @@ function clusterContent(count: number, m: Messages): HTMLElement {
     "position:absolute",
     "inset:0",
     "transform:translate(3px,3px)",
-    "background:var(--ground)",
-    "opacity:0.55",
+    "background:var(--paper)",
+    "opacity:0.45",
     "border-radius:var(--r-frame)",
   ].join(";");
 
   const face = document.createElement("div");
   face.style.cssText = [
     "position:relative",
-    "background:var(--ground)",
-    "color:var(--paper)",
+    "background:var(--paper)",
+    "color:var(--ground)",
     "border-radius:var(--r-frame)",
     "min-width:34px",
     "height:34px",
@@ -407,8 +408,8 @@ export function MapView({
               onClick={retry}
               className="mt-2 cursor-pointer px-4 py-2 font-bold"
               style={{
-                background: "var(--ground)",
-                color: "var(--paper)",
+                background: "var(--paper)",
+                color: "var(--ground)",
                 borderRadius: "var(--r-frame)",
                 fontSize: "var(--t-meta)",
               }}
@@ -446,12 +447,12 @@ export function MapView({
           onClick={() => refitRef.current?.()}
           className="absolute bottom-3 left-3 grid size-10 cursor-pointer place-items-center"
           style={{
-            background: "var(--ground)",
+            background: "var(--paper)",
             borderRadius: "var(--r-frame)",
             boxShadow: "var(--lift-pin)",
           }}
         >
-          <svg aria-hidden viewBox="0 0 64 64" className="size-4" style={{ fill: "var(--paper)" }}>
+          <svg aria-hidden viewBox="0 0 64 64" className="size-4" style={{ fill: "var(--ground)" }}>
             <path d="M4 4h22v6.5H10.5V26H4zm56 0v22h-6.5V10.5H38V4zM4 38h6.5v15.5H26V60H4zm56 0v22H38v-6.5h15.5V38z" />
           </svg>
         </button>

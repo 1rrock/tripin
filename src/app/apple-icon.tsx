@@ -7,10 +7,10 @@ import { ImageResponse } from "next/og";
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-const paper = "#f5f3ef";
-const wax = "#ff3d14";
-const ground = "#0b0b0c";
-const hair = "#2c2c31";
+const paper = "#2a2118";
+const wax = "#c9441a";
+const ground = "#f0e8db";
+const hair = "#ddd0bc";
 const t = 14; // stroke weight ~40/512 * 180
 
 export default function AppleIcon() {

@@ -1,7 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 160" role="img" aria-label="GREATRIPIN">
-  <title>GREATRIPIN — wax accent (dark)</title>
+  <title>GREATRIPIN — wax accent (warm paper)</title>
   <desc>great+trip+pin with shared T and P in vermilion wax pencil</desc>
-  <rect width="920" height="160" fill="#0b0b0c"/>
+  <rect width="920" height="160" fill="#f0e8db"/>
   <!-- GREA · T · RI · P · IN  — T and P are the shared fold letters -->
   <text
     x="460" y="96"
@@ -11,6 +11,6 @@
     font-size="72"
     letter-spacing="0.22em"
   >
-    <tspan fill="#f5f3ef">GREA</tspan><tspan fill="#ff3d14">T</tspan><tspan fill="#f5f3ef">RI</tspan><tspan fill="#ff3d14">P</tspan><tspan fill="#f5f3ef">IN</tspan>
+    <tspan fill="#2a2118">GREA</tspan><tspan fill="#c9441a">T</tspan><tspan fill="#2a2118">RI</tspan><tspan fill="#c9441a">P</tspan><tspan fill="#2a2118">IN</tspan>
   </text>
 </svg>

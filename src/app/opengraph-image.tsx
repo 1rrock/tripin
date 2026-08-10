@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 
 /**
- * 기본 공유 카드 (콘택트 시트 다크) — #0b0b0c 다크 지면 + 오프화이트 타이포 + 왁스(#ff3d14) 밑줄 바.
+ * 기본 공유 카드 (웜 페이퍼) — #f0e8db 지면 + 잉크 타이포 + 왁스(#c9441a) 밑줄 바.
  * 사진·그라디언트 없음. 지면과 타이포 위계만으로 선다.
  */
 export const alt = "여행 유튜버가 간 곳만 지도로 — Greatripin";
@@ -73,7 +73,7 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0b0b0c",
+          background: "#f0e8db",
           padding: "76px 84px",
           fontFamily: "KR",
           letterSpacing: "-0.035em",
@@ -89,23 +89,23 @@ export default async function OpengraphImage() {
               alignItems: "flex-start",
             }}
           >
-            <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#f5f3ef" }}>
+            <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#2a2118" }}>
               {HEAD_A}
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", marginTop: 10 }}>
               {/* 키 프레이즈 — 왁스 밑줄 바 */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-                <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#f5f3ef" }}>
+                <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#2a2118" }}>
                   {HEAD_B}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#ff3d14", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
               </div>
               <div
                 style={{
                   display: "flex",
                   fontSize: 82,
                   fontWeight: 800,
-                  color: "#f5f3ef",
+                  color: "#2a2118",
                   marginLeft: 22,
                 }}
               >
@@ -113,7 +113,7 @@ export default async function OpengraphImage() {
               </div>
             </div>
             <div
-              style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "#9a9892", marginTop: 34 }}
+              style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "#6e5c4a", marginTop: 34 }}
             >
               {SUB}
             </div>
@@ -130,14 +130,14 @@ export default async function OpengraphImage() {
             }}
           >
             {/* 라틴 폴백 — GREATRIPIN, 공유 T·P 왁스 */}
-            <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#f5f3ef" }}>
+            <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#2a2118" }}>
               <span>GREA</span>
-              <span style={{ color: "#ff3d14" }}>T</span>
+              <span style={{ color: "#c9441a" }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#ff3d14" }}>P</span>
+              <span style={{ color: "#c9441a" }}>P</span>
               <span>IN</span>
             </div>
-            <div style={{ display: "flex", fontSize: 34, color: "#9a9892", marginTop: 34 }}>
+            <div style={{ display: "flex", fontSize: 34, color: "#6e5c4a", marginTop: 34 }}>
               Maps from travel YouTubers
             </div>
           </div>
@@ -149,7 +149,7 @@ export default async function OpengraphImage() {
             alignItems: "center",
             fontSize: 26,
             fontWeight: 500,
-            color: "#9a9892",
+            color: "#6e5c4a",
             letterSpacing: "0.06em",
           }}
         >

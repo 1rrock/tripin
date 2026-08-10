@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "db:run": "node scripts/db-run.mjs",
     "db:migrate": "node scripts/db-run.mjs",
-    "translate:en": "node scripts/translate-en.mjs"
+    "translate:en": "node scripts/translate-en.mjs",
+    "check:closed": "node scripts/check-closed.mjs"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.116.0",

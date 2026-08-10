@@ -4,7 +4,7 @@ import { cachePublic } from "@/shared/api/cache";
 
 /**
  * 조각(채널×도시) 공유 카드 — "{크리에이터}의 {도시}" + "간 곳 {n}곳".
- * 콘택트 시트 다크: #0b0b0c 지면, 오프화이트 타이포, 도시명에 왁스(#ff3d14) 밑줄 바. 사진 없음.
+ * 웜 페이퍼: #f0e8db 지면, 잉크 타이포, 도시명에 왁스(#c9441a) 밑줄 바. 사진 없음.
  */
 export const alt = "크리에이터가 간 곳 지도 — Greatripin";
 export const size = { width: 1200, height: 630 };
@@ -129,7 +129,7 @@ export default async function PieceOpengraphImage({
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#0b0b0c",
+          background: "#f0e8db",
           padding: "76px 84px",
           fontFamily: "KR",
           letterSpacing: "-0.035em",
@@ -151,7 +151,7 @@ export default async function PieceOpengraphImage({
                   display: "flex",
                   fontSize: titleSize,
                   fontWeight: 800,
-                  color: "#f5f3ef",
+                  color: "#2a2118",
                   marginRight: 22,
                 }}
               >
@@ -160,11 +160,11 @@ export default async function PieceOpengraphImage({
               {/* 도시명 — 왁스 밑줄 바 */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
                 <div
-                  style={{ display: "flex", fontSize: titleSize, fontWeight: 800, color: "#f5f3ef" }}
+                  style={{ display: "flex", fontSize: titleSize, fontWeight: 800, color: "#2a2118" }}
                 >
                   {cityName}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#ff3d14", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
               </div>
             </div>
             <div
@@ -172,7 +172,7 @@ export default async function PieceOpengraphImage({
                 display: "flex",
                 fontSize: 40,
                 fontWeight: 500,
-                color: "#9a9892",
+                color: "#6e5c4a",
                 marginTop: 40,
               }}
             >
@@ -190,17 +190,17 @@ export default async function PieceOpengraphImage({
               alignItems: "flex-start",
             }}
           >
-            <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#f5f3ef" }}>
+            <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#2a2118" }}>
               <span>GREA</span>
-              <span style={{ color: "#ff3d14" }}>T</span>
+              <span style={{ color: "#c9441a" }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#ff3d14" }}>P</span>
+              <span style={{ color: "#c9441a" }}>P</span>
               <span>IN</span>
             </div>
-            <div style={{ display: "flex", fontSize: 38, color: "#f5f3ef", marginTop: 32 }}>
+            <div style={{ display: "flex", fontSize: 38, color: "#2a2118", marginTop: 32 }}>
               {`${creatorSlug} / ${citySlug}`}
             </div>
-            <div style={{ display: "flex", fontSize: 34, color: "#9a9892", marginTop: 12 }}>
+            <div style={{ display: "flex", fontSize: 34, color: "#6e5c4a", marginTop: 12 }}>
               {`${count} places`}
             </div>
           </div>
@@ -212,7 +212,7 @@ export default async function PieceOpengraphImage({
             alignItems: "center",
             fontSize: 26,
             fontWeight: 500,
-            color: "#9a9892",
+            color: "#6e5c4a",
             letterSpacing: "0.06em",
           }}
         >

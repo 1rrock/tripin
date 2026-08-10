@@ -52,23 +52,23 @@ export function Mark({ className, decorative = true, title }: MarkProps) {
   );
 }
 
-/** 앱 아이콘·파비콘용 풀 프레임 (암실 지면 + hairline 셀) */
+/** 앱 아이콘·파비콘용 풀 프레임 (웜 페이퍼 지면 + hairline 셀) */
 export function MarkAppIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 512 512" className={className} role="img" aria-label="Greatripin">
-      <rect width="512" height="512" fill="#0b0b0c" />
+      <rect width="512" height="512" fill="#f0e8db" />
       <rect
         x="36"
         y="36"
         width="440"
         height="440"
         fill="none"
-        stroke="#2c2c31"
+        stroke="#ddd0bc"
         strokeWidth="2"
       />
       <g
         fill="none"
-        stroke="#f5f3ef"
+        stroke="#2a2118"
         strokeWidth="40"
         strokeLinecap="square"
         strokeLinejoin="miter"
@@ -82,7 +82,7 @@ export function MarkAppIcon({ className }: { className?: string }) {
       <path
         d="M 328 160 V 352"
         fill="none"
-        stroke="#ff3d14"
+        stroke="#c9441a"
         strokeWidth="40"
         strokeLinecap="square"
       />

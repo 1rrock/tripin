@@ -77,7 +77,7 @@ fa19d25 docs: 핸드오프 갱신
   나갔고, `max-w-[42ch]` 의 `ch` 는 "0" 글리프 폭(≈7px) 기준이라 실제 294px — **전각 한글이
   한 줄 22자에서 끊겨** 국수 가락 컬럼이 됐다. `34rem` 직접 지정으로 교체.
 - 문구 전면 재작성(한 문장에 사실 3개 → 한 줄에 한 가지), 정책 링크 행, 브랜드 마감 추가.
-- 브랜드 `Tripin → Greatripin` 은 **코드에선 완결**. 문서에는 미반영(§2-6).
+- 브랜드 `Tripin → Greatripin` 은 **코드에선 완결**. 문서에는 미반영(§2-7).
 
 ### 1-5. EN 산문 번역 (⚠️ 미완 — 키 대기)
 
@@ -175,7 +175,36 @@ npm run translate:en -- --redo       # machine 을 다시 번역
 
 ⚠️ 다시 열지 마라. `displayCreatorName` 이 없는 것은 누락이 아니라 결정이다.
 
-### 🟡 5. 남은 P1 — 감사에서 나왔지만 안 고친 것
+### 🔴 5. 폐업 확인 — **서버용 Google 키가 없다**
+
+**상태**: `scripts/check-closed.mjs` (`npm run check:closed`) 준비 완료. 실행만 남았다.
+
+**막고 있는 것**: `.env.local` 의 `GOOGLE_PLACES_API_KEY` 에 **값이 없다.**
+`NEXT_PUBLIC_GOOGLE_MAPS_KEY` 는 있지만 **HTTP 리퍼러 제한이 걸린 브라우저 키**라
+서버에서 부르면 403 `API_KEY_HTTP_REFERRER_BLOCKED` 이 난다. 확인함.
+→ 콘솔에서 서버용 키를 발급해야 한다. **사용자만 할 수 있다.**
+
+약관은 문제없다 — 렌더러가 Google Maps JS API 라 Places 사용이 허용되고(LEGAL.md 4장
+상단 갱신), `place_id` 는 무기한 보관이 명시적으로 면제다. `businessStatus` 는 화면에
+표시하지 않고 내부 판단에만 쓴다.
+
+```bash
+npm run check:closed              # 확인만 — 아무것도 안 바꾼다
+npm run check:closed -- --hide    # 영구 폐업을 비공개로 (되돌릴 수 있다)
+npm run check:closed -- --delete  # 삭제 ⚠️ video_places 까지 CASCADE
+```
+
+**`--hide` 를 권한다.** 삭제하면 `video_places` 가 같이 지워져 "이 채널이 여기 갔었다"는
+사실이 사라지고, 되살리려면 수집을 다시 해야 한다. 유저에게 안 보이는 효과는 같다.
+
+⚠️ **공개 중 7곳은 `google_place_id` 가 없어 자동 확인이 아예 안 된다** — 텟판혼포 ·
+클라이맥스 커피 데포아일랜드 · 안동돼지국밥 덕포 · 돈카츠 요시다 · 스테이크맨 ·
+화국반점 · 카메노이 호텔 닛코 유니시가와. 손으로 봐야 한다.
+
+⚠️ 현재 DB 의 요약·근거 텍스트에는 폐업 언급이 **0건**이다. 즉 지금까지 폐업 정보가
+반영된 적이 없다 — 첫 확인이다.
+
+### 🟡 6. 남은 P1 — 감사에서 나왔지만 안 고친 것
 
 - **월드의 서명이 핵심 화면에 없다.** `Explorer`·`CityExplorer`·`/type/[type]` 에
   `Frame`/`Thumb`/`VideoSheet` import 가 **0건**. 방향 계약은 "썸네일을 늘어놓는 물건"인데
@@ -188,7 +217,7 @@ npm run translate:en -- --redo       # machine 을 다시 번역
 - 채널 허브 통계 한 줄에서 "검수한 영상"은 `map_status` 무필터, "간 곳"은 confirmed 만 —
   **한 줄에서 두 숫자의 기준이 다르다.** 지금은 candidate 가 0이라 안 드러난다.
 
-### 🟢 6. 나중
+### 🟢 7. 나중
 
 - `cities.ts` 의 `loadGraph` 가 필터 없이 풀테이블 스캔. PostgREST 1000행 상한에 걸리면
   **조용히 잘린다.** 현재 places 133 / videos 116 이라 여유. 채널 20~30개에서 터진다.
