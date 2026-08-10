@@ -50,7 +50,7 @@ export default async function ChannelsPage() {
               <Rule />
               <Link
                 href={localePath(`/c/${c.slug}`, locale)}
-                className="group -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack) transition-[background-color,box-shadow] duration-150 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
+                className="roll -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack)"
                 aria-label={t(m.channels.openChannel, {
                   name: c.displayName,
                   places: c.placeCount,
@@ -84,10 +84,11 @@ export default async function ChannelsPage() {
                 </span>
 
                 <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-                  {c.recentVideos.map((v) => (
+                  {c.recentVideos.map((v, f) => (
                     <Frame
                       key={v.youtubeId}
-                      className="w-[46%] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)] sm:w-auto"
+                      className="cut w-[46%] shrink-0 sm:w-auto"
+                      style={{ "--f": f } as CSSProperties}
                     >
                       <Thumb youtubeId={v.youtubeId} alt={v.title} />
                     </Frame>

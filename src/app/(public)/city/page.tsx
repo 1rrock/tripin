@@ -91,7 +91,7 @@ function CityRoll({
       <Rule />
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="group -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack) transition-[background-color,box-shadow] duration-150 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
+        className="roll -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack)"
         aria-label={t(m.cityIndex.openMap, {
           name: label,
           places: city.placeCount,
@@ -119,10 +119,11 @@ function CityRoll({
         </span>
 
         <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-          {city.recentVideos.map((v) => (
+          {city.recentVideos.map((v, f) => (
             <Frame
               key={v.youtubeId}
-              className="w-[46%] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)] sm:w-auto"
+              className="cut w-[46%] shrink-0 sm:w-auto"
+              style={{ "--f": f } as CSSProperties}
             >
               <Thumb youtubeId={v.youtubeId} alt={v.title} />
             </Frame>
@@ -150,7 +151,7 @@ function CityMinorRow({
     <li>
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="group -mx-2.5 flex items-center gap-3.5 rounded-(--r-control) border-b px-2.5 py-2.5 transition-[background-color,box-shadow] duration-150 last:border-b-0 hover:bg-(--sheet) hover:shadow-[inset_0_0_0_1px_var(--hairline)]"
+        className="roll -mx-2.5 flex items-center gap-3.5 rounded-(--r-control) border-b px-2.5 py-2.5 last:border-b-0"
         style={{ borderColor: "var(--hairline)" }}
         aria-label={t(m.cityIndex.openMap, {
           name: label,
@@ -159,7 +160,7 @@ function CityMinorRow({
         })}
       >
         {cut ? (
-          <Frame className="w-[92px] shrink-0 transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)]">
+          <Frame className="cut w-[92px] shrink-0">
             <Thumb youtubeId={cut.youtubeId} alt={cut.title} />
           </Frame>
         ) : null}

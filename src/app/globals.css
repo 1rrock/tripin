@@ -20,6 +20,8 @@
   /* 지면 — 웜 페이퍼 (palette C) */
   --ground: #f0e8db;        /* 작업대·노트 바탕 */
   --sheet: #faf6ef;         /* 시트 — 지면에서 한 단 뜬 크림 */
+  --hover: #f5efe5;         /* 호버 바닥 — 지면과 시트의 중간. 시트를 그대로 깔면
+                               흰 판이 튀어 행 하나가 카드처럼 도드라진다 */
   --hairline: #ddd0bc;      /* 장식 구분선. 텍스트 대비 대상이 아니다 */
   --edge: #a89278;          /* 인터랙티브 경계 — 지면 대비 3:1 을 넘겨야 하는 선 */
 
@@ -194,3 +196,46 @@ body > * { position: relative; z-index: 1; }
 /* 가로 스크롤 스트립 */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
+
+/* ── 호버: 컷이 종이에서 들린다 ────────────────────────────────────────
+   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아지고, 그 위의 컷들이
+   왼쪽부터 차례로 들린다. 콘택트 시트를 손가락으로 훑을 때 사진이 순서대로
+   딸려 오는 그 물리다.
+
+   ⚠️ 움직이는 것은 **우리 프레임**이지 유튜브 이미지가 아니다.
+      썸네일 자체를 확대하면 프레임 밖으로 잘려 나가 '변형'이 된다
+      (§III.E.3 · LEGAL.md 4.5). scale 을 이미지에 걸지 마라.
+
+   ⚠️ 바닥에 --sheet 를 깔지 마라. 지면과 대비가 커서 행 하나가 흰 카드로
+      떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다. */
+.roll {
+  transition: background-color 0.2s ease;
+}
+.cut {
+  transition:
+    transform 0.34s cubic-bezier(0.16, 1, 0.3, 1),
+    box-shadow 0.34s cubic-bezier(0.16, 1, 0.3, 1);
+  transition-delay: calc(var(--f, 0) * 42ms);
+}
+
+/* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 들려 있으면 안 된다 */
+@media (hover: hover) {
+  .roll:hover { background: var(--hover); }
+  .roll:hover .cut { box-shadow: inset 0 0 0 1px var(--edge); }
+}
+
+/* 들림은 스트립이 가로 스크롤을 벗어나는 폭부터. 모바일 레이아웃에서는
+   overflow-x 컨테이너가 위아래를 함께 잘라 들린 컷의 그림자가 반토막 난다 */
+@media (hover: hover) and (min-width: 640px) {
+  .roll:hover .cut {
+    transform: translateY(-4px);
+    box-shadow: inset 0 0 0 1px var(--edge), var(--lift);
+  }
+  /* 누르는 순간 내려앉는다 — 종이를 짚는 감각 */
+  .roll:active .cut { transform: translateY(-1px); transition-duration: 0.09s; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cut { transition: box-shadow 0.2s ease; transition-delay: 0s; }
+  .roll:hover .cut { transform: none; }
+}

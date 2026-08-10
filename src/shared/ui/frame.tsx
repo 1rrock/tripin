@@ -11,7 +11,7 @@
  */
 
 import Link from "next/link";
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 import { channelAvatar } from "@/shared/lib/youtube";
 
 /* ── 아이콘 ──────────────────────────────────────────────────────────── */
@@ -109,14 +109,21 @@ export type IconName = keyof typeof Icon;
 export function Frame({
   waxed = false,
   className = "",
+  style,
   children,
 }: {
   /** 고른 컷 — 왁스 연필로 두른 자국 */
   waxed?: boolean;
   className?: string;
+  /** 스태거 인덱스(`--f`) 같은 인라인 변수용 */
+  style?: CSSProperties;
   children: ReactNode;
 }) {
-  return <span className={`frame ${waxed ? "waxed" : ""} ${className}`}>{children}</span>;
+  return (
+    <span className={`frame ${waxed ? "waxed" : ""} ${className}`} style={style}>
+      {children}
+    </span>
+  );
 }
 
 /* ── 채널 표식 ───────────────────────────────────────────────────────── */
