@@ -41,6 +41,11 @@ export default async function ChannelsPage() {
 
   return (
     <main className="flex flex-col px-(--gutter) pt-2 pb-20">
+      {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 걷어냈어도
+          스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
+          `title` 은 훅("어디 가세요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
+      <h1 className="sr-only">{m.channels.srHeading}</h1>
+
       {creators.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.channels.empty}</p>
       ) : (
@@ -84,12 +89,8 @@ export default async function ChannelsPage() {
                 </span>
 
                 <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-                  {c.recentVideos.map((v, f) => (
-                    <Frame
-                      key={v.youtubeId}
-                      className="cut w-[46%] shrink-0 sm:w-auto"
-                      style={{ "--f": f } as CSSProperties}
-                    >
+                  {c.recentVideos.map((v) => (
+                    <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
                       <Thumb youtubeId={v.youtubeId} alt={v.title} />
                     </Frame>
                   ))}

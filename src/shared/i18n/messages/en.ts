@@ -38,6 +38,7 @@ export const en: Messages = {
   },
   cityIndex: {
     title: "Where to?",
+    srHeading: "Travel YouTuber places by city",
     stats: "{cities} cities · {places} places",
     blurb: "Pick a region, then a city — places from every creator who went there, on one map.",
     empty: "No cities published yet.",
@@ -79,6 +80,7 @@ export const en: Messages = {
   channels: {
     title: "Channels",
     heading: "Who to follow?",
+    srHeading: "Travel YouTuber channels",
     stats: "{creators} {creators|channel|channels} · {places} places · {cities} {cities|city|cities}",
     empty: "No channels published yet.",
     openChannel: "Open {name} — {places} places",
@@ -87,6 +89,7 @@ export const en: Messages = {
   },
   typeIndex: {
     title: "What kind?",
+    srHeading: "Travel YouTuber places by type — food, cafés, stays, sights",
     stats: "{types} types · {places} places",
     blurb: "Pick food, café, stay, or sights — places group by city.",
     empty: "No places published yet.",

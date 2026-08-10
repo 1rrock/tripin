@@ -197,56 +197,27 @@ body > * { position: relative; z-index: 1; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ── 호버: 컷이 종이에서 들린다 ────────────────────────────────────────
-   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아지고, 그 위의 컷들이
-   왼쪽부터 차례로 들린다. 콘택트 시트를 손가락으로 훑을 때 사진이 순서대로
-   딸려 오는 그 물리다.
+/* ── 호버: 바닥만 조용히 ───────────────────────────────────────────────
+   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아진다. 그게 전부다.
 
-   ⚠️ 움직이는 것은 **우리 프레임**이지 유튜브 이미지가 아니다.
-      썸네일 자체를 확대하면 프레임 밖으로 잘려 나가 '변형'이 된다
-      (§III.E.3 · LEGAL.md 4.5). scale 을 이미지에 걸지 마라.
+   컷을 들거나 테두리를 바꾸지 않는다. 이 화면의 주인공은 썸네일이고, 호버는
+   "여기를 누를 수 있다"만 말하면 된다. 컷까지 반응시키면 마우스를 스칠 때마다
+   화면이 술렁여서 정작 봐야 할 사진에서 눈이 떨어진다 —
+   들림·스태거를 붙였다가 되돌린 이유가 이것이다.
 
    ⚠️ 바닥에 --sheet 를 깔지 마라. 지면과 대비가 커서 행 하나가 흰 카드로
       떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다.
 
-   ⚠️ 얹을 때와 뗄 때를 **비대칭**으로 둔다. 얹을 때는 빨라야 반응한 느낌이
-      나고(120~180ms), 뗄 때는 여유가 있어야 툭 끊기지 않는다(220ms).
-      뗄 때는 스태거도 없앤다 — 차례로 내려앉으면 미련이 남아 보인다. */
+   ⚠️ 얹을 때(120ms)와 뗄 때(220ms)를 **비대칭**으로 둔다. 얹을 때는 빨라야
+      반응한 느낌이 나고, 뗄 때는 여유가 있어야 툭 끊기지 않는다. */
 .roll {
   transition: background-color 0.22s ease;
 }
-.cut {
-  /* 기본값 = 손을 뗄 때. 한꺼번에, 조금 여유 있게 */
-  transition:
-    transform 0.22s cubic-bezier(0.16, 1, 0.3, 1),
-    box-shadow 0.22s cubic-bezier(0.16, 1, 0.3, 1);
-}
 
-/* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 들려 있으면 안 된다 */
+/* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 바닥이 깔려 있으면 안 된다 */
 @media (hover: hover) {
-  .roll:hover { background: var(--hover); transition-duration: 0.12s; }
-  .roll:hover .cut { box-shadow: inset 0 0 0 1px var(--edge); }
-}
-
-/* 들림은 스트립이 가로 스크롤을 벗어나는 폭부터. 모바일 레이아웃에서는
-   overflow-x 컨테이너가 위아래를 함께 잘라 들린 컷의 그림자가 반토막 난다 */
-@media (hover: hover) and (min-width: 640px) {
-  .roll:hover .cut {
-    transform: translateY(-5px);
-    box-shadow: inset 0 0 0 1px var(--edge), var(--lift);
-    /* 얹을 때 = 빠르게, 왼쪽부터 차례로 */
-    transition-duration: 0.18s;
-    transition-delay: calc(var(--f, 0) * 42ms);
+  .roll:hover {
+    background: var(--hover);
+    transition-duration: 0.12s;
   }
-  /* 누르는 순간 내려앉는다 — 종이를 짚는 감각 */
-  .roll:active .cut {
-    transform: translateY(-1px);
-    transition-duration: 0.09s;
-    transition-delay: 0s;
-  }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .cut { transition: box-shadow 0.2s ease; transition-delay: 0s; }
-  .roll:hover .cut { transform: none; }
 }

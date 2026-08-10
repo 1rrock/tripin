@@ -36,6 +36,8 @@ export const ko = {
   },
   cityIndex: {
     title: "어디 가세요?",
+    /** 화면에 안 보이는 h1 — 스크린리더·검색엔진만 읽는다. 훅이 아니라 설명이어야 한다. */
+    srHeading: "지역별 여행 유튜버 장소 지도",
     stats: "도시 {cities} · 간 곳 {places}",
     blurb: "권역에서 도시를 고르면, 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
     empty: "아직 공개된 도시가 없어요.",
@@ -77,6 +79,8 @@ export const ko = {
     /** `<title>`·메타 전용 — 화면 헤드라인은 heading 이다 */
     title: "채널",
     heading: "누구 따라갈까요?",
+    /** 화면에 안 보이는 h1 — 설명형. */
+    srHeading: "등록된 여행 유튜버 채널",
     stats: "채널 {creators} · 간 곳 {places} · 도시 {cities}",
     empty: "아직 공개된 채널이 없어요.",
     openChannel: "{name} 채널 열기 — 간 곳 {places}곳",
@@ -85,6 +89,8 @@ export const ko = {
   },
   typeIndex: {
     title: "뭐 볼래요?",
+    /** 화면에 안 보이는 h1 — 설명형. `title` 은 훅이라 그대로 쓰면 안 된다. */
+    srHeading: "종류별 여행 유튜버 장소 — 맛집·카페·숙소·명소",
     stats: "종류 {types} · 간 곳 {places}",
     blurb: "맛집·카페·숙소·명소 같은 종류를 고르면, 그 유형의 장소가 도시별로 모입니다.",
     empty: "아직 공개된 장소가 없어요.",
@@ -252,6 +258,7 @@ export type Messages = {
   };
   cityIndex: {
     title: string;
+    srHeading: string;
     stats: string;
     blurb: string;
     empty: string;
@@ -292,6 +299,7 @@ export type Messages = {
   channels: {
     title: string;
     heading: string;
+    srHeading: string;
     stats: string;
     empty: string;
     openChannel: string;
@@ -300,6 +308,7 @@ export type Messages = {
   };
   typeIndex: {
     title: string;
+    srHeading: string;
     stats: string;
     blurb: string;
     empty: string;
