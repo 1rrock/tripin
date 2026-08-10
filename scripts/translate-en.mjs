@@ -1,6 +1,9 @@
 #!/usr/bin/env node
 /**
- * 장소 산문(요약·주소·가격 힌트)과 도시 인트로의 **영문 초벌 번역**.
+ * 장소 산문(요약·가격 힌트)과 도시 인트로의 **영문 초벌 번역**.
+ *
+ * ⚠️ **주소는 번역하지 않는다.** 길찾기·현지 검색에 쓰이므로 원문 표기가 맞고,
+ *    공개 화면도 EN 에서 원문 주소를 그대로 보여준다.
  *
  *   npm run translate:en            아직 영문이 없는 것만 (en_source is null)
  *   npm run translate:en -- --limit 5     소량 시험
@@ -91,10 +94,9 @@ const PLACE_SCHEMA = {
   properties: {
     summary_en: { type: "string" },
     summary_bullets_en: { type: "array", items: { type: "string" } },
-    address_en: { type: "string" },
     price_hint_en: { type: "string" },
   },
-  required: ["summary_en", "summary_bullets_en", "address_en", "price_hint_en"],
+  required: ["summary_en", "summary_bullets_en", "price_hint_en"],
   additionalProperties: false,
 };
 
@@ -115,7 +117,6 @@ Rules:
 - Keep proper nouns in their established Latin form: place names, station names, neighborhoods, dish names (tonkatsu, yakiniku, kaisendon), and creator names. Romanize Korean and Japanese names rather than translating them literally — "몬젠나카초역" is "Monzen-nakacho Station", not "Gate Front Middle Town Station".
 - Prices, times, distances, and counts stay exactly as given. Keep the original currency (¥, ₩) and unit.
 - Where the Korean says information is as of filming ("영상 촬영 시점 기준"), keep that qualifier — it is a legal disclosure, not a stylistic choice.
-- Addresses: give the conventional English postal form for that country, keeping the original script in parentheses only if the Korean did.
 - If a field is empty in the input, return an empty string "" (or an empty array for bullets). Do not invent content.
 
 Reply with JSON only — no prose, no markdown fence.`;
@@ -191,7 +192,6 @@ City: ${p.city_name ?? "unknown"}
 
 summary: ${JSON.stringify(p.summary ?? "")}
 summary_bullets: ${JSON.stringify(p.summary_bullets ?? [])}
-address: ${JSON.stringify(p.address ?? "")}
 price_hint: ${JSON.stringify(p.price_hint ?? "")}`;
 }
 
@@ -206,7 +206,6 @@ async function translatePlace(p) {
   return {
     summary_en: orNull(out.summary_en),
     summary_bullets_en: bullets.map((b) => String(b)),
-    address_en: orNull(out.address_en),
     price_hint_en: orNull(out.price_hint_en),
   };
 }
@@ -214,7 +213,7 @@ async function translatePlace(p) {
 async function run() {
   let q = db
     .from("places")
-    .select("id, name, name_local, place_type, address, summary, summary_bullets, price_hint, city_id, en_source")
+    .select("id, name, name_local, place_type, summary, summary_bullets, price_hint, city_id, en_source")
     .order("updated_at", { ascending: true });
   q = REDO ? q.eq("en_source", "machine") : q.is("en_source", null);
   if (LIMIT) q = q.limit(LIMIT);
@@ -238,7 +237,7 @@ async function run() {
 
   /* 번역할 산문이 아무것도 없는 장소는 건너뛴다 — 빈 값에 API 를 쓰지 않는다 */
   const targets = places.filter(
-    (p) => p.summary || (p.summary_bullets?.length ?? 0) > 0 || p.address || p.price_hint,
+    (p) => p.summary || (p.summary_bullets?.length ?? 0) > 0 || p.price_hint,
   );
 
   console.log(`대상 장소 ${targets.length}곳 (전체 ${places.length}, 산문 없음 ${places.length - targets.length})`);
@@ -247,7 +246,6 @@ async function run() {
       n +
       (p.summary?.length ?? 0) +
       (p.summary_bullets ?? []).join("").length +
-      (p.address?.length ?? 0) +
       (p.price_hint?.length ?? 0),
     0,
   );

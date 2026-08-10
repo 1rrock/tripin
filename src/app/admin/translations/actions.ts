@@ -37,7 +37,6 @@ export async function savePlaceTranslation(_: ActionResult, form: FormData): Pro
   const bulletsEn = form
     .getAll("bulletEn")
     .map((b) => String(b).trim());
-  const addressEn = String(form.get("addressEn") ?? "").trim() || null;
   const priceHintEn = String(form.get("priceHintEn") ?? "").trim() || null;
 
   const db = getSupabaseAdmin();
@@ -49,7 +48,7 @@ export async function savePlaceTranslation(_: ActionResult, form: FormData): Pro
     .update({
       summary_en: summaryEn,
       summary_bullets_en: bulletsEn,
-      address_en: addressEn,
+      // address_en 은 건드리지 않는다 — 주소는 원문 유지가 설계다(공개 화면도 원문을 쓴다)
       price_hint_en: priceHintEn,
       en_source: "human",
       en_translated_at: new Date().toISOString(),

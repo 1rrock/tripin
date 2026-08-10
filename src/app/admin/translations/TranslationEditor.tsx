@@ -89,11 +89,11 @@ export function TranslationEditor({ place }: { place: AdminTranslationRow }) {
           ) : null}
         </Field>
 
-        <Field label="주소">
-          <div className="grid gap-2 sm:grid-cols-2">
-            <p className={roCls}>{place.address || "—"}</p>
-            <input name="addressEn" defaultValue={place.addressEn ?? ""} className={inputCls} />
-          </div>
+        {/* 주소는 번역하지 않는다 — 길찾기·현지 검색에 쓰이므로 원문 표기가 맞다.
+            공개 화면도 EN 에서 원문 주소를 그대로 보여준다. 여기서는 "어느 장소를
+            검수하고 있는지" 알려주는 맥락으로만 읽기 전용으로 둔다. */}
+        <Field label="주소 (번역 안 함)">
+          <p className={roCls}>{place.address || "—"}</p>
         </Field>
 
         <Field label="가격 정보">
