@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 
 /**
@@ -45,8 +46,20 @@ export interface FeedVideo {
   cities: { slug: string; name: string; nameEn: string | null }[];
   /** 미리보기용 상호명 — 화면에서 앞 3개만 쓴다 */
   placeNames: string[];
+  /** 정거장들의 장소 유형 — 검색이 "카페"/"cafe" 를 유형으로도 잡게 한다 */
+  placeTypes: PlaceType[];
+  /**
+   * 검색용 요약 불릿 묶음(ko/en). "라멘·이자카야" 같은 음식 종류는 상호명이 아니라
+   * 여기 산다. ⚠️ 클라이언트에는 **둘 다 넘기지 마라** — 서버 컴포넌트(page.tsx)가
+   * 로케일에 맞는 한쪽만 골라 `search` 로 좁혀 넘긴다(§3-2 원문 누수 방지 층).
+   */
+  searchKo: string;
+  searchEn: string;
   lastStopSec: number | null;
 }
+
+/** HomeSheet 가 받는 영상 — 검색 텍스트는 로케일에 맞는 한쪽만 남는다 */
+export type HomeSheetVideo = Omit<FeedVideo, "searchKo" | "searchEn"> & { search: string };
 
 export interface HomeFeed {
   videos: FeedVideo[];
@@ -76,7 +89,9 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       .select("id, youtube_video_id, title, published_at, creator_id")
       .order("published_at", { ascending: false, nullsFirst: false }),
     supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
-    supabase.from("places").select("id, name, city_id, map_status"),
+    supabase
+      .from("places")
+      .select("id, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en"),
   ]);
 
   const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
@@ -137,6 +152,12 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     }
     const times = mine.map((l) => l.timestamp_sec).filter((t): t is number => t !== null);
 
+    // 음식 종류("라멘", "이자카야")는 요약 불릿에 산다 — 정거장들의 불릿을 모아
+    // 검색 건초더미로 만든다. RSC 페이로드가 커지지 않게 영상당 800자에서 끊는다.
+    const cap = (parts: string[]) => parts.join(" ").slice(0, 800);
+    const searchKo = cap(stops.flatMap((p) => p.summary_bullets ?? []));
+    const searchEn = cap(stops.flatMap((p) => p.summary_bullets_en ?? []));
+
     feed.push({
       youtubeId: v.youtube_video_id,
       title: v.title,
@@ -156,6 +177,9 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
         ).values(),
       ],
       placeNames: stops.map((p) => p.name),
+      placeTypes: [...new Set(stops.map((p) => p.place_type))],
+      searchKo,
+      searchEn,
       lastStopSec: times.length ? Math.max(...times) : null,
     });
   }

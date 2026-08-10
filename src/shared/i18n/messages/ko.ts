@@ -19,7 +19,7 @@ export const ko = {
     titleLine2: "그 가게, 지도로.",
     stats: "간 곳 {places} · 도시 {cities} · 검수한 영상 {videos}",
     searchAria: "가게 이름·영상·도시·채널 검색",
-    searchPlaceholder: "가게 이름으로 찾기",
+    searchPlaceholder: "가게·음식·도시로 찾기",
     allCities: "전체 도시",
     allChannels: "전체 채널",
     recentVideos: "최근 영상",

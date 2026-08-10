@@ -50,9 +50,16 @@ export default async function HomePage() {
     );
   }
 
+  // 검색 건초더미는 로케일에 맞는 한쪽만 남긴다 — 둘 다 넘기면 RSC 직렬화로
+  // EN HTML 에 한국어 원문이 통째로 샌다(§3-2). 여기가 그 층이다.
+  const sheetVideos = videos.map(({ searchKo, searchEn, ...v }) => ({
+    ...v,
+    search: locale === "en" ? searchEn : searchKo,
+  }));
+
   return (
     <main>
-      <HomeSheet videos={videos} creators={creators} totals={totals} />
+      <HomeSheet videos={sheetVideos} creators={creators} totals={totals} />
     </main>
   );
 }

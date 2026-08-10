@@ -21,7 +21,7 @@ export const en: Messages = {
     titleLine2: "on YouTube, on a map.",
     stats: "{places} places · {cities} cities · {videos} reviewed videos",
     searchAria: "Search place, video, city, or channel",
-    searchPlaceholder: "Search by place name",
+    searchPlaceholder: "Search places, food, cities",
     allCities: "All cities",
     allChannels: "All channels",
     recentVideos: "Recent videos",

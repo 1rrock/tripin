@@ -6,7 +6,7 @@
 
 import { useId, useMemo, useState } from "react";
 import Link from "next/link";
-import type { FeedCreator, FeedVideo } from "@/shared/api/home";
+import type { FeedCreator, HomeSheetVideo } from "@/shared/api/home";
 import { Avatar, Chip, Icon, Index } from "@/shared/ui/frame";
 import { VideoSheet } from "@/shared/ui/VideoSheet";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -20,7 +20,7 @@ export function HomeSheet({
   creators,
   totals,
 }: {
-  videos: FeedVideo[];
+  videos: HomeSheetVideo[];
   creators: FeedCreator[];
   totals: { creators: number; cities: number; places: number; videos: number };
 }) {
@@ -48,10 +48,16 @@ export function HomeSheet({
         v.title.toLowerCase().includes(needle) ||
         v.creatorName.toLowerCase().includes(needle) ||
         v.cities.some((c) => displayCityName(c, locale).toLowerCase().includes(needle)) ||
-        v.placeNames.some((n) => n.toLowerCase().includes(needle))
+        v.placeNames.some((n) => n.toLowerCase().includes(needle)) ||
+        // 음식 종류 — "라멘"은 상호명이 아니라 요약 불릿(search)에 산다
+        v.search.toLowerCase().includes(needle) ||
+        // 굵은 유형 — "카페"/"cafe" 같은 분류어. 라벨(로케일)과 enum 값 양쪽을 본다
+        v.placeTypes.some(
+          (pt) => m.placeTypes[pt].toLowerCase().includes(needle) || pt.includes(needle),
+        )
       );
     });
-  }, [videos, q, city, channel, locale]);
+  }, [videos, q, city, channel, locale, m]);
 
   const resetPage = () => setVisibleCount(PAGE_SIZE);
 
