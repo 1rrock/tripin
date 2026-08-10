@@ -1,0 +1,22 @@
+"use server";
+
+import { revalidatePath } from "next/cache";
+import { getSupabaseAdmin } from "@/shared/api/supabase";
+
+import type { ActionResult } from "../_lib/action-result";
+
+/**
+ * 처리한 실패어를 지운다 — "이 검색어에 답할 장소를 넣었다" 또는 "무시한다".
+ * 지워도 유저가 또 찾으면 다시 쌓이므로, 지우는 것 자체가 안전한 리셋이다.
+ */
+export async function dismissSearchMiss(query: string): Promise<ActionResult> {
+  const { error } = await getSupabaseAdmin().from("search_misses").delete().eq("query", query);
+  if (error) return { error: error.message };
+  revalidatePath("/admin/search-misses");
+  return { ok: "삭제됨" };
+}
+
+/** `<form action>` 은 반환값이 void 여야 한다 — 폼에서 쓰는 래퍼 */
+export async function dismissSearchMissForm(query: string): Promise<void> {
+  await dismissSearchMiss(query);
+}

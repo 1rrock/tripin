@@ -39,6 +39,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
                 <Link href="/admin/queue" className="transition hover:text-neutral-900">
                   삭제 요청
                 </Link>
+                <Link href="/admin/search-misses" className="transition hover:text-neutral-900">
+                  검색 실패어
+                </Link>
                 <Link
                   href="/"
                   target="_blank"
