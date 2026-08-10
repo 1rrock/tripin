@@ -4,7 +4,7 @@
  * 홈 = 영상 콘택트 시트 + 채널 진입 (로케일 UI).
  */
 
-import { useId, useMemo, useState } from "react";
+import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { FeedCreator, HomeSheetVideo } from "@/shared/api/home";
 import { Avatar, Chip, Icon, Index } from "@/shared/ui/frame";
@@ -38,26 +38,49 @@ export function HomeSheet({
     );
   }, [videos, locale]);
 
+  const needle = q.trim().toLowerCase();
+
+  const matchesNeedle = useCallback(
+    (v: HomeSheetVideo) =>
+      v.title.toLowerCase().includes(needle) ||
+      v.creatorName.toLowerCase().includes(needle) ||
+      v.cities.some((c) => displayCityName(c, locale).toLowerCase().includes(needle)) ||
+      v.placeNames.some((n) => n.toLowerCase().includes(needle)) ||
+      // 음식 종류 — "라멘"은 상호명이 아니라 요약 불릿(search)에 산다
+      v.search.toLowerCase().includes(needle) ||
+      // 굵은 유형 — "카페"/"cafe" 같은 분류어. 라벨(로케일)과 enum 값 양쪽을 본다
+      v.placeTypes.some(
+        (pt) => m.placeTypes[pt].toLowerCase().includes(needle) || pt.includes(needle),
+      ),
+    [needle, locale, m],
+  );
+
   const shown = useMemo(() => {
-    const needle = q.trim().toLowerCase();
     return videos.filter((v) => {
       if (city && !v.cities.some((c) => c.slug === city)) return false;
       if (channel && v.creatorSlug !== channel) return false;
       if (!needle) return true;
-      return (
-        v.title.toLowerCase().includes(needle) ||
-        v.creatorName.toLowerCase().includes(needle) ||
-        v.cities.some((c) => displayCityName(c, locale).toLowerCase().includes(needle)) ||
-        v.placeNames.some((n) => n.toLowerCase().includes(needle)) ||
-        // 음식 종류 — "라멘"은 상호명이 아니라 요약 불릿(search)에 산다
-        v.search.toLowerCase().includes(needle) ||
-        // 굵은 유형 — "카페"/"cafe" 같은 분류어. 라벨(로케일)과 enum 값 양쪽을 본다
-        v.placeTypes.some(
-          (pt) => m.placeTypes[pt].toLowerCase().includes(needle) || pt.includes(needle),
-        )
-      );
+      return matchesNeedle(v);
     });
-  }, [videos, q, city, channel, locale, m]);
+  }, [videos, needle, city, channel, matchesNeedle]);
+
+  // 검색어 자체가 0건인가 — 칩(도시·채널) 필터와 무관하게 판단해야
+  // "말이 빗나갔다"는 신호가 된다. 1.2초 머문 검색어만, 마운트당 한 번씩 기록.
+  const queryMissed = needle.length > 0 && !videos.some(matchesNeedle);
+  const reportedMisses = useRef(new Set<string>());
+  useEffect(() => {
+    if (!queryMissed || reportedMisses.current.has(needle)) return;
+    const timer = setTimeout(() => {
+      reportedMisses.current.add(needle);
+      void fetch("/api/search-miss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: needle }),
+        keepalive: true,
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [queryMissed, needle]);
 
   const resetPage = () => setVisibleCount(PAGE_SIZE);
 

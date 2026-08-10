@@ -192,7 +192,12 @@ export type Database = {
       search_misses: TableOf<SearchMiss>;
     };
     Views: Record<string, never>;
-    Functions: Record<string, never>;
+    Functions: {
+      /** 채널 통계 재집계 — 0005 */
+      recount_stats: { Args: Record<string, never>; Returns: undefined };
+      /** 검색 실패어 upsert — 0008. anon 실행 권한은 잠겨 있다(service_role 전용) */
+      log_search_miss: { Args: { q: string }; Returns: undefined };
+    };
     Enums: {
       place_type: PlaceType;
       map_status: MapStatus;
