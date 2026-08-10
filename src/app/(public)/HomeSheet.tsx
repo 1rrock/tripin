@@ -83,24 +83,6 @@ export function HomeSheet({
 
   return (
     <div className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
-      <header className="flex flex-col gap-4">
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
-        >
-          {m.home.title}
-          <br />
-          {m.home.titleLine2}
-        </h1>
-        <p className="index tnum" style={{ color: "var(--dim)" }}>
-          {t(m.home.stats, {
-            places: totals.places,
-            cities: totals.cities,
-            videos: totals.videos,
-          })}
-        </p>
-      </header>
-
       <section className="flex flex-col gap-(--stack)">
         <label
           htmlFor={searchId}

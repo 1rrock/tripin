@@ -73,7 +73,7 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
       if (type && p.placeType !== type) return false;
       if (missing === "summary" && hasSummary(p)) return false;
       if (missing === "coords" && p.lat !== null) return false;
-      if (flag === "vague" && !isVagueAddress(p.address, p.placeType)) return false;
+      if (flag === "vague" && !isVagueAddress(p)) return false;
       if (flag === "hidden" && !(!p.isPublished && p.mapStatus === "confirmed")) return false;
       if (needle) {
         const hay = [p.name, p.nameLocal, p.address, p.slug, p.videoTitle]
@@ -232,7 +232,7 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
                       {p.mapStatus === "candidate" ? <Pill tone="warn">검수 대기</Pill> : null}
                       {!hasSummary(p) ? <Pill tone="warn">요약 없음</Pill> : null}
                       {p.lat === null ? <Pill tone="danger">좌표 없음</Pill> : null}
-                      {isVagueAddress(p.address, p.placeType) ? <Pill tone="warn">주소 모호</Pill> : null}
+                      {isVagueAddress(p) ? <Pill tone="warn">주소 모호</Pill> : null}
                       {p.isPublished ? <Pill tone="ok">공개</Pill> : <Pill tone="muted">비공개</Pill>}
                     </span>
                   </div>

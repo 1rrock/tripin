@@ -28,25 +28,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ChannelsPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const { creators, totals } = await loadHomeFeed();
+  const { creators } = await loadHomeFeed();
 
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
-      <header className="flex flex-col gap-3.5">
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
-        >
-          {m.channels.heading}
-        </h1>
-        <p className="index tnum" style={{ color: "var(--dim)" }}>
-          {t(m.channels.stats, {
-            creators: totals.creators,
-            places: totals.places,
-            cities: totals.cities,
-          })}
-        </p>
-      </header>
 
       {creators.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.channels.empty}</p>

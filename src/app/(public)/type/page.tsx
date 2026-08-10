@@ -23,36 +23,9 @@ export default async function TypeIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
   const types = await loadTypeIndex();
-  const totalPlaces = types.reduce((s, row) => s + row.placeCount, 0);
 
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
-      <header className="flex flex-col gap-3.5">
-        <h1
-          className="font-black"
-          style={{
-            fontSize: "var(--t-display)",
-            letterSpacing: "-0.045em",
-            lineHeight: 1.12,
-          }}
-        >
-          {m.typeIndex.title}
-        </h1>
-        <p className="index tnum" style={{ color: "var(--dim)" }}>
-          {t(m.typeIndex.stats, { types: types.length, places: totalPlaces })}
-        </p>
-        <p
-          className="max-w-[42ch]"
-          style={{
-            fontSize: "var(--t-body)",
-            color: "var(--dim)",
-            lineHeight: 1.7,
-          }}
-        >
-          {m.typeIndex.blurb}
-        </p>
-      </header>
-
       {types.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.typeIndex.empty}</p>
       ) : (

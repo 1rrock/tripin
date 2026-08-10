@@ -31,36 +31,10 @@ export default async function CityIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
   const cities = await loadCityIndex();
-  const totalPlaces = cities.reduce((sum, c) => sum + c.placeCount, 0);
   const sections = groupByGeoRegion(cities);
 
   return (
     <main className="flex flex-col gap-(--stack) px-(--gutter) pt-2 pb-20">
-      <header className="flex flex-col gap-2">
-        <h1
-          className="font-black"
-          style={{
-            fontSize: "var(--t-display)",
-            letterSpacing: "-0.045em",
-            lineHeight: 1.12,
-          }}
-        >
-          {m.cityIndex.title}
-        </h1>
-        <p className="index tnum" style={{ color: "var(--dim)" }}>
-          {t(m.cityIndex.stats, { cities: cities.length, places: totalPlaces })}
-        </p>
-        <p
-          className="max-w-[40rem]"
-          style={{
-            fontSize: "var(--t-body)",
-            color: "var(--dim)",
-            lineHeight: 1.55,
-          }}
-        >
-          {m.cityIndex.blurb}
-        </p>
-      </header>
 
       {cities.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.cityIndex.empty}</p>

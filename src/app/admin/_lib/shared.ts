@@ -90,22 +90,35 @@ export interface AdminCityIntroRow {
 const VAGUE_HEDGE = /인근|근처|주변|부근|일대|추정|미상|불명|미특정|어딘가|확인\s*필요/;
 
 /**
- * 주소가 가게를 특정하지 못하면 검수 대상이다.
+ * 주소만으로는 **유저가 그 가게를 못 찾는** 경우를 골라낸다.
  *
- * ⚠️ 예전 규칙은 `\(` 를 얼버무림으로 쳤다. 한국 주소는 지번을 괄호로 병기하는 게
- *    표준이라(`… 수영로594번길 28-2 (광안2동 146-17)`) **정확한 주소 9건이 모호로
- *    표시됐다.** 괄호는 신호가 아니다.
+ * ⚠️ 판정 기준은 "주소 문자열이 예쁜가"가 아니라 **"찾아갈 수 있는가"** 다.
+ *    구글 링크가 있으면 핀은 좌표가, 길찾기는 `place_id` 가 결정하고 주소 문자열은
+ *    표시용일 뿐이다 — 그래서 **지도 링크가 있으면 모호하지 않다.**
  *
- * 대신 두 가지를 본다:
+ * 지금까지 두 번 잘못 잡았다:
+ *   1. `\(` 를 얼버무림으로 쳤다. 한국 주소는 지번을 괄호로 병기하는 게 표준이라
+ *      (`… 수영로594번길 28-2 (광안2동 146-17)`) **정확한 주소 9건**이 걸렸다.
+ *   2. 구글 링크가 있는데도 주소 문구만 보고 걸었다 — **8곳 전부가 여기 해당했다.**
+ *      전부 좌표와 구글 링크가 있어 지도에서 정확히 찍히는 곳들이었다.
+ *
+ * 남는 판정 순서:
+ *   0. 구글 링크(`place_id` 또는 공유 URL)가 있으면 → 모호하지 않다. 여기서 끝
  *   1. 얼버무리는 표현이 들어 있다
  *   2. **숫자가 하나도 없다** — 번지가 없으면 동/구 수준이라 가게를 못 찾는다.
  *      단 `attraction` 은 구역·거리 자체가 대상이라(아메리칸 빌리지, 나카스 포장마차
  *      거리) 번지가 없는 게 정상이므로 제외한다.
  */
-export function isVagueAddress(address: string | null, placeType?: string | null): boolean {
-  if (!address) return false;
-  if (VAGUE_HEDGE.test(address)) return true;
-  return placeType !== "attraction" && !/\d/.test(address);
+export function isVagueAddress(place: {
+  address: string | null;
+  placeType?: string | null;
+  googlePlaceId?: string | null;
+  googleMapsUrl?: string | null;
+}): boolean {
+  if (place.googlePlaceId || place.googleMapsUrl) return false;
+  if (!place.address) return false;
+  if (VAGUE_HEDGE.test(place.address)) return true;
+  return place.placeType !== "attraction" && !/\d/.test(place.address);
 }
 
 export function hasSummary(p: { summary: string | null; summaryBullets: string[] }): boolean {
