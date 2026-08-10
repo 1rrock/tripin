@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
+import type { Locale } from "@/shared/i18n/config";
 import Link from "next/link";
-import { loadCityIndex } from "@/shared/api/cities";
-import { groupByGeoRegion, type GeoRegionId } from "@/shared/lib/geo-regions";
+import { loadCityIndex, type CityRow } from "@/shared/api/cities";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { Frame, Icon, Index, Rule } from "@/shared/ui/frame";
+import { Thumb } from "@/shared/ui/Thumb";
 
 /**
- * 지역 인덱스 — 여행사 디렉터리 문법.
+ * 지역 인덱스 — 필름 스트립 행 (콘택트 시트의 선반).
  *
- * 도시마다 높이 다른 리스트 행(+유형 칩)을 쓰지 않는다.
- * 권역 섹션(일본·한국·미주…) 아래 **동일 높이 도시 타일** 그리드.
- * 유형 필터는 도시 지도 안에서 한다.
+ * 도시 하나가 필름 한 롤이다: 왁스 번호 + 도시명 + 최근 컷 4장.
+ * 균일 타일 그리드를 쓰지 않는 이유는 데이터 분포다 — 후쿠오카 75곳과 1곳짜리
+ * 도시 6개가 같은 타일이면 무게가 거짓말이 된다. 분량이 있는 도시는 스트립 행,
+ * 아직 한두 곳뿐인 도시는 컴팩트 행으로 **투티어**를 나눈다.
  */
+
+/** 이 개수 이상 영상이 있어야 스트립 행 — 미만이면 컴팩트 행으로 내려간다 */
+const STRIP_MIN_VIDEOS = 3;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -31,101 +38,142 @@ export default async function CityIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
   const cities = await loadCityIndex();
-  const sections = groupByGeoRegion(cities);
+  const majors = cities.filter((c) => c.videoCount >= STRIP_MIN_VIDEOS);
+  const minors = cities.filter((c) => c.videoCount < STRIP_MIN_VIDEOS);
 
   return (
-    <main className="flex flex-col gap-(--stack) px-(--gutter) pt-2 pb-20">
-
+    <main className="flex flex-col px-(--gutter) pt-2 pb-20">
       {cities.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.cityIndex.empty}</p>
       ) : (
-        <div className="flex flex-col gap-(--block)">
-          {sections.map(({ id, items }) => (
-            <section key={id} aria-labelledby={`region-${id}`} className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2
-                  id={`region-${id}`}
-                  className="font-bold"
-                  style={{
-                    fontSize: "var(--t-title)",
-                    letterSpacing: "-0.02em",
-                  }}
-                >
-                  {regionLabel(m, id)}
-                </h2>
-                <p className="index tnum" style={{ color: "var(--dim)" }}>
-                  {t(m.cityIndex.regionStats, {
-                    cities: items.length,
-                    places: items.reduce((s, c) => s + c.placeCount, 0),
-                  })}
-                </p>
-              </div>
+        <>
+          <ul className="flex flex-col">
+            {majors.map((c, i) => (
+              <CityRoll key={c.slug} city={c} n={i + 1} locale={locale} m={m} />
+            ))}
+          </ul>
 
-              <ul className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
-                {items.map((c) => {
-                  const label = displayCityName({ name: c.name, nameEn: c.nameEn }, locale);
-                  const sub = locale === "en" ? c.name : c.nameEn;
-                  return (
-                    <li key={c.slug} className="min-h-0">
-                      <Link
-                        href={localePath(`/city/${c.slug}`, locale)}
-                        className="flex h-full min-h-[4.75rem] flex-col justify-between gap-2 p-3 transition-colors"
-                        style={{
-                          background: "var(--sheet)",
-                          borderRadius: "var(--r-control)",
-                          boxShadow: "inset 0 0 0 1px var(--hairline)",
-                        }}
-                        aria-label={t(m.cityIndex.openMap, {
-                          name: label,
-                          places: c.placeCount,
-                          creators: c.creatorCount,
-                        })}
-                      >
-                        <span className="min-w-0">
-                          <span
-                            className="block truncate font-bold"
-                            style={{
-                              fontSize: "var(--t-body)",
-                              letterSpacing: "-0.02em",
-                              lineHeight: 1.25,
-                            }}
-                          >
-                            {label}
-                          </span>
-                          {sub ? (
-                            <span
-                              className="mt-0.5 block truncate"
-                              style={{ fontSize: "var(--t-index)", color: "var(--dim)" }}
-                            >
-                              {sub}
-                            </span>
-                          ) : null}
-                        </span>
-                        <span
-                          className="index tnum"
-                          style={{ color: "var(--dim)", fontSize: "var(--t-index)" }}
-                        >
-                          {t(m.cityIndex.placesChannels, {
-                            places: c.placeCount,
-                            creators: c.creatorCount,
-                          })}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
+          {minors.length > 0 ? (
+            <section className="mt-(--block)">
+              <div className="flex items-center gap-3">
+                <Index>{m.cityIndex.minorHeading}</Index>
+                <Rule className="flex-1" />
+              </div>
+              <ul className="mt-2 flex flex-col">
+                {minors.map((c) => (
+                  <CityMinorRow key={c.slug} city={c} locale={locale} m={m} />
+                ))}
               </ul>
             </section>
-          ))}
-        </div>
+          ) : null}
+        </>
       )}
     </main>
   );
 }
 
-function regionLabel(
-  m: ReturnType<typeof getDictionary>,
-  id: GeoRegionId,
-): string {
-  return m.cityIndex.regions[id];
+/** 분량이 있는 도시 — 왁스 번호 + 큰 도시명 + 최근 컷 스트립 */
+function CityRoll({
+  city,
+  n,
+  locale,
+  m,
+}: {
+  city: CityRow;
+  n: number;
+  locale: Locale;
+  m: ReturnType<typeof getDictionary>;
+}) {
+  const label = displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
+  const sub = locale === "en" ? city.name : city.nameEn;
+  return (
+    <li className="develop" style={{ "--i": n - 1 } as CSSProperties}>
+      <Rule />
+      <Link
+        href={localePath(`/city/${city.slug}`, locale)}
+        className="group block py-(--stack)"
+        aria-label={t(m.cityIndex.openMap, {
+          name: label,
+          places: city.placeCount,
+          creators: city.creatorCount,
+        })}
+      >
+        <span className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
+          <Index tone="wax" className="tnum">
+            {String(n).padStart(2, "0")}
+          </Index>
+          <span
+            className="font-black group-hover:[box-shadow:inset_0_-3px_0_var(--wax)]"
+            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.1 }}
+          >
+            {label}
+          </span>
+          {sub ? <Index>{sub}</Index> : null}
+          <Index className="tnum ml-auto">
+            {t(m.cityIndex.rowMeta, {
+              places: city.placeCount,
+              creators: city.creatorCount,
+              videos: city.videoCount,
+            })}
+          </Index>
+        </span>
+
+        <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
+          {city.recentVideos.map((v) => (
+            <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
+              <Thumb youtubeId={v.youtubeId} alt={v.title} />
+            </Frame>
+          ))}
+        </span>
+      </Link>
+    </li>
+  );
+}
+
+/** 아직 한두 곳뿐인 도시 — 컷 하나 + 이름 + 메타의 컴팩트 행 */
+function CityMinorRow({
+  city,
+  locale,
+  m,
+}: {
+  city: CityRow;
+  locale: Locale;
+  m: ReturnType<typeof getDictionary>;
+}) {
+  const label = displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
+  const sub = locale === "en" ? city.name : city.nameEn;
+  const cut = city.recentVideos[0];
+  return (
+    <li>
+      <Link
+        href={localePath(`/city/${city.slug}`, locale)}
+        className="group flex items-center gap-3.5 border-b py-2.5 last:border-b-0"
+        style={{ borderColor: "var(--hairline)" }}
+        aria-label={t(m.cityIndex.openMap, {
+          name: label,
+          places: city.placeCount,
+          creators: city.creatorCount,
+        })}
+      >
+        {cut ? (
+          <Frame className="w-[92px] shrink-0">
+            <Thumb youtubeId={cut.youtubeId} alt={cut.title} />
+          </Frame>
+        ) : null}
+        <span className="min-w-0 flex-1 truncate">
+          <span
+            className="font-bold group-hover:[box-shadow:inset_0_-2px_0_var(--wax)]"
+            style={{ fontSize: "var(--t-body)", letterSpacing: "-0.02em" }}
+          >
+            {label}
+          </span>
+          {sub ? <Index className="ml-2 max-sm:hidden">{sub}</Index> : null}
+        </span>
+        <Index className="tnum shrink-0">
+          {t(m.cityIndex.minorMeta, { places: city.placeCount, videos: city.videoCount })}
+        </Index>
+        <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
+      </Link>
+    </li>
+  );
 }

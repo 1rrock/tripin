@@ -41,6 +41,9 @@ export const ko = {
     empty: "아직 공개된 도시가 없어요.",
     openMap: "{name} 지도 열기 — 간 곳 {places}곳, 채널 {creators}",
     placesChannels: "{places}곳 · 채널 {creators}",
+    rowMeta: "{places}곳 · 채널 {creators} · 영상 {videos}",
+    minorHeading: "아직 한두 곳뿐인 도시",
+    minorMeta: "{places}곳 · 영상 {videos}",
     regionStats: "도시 {cities} · {places}곳",
     regions: {
       japan: "일본",
@@ -78,6 +81,7 @@ export const ko = {
     empty: "아직 공개된 채널이 없어요.",
     openChannel: "{name} 채널 열기 — 간 곳 {places}곳",
     placesUnit: "{n}곳",
+    rollMeta: "영상 {videos} · {places}곳",
   },
   typeIndex: {
     title: "뭐 볼래요?",
@@ -253,6 +257,9 @@ export type Messages = {
     empty: string;
     openMap: string;
     placesChannels: string;
+    rowMeta: string;
+    minorHeading: string;
+    minorMeta: string;
     regionStats: string;
     regions: {
       japan: string;
@@ -289,6 +296,7 @@ export type Messages = {
     empty: string;
     openChannel: string;
     placesUnit: string;
+    rollMeta: string;
   };
   typeIndex: {
     title: string;

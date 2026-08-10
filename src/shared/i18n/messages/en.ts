@@ -43,6 +43,10 @@ export const en: Messages = {
     empty: "No cities published yet.",
     openMap: "Open {name} — {places} places, {creators} channels",
     placesChannels: "{places} places · {creators} channels",
+    rowMeta:
+      "{places} {places|place|places} · {creators} {creators|channel|channels} · {videos} {videos|video|videos}",
+    minorHeading: "Cities with just a spot or two",
+    minorMeta: "{places} {places|place|places} · {videos} {videos|video|videos}",
     regionStats: "{cities} cities · {places} places",
     regions: {
       japan: "Japan",
@@ -79,6 +83,7 @@ export const en: Messages = {
     empty: "No channels published yet.",
     openChannel: "Open {name} — {places} places",
     placesUnit: "{n} places",
+    rollMeta: "{videos} {videos|video|videos} · {places} {places|place|places}",
   },
   typeIndex: {
     title: "What kind?",

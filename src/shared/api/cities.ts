@@ -86,6 +86,9 @@ export interface CityRow {
   lng: number;
   placeCount: number;
   creatorCount: number;
+  videoCount: number;
+  /** 최근 영상 순 — 지역 인덱스의 필름 스트립이 이 컷들을 쓴다. 제목은 alt 용 원문 그대로 */
+  recentVideos: { youtubeId: string; title: string }[];
   types: { type: PlaceType; count: number }[];
 }
 
@@ -99,7 +102,7 @@ const loadGraphRows = cachePublic(async () => {
     await Promise.all([
       supabase.from("cities").select("id, slug, name, name_en, country_code, lat, lng, default_zoom"),
       supabase.from("creators").select("id, slug, display_name, initials, accent_color, avatar_url"),
-      supabase.from("videos").select("id, youtube_video_id, title, creator_id"),
+      supabase.from("videos").select("id, youtube_video_id, title, creator_id, published_at"),
       supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
       supabase
         .from("places")
@@ -135,7 +138,12 @@ export async function loadCityIndex(): Promise<CityRow[]> {
 
   const byCity = new Map<
     string,
-    { places: Set<string>; creators: Set<string>; types: Map<PlaceType, Set<string>> }
+    {
+      places: Set<string>;
+      creators: Set<string>;
+      videos: Set<string>;
+      types: Map<PlaceType, Set<string>>;
+    }
   >();
   for (const link of links) {
     const place = placeById.get(link.place_id);
@@ -145,11 +153,12 @@ export async function loadCityIndex(): Promise<CityRow[]> {
 
     let bucket = byCity.get(place.city_id);
     if (!bucket) {
-      bucket = { places: new Set(), creators: new Set(), types: new Map() };
+      bucket = { places: new Set(), creators: new Set(), videos: new Set(), types: new Map() };
       byCity.set(place.city_id, bucket);
     }
     bucket.places.add(place.id);
     bucket.creators.add(video.creator_id);
+    bucket.videos.add(video.id);
     // 타입별 개수는 "장소" 기준이다 — 같은 장소가 여러 영상에 나와도 한 번만 센다
     const set = bucket.types.get(place.place_type) ?? new Set<string>();
     set.add(place.id);
@@ -160,6 +169,11 @@ export async function loadCityIndex(): Promise<CityRow[]> {
     .map((c) => {
       const bucket = byCity.get(c.id);
       if (!bucket) return null;
+      const recentVideos = [...bucket.videos]
+        .map((id) => videoById.get(id)!)
+        .sort((a, b) => (b.published_at ?? "").localeCompare(a.published_at ?? ""))
+        .slice(0, 4)
+        .map((v) => ({ youtubeId: v.youtube_video_id, title: v.title }));
       return {
         slug: c.slug,
         name: c.name,
@@ -169,6 +183,8 @@ export async function loadCityIndex(): Promise<CityRow[]> {
         lng: c.lng,
         placeCount: bucket.places.size,
         creatorCount: bucket.creators.size,
+        videoCount: bucket.videos.size,
+        recentVideos,
         types: [...bucket.types.entries()]
           .map(([type, ids]) => ({ type, count: ids.size }))
           .sort((a, b) => b.count - a.count),

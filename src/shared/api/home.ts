@@ -23,7 +23,12 @@ export interface FeedCreator {
   initials: string;
   accentColor: string;
   avatarUrl: string | null;
+  /** DB 에 `@` 포함 저장 — 표시할 때 `@` 를 덧붙이지 마라 */
+  handle: string | null;
   placeCount: number;
+  videoCount: number;
+  /** 최근 영상 순 — 채널 목록의 필름 롤이 이 컷들을 쓴다. 제목은 alt 용 원문 그대로 */
+  recentVideos: { youtubeId: string; title: string }[];
   cities: { slug: string; name: string; nameEn: string | null }[];
 }
 
@@ -60,7 +65,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
 
   const { data: creators } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color, avatar_url")
+    .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_handle")
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
 
@@ -170,16 +175,24 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       myCities.push({ slug: city.slug, name: city.name, nameEn: city.name_en });
       placeCount += ids.size;
     }
+    // feed 는 이미 최신순 — 검수를 거쳐 피드에 오른 영상만 센다
+    const myVideos = feed.filter((f) => f.creatorSlug === c.slug);
     creatorRows.push({
       slug: c.slug,
       displayName: c.display_name,
       initials: c.initials,
       accentColor: c.accent_color,
       avatarUrl: c.avatar_url,
+      handle: c.youtube_handle,
       placeCount,
+      videoCount: myVideos.length,
+      recentVideos: myVideos.slice(0, 4).map((v) => ({ youtubeId: v.youtubeId, title: v.title })),
       cities: myCities,
     });
   }
+  // DB 의 place_count 컬럼과 조각 합산이 어긋날 수 있다(실측: bimirya 12 가
+  // chuseonghoon 20 위에 있었다) — 화면에 찍는 합산 기준으로 다시 정렬한다.
+  creatorRows.sort((a, b) => b.placeCount - a.placeCount);
 
   return {
     videos: feed,
