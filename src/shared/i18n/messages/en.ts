@@ -39,10 +39,21 @@ export const en: Messages = {
   cityIndex: {
     title: "Where to?",
     stats: "{cities} cities · {places} places",
-    blurb: "Pick a city to see places from every creator who went there, on one map.",
+    blurb: "Pick a region, then a city — places from every creator who went there, on one map.",
     empty: "No cities published yet.",
     openMap: "Open {name} — {places} places, {creators} channels",
     placesChannels: "{places} places · {creators} channels",
+    regionStats: "{cities} cities · {places} places",
+    regions: {
+      japan: "Japan",
+      korea: "Korea",
+      eastAsia: "East Asia",
+      seAsia: "Southeast Asia",
+      europe: "Europe",
+      americas: "Americas",
+      oceania: "Oceania",
+      other: "Elsewhere",
+    },
   },
   cityDetail: {
     home: "Home",

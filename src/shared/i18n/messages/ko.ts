@@ -37,10 +37,21 @@ export const ko = {
   cityIndex: {
     title: "어디 가세요?",
     stats: "도시 {cities} · 간 곳 {places}",
-    blurb: "도시를 고르면 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
+    blurb: "권역에서 도시를 고르면, 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
     empty: "아직 공개된 도시가 없어요.",
     openMap: "{name} 지도 열기 — 간 곳 {places}곳, 채널 {creators}",
     placesChannels: "{places}곳 · 채널 {creators}",
+    regionStats: "도시 {cities} · {places}곳",
+    regions: {
+      japan: "일본",
+      korea: "한국",
+      eastAsia: "동아시아",
+      seAsia: "동남아시아",
+      europe: "유럽",
+      americas: "미주",
+      oceania: "오세아니아",
+      other: "그 외",
+    },
   },
   cityDetail: {
     home: "홈",
@@ -242,6 +253,17 @@ export type Messages = {
     empty: string;
     openMap: string;
     placesChannels: string;
+    regionStats: string;
+    regions: {
+      japan: string;
+      korea: string;
+      eastAsia: string;
+      seAsia: string;
+      europe: string;
+      americas: string;
+      oceania: string;
+      other: string;
+    };
   };
   cityDetail: {
     home: string;

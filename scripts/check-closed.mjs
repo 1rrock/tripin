@@ -7,6 +7,10 @@
  *   npm run check:closed -- --delete  영구 폐업으로 나온 곳을 삭제 (⚠️ 되돌릴 수 없다)
  *   npm run check:closed -- --limit 5 소량 시험
  *
+ *   --with-temporary 를 붙이면 일시 휴업(CLOSED_TEMPORARILY)도 대상에 넣는다.
+ *   지금 문을 닫은 건 같으니 찾아가면 헛걸음이다 — 재개장하면 어드민에서 되돌린다.
+ *   ⚠️ 일시 휴업은 재개장할 수 있으므로 --delete 와는 같이 쓰지 못하게 막아 뒀다.
+ *
  * ⚠️ **기본값은 아무것도 바꾸지 않는다.** 폐업 판정은 오탐이 난다 — 상호를 바꿔
  *    재개업했거나, 이전했거나, 구글 쪽 데이터가 밀린 경우가 있다. 사람이 목록을
  *    먼저 보고 결정해야 한다.
@@ -51,10 +55,15 @@ const value = (name, fallback) => {
 
 const HIDE = flag("hide");
 const DELETE = flag("delete");
+const WITH_TEMPORARY = flag("with-temporary");
 const LIMIT = Number(value("limit", "0")) || null;
 
 if (HIDE && DELETE) {
   console.error("✖ --hide 와 --delete 를 같이 쓸 수 없습니다. 하나만 고르세요.");
+  process.exit(1);
+}
+if (WITH_TEMPORARY && DELETE) {
+  console.error("✖ 일시 휴업은 재개장할 수 있습니다 — --with-temporary 는 --hide 와만 씁니다.");
   process.exit(1);
 }
 
@@ -171,18 +180,23 @@ async function run() {
     for (const p of renamed) console.log(`  · 우리: ${p.name}  /  구글: ${p.googleName}`);
   }
 
-  const targets = [...buckets.CLOSED_PERMANENTLY];
+  const targets = [
+    ...buckets.CLOSED_PERMANENTLY,
+    ...(WITH_TEMPORARY ? buckets.CLOSED_TEMPORARILY : []),
+  ];
+  const label = WITH_TEMPORARY ? "폐업·휴업" : "영구 폐업";
   if (targets.length === 0) {
-    console.log("\n영구 폐업으로 확인된 곳이 없습니다.");
+    console.log(`\n${label}으로 확인된 곳이 없습니다.`);
     return;
   }
 
-  console.log(`\n── 영구 폐업 ${targets.length}곳 ──`);
+  console.log(`\n── ${label} ${targets.length}곳 ──`);
   for (const p of targets) console.log(`  · ${p.name}${p.is_published ? "" : " (이미 비공개)"}`);
 
   if (!HIDE && !DELETE) {
     console.log("\n(확인만 했습니다 — 아무것도 바꾸지 않았습니다.)");
     console.log("  비공개로 내리려면: npm run check:closed -- --hide");
+    console.log("  일시 휴업까지:    npm run check:closed -- --hide --with-temporary");
     console.log("  삭제하려면:       npm run check:closed -- --delete   ⚠️ 되돌릴 수 없습니다");
     return;
   }
