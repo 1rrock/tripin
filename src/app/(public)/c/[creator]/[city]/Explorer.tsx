@@ -25,8 +25,17 @@ import { primaryMapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
-import { FILTERABLE_TYPES, PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
+import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import type { SummaryDisplay } from "@/shared/i18n/display";
+import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 
+/**
+ * `page.tsx` 가 이미 로케일로 `summary` 를 확정해서 넘긴다 — ko/en 원본을 그대로
+ * 이 클라이언트 컴포넌트에 넘기면 props 직렬화로 EN 페이지 HTML 에 한국어 원문이
+ * 새어 나간다(검증 중 실제로 걸렸다: grep 이 0이어야 할 자리에 1이 나왔다).
+ */
 export interface PublicPlace {
   id: string;
   slug: string;
@@ -41,9 +50,7 @@ export interface PublicPlace {
   googleMapsUrl: string | null;
   kakaoPlaceId: string | null;
   naverPlaceId: string | null;
-  summary: string | null;
-  summaryBullets: string[];
-  priceHint: string | null;
+  summary: SummaryDisplay;
   videoTitle: string | null;
   youtubeVideoId: string | null;
   timestampSec: number | null;
@@ -115,6 +122,7 @@ export function Explorer({
   otherCities = [],
   otherCreators = [],
 }: ExplorerProps) {
+  const { messages: m, href, t, locale } = useLocale();
   const [activeId, setActiveId] = useState<string | null>(null);
   // 핀을 눌렀을 때만 상세 시트를 띄운다. 목록 행은 그 자체가 이미 상세라
   // 행을 눌렀다고 시트까지 겹쳐 띄우면 같은 내용이 두 번 나온다.
@@ -157,18 +165,20 @@ export function Explorer({
   );
 
   // 이 조각에 실제로 존재하는 타입만 필터 칩으로 노출
-  const presentTypes = FILTERABLE_TYPES.filter((t) => places.some((p) => p.placeType === t));
+  const presentTypes = FILTERABLE_TYPES.filter((pt) => places.some((p) => p.placeType === pt));
 
   // basePath = /c/[creator]/[city] — 다음 행동 칩의 교차 링크에 재사용
   const [, , creatorSlug, citySlug] = basePath.split("/");
 
-  /** 필터·담기 상태를 모두 담은 URL — 필터 칩 href 와 담기 동기화가 같은 규칙을 쓴다. */
+  /** 필터·담기 상태를 모두 담은 URL — 필터 칩 href 와 담기 동기화가 같은 규칙을 쓴다.
+      basePath 는 로케일 없는 내부 경로라 href() 로 접두사를 붙여야 en 에서 ko 로 튀지 않는다. */
   const buildUrl = (type: PlaceType | null, pickedSet: ReadonlySet<string>) => {
     const params = new URLSearchParams();
     if (type) params.set("type", type);
     if (pickedSet.size > 0) params.set("picked", [...pickedSet].join(","));
     const qs = params.toString();
-    return qs ? `${basePath}?${qs}` : basePath;
+    const path = href(basePath);
+    return qs ? `${path}?${qs}` : path;
   };
 
   /** 선택된 행이 화면 밖이면 끌어온다. 이미 보이면 건드리지 않는다 */
@@ -215,13 +225,11 @@ export function Explorer({
   const sheetSource = sheetIndex >= 0 ? confirmed[sheetIndex]! : null;
   const sheetPlace: SheetPlace | null = sheetSource
     ? {
-        name: sheetSource.name,
+        name: displayPlaceName(sheetSource, locale),
         nameLocal: sheetSource.nameLocal,
-        typeLabel: PLACE_TYPE_LABELS[sheetSource.placeType],
+        typeLabel: m.placeTypes[sheetSource.placeType],
         address: sheetSource.address,
         summary: sheetSource.summary,
-        summaryBullets: sheetSource.summaryBullets,
-        priceHint: sheetSource.priceHint,
         mapUrl: mapsUrl(sheetSource),
         sources: sheetSource.youtubeVideoId
           ? [
@@ -232,7 +240,7 @@ export function Explorer({
                 accentColor,
                 avatarUrl: creatorAvatar,
                 youtubeId: sheetSource.youtubeVideoId,
-                videoTitle: sheetSource.videoTitle ?? "출처 영상",
+                videoTitle: sheetSource.videoTitle ?? m.piece.sourceVideoFallback,
                 timestampSec: sheetSource.timestampSec,
               },
             ]
@@ -276,11 +284,14 @@ export function Explorer({
         <section className="lg:order-1">
           <header className="flex flex-col gap-3.5 px-(--gutter) pt-6 pb-5 lg:px-0 lg:pt-0">
             <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
-              <Link href="/" className="underline-offset-4 hover:underline">
-                홈
+              <Link href={href("/")} className="underline-offset-4 hover:underline">
+                {m.common.home}
               </Link>
               <Icon.chevron className="size-2.5" />
-              <Link href={`/c/${creatorSlug}`} className="underline-offset-4 hover:underline">
+              <Link
+                href={href(`/c/${creatorSlug}`)}
+                className="underline-offset-4 hover:underline"
+              >
                 {creatorName}
               </Link>
               <Icon.chevron className="size-2.5" />
@@ -291,13 +302,13 @@ export function Explorer({
               className="font-black"
               style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
             >
-              {creatorName}의 {cityName}
+              {t(m.piece.title, { creator: creatorName, city: cityName })}
             </h1>
 
             <p className="index tnum" style={{ color: "var(--dim)" }}>
-              확정 {confirmed.length}
-              {candidates.length > 0 ? ` · 확인 중 ${candidates.length}` : ""} · 유형{" "}
-              {presentTypes.length}
+              {t(m.piece.statsConfirmed, { n: confirmed.length })}
+              {candidates.length > 0 ? t(m.piece.statsCandidates, { n: candidates.length }) : ""}
+              {t(m.piece.statsTypes, { n: presentTypes.length })}
             </p>
 
             {introText ? (
@@ -311,12 +322,17 @@ export function Explorer({
 
             {presentTypes.length > 1 ? (
               <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-                <Chip href={buildUrl(null, picked)} active={activeType === null}>
-                  전체
+                <Chip href={buildUrl(null, picked)} active={activeType === null} scroll={false}>
+                  {m.piece.filterAll}
                 </Chip>
-                {presentTypes.map((t) => (
-                  <Chip key={t} href={buildUrl(t, picked)} active={activeType === t}>
-                    {PLACE_TYPE_LABELS[t]}
+                {presentTypes.map((pt) => (
+                  <Chip
+                    key={pt}
+                    href={buildUrl(pt, picked)}
+                    active={activeType === pt}
+                    scroll={false}
+                  >
+                    {m.placeTypes[pt]}
                   </Chip>
                 ))}
               </div>
@@ -326,9 +342,7 @@ export function Explorer({
           <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
             {confirmed.length === 0 ? (
               <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                {activeType
-                  ? "이 카테고리의 확정 장소가 아직 없어요."
-                  : "확정된 장소가 아직 없어요."}
+                {activeType ? m.piece.emptyFiltered : m.piece.emptyAll}
               </p>
             ) : (
               <ol>
@@ -369,17 +383,19 @@ export function Explorer({
                                 lineHeight: 1.3,
                               }}
                             >
-                              {place.name}
+                              {displayPlaceName(place, locale)}
                             </span>
                             <span
                               className="mt-1 block"
                               style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                             >
-                              {PLACE_TYPE_LABELS[place.placeType]}
-                              {place.nameLocal ? (
+                              {m.placeTypes[place.placeType]}
+                              {displayPlaceSecondary(place, locale) ? (
                                 <>
                                   {" · "}
-                                  <span lang="ja">{place.nameLocal}</span>
+                                  <span lang={locale === "en" ? "ko" : "ja"}>
+                                    {displayPlaceSecondary(place, locale)}
+                                  </span>
                                 </>
                               ) : null}
                             </span>
@@ -401,52 +417,23 @@ export function Explorer({
                           />
                         </button>
 
-                        {place.summaryBullets.length > 0 ? (
-                          <ul
-                            className="flex flex-col gap-1.5 pl-10"
-                            style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
-                          >
-                            {place.summaryBullets.map((b, i) => (
-                              <li key={i} className="flex gap-2">
-                                <span aria-hidden style={{ color: "var(--dim)" }}>
-                                  ·
-                                </span>
-                                <span>{b}</span>
-                              </li>
-                            ))}
-                          </ul>
-                        ) : place.summary ? (
-                          <p
-                            className="pl-10"
-                            style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
-                          >
-                            {place.summary}
-                          </p>
-                        ) : null}
-                        {place.priceHint ? (
-                          <p
-                            className="pl-10"
-                            style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                          >
-                            {place.priceHint}
-                          </p>
-                        ) : null}
+                        <SummaryBlock className="pl-10" display={place.summary} />
 
                         <div className="flex flex-wrap items-center gap-2 pl-10">
                           {place.youtubeVideoId ? (
                             <Act
                               icon="play"
                               href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
-                              title={place.videoTitle ?? "출처 영상"}
+                              title={place.videoTitle ?? m.piece.sourceVideoFallback}
                             >
                               {place.timestampSec !== null
-                                ? `영상 ${formatTimestamp(place.timestampSec)}`
-                                : "영상 보기"}
+                                ? t(m.common.watchAt, { ts: formatTimestamp(place.timestampSec) })
+                                : m.common.watchVideo}
                             </Act>
                           ) : null}
                           {mapHref ? (
                             <Act icon="out" href={mapHref}>
-                              지도 열기
+                              {m.common.openMap}
                             </Act>
                           ) : null}
                           <Act
@@ -454,9 +441,24 @@ export function Explorer({
                             pressed={isPicked}
                             onClick={() => togglePick(place.slug)}
                           >
-                            {isPicked ? "담음" : "담기"}
+                            {isPicked ? m.piece.picked : m.piece.pick}
                           </Act>
                         </div>
+
+                        {/* 출처 영상 제목 — 원문 그대로 노출 (YouTube API §III.E.3).
+                            title= 툴팁만으로는 터치 기기에서 보이지 않는다 */}
+                        {place.videoTitle ? (
+                          <p
+                            className="pl-10"
+                            style={{
+                              fontSize: "var(--t-meta)",
+                              color: "var(--dim)",
+                              lineHeight: 1.5,
+                            }}
+                          >
+                            {place.videoTitle}
+                          </p>
+                        ) : null}
                       </div>
                     </li>
                   );
@@ -475,7 +477,7 @@ export function Explorer({
                 }}
               >
                 <h2 className="index" style={{ color: "var(--dim)" }}>
-                  위치 확인 중 {candidates.length}
+                  {t(m.piece.pendingHeading, { n: candidates.length })}
                 </h2>
                 <ul className="flex flex-col gap-2">
                   {candidates.map((place) => (
@@ -485,10 +487,14 @@ export function Explorer({
                       style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                     >
                       <span className="font-bold" style={{ color: "var(--paper)" }}>
-                        {place.name}
+                        {displayPlaceName(place, locale)}
                       </span>
-                      {place.nameLocal ? <span lang="ja">{place.nameLocal}</span> : null}
-                      <span>{PLACE_TYPE_LABELS[place.placeType]}</span>
+                      {displayPlaceSecondary(place, locale) ? (
+                        <span lang={locale === "en" ? "ko" : "ja"}>
+                          {displayPlaceSecondary(place, locale)}
+                        </span>
+                      ) : null}
+                      <span>{m.placeTypes[place.placeType]}</span>
                       {place.youtubeVideoId ? (
                         <a
                           href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
@@ -497,7 +503,7 @@ export function Explorer({
                           className="font-medium underline underline-offset-4"
                           style={{ color: "var(--paper)" }}
                         >
-                          영상 보기
+                          {m.common.watchVideo}
                         </a>
                       ) : null}
                     </li>
@@ -512,11 +518,11 @@ export function Explorer({
                 {otherCities.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     <h2 className="index" style={{ color: "var(--dim)" }}>
-                      {creatorName}의 다른 도시
+                      {t(m.piece.otherCitiesHeading, { creator: creatorName })}
                     </h2>
                     <div className="flex flex-wrap gap-2">
                       {otherCities.map((c) => (
-                        <Chip key={c.slug} href={`/c/${creatorSlug}/${c.slug}`}>
+                        <Chip key={c.slug} href={href(`/c/${creatorSlug}/${c.slug}`)}>
                           {c.name} <span className="tnum ml-1.5 opacity-60">{c.count}</span>
                         </Chip>
                       ))}
@@ -526,11 +532,11 @@ export function Explorer({
                 {otherCreators.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     <h2 className="index" style={{ color: "var(--dim)" }}>
-                      {cityName}에 간 다른 채널
+                      {t(m.piece.otherCreatorsHeading, { city: cityName })}
                     </h2>
                     <div className="flex flex-wrap gap-2">
                       {otherCreators.map((c) => (
-                        <Chip key={c.slug} href={`/c/${c.slug}/${citySlug}`}>
+                        <Chip key={c.slug} href={href(`/c/${c.slug}/${citySlug}`)}>
                           {c.name} <span className="tnum ml-1.5 opacity-60">{c.count}</span>
                         </Chip>
                       ))}
@@ -560,13 +566,14 @@ export function Explorer({
                   }}
                 >
                   <p
+                    className="tnum"
                     style={{
                       color: "var(--ground)",
                       fontSize: "var(--t-body)",
                       fontWeight: 700,
                     }}
                   >
-                    내 목록 <span className="tnum">{picked.size}</span>곳
+                    {t(m.piece.myListCount, { n: picked.size })}
                   </p>
                   {/* 전역 포커스 링이 왁스인데 이 바는 밝은 면이라 왁스 링이 묻는다 —
                       지면 색 링으로 반전한다 (WCAG 2.4.7) */}
@@ -581,7 +588,7 @@ export function Explorer({
                       fontSize: "var(--t-meta)",
                     }}
                   >
-                    {copied ? "복사됨" : "링크 복사"}
+                    {copied ? m.piece.copied : m.piece.copyLink}
                   </button>
                 </div>
               </div>

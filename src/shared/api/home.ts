@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabase";
+import { cachePublic } from "@/shared/api/cache";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 
 /**
@@ -23,7 +24,7 @@ export interface FeedCreator {
   accentColor: string;
   avatarUrl: string | null;
   placeCount: number;
-  cities: { slug: string; name: string }[];
+  cities: { slug: string; name: string; nameEn: string | null }[];
 }
 
 export interface FeedVideo {
@@ -36,7 +37,7 @@ export interface FeedVideo {
   accentColor: string;
   avatarUrl: string | null;
   stopCount: number;
-  cities: string[];
+  cities: { slug: string; name: string; nameEn: string | null }[];
   /** 미리보기용 상호명 — 화면에서 앞 3개만 쓴다 */
   placeNames: string[];
   lastStopSec: number | null;
@@ -49,7 +50,8 @@ export interface HomeFeed {
   totals: { creators: number; cities: number; places: number; videos: number };
 }
 
-export async function loadHomeFeed(): Promise<HomeFeed> {
+/** 홈·채널 목록이 같은 캐시 항목을 나눠 쓴다. 표시 문자열은 여기서 만들지 않는다. */
+export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const empty: HomeFeed = {
     videos: [],
     creators: [],
@@ -63,7 +65,7 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
   if (!creators || creators.length === 0) return empty;
 
   const [{ data: cities }, { data: videos }, { data: links }, { data: places }] = await Promise.all([
-    supabase.from("cities").select("id, slug, name"),
+    supabase.from("cities").select("id, slug, name, name_en"),
     supabase
       .from("videos")
       .select("id, youtube_video_id, title, published_at, creator_id")
@@ -141,9 +143,12 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
       avatarUrl: creator.avatar_url,
       stopCount: stops.length,
       cities: [
-        ...new Set(
-          stops.map((p) => cityById.get(p.city_id)?.name).filter((n): n is string => Boolean(n)),
-        ),
+        ...new Map(
+          stops
+            .map((p) => cityById.get(p.city_id))
+            .filter((c): c is NonNullable<typeof c> => Boolean(c))
+            .map((c) => [c.slug, { slug: c.slug, name: c.name, nameEn: c.name_en }] as const),
+        ).values(),
       ],
       placeNames: stops.map((p) => p.name),
       lastStopSec: times.length ? Math.max(...times) : null,
@@ -156,13 +161,13 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
   const creatorRows: FeedCreator[] = [];
   for (const c of creators) {
     if (!activeCreators.has(c.slug)) continue;
-    const myCities: { slug: string; name: string }[] = [];
+    const myCities: { slug: string; name: string; nameEn: string | null }[] = [];
     let placeCount = 0;
     for (const [key, ids] of slicePlaces) {
       if (!publishedSlices.has(key) || !key.startsWith(`${c.id}:`)) continue;
       const city = cityById.get(key.slice(c.id.length + 1));
       if (!city) continue;
-      myCities.push({ slug: city.slug, name: city.name });
+      myCities.push({ slug: city.slug, name: city.name, nameEn: city.name_en });
       placeCount += ids.size;
     }
     creatorRows.push({
@@ -186,4 +191,4 @@ export async function loadHomeFeed(): Promise<HomeFeed> {
       videos: feed.length,
     },
   };
-}
+}, ["home:feed"]);

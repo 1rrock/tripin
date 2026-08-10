@@ -12,6 +12,7 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 
 import type { ActionResult } from "../_lib/action-result";
@@ -94,6 +95,7 @@ export async function blindTarget(id: string): Promise<ActionResult> {
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  purgePublicData();
   return {
     ok: `임시조치 완료 — ${touched}곳 비공개. 30일 안에 결론을 내야 합니다(§44조의2④). 신청인·게재자 양쪽 통지도 잊지 마세요(§44조의2②).`,
   };

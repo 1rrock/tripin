@@ -1,9 +1,11 @@
+"use client";
+
 /**
  * 핀 상세 — 지도에서 핀을 눌렀을 때 나오는 내용.
  *
- * "use client" 를 붙이지 않는다 — 훅이 없어서 클라이언트 경계 안에서 렌더되기만 하면
- * 되고, 붙이면 이 파일이 클라이언트 진입점이 되어 onClose 같은 함수 prop 이
- * 직렬화 대상으로 검사된다.
+ * 훅(포커스 트랩·Escape 처리)을 쓰지만, 이 컴포넌트는 항상 이미 클라이언트
+ * 컴포넌트(Explorer, CityExplorer) 안에서만 렌더된다 — 즉 서버→클라이언트
+ * 경계를 이 파일이 새로 여는 게 아니라서 "use client" 가 안전하다.
  *
  * 모바일은 화면 하단 고정 시트, 데스크톱은 지도 패널 안쪽 하단이다. 그래서 호출부는
  * 이 컴포넌트를 **지도를 감싼 relative 컨테이너 안**에 놓아야 한다(데스크톱 absolute 기준).
@@ -16,7 +18,11 @@
  * 데스크톱에서는 라이트박스(지도) 위에 놓이므로 지도와도 같은 층으로 읽힌다.
  */
 
+import { useEffect, useRef, useState } from "react";
 import { Avatar, Icon } from "@/shared/ui/frame";
+import { SummaryBlock } from "@/shared/ui/SummaryBlock";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import type { SummaryDisplay } from "@/shared/i18n/display";
 
 export interface SheetSource {
   creatorSlug: string;
@@ -34,9 +40,8 @@ export interface SheetPlace {
   nameLocal: string | null;
   typeLabel: string;
   address: string | null;
-  summary: string | null;
-  summaryBullets: string[];
-  priceHint: string | null;
+  /** 로케일 + en_source 로 이미 판정된 표시 결과 — `shared/i18n/display.ts` 의 `displaySummary`. */
+  summary: SummaryDisplay;
   mapUrl: string | null;
   sources: SheetSource[];
 }
@@ -65,10 +70,70 @@ export function PlaceSheet({
   index: number;
   onClose: () => void;
 }) {
+  const { messages: m, t } = useLocale();
+  const containerRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
+
+  /* 호출부가 onClose 로 인라인 화살표를 넘긴다 — 매 렌더마다 새 정체성이라
+     이걸 이펙트 의존성으로 쓰면 부모가 리렌더될 때마다(담기·복사 등) 이펙트가
+     다시 돌아 포커스를 빼앗는다. 최신 값은 ref 로 들고, 이펙트는 안 묶는다. */
+  const onCloseRef = useRef(onClose);
+  useEffect(() => {
+    onCloseRef.current = onClose;
+  });
+
+  /**
+   * 이 시트는 모바일에서만 모달이다.
+   * `lg` 이상에서는 지도 패널 **안쪽**에 absolute 로 앉고 좌측 장소 목록이 그대로
+   * 조작 가능하다. 그 상태에서 `aria-modal="true"` 는 "바깥은 전부 불활성"이라는
+   * 거짓말이고, Tab 트랩은 키보드 사용자를 시트 안에 가둬 Escape 로만 나가게 만든다.
+   */
+  const [isModal, setIsModal] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(max-width: 1023.98px)");
+    const sync = () => setIsModal(mq.matches);
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
+
+  /* 열릴 때 한 번만 — 마운트 이후 재실행되면 포커스를 빼앗는다 */
+  useEffect(() => {
+    closeBtnRef.current?.focus();
+  }, []);
+
+  useEffect(() => {
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onCloseRef.current();
+        return;
+      }
+      /* 트랩은 모달일 때만 — 데스크톱에서는 목록으로 Tab 해 나갈 수 있어야 한다 */
+      if (!isModal || e.key !== "Tab" || !containerRef.current) return;
+      const focusable = containerRef.current.querySelectorAll<HTMLElement>(
+        "a[href], button:not([disabled])",
+      );
+      if (focusable.length === 0) return;
+      const first = focusable[0]!;
+      const last = focusable[focusable.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isModal]);
+
   return (
     <div
+      ref={containerRef}
       role="dialog"
-      aria-label={`${place.name} 상세`}
+      aria-modal={isModal ? "true" : undefined}
+      aria-label={t(m.map.detailAria, { name: place.name })}
       className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[62dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-x-3 lg:bottom-3 lg:max-h-[46%] lg:pb-4"
       style={{
         background: "var(--paper)",
@@ -83,8 +148,8 @@ export function PlaceSheet({
           className="index tnum grid size-7 shrink-0 place-items-center"
           style={{
             borderRadius: "var(--r-frame)",
-            background: "var(--wax)",
-            color: "var(--ground)",
+            boxShadow: "inset 0 0 0 1.5px var(--wax)",
+            color: "var(--lightbox-ink)",
           }}
         >
           {index}
@@ -127,9 +192,10 @@ export function PlaceSheet({
         </div>
 
         <button
+          ref={closeBtnRef}
           type="button"
           onClick={onClose}
-          aria-label="상세 닫기"
+          aria-label={m.map.closeDetail}
           className="grid size-8 shrink-0 cursor-pointer place-items-center"
           style={{
             borderRadius: "var(--r-frame)",
@@ -143,36 +209,7 @@ export function PlaceSheet({
         </button>
       </div>
 
-      {place.summaryBullets.length > 0 ? (
-        <ul
-          className="mt-3 flex flex-col gap-1.5 pl-10"
-          style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
-        >
-          {place.summaryBullets.map((b, i) => (
-            <li key={i} className="flex gap-2">
-              <span aria-hidden style={{ color: "var(--lightbox-dim)" }}>
-                ·
-              </span>
-              <span>{b}</span>
-            </li>
-          ))}
-        </ul>
-      ) : place.summary ? (
-        <p
-          className="mt-3 pl-10"
-          style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
-        >
-          {place.summary}
-        </p>
-      ) : null}
-      {place.priceHint ? (
-        <p
-          className="mt-2 pl-10"
-          style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}
-        >
-          {place.priceHint}
-        </p>
-      ) : null}
+      <SummaryBlock className="mt-3 pl-10" display={place.summary} dimColor="var(--lightbox-dim)" />
 
       {/* 출처 — 여러 채널이 같은 곳을 갔으면 전부 보여준다. 도시 교차 진입의 값이 여기 있다.
           유튜브로 돌아가는 링크를 가리지 않는 것은 정책 요건이다(LEGAL.md 4.5-(3)) */}
@@ -209,8 +246,8 @@ export function PlaceSheet({
             >
               <Icon.play className="size-3.5" />
               {s.timestampSec !== null
-                ? `영상 ${fmt(s.timestampSec)}`
-                : "영상 보기"}
+                ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
+                : m.common.watchVideo}
             </a>
           </div>
         ))}
@@ -231,7 +268,7 @@ export function PlaceSheet({
               }}
             >
               <Icon.out className="size-4" />
-              지도 앱에서 열기
+              {m.map.openInMapApp}
             </a>
           </div>
         ) : null}

@@ -10,6 +10,7 @@ import type { FeedCreator, FeedVideo } from "@/shared/api/home";
 import { Avatar, Chip, Icon, Index } from "@/shared/ui/frame";
 import { VideoSheet } from "@/shared/ui/VideoSheet";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayCityName } from "@/shared/i18n/display";
 
 const DEVELOP_LIMIT = 6;
 const PAGE_SIZE = 24;
@@ -23,29 +24,34 @@ export function HomeSheet({
   creators: FeedCreator[];
   totals: { creators: number; cities: number; places: number; videos: number };
 }) {
-  const { messages: m, href, t } = useLocale();
+  const { messages: m, href, t, locale } = useLocale();
   const [q, setQ] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [channel, setChannel] = useState<string | null>(null);
   const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
   const searchId = useId();
 
-  const allCities = useMemo(() => [...new Set(videos.flatMap((v) => v.cities))].sort(), [videos]);
+  const allCities = useMemo(() => {
+    const bySlug = new Map(videos.flatMap((v) => v.cities).map((c) => [c.slug, c]));
+    return [...bySlug.values()].sort((a, b) =>
+      displayCityName(a, locale).localeCompare(displayCityName(b, locale)),
+    );
+  }, [videos, locale]);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return videos.filter((v) => {
-      if (city && !v.cities.includes(city)) return false;
+      if (city && !v.cities.some((c) => c.slug === city)) return false;
       if (channel && v.creatorSlug !== channel) return false;
       if (!needle) return true;
       return (
         v.title.toLowerCase().includes(needle) ||
         v.creatorName.toLowerCase().includes(needle) ||
-        v.cities.some((c) => c.toLowerCase().includes(needle)) ||
+        v.cities.some((c) => displayCityName(c, locale).toLowerCase().includes(needle)) ||
         v.placeNames.some((n) => n.toLowerCase().includes(needle))
       );
     });
-  }, [videos, q, city, channel]);
+  }, [videos, q, city, channel, locale]);
 
   const resetPage = () => setVisibleCount(PAGE_SIZE);
 
@@ -126,8 +132,12 @@ export function HomeSheet({
               {m.home.allCities}
             </Chip>
             {allCities.map((c) => (
-              <Chip key={c} active={city === c} onClick={() => onCity(city === c ? null : c)}>
-                {c}
+              <Chip
+                key={c.slug}
+                active={city === c.slug}
+                onClick={() => onCity(city === c.slug ? null : c.slug)}
+              >
+                {displayCityName(c, locale)}
               </Chip>
             ))}
           </div>
@@ -182,7 +192,7 @@ export function HomeSheet({
           <ul key={`lead-${filterKey}`} className="flex flex-col">
             {lead ? (
               <VideoSheet
-                video={lead}
+                video={{ ...lead, cities: lead.cities.map((c) => displayCityName(c, locale)) }}
                 href={href(`/c/${lead.creatorSlug}/v/${lead.youtubeId}`)}
                 i={0}
                 large
@@ -203,7 +213,7 @@ export function HomeSheet({
               {rest.map((v, i) => (
                 <VideoSheet
                   key={v.youtubeId}
-                  video={v}
+                  video={{ ...v, cities: v.cities.map((c) => displayCityName(c, locale)) }}
                   href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)}
                   i={i + 1}
                   animate={i + 1 < DEVELOP_LIMIT}
@@ -275,7 +285,7 @@ export function HomeSheet({
                       className="block truncate"
                       style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                     >
-                      {c.cities.map((x) => x.name).join(" · ")}
+                      {c.cities.map((x) => displayCityName(x, locale)).join(" · ")}
                     </span>
                   </span>
                   <Index className="tnum shrink-0">

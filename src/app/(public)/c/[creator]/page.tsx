@@ -4,10 +4,13 @@ import { notFound } from "next/navigation";
 import { loadCreatorVideos } from "@/shared/api/videos";
 import { VideoList } from "./VideoList";
 import { supabase } from "@/shared/api/supabase";
+import { cachePublic } from "@/shared/api/cache";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
-import { Avatar, Chip, Icon, Index, Rule } from "@/shared/ui/frame";
-import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
+import { Act, Avatar, Chip, Icon, Index, Rule } from "@/shared/ui/frame";
+import { getDictionary, t } from "@/shared/i18n/get-dictionary";
+import { getLocale, localePath } from "@/shared/i18n/locale";
+import { displayCityName } from "@/shared/i18n/display";
 
 /**
  * 채널 허브 — 콘택트 시트의 "롤" 한 통.
@@ -18,19 +21,20 @@ import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
  *
  * anon 클라이언트 → RLS 가 is_published=true 만 내려준다.
  */
-export const revalidate = 3600;
 
 interface CityGroup {
   slug: string;
   name: string;
+  nameEn: string | null;
   placeCount: number;
   types: { type: PlaceType; count: number }[];
 }
 
-async function loadCreatorHub(creatorSlug: string) {
+/** generateMetadata 와 페이지가 같은 캐시 항목을 나눠 쓴다 — 로케일 무관한 행만. */
+const loadCreatorHub = cachePublic(async function loadCreatorHub(creatorSlug: string) {
   const { data: creator } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color, avatar_url")
+    .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_channel_id, youtube_handle")
     .eq("slug", creatorSlug)
     .single();
   if (!creator) return null;
@@ -51,7 +55,7 @@ async function loadCreatorHub(creatorSlug: string) {
 
   const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
   const { data: cities } = cityIds.length
-    ? await supabase.from("cities").select("id, slug, name").in("id", cityIds)
+    ? await supabase.from("cities").select("id, slug, name, name_en").in("id", cityIds)
     : { data: [] };
 
   const groups: CityGroup[] = (cities ?? [])
@@ -64,6 +68,7 @@ async function loadCreatorHub(creatorSlug: string) {
       return {
         slug: city.slug,
         name: city.name,
+        nameEn: city.name_en,
         placeCount: cityPlaces.length,
         types: [...typeCount.entries()]
           .map(([type, count]) => ({ type, count }))
@@ -77,19 +82,34 @@ async function loadCreatorHub(creatorSlug: string) {
   if (groups.length === 0) return null;
 
   return { creator, groups };
-}
+}, ["creator:hub"]);
 
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ creator: string }>;
 }): Promise<Metadata> {
-  const data = await loadCreatorHub((await params).creator);
-  if (!data) return { title: "찾을 수 없는 페이지" };
-  const cityNames = data.groups.map((g) => g.name).join(", ");
+  const locale = await getLocale();
+  const { creator: creatorSlug } = await params;
+  const data = await loadCreatorHub(creatorSlug);
+  if (!data) return { title: "Not found" };
+  const cityNames = data.groups.map((g) => displayCityName(g, locale)).join(", ");
+  const bare = `/c/${creatorSlug}`;
+  const alternates = {
+    canonical: localePath(bare, locale),
+    languages: { ko: bare, en: `/en${bare}` },
+  };
+  if (locale === "en") {
+    return {
+      title: `${data.creator.display_name} travel map — ${cityNames}`,
+      description: `${data.creator.display_name} visited ${data.groups.length} cities (${cityNames}): places to eat and see. Each place links to its source video.`,
+      alternates,
+    };
+  }
   return {
     title: `${data.creator.display_name} 여행 지도 — ${cityNames}`,
     description: `${data.creator.display_name}이(가) 다녀간 도시 ${data.groups.length}곳(${cityNames})의 맛집·명소 지도. 모든 장소에 출처 영상 링크 포함.`,
+    alternates,
   };
 }
 
@@ -98,6 +118,8 @@ export default async function CreatorHubPage({
 }: {
   params: Promise<{ creator: string }>;
 }) {
+  const locale = await getLocale();
+  const m = getDictionary(locale);
   const { creator: creatorSlug } = await params;
   const [data, videoData] = await Promise.all([
     loadCreatorHub(creatorSlug),
@@ -109,12 +131,15 @@ export default async function CreatorHubPage({
   const { creator, groups } = data;
   const videos = videoData?.videos ?? [];
   const totalPlaces = groups.reduce((sum, g) => sum + g.placeCount, 0);
+  const channelUrl = creator.youtube_handle
+    ? `https://www.youtube.com/${creator.youtube_handle}`
+    : `https://www.youtube.com/channel/${creator.youtube_channel_id}`;
 
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
       <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
-        <Link href="/" className="underline-offset-4 hover:underline">
-          홈
+        <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
+          {m.common.home}
         </Link>
         <Icon.chevron className="size-2.5" />
         <span style={{ color: "var(--paper)" }}>{creator.display_name}</span>
@@ -135,33 +160,41 @@ export default async function CreatorHubPage({
             {creator.display_name}
           </h1>
           <p className="index tnum mt-1.5" style={{ color: "var(--dim)" }}>
-            간 곳 {totalPlaces} · 도시 {groups.length} · 검수한 영상 {videos.length}
+            {t(m.hub.stats, { places: totalPlaces, cities: groups.length, videos: videos.length })}
           </p>
+          <div className="mt-2">
+            <Act icon="out" href={channelUrl}>
+              {m.hub.channelLink}
+            </Act>
+          </div>
         </div>
       </header>
 
       {/* 도시 축 — 지도로 가는 문. 이미지가 없으므로 라벨 행으로 놓는다 */}
       <section aria-labelledby="city-h" className="flex flex-col gap-(--stack)">
         <h2 id="city-h" className="index" style={{ color: "var(--dim)" }}>
-          도시 {groups.length} — 지도로 열기
+          {t(m.hub.citiesHeading, { n: groups.length })}
         </h2>
         <ul className="md:grid md:grid-cols-2 md:gap-x-(--block)">
           {groups.map((g) => (
             <li key={g.slug}>
               <Rule />
               <Link
-                href={`/c/${creatorSlug}/${g.slug}`}
+                href={localePath(`/c/${creatorSlug}/${g.slug}`, locale)}
                 className="flex items-center gap-3 py-3.5"
-                aria-label={`${g.name} 지도 열기 — 확정 ${g.placeCount}곳`}
+                aria-label={t(m.hub.cityMapAria, {
+                  name: displayCityName(g, locale),
+                  places: g.placeCount,
+                })}
               >
                 <Icon.pin className="size-[18px] shrink-0" style={{ color: "var(--wax)" }} />
                 <span
                   className="min-w-0 flex-1 truncate font-bold"
                   style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
                 >
-                  {g.name}
+                  {displayCityName(g, locale)}
                 </span>
-                <Index className="tnum shrink-0">{g.placeCount}곳</Index>
+                <Index className="tnum shrink-0">{t(m.home.placesUnit, { n: g.placeCount })}</Index>
                 <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
               </Link>
 
@@ -169,8 +202,8 @@ export default async function CreatorHubPage({
               {g.types.length > 1 ? (
                 <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-3.5 md:mx-0 md:flex-wrap md:px-0">
                   {g.types.map(({ type, count }) => (
-                    <Chip key={type} href={`/c/${creatorSlug}/${g.slug}?type=${type}`}>
-                      {PLACE_TYPE_LABELS[type]}
+                    <Chip key={type} href={localePath(`/c/${creatorSlug}/${g.slug}?type=${type}`, locale)}>
+                      {m.placeTypes[type]}
                       <span className="tnum ml-1.5 opacity-60">{count}</span>
                     </Chip>
                   ))}
@@ -184,7 +217,7 @@ export default async function CreatorHubPage({
       {videos.length > 0 ? (
         <section aria-labelledby="video-h" className="flex flex-col gap-(--stack)">
           <h2 id="video-h" className="index" style={{ color: "var(--dim)" }}>
-            영상 {videos.length} — 나온 시각으로 열기
+            {t(m.hub.videosHeading, { n: videos.length })}
           </h2>
           <VideoList videos={videos} creatorSlug={creatorSlug} />
         </section>

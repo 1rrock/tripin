@@ -8,6 +8,7 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { purgePublicData } from "@/shared/api/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 
@@ -46,7 +47,8 @@ export async function savePlaceSummary(_: SaveResult, form: FormData): Promise<S
   revalidatePath("/admin");
   revalidatePath("/admin/confirm");
   revalidatePath(`/admin/place/${placeId}`);
-  // 공개 조각 페이지도 즉시 갱신 (ISR 1시간을 기다리지 않게)
+  // 요약·가격은 공개 화면에 그대로 나간다 — 로더 캐시를 비워야 1시간을 안 기다린다
+  purgePublicData();
   const publicPath = String(form.get("publicPath") ?? "").trim();
   if (publicPath.startsWith("/c/")) revalidatePath(publicPath);
 

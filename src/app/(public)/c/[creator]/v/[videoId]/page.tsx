@@ -4,6 +4,9 @@ import { notFound } from "next/navigation";
 import { loadVideoDetail } from "@/shared/api/videos";
 import { Chip, Frame, Icon } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
+import { getDictionary, t } from "@/shared/i18n/get-dictionary";
+import { getLocale, localePath } from "@/shared/i18n/locale";
+import { displayCityName } from "@/shared/i18n/display";
 import { Timeline } from "./Timeline";
 
 /**
@@ -18,7 +21,6 @@ import { Timeline } from "./Timeline";
  * 롱테일 상호명을 흡수하도록 설계돼 있어(PRODUCT.md) 영상 페이지가 같은
  * 상호명으로 경쟁하면 둘 다 내려간다. 사람은 볼 수 있고 검색엔진은 조각을 본다.
  */
-export const revalidate = 3600;
 
 interface Params {
   creator: string;
@@ -30,21 +32,42 @@ export async function generateMetadata({
 }: {
   params: Promise<Params>;
 }): Promise<Metadata> {
+  const locale = await getLocale();
   const { creator, videoId } = await params;
   const data = await loadVideoDetail(creator, videoId);
-  if (!data) return { title: "찾을 수 없는 페이지", robots: { index: false, follow: false } };
+  if (!data)
+    return {
+      title: locale === "en" ? "Not found" : "찾을 수 없는 페이지",
+      robots: { index: false, follow: false },
+    };
   const names = data.video.stops
     .slice(0, 3)
     .map((s) => s.name)
     .join(", ");
+  const bare = `/c/${creator}/v/${videoId}`;
+  const alternates = {
+    canonical: localePath(bare, locale),
+    languages: { ko: bare, en: `/en${bare}` },
+  };
+  if (locale === "en") {
+    return {
+      title: `${data.creator.displayName} — ${data.video.title}`,
+      description: `${data.video.stopCount} places in this video: ${names}. Each place has a video timestamp and map link.`,
+      alternates,
+      robots: { index: false, follow: true },
+    };
+  }
   return {
     title: `${data.creator.displayName} — ${data.video.title}`,
     description: `이 영상에 나온 곳 ${data.video.stopCount}곳: ${names}. 각 장소마다 영상 타임스탬프와 지도 링크가 있습니다.`,
+    alternates,
     robots: { index: false, follow: true },
   };
 }
 
 export default async function VideoPage({ params }: { params: Promise<Params> }) {
+  const locale = await getLocale();
+  const m = getDictionary(locale);
   const { creator, videoId } = await params;
   const data = await loadVideoDetail(creator, videoId);
   if (!data) notFound();
@@ -57,15 +80,18 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
       style={{ "--hl": ch.accentColor } as React.CSSProperties}
     >
       <nav className="index flex flex-wrap items-center gap-1.5" style={{ color: "var(--dim)" }}>
-        <Link href="/" className="underline-offset-4 hover:underline">
-          홈
+        <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
+          {m.common.home}
         </Link>
         <Icon.chevron className="size-2.5" />
-        <Link href={`/c/${ch.slug}`} className="underline-offset-4 hover:underline">
+        <Link
+          href={localePath(`/c/${ch.slug}`, locale)}
+          className="underline-offset-4 hover:underline"
+        >
           {ch.displayName}
         </Link>
         <Icon.chevron className="size-2.5" />
-        <span style={{ color: "var(--paper)" }}>영상</span>
+        <span style={{ color: "var(--paper)" }}>{m.video.breadcrumbLabel}</span>
       </nav>
 
       <header className="grid gap-4 md:grid-cols-[3fr_2fr] md:items-center md:gap-7">
@@ -76,7 +102,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
         <div className="flex flex-col gap-2">
           <p className="index" style={{ color: "var(--dim)" }}>
             {ch.displayName}
-            {video.cities[0] ? ` · ${video.cities[0]}` : ""}
+            {video.cities[0] ? ` · ${displayCityName(video.cities[0], locale)}` : ""}
           </p>
           {/* 제목은 유튜브 원본 그대로여야 한다 — 요약·의역은 §III.E.3 위반 */}
           <h1
@@ -86,10 +112,10 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
             {video.title}
           </h1>
           <p className="index tnum" style={{ color: "var(--dim)" }}>
-            나온 곳 {video.stopCount} · 도시 {video.cities.length}
+            {t(m.video.stats, { stops: video.stopCount, cities: video.cities.length })}
           </p>
           <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}>
-            썸네일과 제목은 YouTube 원본 표기 그대로입니다.
+            {m.video.thumbnailNotice}
           </p>
         </div>
       </header>
@@ -98,10 +124,12 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
       {/* 다음 행동 — 1페이지 이탈을 막는 조각 간 연결 */}
       <section className="flex flex-wrap gap-2">
-        <Chip href={`/c/${ch.slug}`}>{ch.displayName}의 다른 영상</Chip>
+        <Chip href={localePath(`/c/${ch.slug}`, locale)}>
+          {t(m.video.otherVideos, { creator: ch.displayName })}
+        </Chip>
         {video.cities.length === 1 && video.stops[0]?.citySlug ? (
-          <Chip href={`/c/${ch.slug}/${video.stops[0].citySlug}`}>
-            {video.cities[0]} 지도로 보기
+          <Chip href={localePath(`/c/${ch.slug}/${video.stops[0].citySlug}`, locale)}>
+            {t(m.video.viewCityMap, { city: displayCityName(video.cities[0], locale) })}
           </Chip>
         ) : null}
       </section>

@@ -8,6 +8,8 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/shared/ui/frame";
+import { Mark } from "@/shared/ui/Mark";
+import { Wordmark } from "@/shared/ui/Wordmark";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 
@@ -86,15 +88,9 @@ export function Nav() {
           style={{ background: "var(--ground)" }}
         >
           <div className="flex items-center justify-between px-(--gutter) pt-5 pb-4">
-            <span
-              style={{
-                fontFamily: "var(--font-archivo), sans-serif",
-                fontSize: "15px",
-                fontWeight: 700,
-                letterSpacing: "0.22em",
-              }}
-            >
-              TRIPIN
+            <span className="flex items-center gap-2.5" style={{ color: "var(--paper)" }}>
+              <Mark className="size-7 shrink-0" />
+              <Wordmark />
             </span>
             <button
               type="button"

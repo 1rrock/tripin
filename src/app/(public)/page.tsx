@@ -1,13 +1,12 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { getLocale } from "@/shared/i18n/locale";
+import { getLocale, localePath } from "@/shared/i18n/locale";
 import { HomeSheet } from "./HomeSheet";
 
 /**
  * 홈 = 영상 콘택트 시트 + 채널 진입 (멀티채널 전제).
  */
-export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -21,6 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
       description: m.meta.homeDescription,
     },
     alternates: {
+      canonical: localePath("/", locale),
       languages: {
         ko: "/",
         en: "/en",

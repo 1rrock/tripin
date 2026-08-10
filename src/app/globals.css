@@ -125,7 +125,7 @@ body > * { position: relative; z-index: 1; }
       "CHOOSUNGHOON"). 한글은 영향이 없어서 눈에 안 띄다가 라틴 이름에서 드러난다.
       대문자가 필요한 자리가 생기면 .index--caps 를 따로 만든다. */
 .index {
-  font-family: var(--font-archivo), sans-serif;
+  font-family: var(--font-archivo), var(--font-gothic), -apple-system, sans-serif;
   font-size: var(--t-index);
   font-weight: 600;
   letter-spacing: 0.14em;
@@ -178,8 +178,18 @@ body > * { position: relative; z-index: 1; }
   animation-delay: calc(var(--i, 0) * 55ms);
 }
 
+/* 시트·바가 아래에서 떠오르며 나타난다. develop 과 같은 이유로 blur 없음 */
+@keyframes rise-in {
+  from { opacity: 0; transform: translateY(16px); }
+  to   { opacity: 1; transform: none; }
+}
+.rise-in {
+  animation: rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
 @media (prefers-reduced-motion: reduce) {
   .develop { animation: none; }
+  .rise-in { animation: none; }
 }
 
 /* 가로 스크롤 스트립 */

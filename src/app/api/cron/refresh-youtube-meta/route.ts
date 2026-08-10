@@ -1,4 +1,5 @@
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { purgePublicData } from "@/shared/api/cache";
 import { serverEnv } from "@/shared/config/env";
 
 /**
@@ -225,6 +226,11 @@ async function run(request: Request) {
         .eq("id", row.id);
       report.creators.refreshed += 1;
     }
+  }
+
+  // 갱신된 제목·채널명·아바타는 공개 화면에 그대로 나간다 — 로더 캐시를 비운다
+  if (report.videos.refreshed > 0 || report.creators.refreshed > 0) {
+    purgePublicData();
   }
 
   return Response.json(report);

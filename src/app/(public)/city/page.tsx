@@ -6,7 +6,6 @@ import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Chip, Icon, Index, Rule } from "@/shared/ui/frame";
 
-export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -14,7 +13,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: m.cityIndex.title,
     description: m.cityIndex.blurb,
-    alternates: { languages: { ko: "/city", en: "/en/city" } },
+    alternates: {
+      canonical: localePath("/city", locale),
+      languages: { ko: "/city", en: "/en/city" },
+    },
   };
 }
 

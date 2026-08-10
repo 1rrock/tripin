@@ -17,6 +17,9 @@ import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
 import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from "@googlemaps/markerclusterer";
 import { isProduction, publicEnv } from "@/shared/config/env";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import type { Messages } from "@/shared/i18n/messages/ko";
+import { t } from "@/shared/i18n/get-dictionary";
 // map-style.ts 의 LIGHTBOX_MAP_STYLE 은 여기서 import 하지 않는다 — 런타임에 쓸 수
 // 없기 때문이다(아래 Map 생성부 주석 참조). 그 파일은 Cloud 콘솔에 올릴 **명세**다.
 
@@ -116,7 +119,7 @@ function markerContent(pin: MapPin, active: boolean): HTMLElement {
  * 숫자는 묶인 장소 수다. 리스트의 번호와 다른 값이라 tabular-nums 로만 맞추고
  * 왁스를 쓰지 않는다 — 왁스를 쓰면 "내가 고른 컷"과 같은 층으로 읽힌다.
  */
-function clusterContent(count: number): HTMLElement {
+function clusterContent(count: number, m: Messages): HTMLElement {
   const wrap = document.createElement("div");
   wrap.style.cssText = "position:relative;cursor:pointer";
 
@@ -154,7 +157,7 @@ function clusterContent(count: number): HTMLElement {
   face.textContent = String(count);
 
   wrap.append(back, face);
-  wrap.title = `이 자리에 장소 ${count}곳 — 누르면 펼쳐집니다`;
+  wrap.title = t(m.map.clusterHint, { n: count });
   return wrap;
 }
 
@@ -166,6 +169,7 @@ export function MapView({
   singlePinZoom = 15,
   cluster = false,
 }: MapViewProps) {
+  const { messages: m } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<google.maps.Map | null>(null);
   const markersRef = useRef<Map<string, google.maps.marker.AdvancedMarkerElement>>(new Map());
@@ -301,7 +305,7 @@ export function MapView({
               render: (c: Cluster) =>
                 new AdvancedMarkerElement({
                   position: c.position,
-                  content: clusterContent(c.count),
+                  content: clusterContent(c.count, m),
                   // 묶음은 항상 낱개 위에 — 낱개 zIndex 는 pin.index(수십 단위)다
                   zIndex: 900,
                 }),
@@ -392,10 +396,10 @@ export function MapView({
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 px-6 text-center">
           <p className="font-bold" style={{ fontSize: "var(--t-body)", color: "var(--lightbox-ink)" }}>
-            지도를 잠시 불러오지 못했어요
+            {m.map.failedTitle}
           </p>
           <p style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}>
-            목록만으로도 모든 장소를 확인할 수 있어요
+            {m.map.failedBody}
           </p>
           {publicEnv.googleMapsKey ? (
             <button
@@ -409,7 +413,7 @@ export function MapView({
                 fontSize: "var(--t-meta)",
               }}
             >
-              다시 시도
+              {m.map.retry}
             </button>
           ) : null}
         </div>
@@ -434,11 +438,11 @@ export function MapView({
           />
         </div>
       ) : null}
-      {!loaded ? <p className="sr-only">지도 불러오는 중</p> : null}
+      {!loaded ? <p className="sr-only">{m.map.loading}</p> : null}
       {loaded && pins.length > 0 ? (
         <button
           type="button"
-          aria-label="전체 핀 보기"
+          aria-label={m.map.viewAll}
           onClick={() => refitRef.current?.()}
           className="absolute bottom-3 left-3 grid size-10 cursor-pointer place-items-center"
           style={{

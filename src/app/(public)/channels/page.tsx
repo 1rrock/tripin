@@ -3,17 +3,25 @@ import Link from "next/link";
 import { loadHomeFeed } from "@/shared/api/home";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { displayCityName } from "@/shared/i18n/display";
 import { Avatar, Chip, Icon, Index, Rule } from "@/shared/ui/frame";
 
-export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const m = getDictionary(locale);
+  const { totals } = await loadHomeFeed();
   return {
     title: m.channels.title,
-    description: m.channels.empty,
-    alternates: { languages: { ko: "/channels", en: "/en/channels" } },
+    description: t(m.channels.stats, {
+      creators: totals.creators,
+      places: totals.places,
+      cities: totals.cities,
+    }),
+    alternates: {
+      canonical: localePath("/channels", locale),
+      languages: { ko: "/channels", en: "/en/channels" },
+    },
   };
 }
 
@@ -29,7 +37,7 @@ export default async function ChannelsPage() {
           className="font-black"
           style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
         >
-          {locale === "en" ? "Who to follow?" : "누구 따라갈까요?"}
+          {m.channels.heading}
         </h1>
         <p className="index tnum" style={{ color: "var(--dim)" }}>
           {t(m.channels.stats, {
@@ -72,7 +80,7 @@ export default async function ChannelsPage() {
                     className="mt-1 block truncate"
                     style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                   >
-                    {c.cities.map((x) => x.name).join(" · ")}
+                    {c.cities.map((x) => displayCityName(x, locale)).join(" · ")}
                   </span>
                 </span>
                 <Index className="tnum shrink-0">
@@ -88,7 +96,7 @@ export default async function ChannelsPage() {
                       key={city.slug}
                       href={localePath(`/c/${c.slug}/${city.slug}`, locale)}
                     >
-                      {city.name}
+                      {displayCityName(city, locale)}
                     </Chip>
                   ))}
                 </div>

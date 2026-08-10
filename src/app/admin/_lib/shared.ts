@@ -54,6 +54,38 @@ export interface AdminPiece {
   publishedAt: string | null;
 }
 
+export interface AdminTranslationRow {
+  id: string;
+  slug: string;
+  name: string;
+  nameLocal: string | null;
+  citySlug: string;
+  cityName: string;
+  creatorSlug: string;
+  creatorName: string;
+  summary: string | null;
+  summaryBullets: string[];
+  address: string | null;
+  priceHint: string | null;
+  summaryEn: string | null;
+  summaryBulletsEn: string[];
+  addressEn: string | null;
+  priceHintEn: string | null;
+  enSource: "machine" | "human" | null;
+  enTranslatedAt: string | null;
+}
+
+export interface AdminCityIntroRow {
+  creatorId: string;
+  creatorSlug: string;
+  creatorName: string;
+  cityId: string;
+  citySlug: string;
+  cityName: string;
+  introText: string;
+  introTextEn: string | null;
+}
+
 /** 주소가 "인근·추정" 같은 얼버무림을 담고 있으면 검수 대상이다. */
 const VAGUE_ADDRESS = /인근|추정|근처|일대|부근|\(/;
 

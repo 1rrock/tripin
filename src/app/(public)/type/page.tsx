@@ -5,7 +5,6 @@ import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Icon, Index, Rule } from "@/shared/ui/frame";
 
-export const revalidate = 3600;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -13,7 +12,10 @@ export async function generateMetadata(): Promise<Metadata> {
   return {
     title: m.typeIndex.title,
     description: m.typeIndex.blurb,
-    alternates: { languages: { ko: "/type", en: "/en/type" } },
+    alternates: {
+      canonical: localePath("/type", locale),
+      languages: { ko: "/type", en: "/en/type" },
+    },
   };
 }
 

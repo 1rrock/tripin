@@ -1,7 +1,9 @@
 import { supabase } from "@/shared/api/supabase";
+import { cachePublic } from "@/shared/api/cache";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import type { EnSource } from "@/shared/i18n/display";
 
 /**
  * 도시 축 로더 — 채널 무관 진입점 (CONCEPT.md 4.5).
@@ -25,7 +27,15 @@ export interface PlaceSource {
   timestampSec: number | null;
 }
 
-export interface CityPlace {
+/**
+ * 로더가 돌려주는 원본 — 로케일 무관, ko/en 요약을 **둘 다** 싣는다.
+ *
+ * ⚠️ 이 그대로 클라이언트 컴포넌트(CityExplorer)에 넘기지 마라 — props 직렬화에
+ *    두 언어가 다 실려 EN 페이지 HTML 에 한국어 원문이 새어 나간다(초기 검증에서
+ *    실제로 걸렸다). 로케일을 아는 서버 쪽(`city/[city]/page.tsx`)에서
+ *    `displaySummary()` 로 한 언어만 고른 `CityExplorer` 의 `CityPlace` 로 바꿔서 넘긴다.
+ */
+export interface CityPlaceRaw {
   id: string;
   slug: string;
   name: string;
@@ -37,6 +47,10 @@ export interface CityPlace {
   summary: string | null;
   summaryBullets: string[];
   priceHint: string | null;
+  summaryEn: string | null;
+  summaryBulletsEn: string[];
+  priceHintEn: string | null;
+  enSource: EnSource;
   mapUrl: string | null;
   /** 이 장소를 다녀간 채널·영상. 여러 채널이 같은 곳을 갔을 수 있고, 그게 이 페이지의 존재 이유다. */
   sources: PlaceSource[];
@@ -59,7 +73,7 @@ export interface CityDetail {
   lat: number;
   lng: number;
   defaultZoom: number;
-  places: CityPlace[];
+  places: CityPlaceRaw[];
   creators: CityCreator[];
 }
 
@@ -75,8 +89,12 @@ export interface CityRow {
   types: { type: PlaceType; count: number }[];
 }
 
-/** 도시 → 확정 장소·채널을 잇는 공통 조회. 목록과 상세가 같은 판정을 쓰게 한다. */
-async function loadGraph() {
+/**
+ * 필터 없는 5개 테이블 스캔 — 목록·상세가 **같은 캐시 항목**을 나눠 쓴다.
+ * 로케일 무관한 원본 행만 담는다(`name` 과 `name_en` 을 둘 다 실어 보낸다).
+ * 캐시가 JSON 직렬화라 여기서 Map 을 만들면 안 된다 — 아래 `loadGraph` 가 맡는다.
+ */
+const loadGraphRows = cachePublic(async () => {
   const [{ data: cities }, { data: creators }, { data: videos }, { data: links }, { data: places }] =
     await Promise.all([
       supabase.from("cities").select("id, slug, name, name_en, country_code, lat, lng, default_zoom"),
@@ -86,16 +104,29 @@ async function loadGraph() {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .eq("map_status", "confirmed"),
     ]);
 
-  const placeById = new Map((places ?? []).map((p) => [p.id, p]));
-  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
-  const creatorById = new Map((creators ?? []).map((c) => [c.id, c]));
+  return {
+    cities: cities ?? [],
+    creators: creators ?? [],
+    videos: videos ?? [],
+    links: links ?? [],
+    places: places ?? [],
+  };
+}, ["cities:graph"]);
 
-  return { cities: cities ?? [], links: links ?? [], placeById, videoById, creatorById };
+/** 도시 → 확정 장소·채널을 잇는 공통 조회. 목록과 상세가 같은 판정을 쓰게 한다. */
+async function loadGraph() {
+  const { cities, creators, videos, links, places } = await loadGraphRows();
+
+  const placeById = new Map(places.map((p) => [p.id, p]));
+  const videoById = new Map(videos.map((v) => [v.id, v]));
+  const creatorById = new Map(creators.map((c) => [c.id, c]));
+
+  return { cities, links, placeById, videoById, creatorById };
 }
 
 /** 지역 목록 — 확정 장소가 하나라도 있는 도시만. */
@@ -179,7 +210,7 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
   }
   if (byPlace.size === 0) return null;
 
-  const places: CityPlace[] = [...byPlace.entries()]
+  const places: CityPlaceRaw[] = [...byPlace.entries()]
     .map(([placeId, sources]) => {
       const p = placeById.get(placeId)!;
       return {
@@ -194,6 +225,10 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
         summary: p.summary,
         summaryBullets: p.summary_bullets ?? [],
         priceHint: p.price_hint,
+        summaryEn: p.summary_en,
+        summaryBulletsEn: p.summary_bullets_en ?? [],
+        priceHintEn: p.price_hint_en,
+        enSource: p.en_source,
         mapUrl:
           primaryMapLink({
             googleMapsUrl: p.google_maps_url,
@@ -205,7 +240,7 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
           })?.url ?? null,
         // 같은 장소를 여러 영상이 가리키면 이른 시각이 먼저 — 목록 순서가 매번 흔들리지 않게
         sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
-      } satisfies CityPlace;
+      } satisfies CityPlaceRaw;
     })
     .sort((a, b) => a.name.localeCompare(b.name, "ko"));
 

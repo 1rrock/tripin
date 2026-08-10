@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabase";
+import { cachePublic } from "@/shared/api/cache";
 import type { PlaceType } from "@/shared/api/database.types";
 
 /**
@@ -22,6 +23,7 @@ export interface VideoStop {
   confirmed: boolean;
   address: string | null;
   cityName: string | null;
+  cityNameEn: string | null;
   citySlug: string | null;
   summary: string | null;
   summaryBullets: string[];
@@ -40,7 +42,7 @@ export interface VideoSummary {
   durationSec: number | null;
   stopCount: number;
   /** 이 영상에 등장하는 도시·타입 — 목록 필터의 근거. */
-  cities: string[];
+  cities: { slug: string; name: string; nameEn: string | null }[];
   types: PlaceType[];
   /**
    * 등장 상호명 — 목록 카드의 헤드라인이 된다.
@@ -93,7 +95,7 @@ async function loadCreator(slug: string): Promise<CreatorHeader | null> {
 }
 
 /** 한 채널의 영상 목록 — 정거장이 하나도 없는 영상은 제외한다. */
-export async function loadCreatorVideos(
+export const loadCreatorVideos = cachePublic(async function loadCreatorVideos(
   creatorSlug: string,
 ): Promise<{ creator: CreatorHeader; videos: VideoSummary[] } | null> {
   const creator = await loadCreator(creatorSlug);
@@ -131,9 +133,9 @@ export async function loadCreatorVideos(
 
   const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
   const { data: cities } = cityIds.length
-    ? await supabase.from("cities").select("id, name").in("id", cityIds)
+    ? await supabase.from("cities").select("id, slug, name, name_en").in("id", cityIds)
     : { data: [] };
-  const cityName = new Map((cities ?? []).map((c) => [c.id, c.name]));
+  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
   const placeById = new Map((places ?? []).map((p) => [p.id, p]));
 
   const out: VideoSummary[] = [];
@@ -151,7 +153,12 @@ export async function loadCreatorVideos(
       durationSec: v.duration_sec,
       stopCount: stops.length,
       cities: [
-        ...new Set(stops.map((p) => cityName.get(p!.city_id)).filter((n): n is string => Boolean(n))),
+        ...new Map(
+          stops
+            .map((p) => cityById.get(p!.city_id))
+            .filter((c): c is NonNullable<typeof c> => Boolean(c))
+            .map((c) => [c.slug, { slug: c.slug, name: c.name, nameEn: c.name_en }] as const),
+        ).values(),
       ],
       types: [...new Set(stops.map((p) => p!.place_type))],
       placeNames: stops.map((p) => p!.name),
@@ -159,10 +166,10 @@ export async function loadCreatorVideos(
     });
   }
   return { creator, videos: out };
-}
+}, ["videos:by-creator"]);
 
 /** 영상 한 편의 타임라인 — 정거장을 시각 순으로 정렬한다. */
-export async function loadVideoDetail(
+export const loadVideoDetail = cachePublic(async function loadVideoDetail(
   creatorSlug: string,
   youtubeId: string,
 ): Promise<{ creator: CreatorHeader; video: VideoDetail } | null> {
@@ -200,7 +207,7 @@ export async function loadVideoDetail(
 
   const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
   const { data: cities } = cityIds.length
-    ? await supabase.from("cities").select("id, slug, name").in("id", cityIds)
+    ? await supabase.from("cities").select("id, slug, name, name_en").in("id", cityIds)
     : { data: [] };
   const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
   const placeById = new Map((places ?? []).map((p) => [p.id, p]));
@@ -219,6 +226,7 @@ export async function loadVideoDetail(
         confirmed: p.map_status === "confirmed",
         address: p.address,
         cityName: city?.name ?? null,
+        cityNameEn: city?.name_en ?? null,
         citySlug: city?.slug ?? null,
         summary: p.summary,
         summaryBullets: p.summary_bullets ?? [],
@@ -249,11 +257,20 @@ export async function loadVideoDetail(
       publishedAt: video.published_at,
       durationSec: video.duration_sec,
       stopCount: stops.length,
-      cities: [...new Set(stops.map((s) => s.cityName).filter((n): n is string => Boolean(n)))],
+      cities: [
+        ...new Map(
+          stops
+            .filter((s) => s.citySlug !== null)
+            .map(
+              (s) =>
+                [s.citySlug, { slug: s.citySlug!, name: s.cityName!, nameEn: s.cityNameEn }] as const,
+            ),
+        ).values(),
+      ],
       types: [...new Set(stops.map((s) => s.placeType))],
       placeNames: stops.map((s) => s.name),
       lastStopSec: times.length ? Math.max(...times) : null,
       stops,
     },
   };
-}
+}, ["videos:detail"]);

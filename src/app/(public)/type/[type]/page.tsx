@@ -7,7 +7,12 @@ import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shar
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Act, Chip, Icon, Rule } from "@/shared/ui/frame";
 
-export const revalidate = 3600;
+/* `export const revalidate` 를 두지 않는다 — 이 트리는 레이아웃이 headers() 를 읽어
+   요청마다 렌더되므로 아무 일도 하지 않는 죽은 선언이 된다(shared/api/cache.ts).
+   캐시는 로더 쪽 cachePublic 이 맡는다. 나머지 공개 페이지 8개도 같은 이유로 뺐다. */
+
+/** 도시당 펼쳐 보여줄 상한. 나머지는 렌더하지 않고 도시 지도로 넘긴다(무게). */
+const VISIBLE_PER_CITY = 12;
 
 interface Params {
   type: string;
@@ -50,6 +55,7 @@ export async function generateMetadata({
         ? `${data.placeCount} ${label.toLowerCase()} places across ${data.cityCount} cities, each with a source video.`
         : `여행 유튜버가 다녀간 ${label} ${data.placeCount}곳 (${data.cityCount}개 도시). 각 장소마다 출처 영상과 지도 링크가 있습니다.`,
     alternates: {
+      canonical: localePath(`/type/${type}`, locale),
       languages: {
         ko: `/type/${type}`,
         en: `/en/type/${type}`,
@@ -127,7 +133,7 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
               </div>
 
               <ol>
-                {g.places.map((place, i) => (
+                {g.places.slice(0, VISIBLE_PER_CITY).map((place, i) => (
                   <li key={place.id}>
                     <Rule />
                     <div className="flex flex-col gap-2.5 py-4">
@@ -165,21 +171,6 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                               {place.address}
                             </p>
                           ) : null}
-                          {place.summaryBullets.length > 0 && locale === "ko" ? (
-                            <ul
-                              className="mt-2 flex flex-col gap-1"
-                              style={{ fontSize: "var(--t-body)", lineHeight: 1.6 }}
-                            >
-                              {place.summaryBullets.map((b, bi) => (
-                                <li key={bi} className="flex gap-2">
-                                  <span aria-hidden style={{ color: "var(--dim)" }}>
-                                    ·
-                                  </span>
-                                  <span>{b}</span>
-                                </li>
-                              ))}
-                            </ul>
-                          ) : null}
                         </div>
                       </div>
 
@@ -214,6 +205,16 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                     </div>
                   </li>
                 ))}
+                {g.places.length > VISIBLE_PER_CITY ? (
+                  <li>
+                    <Rule />
+                    <div className="py-4 pl-9">
+                      <Chip href={localePath(`/city/${g.citySlug}?type=${type}`, locale)}>
+                        {t(m.typeDetail.moreInCity, { n: g.places.length - VISIBLE_PER_CITY })}
+                      </Chip>
+                    </div>
+                  </li>
+                ) : null}
                 <Rule />
               </ol>
             </section>

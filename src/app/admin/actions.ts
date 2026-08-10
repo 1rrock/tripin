@@ -4,10 +4,15 @@
  * 어드민 공통 서버 액션 — 대시보드·조각 화면이 쓴다.
  *
  * 보호: proxy(middleware) 가 /admin/* POST(서버 액션 포함)에 쿠키를 요구한다.
+ *
+ * ⚠️ 공개 데이터를 바꾸는 액션은 `revalidatePath` 만으로 끝나지 않는다. 공개 화면은
+ *    동적 렌더 + 로더 캐시 구조라(`shared/api/cache.ts`) `purgePublicData()`
+ *    를 같이 불러야 유저 화면에 반영된다.
  */
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { purgePublicData } from "@/shared/api/cache";
 import type { ActionResult } from "./_lib/action-result";
 
 export type { ActionResult };
@@ -37,6 +42,7 @@ export async function recountStats(): Promise<ActionResult> {
   const row = Array.isArray(data) ? data[0] : data;
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  purgePublicData();
   return {
     ok: `재계산 완료 — 크리에이터 ${row?.creators_updated ?? 0}건 · 조각 ${row?.pieces_updated ?? 0}건 갱신`,
   };
@@ -90,6 +96,7 @@ export async function setPiecePublished(
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  purgePublicData();
   return { ok: publish ? "조각을 유저 화면에 올렸습니다" : "조각을 비공개로 내렸습니다" };
 }
 
@@ -109,6 +116,7 @@ export async function deletePlaceById(placeId: string): Promise<ActionResult> {
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  purgePublicData();
   return { ok: `"${place?.name ?? "장소"}" 삭제됨` };
 }
 
@@ -142,5 +150,6 @@ export async function togglePlacePublished(
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
   revalidatePath("/", "layout");
+  purgePublicData();
   return { ok: publish ? "공개로 전환" : "비공개로 전환" };
 }

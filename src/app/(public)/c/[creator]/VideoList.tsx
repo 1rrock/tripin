@@ -14,8 +14,9 @@ import { useId, useMemo, useState } from "react";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { VideoSummary } from "@/shared/api/videos";
 import { Chip, Icon } from "@/shared/ui/frame";
-import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
 import { VideoSheet } from "@/shared/ui/VideoSheet";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayCityName } from "@/shared/i18n/display";
 
 const DEVELOP_LIMIT = 6;
 
@@ -26,18 +27,24 @@ export function VideoList({
   videos: VideoSummary[];
   creatorSlug: string;
 }) {
+  const { messages: m, href, t, locale } = useLocale();
   const [q, setQ] = useState("");
   const [city, setCity] = useState<string | null>(null);
   const [type, setType] = useState<PlaceType | null>(null);
   const searchId = useId();
 
-  const allCities = useMemo(() => [...new Set(videos.flatMap((v) => v.cities))].sort(), [videos]);
+  const allCities = useMemo(() => {
+    const bySlug = new Map(videos.flatMap((v) => v.cities).map((c) => [c.slug, c]));
+    return [...bySlug.values()].sort((a, b) =>
+      displayCityName(a, locale).localeCompare(displayCityName(b, locale)),
+    );
+  }, [videos, locale]);
   const allTypes = useMemo(() => [...new Set(videos.flatMap((v) => v.types))], [videos]);
 
   const shown = useMemo(() => {
     const needle = q.trim().toLowerCase();
     return videos.filter((v) => {
-      if (city && !v.cities.includes(city)) return false;
+      if (city && !v.cities.some((c) => c.slug === city)) return false;
       if (type && !v.types.includes(type)) return false;
       if (!needle) return true;
       // 상호명까지 훑는다 — 방문자는 영상 제목이 아니라 가게 이름을 기억한다
@@ -66,14 +73,14 @@ export function VideoList({
           boxShadow: "inset 0 0 0 1px var(--hairline)",
         }}
       >
-        <span className="sr-only">가게 이름·영상 제목 검색</span>
+        <span className="sr-only">{m.home.searchAria}</span>
         <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
         <input
           id={searchId}
           type="search"
           value={q}
           onChange={(e) => setQ(e.target.value)}
-          placeholder="가게 이름·영상 제목으로 찾기"
+          placeholder={m.home.searchPlaceholder}
           autoComplete="off"
           enterKeyHint="search"
           className="w-full bg-transparent outline-none placeholder:text-[color:var(--dim)]"
@@ -84,11 +91,15 @@ export function VideoList({
       {allCities.length > 1 ? (
         <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
           <Chip active={city === null} onClick={() => setCity(null)}>
-            전체 도시
+            {m.home.allCities}
           </Chip>
           {allCities.map((c) => (
-            <Chip key={c} active={city === c} onClick={() => setCity(city === c ? null : c)}>
-              {c}
+            <Chip
+              key={c.slug}
+              active={city === c.slug}
+              onClick={() => setCity(city === c.slug ? null : c.slug)}
+            >
+              {displayCityName(c, locale)}
             </Chip>
           ))}
         </div>
@@ -97,11 +108,11 @@ export function VideoList({
       {allTypes.length > 1 ? (
         <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
           <Chip active={type === null} onClick={() => setType(null)}>
-            전체 종류
+            {m.cityDetail.allTypes}
           </Chip>
-          {allTypes.map((t) => (
-            <Chip key={t} active={type === t} onClick={() => setType(type === t ? null : t)}>
-              {PLACE_TYPE_LABELS[t]}
+          {allTypes.map((pt) => (
+            <Chip key={pt} active={type === pt} onClick={() => setType(type === pt ? null : pt)}>
+              {m.placeTypes[pt]}
             </Chip>
           ))}
         </div>
@@ -110,7 +121,7 @@ export function VideoList({
       {filtered ? (
         <div className="flex items-baseline justify-between gap-3">
           <p className="index tnum" style={{ color: "var(--dim)" }}>
-            찾은 영상 {shown.length} / {videos.length}
+            {t(m.home.foundVideos, { n: shown.length })}
           </p>
           <button
             type="button"
@@ -118,15 +129,15 @@ export function VideoList({
             className="cursor-pointer underline underline-offset-4"
             style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
           >
-            필터 지우기
+            {m.cityDetail.clearFilters}
           </button>
         </div>
       ) : null}
 
       {shown.length === 0 ? (
         <div className="flex flex-col items-start gap-3 py-6">
-          <p style={{ fontSize: "var(--t-body)" }}>조건에 맞는 영상이 없어요.</p>
-          <Chip onClick={clearAll}>필터 지우기</Chip>
+          <p style={{ fontSize: "var(--t-body)" }}>{m.hub.noVideoMatch}</p>
+          <Chip onClick={clearAll}>{m.cityDetail.clearFilters}</Chip>
         </div>
       ) : (
         <ul
@@ -136,8 +147,8 @@ export function VideoList({
           {shown.map((v, i) => (
             <VideoSheet
               key={v.youtubeId}
-              video={v}
-              href={`/c/${creatorSlug}/v/${v.youtubeId}`}
+              video={{ ...v, cities: v.cities.map((c) => displayCityName(c, locale)) }}
+              href={href(`/c/${creatorSlug}/v/${v.youtubeId}`)}
               i={i}
               animate={i < DEVELOP_LIMIT}
             />

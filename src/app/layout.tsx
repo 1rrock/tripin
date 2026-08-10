@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Archivo, Gothic_A1 } from "next/font/google";
 import { publicEnv } from "@/shared/config/env";
+import { getLocale } from "@/shared/i18n/locale";
+import { getDictionary } from "@/shared/i18n/get-dictionary";
 import "./globals.css";
 
 /**
@@ -29,35 +31,44 @@ const archivo = Archivo({
   display: "swap",
 });
 
-export const metadata: Metadata = {
-  metadataBase: new URL(publicEnv.siteUrl),
-  title: {
-    default: "여행 유튜버가 간 곳 지도 | Tripin",
-    template: "%s | Tripin",
-  },
-  description:
-    "채널을 고르면 그 여행 유튜버가 다녀간 맛집·명소가 지도에 뜹니다. 모든 장소에 출처 영상 링크가 있습니다.",
-  /* 공유 카드 기본값 — images 는 opengraph-image.tsx 파일 규약이 자동으로 채운다 */
-  openGraph: {
-    type: "website",
-    locale: "ko_KR",
-    siteName: "Tripin",
-    title: "여행 유튜버가 간 곳 지도 | Tripin",
-    description:
-      "채널을 고르면 그 여행 유튜버가 다녀간 맛집·명소가 지도에 뜹니다. 모든 장소에 출처 영상 링크가 있습니다.",
-  },
-  twitter: {
-    card: "summary_large_image",
-  },
-};
+/**
+ * 루트 폴백 메타데이터 — 페이지가 자기 `generateMetadata`에서 `openGraph`를
+ * 명시적으로 오버라이드하지 않으면 여기로 떨어진다. 로케일을 몰라 정적으로
+ * "ko_KR"·한국어 문구가 고정돼 있었는데, 그러면 openGraph를 안 채우는 페이지의
+ * EN 공유 카드가 전부 한국어로 나간다 — `getLocale()`로 풀어서 고쳤다.
+ */
+export async function generateMetadata(): Promise<Metadata> {
+  const locale = await getLocale();
+  const m = getDictionary(locale);
+  return {
+    metadataBase: new URL(publicEnv.siteUrl),
+    title: {
+      default: m.meta.homeTitle,
+      template: `%s | ${m.brand}`,
+    },
+    description: m.meta.homeDescription,
+    /* 공유 카드 기본값 — images 는 opengraph-image.tsx 파일 규약이 자동으로 채운다 */
+    openGraph: {
+      type: "website",
+      locale: locale === "en" ? "en_US" : "ko_KR",
+      siteName: m.brand,
+      title: m.meta.homeTitle,
+      description: m.meta.homeDescription,
+    },
+    twitter: {
+      card: "summary_large_image",
+    },
+  };
+}
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const locale = await getLocale();
   return (
-    <html lang="ko" className={`${gothic.variable} ${archivo.variable} h-full antialiased`}>
+    <html lang={locale} className={`${gothic.variable} ${archivo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
         {/* 방향 계약 — 빌드 산출물에 HTML 주석으로 남아야 감사 가능 (JSX 주석은 스트립됨) */}
         <div

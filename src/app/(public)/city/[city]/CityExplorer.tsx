@@ -20,13 +20,34 @@ import { useCallback, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
-import type { CityCreator, CityPlace } from "@/shared/api/cities";
+import type { CityCreator, PlaceSource } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import type { SummaryDisplay } from "@/shared/i18n/display";
+import { SummaryBlock } from "@/shared/ui/SummaryBlock";
+
+/**
+ * `CityPlaceRaw`(shared/api/cities.ts) 에서 요약을 로케일 하나로 확정한 표시용 형태.
+ * `city/[city]/page.tsx` 가 로케일을 알고 있으므로 거기서 `displaySummary()` 로 만들어 넘긴다 —
+ * 원본 ko/en 을 그대로 넘기면 클라이언트 props 직렬화로 EN 페이지에 한국어 원문이 새어 나간다.
+ */
+export interface CityPlace {
+  id: string;
+  slug: string;
+  name: string;
+  nameLocal: string | null;
+  placeType: PlaceType;
+  lat: number;
+  lng: number;
+  address: string | null;
+  summary: SummaryDisplay;
+  mapUrl: string | null;
+  sources: PlaceSource[];
+}
 
 function fmt(sec: number | null): string {
   if (sec === null) return "—";
@@ -171,8 +192,6 @@ export function CityExplorer({
               typeLabel: m.placeTypes[activePlace.placeType],
               address: activePlace.address,
               summary: activePlace.summary,
-              summaryBullets: activePlace.summaryBullets,
-              priceHint: activePlace.priceHint,
               mapUrl: activePlace.mapUrl,
               sources: sourcesFor(activePlace),
             }}
@@ -325,25 +344,7 @@ export function CityExplorer({
                         />
                       </button>
 
-                      {place.summaryBullets.length > 0 ? (
-                        <ul
-                          className="flex flex-col gap-1.5 pl-10"
-                          style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
-                        >
-                          {place.summaryBullets.map((b, i) => (
-                            <li key={i} className="flex gap-2">
-                              <span aria-hidden style={{ color: "var(--dim)" }}>
-                                ·
-                              </span>
-                              <span>{b}</span>
-                            </li>
-                          ))}
-                        </ul>
-                      ) : place.summary ? (
-                        <p className="pl-10" style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}>
-                          {place.summary}
-                        </p>
-                      ) : null}
+                      <SummaryBlock className="pl-10" display={place.summary} showPriceHint={false} />
 
                       {/* 출처 — 채널 필터 중이면 그 채널만 */}
                       <div className="flex flex-wrap items-center gap-2 pl-10">

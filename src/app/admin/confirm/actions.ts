@@ -10,6 +10,7 @@
  */
 
 import { revalidatePath } from "next/cache";
+import { purgePublicData } from "@/shared/api/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { resolveGoogleCoords } from "@/shared/lib/resolve-google-place";
@@ -289,6 +290,7 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
   revalidatePath("/admin/confirm");
   revalidatePath("/admin");
   revalidatePath("/", "layout");
+  purgePublicData();
   return { ok: `"${d.name}" ${d.mapStatus === "confirmed" ? "확정" : "보류"} 저장됨` };
 }
 
@@ -408,6 +410,7 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   revalidatePath("/admin/confirm");
   revalidatePath("/admin");
   revalidatePath("/", "layout");
+  purgePublicData();
   const label =
     d.mapStatus === "confirmed"
       ? nextPublished

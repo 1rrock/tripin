@@ -1,15 +1,16 @@
 import { ImageResponse } from "next/og";
 import { supabase } from "@/shared/api/supabase";
+import { cachePublic } from "@/shared/api/cache";
 
 /**
  * 조각(채널×도시) 공유 카드 — "{크리에이터}의 {도시}" + "간 곳 {n}곳".
- * 캐논 톤: 웜 화이트 지면, 잉크 타이포, 도시명에 레몬 밑줄 바. 사진 없음.
+ * 콘택트 시트 다크: #0b0b0c 지면, 오프화이트 타이포, 도시명에 왁스(#ff3d14) 밑줄 바. 사진 없음.
  */
-export const alt = "크리에이터가 간 곳 지도 — Tripin";
+export const alt = "크리에이터가 간 곳 지도 — Greatripin";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const FOOT = "Tripin · 비공식 디렉터리";
+const FOOT = "Greatripin · 비공식 디렉터리";
 
 /**
  * satori 에는 한글 폰트가 없다 — 없으면 두부(tofu)로 렌더된다.
@@ -46,7 +47,10 @@ function isOpenType(data: ArrayBuffer): boolean {
 }
 
 /** 조각의 표시 이름과 확정 핀 수. 조각이 없으면 null — 호출부가 안전한 기본 카드로 물러난다. */
-async function loadPieceSummary(creatorSlug: string, citySlug: string) {
+const loadPieceSummary = cachePublic(async function loadPieceSummary(
+  creatorSlug: string,
+  citySlug: string,
+) {
   const [{ data: creator }, { data: city }] = await Promise.all([
     supabase.from("creators").select("id, display_name").eq("slug", creatorSlug).maybeSingle(),
     supabase.from("cities").select("id, name").eq("slug", citySlug).maybeSingle(),
@@ -76,7 +80,7 @@ async function loadPieceSummary(creatorSlug: string, citySlug: string) {
     .eq("map_status", "confirmed");
 
   return { creatorName: creator.display_name, cityName: city.name, count: (places ?? []).length };
-}
+}, ["piece:og-summary"]);
 
 export default async function PieceOpengraphImage({
   params,
@@ -153,7 +157,7 @@ export default async function PieceOpengraphImage({
               >
                 {owner}
               </div>
-              {/* 도시명 — 레몬 밑줄 바 (Explorer H1 의 .hl-under 와 같은 장치) */}
+              {/* 도시명 — 왁스 밑줄 바 */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
                 <div
                   style={{ display: "flex", fontSize: titleSize, fontWeight: 800, color: "#f5f3ef" }}
@@ -186,11 +190,12 @@ export default async function PieceOpengraphImage({
               alignItems: "flex-start",
             }}
           >
-            <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
-              <div style={{ display: "flex", fontSize: 96, fontWeight: 800, color: "#f5f3ef" }}>
-                Tripin
-              </div>
-              <div style={{ display: "flex", height: 20, background: "#ff3d14", marginTop: 6 }} />
+            <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#f5f3ef" }}>
+              <span>GREA</span>
+              <span style={{ color: "#ff3d14" }}>T</span>
+              <span>RI</span>
+              <span style={{ color: "#ff3d14" }}>P</span>
+              <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 38, color: "#f5f3ef", marginTop: 32 }}>
               {`${creatorSlug} / ${citySlug}`}
@@ -208,9 +213,10 @@ export default async function PieceOpengraphImage({
             fontSize: 26,
             fontWeight: 500,
             color: "#9a9892",
+            letterSpacing: "0.06em",
           }}
         >
-          {bold ? FOOT : "Tripin"}
+          {bold ? FOOT : "GREATRIPIN"}
         </div>
       </div>
     ),

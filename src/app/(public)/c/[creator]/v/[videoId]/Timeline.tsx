@@ -22,7 +22,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoDetail, VideoStop } from "@/shared/api/videos";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
-import { PLACE_TYPE_LABELS } from "@/shared/ui/place-types";
+import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 
 function fmt(sec: number | null): string {
   if (sec === null) return "—";
@@ -54,6 +55,7 @@ function StopRow({
   onSelect: () => void;
   selectable: boolean;
 }) {
+  const { messages: m, t, locale } = useLocale();
   const header = (
     <>
       <FrameNo n={index} active={active} />
@@ -62,17 +64,17 @@ function StopRow({
           className="block font-bold"
           style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em", lineHeight: 1.3 }}
         >
-          {stop.name}
+          {displayPlaceName(stop, locale)}
         </span>
         <span className="mt-1 block" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
           <span className="tnum">{fmt(stop.timestampSec)}</span>
           {" · "}
-          {PLACE_TYPE_LABELS[stop.placeType]}
-          {!stop.confirmed ? " · 위치 확인 중" : ""}
-          {stop.nameLocal ? (
+          {m.placeTypes[stop.placeType]}
+          {!stop.confirmed ? m.video.pendingLocation : ""}
+          {displayPlaceSecondary(stop, locale) ? (
             <>
               {" · "}
-              <span lang="ja">{stop.nameLocal}</span>
+              <span lang={locale === "en" ? "ko" : "ja"}>{displayPlaceSecondary(stop, locale)}</span>
             </>
           ) : null}
         </span>
@@ -81,7 +83,7 @@ function StopRow({
             className="mt-0.5 block"
             style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
           >
-            {stop.cityName ? `${stop.cityName} · ` : ""}
+            {stop.cityName ? `${displayCityName({ name: stop.cityName, nameEn: stop.cityNameEn }, locale)} · ` : ""}
             {stop.address}
           </span>
         ) : null}
@@ -143,12 +145,14 @@ function StopRow({
 
       <div className="flex flex-wrap items-center gap-2 pl-10">
         <Act icon="play" href={youtubeUrl(videoId, stop.timestampSec)}>
-          {stop.timestampSec !== null ? `영상 ${fmt(stop.timestampSec)}` : "영상 보기"}
+          {stop.timestampSec !== null
+            ? t(m.common.watchAt, { ts: fmt(stop.timestampSec) })
+            : m.common.watchVideo}
         </Act>
         {stop.mapUrl ? (
           <Act icon="out" href={stop.mapUrl}>
             {/* 확정만 검수된 딥링크다 — 후보는 이름 검색이라 라벨로 정직하게 구분한다 */}
-            {stop.confirmed ? "지도 열기" : "지도에서 검색"}
+            {stop.confirmed ? m.common.openMap : m.video.searchAtLocation}
           </Act>
         ) : null}
       </div>
@@ -157,6 +161,7 @@ function StopRow({
 }
 
 export function Timeline({ video, creatorName }: { video: VideoDetail; creatorName: string }) {
+  const { messages: m, t, locale } = useLocale();
   const stops = video.stops;
   const timed = useMemo(
     () => stops.filter((s): s is VideoStop & { timestampSec: number } => s.timestampSec !== null),
@@ -261,8 +266,9 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
       {!soloLayout ? (
         <section className="flex flex-col gap-3">
           <p className="index tnum" style={{ color: "var(--dim)" }}>
-            클립 {timed.length} · 현재 {fmt(head)} · {video.durationSec ? "길이" : "길이(추정)"}{" "}
-            {fmt(axisEnd)}
+            {t(m.video.clipCount, { n: timed.length })} ·{" "}
+            {t(m.video.clipCurrent, { t: fmt(head) })} ·{" "}
+            {video.durationSec ? m.video.durationKnown : m.video.durationEstimated} {fmt(axisEnd)}
           </p>
 
           {/* 1차 선택 UI — 가로 칩. 스크러버 마커끼리 붙어도 손가락으로 고를 수 있다 */}
@@ -270,7 +276,7 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
             ref={chipStripRef}
             className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:px-0"
             role="listbox"
-            aria-label="장소 클립 목록"
+            aria-label={m.video.clipListAria}
           >
             {timed.map((s, i) => (
               <div
@@ -284,7 +290,9 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
               >
                 <Chip active={i === activeIdx} onClick={() => selectStop(s.timestampSec)}>
                   <span className="tnum font-bold">{fmt(s.timestampSec)}</span>
-                  <span className="ml-2 max-w-[9.5rem] truncate sm:max-w-[12rem]">{s.name}</span>
+                  <span className="ml-2 max-w-[9.5rem] truncate sm:max-w-[12rem]">
+                    {displayPlaceName(s, locale)}
+                  </span>
                 </Chip>
               </div>
             ))}
@@ -300,11 +308,13 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
           <div
             role="slider"
             tabIndex={0}
-            aria-label={`${creatorName} 영상 타임라인 — 좌우 화살표로 이동`}
+            aria-label={t(m.video.scrubberAria, { creator: creatorName })}
             aria-valuemin={0}
             aria-valuemax={Math.round(axisEnd)}
             aria-valuenow={Math.round(head)}
-            aria-valuetext={`${fmt(head)}, ${timed[activeIdx]?.name ?? ""}`}
+            aria-valuetext={`${fmt(head)}, ${
+              timed[activeIdx] ? displayPlaceName(timed[activeIdx], locale) : ""
+            }`}
             onPointerDown={onPointerDown}
             onPointerMove={onPointerMove}
             onKeyDown={onKeyDown}
@@ -335,7 +345,10 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
                       e.stopPropagation();
                       selectStop(s.timestampSec);
                     }}
-                    aria-label={`${fmt(s.timestampSec)} ${s.name} 로 이동`}
+                    aria-label={t(m.video.seekToAria, {
+                      time: fmt(s.timestampSec),
+                      name: displayPlaceName(s, locale),
+                    })}
                     className="absolute top-0 bottom-0 w-11 -translate-x-1/2 cursor-pointer"
                     style={{ left: `${pct}%`, zIndex: on ? 3 : 1 }}
                   >
@@ -374,7 +387,7 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
           </div>
 
           <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.6, color: "var(--dim)" }}>
-            위 클립을 누르거나 바를 드래그하세요. 화살표 키로도 시간을 옮길 수 있습니다.
+            {m.video.scrubHint}
           </p>
         </section>
       ) : null}
@@ -406,7 +419,7 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
             style={{ border: "1px dashed var(--hairline)", borderRadius: "var(--r-control)" }}
           >
             <p className="index" style={{ color: "var(--dim)" }}>
-              시각 미확인 {untimed.length}
+              {t(m.video.untimedHeading, { n: untimed.length })}
             </p>
             {untimed.map((s, i) => (
               <StopRow

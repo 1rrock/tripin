@@ -3,6 +3,8 @@ import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { LocaleProvider } from "@/shared/i18n/LocaleContext";
+import { Mark } from "@/shared/ui/Mark";
+import { Wordmark } from "@/shared/ui/Wordmark";
 import { Nav } from "./Nav";
 import { LanguageSwitch } from "./LanguageSwitch";
 
@@ -21,27 +23,14 @@ export default async function PublicLayout({ children }: { children: React.React
     <LocaleProvider locale={locale} messages={m}>
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col xl:max-w-6xl">
         <header className="flex items-center justify-between px-(--gutter) pt-5 pb-4">
-          <Link href={home} aria-label={m.brandAria} className="flex items-baseline gap-2">
-            <span
-              style={{
-                fontFamily: "var(--font-archivo), sans-serif",
-                fontSize: "15px",
-                fontWeight: 700,
-                letterSpacing: "0.22em",
-              }}
-            >
-              TRIPIN
-            </span>
-            <span
-              aria-hidden
-              style={{
-                width: 5,
-                height: 5,
-                borderRadius: "var(--r-round)",
-                background: "var(--wax)",
-                display: "inline-block",
-              }}
-            />
+          <Link
+            href={home}
+            aria-label={m.brandAria}
+            className="flex items-center gap-2.5"
+            style={{ color: "var(--paper)" }}
+          >
+            <Mark className="size-7 shrink-0" />
+            <Wordmark />
           </Link>
           <div className="flex items-center gap-2 md:gap-3">
             <Suspense fallback={null}>
@@ -60,40 +49,83 @@ export default async function PublicLayout({ children }: { children: React.React
 
         <div className="flex-1">{children}</div>
 
-        <footer id="notice" className="mt-(--block) px-(--gutter) pb-12">
-          <hr className="rule mb-5" />
-          <p className="index mb-3" style={{ color: "var(--dim)" }}>
+        {/*
+          푸터 = 시트의 **가장자리 인화**. 필름 여백에 찍히는 롤 이름·프레임 번호처럼,
+          본편이 끝난 자리에 재료 자신의 정보가 작게 남는다. UI 크롬 바가 아니다.
+
+          두 단으로만 나눈다:
+            · 가장자리 — 왼쪽 랩 스탬프(마크), 오른쪽 정책 색인
+            · 여백 인화 — 고지 본문. 왁스는 이 화면에서 딱 하나, "요청 보내기"에만 찍힌다
+        */}
+        <footer
+          id="notice"
+          aria-labelledby="notice-h"
+          className="mt-(--block) border-t px-(--gutter) pt-(--stack) pb-(--block)"
+          style={{ borderColor: "var(--hairline)" }}
+        >
+          <div className="flex flex-col gap-(--stack) md:flex-row md:items-center md:justify-between">
+            <Link
+              href={home}
+              aria-label={m.brandAria}
+              className="flex w-fit items-center gap-2.5 transition-opacity hover:opacity-70"
+            >
+              <Mark className="size-6 shrink-0" />
+              <Wordmark style={{ fontSize: "12px" }} />
+            </Link>
+
+            {/* flex-wrap 필수 — 없으면 EN 라벨 4개가 375px 화면 밖으로 나간다 */}
+            <nav
+              aria-label={m.notice.linksAria}
+              className="index flex flex-wrap gap-x-5 gap-y-2.5"
+            >
+              {[
+                { href: "/about", label: m.common.about },
+                { href: "/policy", label: m.common.policy },
+                { href: "/privacy", label: m.common.privacy },
+                { href: "/takedown", label: m.common.takedown },
+              ].map((it) => (
+                <Link
+                  key={it.href}
+                  href={localePath(it.href, locale)}
+                  className="underline-offset-4 transition-colors hover:underline"
+                  style={{ color: "var(--dim)" }}
+                >
+                  {it.label}
+                </Link>
+              ))}
+            </nav>
+          </div>
+
+          <h2 id="notice-h" className="index mt-(--block)" style={{ color: "var(--dim)" }}>
             {m.notice.title}
-          </p>
-          <div className="flex max-w-[42ch] flex-col gap-3">
-            <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.7, color: "var(--dim)" }}>
-              {locale === "ko" ? (
-                <>
-                  Tripin은 공개된 영상 정보를 정리한{" "}
-                  <strong className="font-bold" style={{ color: "var(--paper)" }}>
-                    {m.notice.p1Strong}
-                  </strong>{" "}
-                  디렉터리입니다. 각 크리에이터·채널과 제휴 관계가 없으며, 모든 장소 정보에는 출처
-                  영상이 표기됩니다. 가격·영업 정보는 영상 촬영 시점 기준으로 실제와 다를 수
-                  있습니다.
-                </>
-              ) : (
-                <>
-                  Tripin is an{" "}
-                  <strong className="font-bold" style={{ color: "var(--paper)" }}>
-                    {m.notice.p1Strong}
-                  </strong>{" "}
-                  directory of publicly available video information. It is not affiliated with any
-                  creator or channel. Every place links back to a source video. Prices and hours are
-                  as of filming and may be outdated.
-                </>
-              )}
+          </h2>
+
+          {/*
+            폭은 ch 로 재지 않는다 — ch 는 "0" 글리프 폭(≈7px)이라 42ch 가 294px 밖에
+            안 되고, 전각인 한글은 한 줄 22자에서 끊겨 국수 가락 컬럼이 된다.
+            한글 13px × 40자 ≈ 520px 기준으로 34rem 을 직접 준다.
+          */}
+          <div
+            className="mt-(--stack) flex max-w-[34rem] flex-col gap-2.5"
+            style={{ fontSize: "var(--t-meta)", lineHeight: 1.75, color: "var(--dim)" }}
+          >
+            <p>
+              {m.notice.p1Before}
+              <strong className="font-bold" style={{ color: "var(--paper)" }}>
+                {m.notice.p1Strong}
+              </strong>
+              {m.notice.p1After}
             </p>
-            <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.7, color: "var(--dim)" }}>
-              {m.notice.p2}
-            </p>
-            <p style={{ fontSize: "var(--t-meta)", lineHeight: 1.7, color: "var(--dim)" }}>
-              {m.notice.p3}
+            <p>{m.notice.p2}</p>
+            <p>
+              {m.notice.p3}{" "}
+              <Link
+                href={localePath("/takedown", locale)}
+                className="font-medium underline underline-offset-4"
+                style={{ color: "var(--wax)" }}
+              >
+                {m.notice.p3LinkLabel}
+              </Link>
             </p>
           </div>
         </footer>

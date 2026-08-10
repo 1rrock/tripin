@@ -8,10 +8,10 @@
  */
 
 import { getSupabaseAdmin } from "@/shared/api/supabase";
-import type { AdminPiece, AdminPlaceRow } from "./shared";
+import type { AdminCityIntroRow, AdminPiece, AdminPlaceRow, AdminTranslationRow } from "./shared";
 import { hasSummary } from "./shared";
 
-export type { AdminPiece, AdminPlaceRow } from "./shared";
+export type { AdminCityIntroRow, AdminPiece, AdminPlaceRow, AdminTranslationRow } from "./shared";
 export { hasSummary, isVagueAddress, PLACE_TYPE_LABEL } from "./shared";
 
 /**
@@ -183,4 +183,111 @@ export async function loadAdminPieces(
     (a, b) => b.published - a.published || a.creatorSlug.localeCompare(b.creatorSlug),
   );
   return { pieces, gate: minPins };
+}
+
+/**
+ * 영문 번역 검수 대상 — /admin/translations.
+ *
+ * `en_source` 가 있는(machine/human) 장소는 전부 싣는다. `null`(미번역)은 번역할
+ * 산문이 하나라도 있는 것만 싣는다 — `scripts/translate-en.mjs` 가 스킵하는 것과 같은
+ * 장소를 어드민에서도 "미번역" 큐에 올리지 않기 위해서다(완전히 빈 행은 번역 대상이 아니다).
+ */
+export async function loadAdminTranslations(): Promise<AdminTranslationRow[]> {
+  const db = getSupabaseAdmin();
+  const [{ data: places }, { data: cities }, { data: links }, { data: videos }, { data: creators }] =
+    await Promise.all([
+      db
+        .from("places")
+        .select(
+          "id, slug, name, name_local, city_id, summary, summary_bullets, address, price_hint, summary_en, summary_bullets_en, address_en, price_hint_en, en_source, en_translated_at",
+        )
+        .order("updated_at", { ascending: false }),
+      db.from("cities").select("id, slug, name"),
+      db.from("video_places").select("video_id, place_id"),
+      db.from("videos").select("id, creator_id, published_at"),
+      db.from("creators").select("id, slug, display_name"),
+    ]);
+
+  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
+  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
+  const creatorById = new Map((creators ?? []).map((c) => [c.id, c]));
+
+  const linksByPlace = new Map<string, string[]>();
+  for (const l of links ?? []) {
+    const arr = linksByPlace.get(l.place_id) ?? [];
+    arr.push(l.video_id);
+    linksByPlace.set(l.place_id, arr);
+  }
+
+  return (places ?? [])
+    .filter(
+      (p) =>
+        p.en_source ||
+        p.summary ||
+        (p.summary_bullets?.length ?? 0) > 0 ||
+        p.address ||
+        p.price_hint,
+    )
+    .map((p) => {
+      const city = cityById.get(p.city_id);
+      const videosHere = (linksByPlace.get(p.id) ?? [])
+        .map((id) => videoById.get(id))
+        .filter((v): v is NonNullable<typeof v> => Boolean(v))
+        .sort((a, b) => (a.published_at ?? "").localeCompare(b.published_at ?? ""));
+      const creator = videosHere[0] ? creatorById.get(videosHere[0].creator_id) : undefined;
+
+      return {
+        id: p.id,
+        slug: p.slug,
+        name: p.name,
+        nameLocal: p.name_local,
+        citySlug: city?.slug ?? "?",
+        cityName: city?.name ?? "?",
+        creatorSlug: creator?.slug ?? "?",
+        creatorName: creator?.display_name ?? "(출처 영상 없음)",
+        summary: p.summary,
+        summaryBullets: p.summary_bullets ?? [],
+        address: p.address,
+        priceHint: p.price_hint,
+        summaryEn: p.summary_en,
+        summaryBulletsEn: p.summary_bullets_en ?? [],
+        addressEn: p.address_en,
+        priceHintEn: p.price_hint_en,
+        enSource: p.en_source,
+        enTranslatedAt: p.en_translated_at,
+      };
+    });
+}
+
+/** 도시 인트로 영문 검수 — 행 수가 적어(조각당 최대 1개) 필터·큐 없이 전부 싣는다. */
+export async function loadAdminCityIntros(): Promise<AdminCityIntroRow[]> {
+  const db = getSupabaseAdmin();
+  const [{ data: cc }, { data: creators }, { data: cities }] = await Promise.all([
+    db
+      .from("creator_cities")
+      .select("creator_id, city_id, intro_text, intro_text_en")
+      .not("intro_text", "is", null),
+    db.from("creators").select("id, slug, display_name"),
+    db.from("cities").select("id, slug, name"),
+  ]);
+  const creatorById = new Map((creators ?? []).map((c) => [c.id, c]));
+  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
+
+  return (cc ?? [])
+    .filter((r): r is typeof r & { intro_text: string } => Boolean(r.intro_text))
+    .map((r) => {
+      const creator = creatorById.get(r.creator_id);
+      const city = cityById.get(r.city_id);
+      return {
+        creatorId: r.creator_id,
+        creatorSlug: creator?.slug ?? "?",
+        creatorName: creator?.display_name ?? "?",
+        cityId: r.city_id,
+        citySlug: city?.slug ?? "?",
+        cityName: city?.name ?? "?",
+        introText: r.intro_text,
+        introTextEn: r.intro_text_en,
+      };
+    })
+    .sort((a, b) => a.creatorSlug.localeCompare(b.creatorSlug) || a.citySlug.localeCompare(b.citySlug));
 }

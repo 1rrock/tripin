@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { QueueClient, type TakedownRow } from "./QueueClient";
 
-export const metadata: Metadata = { title: "삭제 요청 — Tripin 어드민" };
+export const metadata: Metadata = { title: "삭제 요청 — Greatripin 어드민" };
 export const dynamic = "force-dynamic";
 
 /**

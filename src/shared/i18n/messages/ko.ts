@@ -1,7 +1,7 @@
 /** 한국어 UI 문자열 — 공개 화면 크롬·라벨. 콘텐츠(요약)는 DB. */
 export const ko = {
-  brand: "Tripin",
-  brandAria: "Tripin 홈",
+  brand: "Greatripin",
+  brandAria: "Greatripin 홈",
   nav: {
     region: "지역",
     regionHint: "도시별로 — 여러 채널이 간 곳을 한 지도에",
@@ -60,7 +60,9 @@ export const ko = {
     openMap: "지도 열기",
   },
   channels: {
+    /** `<title>`·메타 전용 — 화면 헤드라인은 heading 이다 */
     title: "채널",
+    heading: "누구 따라갈까요?",
     stats: "채널 {creators} · 간 곳 {places} · 도시 {cities}",
     empty: "아직 공개된 채널이 없어요.",
     openChannel: "{name} 채널 열기 — 간 곳 {places}곳",
@@ -85,6 +87,7 @@ export const ko = {
     openMap: "지도 열기",
     channelMap: "채널 지도",
     otherTypes: "다른 종류 보기",
+    moreInCity: "+{n}곳 더 — 지도에서 모두 보기",
   },
   placeTypes: {
     restaurant: "맛집",
@@ -100,17 +103,83 @@ export const ko = {
   common: {
     openMap: "지도 열기",
     watchVideo: "영상 보기",
+    watchAt: "영상 {ts}",
     home: "홈",
     language: "Language",
     ko: "한국어",
     en: "English",
+    about: "소개",
+    policy: "콘텐츠 정책",
+    takedown: "삭제 요청",
+    privacy: "개인정보처리방침",
+  },
+  hub: {
+    stats: "간 곳 {places} · 도시 {cities} · 검수한 영상 {videos}",
+    citiesHeading: "도시 {n} — 지도로 열기",
+    cityMapAria: "{name} 지도 열기 — 확정 {places}곳",
+    videosHeading: "영상 {n} — 나온 시각으로 열기",
+    channelLink: "유튜브 채널 열기",
+    noVideoMatch: "조건에 맞는 영상이 없어요.",
+  },
+  piece: {
+    title: "{creator}의 {city}",
+    statsConfirmed: "확정 {n}",
+    statsCandidates: " · 확인 중 {n}",
+    statsTypes: " · 유형 {n}",
+    filterAll: "전체",
+    emptyFiltered: "이 카테고리의 확정 장소가 아직 없어요.",
+    emptyAll: "확정된 장소가 아직 없어요.",
+    pick: "담기",
+    picked: "담음",
+    pendingHeading: "위치 확인 중 {n}",
+    otherCitiesHeading: "{creator}의 다른 도시",
+    otherCreatorsHeading: "{city}에 간 다른 채널",
+    myListCount: "내 목록 {n}곳",
+    copyLink: "링크 복사",
+    copied: "복사됨",
+    sourceVideoFallback: "출처 영상",
+    machineTranslated: "자동 번역",
+    showOriginal: "원문 보기",
+  },
+  video: {
+    breadcrumbLabel: "영상",
+    stats: "나온 곳 {stops} · 도시 {cities}",
+    thumbnailNotice: "썸네일과 제목은 YouTube 원본 표기 그대로입니다.",
+    otherVideos: "{creator}의 다른 영상",
+    viewCityMap: "{city} 지도로 보기",
+    pendingLocation: " · 위치 확인 중",
+    searchAtLocation: "지도에서 검색",
+    clipCount: "클립 {n}",
+    clipCurrent: "현재 {t}",
+    durationKnown: "길이",
+    durationEstimated: "길이(추정)",
+    clipListAria: "장소 클립 목록",
+    scrubHint: "위 클립을 누르거나 바를 드래그하세요. 화살표 키로도 시간을 옮길 수 있습니다.",
+    scrubberAria: "{creator} 영상 타임라인 — 좌우 화살표로 이동",
+    seekToAria: "{time} {name} 로 이동",
+    untimedHeading: "시각 미확인 {n}",
+  },
+  map: {
+    loading: "지도 불러오는 중",
+    clusterHint: "이 자리에 장소 {n}곳 — 누르면 펼쳐집니다",
+    failedTitle: "지도를 잠시 불러오지 못했어요",
+    failedBody: "목록만으로도 모든 장소를 확인할 수 있어요",
+    retry: "다시 시도",
+    viewAll: "전체 핀 보기",
+    detailAria: "{name} 상세",
+    closeDetail: "상세 닫기",
+    openInMapApp: "지도 앱에서 열기",
   },
   notice: {
     title: "고지",
-    p1: "Tripin은 공개된 영상 정보를 정리한 비공식 디렉터리입니다. 각 크리에이터·채널과 제휴 관계가 없으며, 모든 장소 정보에는 출처 영상이 표기됩니다. 가격·영업 정보는 영상 촬영 시점 기준으로 실제와 다를 수 있습니다.",
+    linksAria: "정책 문서",
+    /* 한 문단에 사실을 세 개씩 넣지 않는다 — 한 줄에 한 가지만. */
+    p1Before: "Greatripin은 공개된 영상을 정리한 ",
     p1Strong: "비공식",
-    p2: "영상 썸네일과 제목은 YouTube 원본을 변형 없이 표시하며, 저작권은 각 채널에 있습니다.",
-    p3: "삭제·수정 요청은 접수 즉시 우선 비공개 후 검토합니다. (요청 창구 준비 중)",
+    p1After: " 디렉터리입니다. 어떤 채널과도 제휴하지 않으며, 장소마다 출처 영상을 답니다.",
+    p2: "썸네일과 제목은 YouTube 원본 그대로이며, 저작권은 각 채널에 있습니다. 가격·영업 정보는 영상 촬영 시점 기준입니다.",
+    p3: "삭제·수정 요청은 접수 즉시 비공개로 내린 뒤 검토합니다.",
+    p3LinkLabel: "요청 보내기",
   },
   meta: {
     homeTitle: "여행 유튜버가 간 곳 지도",
@@ -182,6 +251,7 @@ export type Messages = {
   };
   channels: {
     title: string;
+    heading: string;
     stats: string;
     empty: string;
     openChannel: string;
@@ -206,6 +276,7 @@ export type Messages = {
     openMap: string;
     channelMap: string;
     otherTypes: string;
+    moreInCity: string;
   };
   placeTypes: {
     restaurant: string;
@@ -221,17 +292,82 @@ export type Messages = {
   common: {
     openMap: string;
     watchVideo: string;
+    watchAt: string;
     home: string;
     language: string;
     ko: string;
     en: string;
+    about: string;
+    policy: string;
+    takedown: string;
+    privacy: string;
+  };
+  hub: {
+    stats: string;
+    citiesHeading: string;
+    cityMapAria: string;
+    videosHeading: string;
+    channelLink: string;
+    noVideoMatch: string;
+  };
+  piece: {
+    title: string;
+    statsConfirmed: string;
+    statsCandidates: string;
+    statsTypes: string;
+    filterAll: string;
+    emptyFiltered: string;
+    emptyAll: string;
+    pick: string;
+    picked: string;
+    pendingHeading: string;
+    otherCitiesHeading: string;
+    otherCreatorsHeading: string;
+    myListCount: string;
+    copyLink: string;
+    copied: string;
+    sourceVideoFallback: string;
+    machineTranslated: string;
+    showOriginal: string;
+  };
+  video: {
+    breadcrumbLabel: string;
+    stats: string;
+    thumbnailNotice: string;
+    otherVideos: string;
+    viewCityMap: string;
+    pendingLocation: string;
+    searchAtLocation: string;
+    clipCount: string;
+    clipCurrent: string;
+    durationKnown: string;
+    durationEstimated: string;
+    clipListAria: string;
+    scrubHint: string;
+    scrubberAria: string;
+    seekToAria: string;
+    untimedHeading: string;
+  };
+  map: {
+    loading: string;
+    clusterHint: string;
+    failedTitle: string;
+    failedBody: string;
+    retry: string;
+    viewAll: string;
+    detailAria: string;
+    closeDetail: string;
+    openInMapApp: string;
   };
   notice: {
     title: string;
-    p1: string;
+    linksAria: string;
+    p1Before: string;
     p1Strong: string;
+    p1After: string;
     p2: string;
     p3: string;
+    p3LinkLabel: string;
   };
   meta: {
     homeTitle: string;

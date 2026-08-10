@@ -331,11 +331,13 @@ export function Chip({
   active = false,
   href,
   onClick,
+  scroll = true,
   children,
 }: {
   active?: boolean;
   href?: string;
   onClick?: () => void;
+  scroll?: boolean;
   children: ReactNode;
 }) {
   const cls = "shrink-0 whitespace-nowrap px-3 py-1.5 transition-colors";
@@ -349,7 +351,7 @@ export function Chip({
 
   if (href) {
     return (
-      <Link href={href} scroll={false} className={cls} style={style}>
+      <Link href={href} scroll={scroll} className={cls} style={style}>
         {children}
       </Link>
     );

@@ -3,7 +3,7 @@ import { PRODUCTION_MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import { loadAdminPieces } from "../_lib/queries";
 import { PiecesClient } from "./PiecesClient";
 
-export const metadata: Metadata = { title: "조각 — Tripin 어드민" };
+export const metadata: Metadata = { title: "조각 — Greatripin 어드민" };
 export const dynamic = "force-dynamic";
 
 /**
