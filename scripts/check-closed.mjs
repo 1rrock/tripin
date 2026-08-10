@@ -23,7 +23,7 @@
  *    (`API_KEY_HTTP_REFERRER_BLOCKED`) 이 난다.
  */
 import { createClient } from "@supabase/supabase-js";
-import { existsSync, readFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 import { setTimeout as sleep } from "node:timers/promises";
@@ -130,6 +130,31 @@ async function run() {
   console.log("\n── 집계 ──");
   for (const [k, v] of Object.entries(buckets)) console.log(`  ${k.padEnd(19)} ${v.length}`);
   if (failed.length) console.log(`  조회 실패          ${failed.length}`);
+
+  /* 결과를 파일로도 남긴다 — 콘솔 출력은 길어서 스크롤에 잘리고, 다시 보려고
+     API 를 또 때릴 이유가 없다. 판단(비공개/삭제)은 이 파일을 보고 하면 된다. */
+  const reportPath = join(ROOT, "tmp-closed-report.json");
+  writeFileSync(
+    reportPath,
+    JSON.stringify(
+      {
+        checkedAt: new Date().toISOString(),
+        counts: Object.fromEntries(Object.entries(buckets).map(([k, v]) => [k, v.length])),
+        buckets: Object.fromEntries(
+          Object.entries(buckets).map(([k, v]) => [
+            k,
+            v.map((p) => ({ name: p.name, googleName: p.googleName, isPublished: p.is_published })),
+          ]),
+        ),
+        noPlaceId: unchecked.map((p) => ({ name: p.name, isPublished: p.is_published })),
+        failed,
+      },
+      null,
+      2,
+    ),
+    "utf8",
+  );
+  console.log(`\n리포트: ${reportPath}`);
 
   if (unchecked.length) {
     console.log(`\n── place_id 가 없어 자동 확인 불가 (${unchecked.length}곳) — 손으로 봐야 한다 ──`);

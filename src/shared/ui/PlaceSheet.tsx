@@ -14,8 +14,8 @@
  * 여러 개·아웃링크 두 개라 말풍선 폭에 안 들어가고, 구글이 그리는 요소라 이 월드의
  * 문법(각진 프레임·왁스 표시)을 입힐 수 없다.
  *
- * 시트는 밝은 면(--paper)이다. 어두운 지면 위에서 가장 강한 강조는 반전이고,
- * 데스크톱에서는 라이트박스(지도) 위에 놓이므로 지도와도 같은 층으로 읽힌다.
+ * 시트는 밝은 면(--sheet)이다. 웜 페이퍼 월드에서 --paper 는 잉크이므로
+ * 시트 배경에 쓰지 않는다. 데스크톱에서는 라이트박스(지도) 위에 놓인다.
  */
 
 import { useEffect, useRef, useState } from "react";
@@ -136,8 +136,8 @@ export function PlaceSheet({
       aria-label={t(m.map.detailAria, { name: place.name })}
       className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[62dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-x-3 lg:bottom-3 lg:max-h-[46%] lg:pb-4"
       style={{
-        background: "var(--paper)",
-        color: "var(--lightbox-ink)",
+        background: "var(--sheet)",
+        color: "var(--paper)",
         borderRadius: "var(--r-control)",
         boxShadow: "var(--lift)",
       }}
@@ -149,7 +149,7 @@ export function PlaceSheet({
           style={{
             borderRadius: "var(--r-frame)",
             boxShadow: "inset 0 0 0 1.5px var(--wax)",
-            color: "var(--lightbox-ink)",
+            color: "var(--paper)",
           }}
         >
           {index}
@@ -168,7 +168,7 @@ export function PlaceSheet({
           </h2>
           <p
             className="mt-1"
-            style={{ fontSize: "var(--t-meta)", color: "var(--lightbox-dim)" }}
+            style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
           >
             {place.typeLabel}
             {place.nameLocal ? (
@@ -183,7 +183,7 @@ export function PlaceSheet({
               className="mt-0.5"
               style={{
                 fontSize: "var(--t-meta)",
-                color: "var(--lightbox-dim)",
+                color: "var(--dim)",
               }}
             >
               {place.address}
@@ -199,17 +199,17 @@ export function PlaceSheet({
           className="grid size-8 shrink-0 cursor-pointer place-items-center"
           style={{
             borderRadius: "var(--r-frame)",
-            boxShadow: "inset 0 0 0 1px var(--lightbox-edge)",
+            boxShadow: "inset 0 0 0 1px var(--hairline)",
           }}
         >
           <Icon.close
             className="size-4"
-            style={{ color: "var(--lightbox-ink)" }}
+            style={{ color: "var(--paper)" }}
           />
         </button>
       </div>
 
-      <SummaryBlock className="mt-3 pl-10" display={place.summary} dimColor="var(--lightbox-dim)" />
+      <SummaryBlock className="mt-3 pl-10" display={place.summary} dimColor="var(--dim)" />
 
       {/* 출처 — 여러 채널이 같은 곳을 갔으면 전부 보여준다. 도시 교차 진입의 값이 여기 있다.
           유튜브로 돌아가는 링크를 가리지 않는 것은 정책 요건이다(LEGAL.md 4.5-(3)) */}
@@ -241,7 +241,7 @@ export function PlaceSheet({
                 fontSize: "var(--t-meta)",
                 fontWeight: 500,
                 borderRadius: "var(--r-control)",
-                boxShadow: "inset 0 0 0 1px var(--lightbox-edge)",
+                boxShadow: "inset 0 0 0 1px var(--hairline)",
               }}
             >
               <Icon.play className="size-3.5" />
@@ -254,7 +254,6 @@ export function PlaceSheet({
 
         {place.mapUrl ? (
           <div className="mt-1">
-            {/* Act 은 어두운 지면 기준 색이라 밝은 시트 위에서는 직접 그린다 */}
             <a
               href={place.mapUrl}
               target="_blank"
@@ -263,8 +262,8 @@ export function PlaceSheet({
               style={{
                 fontSize: "var(--t-meta)",
                 borderRadius: "var(--r-frame)",
-                background: "var(--ground)",
-                color: "var(--paper)",
+                background: "var(--paper)",
+                color: "var(--sheet)",
               }}
             >
               <Icon.out className="size-4" />

@@ -51,7 +51,7 @@ export default async function ChannelsPage() {
       {creators.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.channels.empty}</p>
       ) : (
-        <ul className="md:grid md:grid-cols-2 md:gap-x-(--block)">
+        <ul className="flex flex-col">
           {creators.map((c) => (
             <li key={c.slug}>
               <Rule />
@@ -90,7 +90,7 @@ export default async function ChannelsPage() {
               </Link>
 
               {c.cities.length > 1 ? (
-                <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-4 md:mx-0 md:flex-wrap md:px-0">
+                <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-4">
                   {c.cities.map((city) => (
                     <Chip
                       key={city.slug}

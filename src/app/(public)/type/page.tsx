@@ -56,7 +56,7 @@ export default async function TypeIndexPage() {
       {types.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.typeIndex.empty}</p>
       ) : (
-        <ul className="md:grid md:grid-cols-2 md:gap-x-(--block)">
+        <ul className="flex flex-col">
           {types.map((row) => {
             const label = m.placeTypes[row.type];
             return (

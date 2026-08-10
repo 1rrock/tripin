@@ -57,7 +57,7 @@ export default async function CityIndexPage() {
       {cities.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.cityIndex.empty}</p>
       ) : (
-        <ul className="md:grid md:grid-cols-2 md:gap-x-(--block)">
+        <ul className="flex flex-col">
           {cities.map((c) => {
             const label = displayCityName({ name: c.name, nameEn: c.nameEn }, locale);
             return (
@@ -97,7 +97,7 @@ export default async function CityIndexPage() {
                 </Link>
 
                 {c.types.length > 1 ? (
-                  <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-3.5 md:mx-0 md:flex-wrap md:px-0">
+                  <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) pb-3.5">
                     {c.types.map(({ type, count }) => (
                       <Chip
                         key={type}

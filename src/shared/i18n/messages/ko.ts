@@ -114,12 +114,23 @@ export const ko = {
     privacy: "개인정보처리방침",
   },
   hub: {
+    channelNav: "채널",
     stats: "간 곳 {places} · 도시 {cities} · 검수한 영상 {videos}",
     citiesHeading: "도시 {n} — 지도로 열기",
     cityMapAria: "{name} 지도 열기 — 확정 {places}곳",
     videosHeading: "영상 {n} — 나온 시각으로 열기",
     channelLink: "유튜브 채널 열기",
     noVideoMatch: "조건에 맞는 영상이 없어요.",
+    allCities: "전체 지역",
+    allTypes: "전체",
+    placesAll: "간 곳 {n}",
+    placesFiltered: "{shown} / {total}곳",
+    pinHint: " · 목록은 영상 · 핀은 상세",
+    onlyThisCity: "이 도시 지도만 보기",
+    noMatch: "조건에 맞는 장소가 없어요.",
+    clearFilters: "필터 지우기",
+    openMap: "지도 열기",
+    openVideoAria: "{name} — 출처 영상 열기",
   },
   piece: {
     title: "{creator}의 {city}",
@@ -303,12 +314,23 @@ export type Messages = {
     privacy: string;
   };
   hub: {
+    channelNav: string;
     stats: string;
     citiesHeading: string;
     cityMapAria: string;
     videosHeading: string;
     channelLink: string;
     noVideoMatch: string;
+    allCities: string;
+    allTypes: string;
+    placesAll: string;
+    placesFiltered: string;
+    pinHint: string;
+    onlyThisCity: string;
+    noMatch: string;
+    clearFilters: string;
+    openMap: string;
+    openVideoAria: string;
   };
   piece: {
     title: string;
