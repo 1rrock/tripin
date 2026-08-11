@@ -231,3 +231,124 @@ body > * { position: relative; z-index: 1; }
     transition-duration: 0.12s;
   }
 }
+
+/* ── 헤더 메뉴 ─────────────────────────────────────────────────────────
+   .roll 과 같은 바닥에 **잉크**를 하나 더 얹는다. 목록 행과 달리 메뉴 항목은
+   11px 자간 넓은 라벨이라, 바닥만으로는 변화가 눈에 안 들어온다.
+
+   ⚠️ 색을 인라인 style 로 주지 마라. 인라인은 스타일시트의 :hover 를 이기므로
+      호버가 조용히 죽는다 — 여기로 옮긴 이유가 그것이다.
+
+   ── 활성과 호버가 왜 안 헷갈리나 ────────────────────────────────
+   현재 페이지는 **왁스 링**(box-shadow), 손 얹은 곳은 **바닥**(background) 이다.
+   둘이 다른 속성이라 겹쳐도 각각 읽힌다. 호버는 box-shadow 를 건드리지 않으므로
+   활성 항목에 손을 얹으면 링은 그대로 있고 바닥만 깔린다.
+
+   같은 속성을 색만 바꿔 두 번 쓰는 안(호버=--edge 링, 활성=--wax 링)도 검토했는데,
+   링 두 개를 색으로만 구별해야 해서 기각했다. */
+.nav-item {
+  color: var(--dim);
+  border-radius: var(--r-control);
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease;
+}
+.nav-item[aria-current] {
+  color: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--wax);
+}
+@media (hover: hover) {
+  /* [aria-current] 뒤에 선언 — 같은 특이도라 활성 항목에서도 잉크가 이긴다.
+     box-shadow 는 안 건드리므로 왁스 링은 살아 있다 */
+  .nav-item:hover {
+    background: var(--hover);
+    color: var(--paper);
+    transition-duration: 0.12s;
+  }
+}
+
+/* 판 없는 메뉴 링크 — 헤더 '고지', 푸터 정책 색인.
+   여기는 **바닥을 칠하지 않는다.** 배경을 깔려면 그 배경이 앉을 판이 있어야 하는데,
+   이 링크들은 패딩도 테두리도 없는 맨 글자다. 면을 칠하면 글자에 딱 붙은 색 조각이
+   생겨 오히려 지저분해진다. 잉크와 밑줄로만 말한다.
+
+   ⚠️ 원래 `transition-colors` 가 붙어 있었는데 호버에서 바뀌는 색이 없어서
+      **아무 일도 안 하고 있었다.** 헤더 메뉴와 같은 종류의 죽은 트랜지션이다. */
+.nav-link {
+  color: var(--dim);
+  text-underline-offset: 4px;
+  transition: color 0.22s ease;
+}
+@media (hover: hover) {
+  .nav-link:hover {
+    color: var(--paper);
+    text-decoration: underline;
+    transition-duration: 0.12s;
+  }
+}
+
+/* ── 하단 탭바 (모바일) ────────────────────────────────────────────────
+   햄버거 + 전체화면 오버레이가 있던 자리. 항목이 넷뿐인 목록을 열려고 화면을
+   통째로 덮을 이유가 없고, 여닫는 버튼이 사라지면 "메뉴 ↔ X" 위치가 어긋날
+   일도 없어진다.
+
+   왜 불투명 지면인가: 헤더와 같은 이유다. 전체화면 fixed 그레인 레이어 위에
+   backdrop-filter 를 걸면 그 영역이 검게 래스터된다.
+
+   safe-area 는 바 **안쪽** 패딩으로 먹는다. 바깥에 마진으로 주면 홈 인디케이터
+   구역에 지면이 비쳐 바가 떠 보인다. */
+.tabbar {
+  background: var(--ground);
+  border-top: 1px solid var(--hairline);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+.tab {
+  position: relative;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  padding: 9px 0 11px;
+  color: var(--dim);
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease;
+}
+/* 현재 위치 = 잉크가 진해지고 **왁스 눈금**이 바 윗변에 하나 찍힌다.
+   면을 칠하거나 아이콘 굵기를 바꾸지 않는다 — 왁스는 표시이지 배경이 아니고,
+   아이콘 세트는 stroke 1.6 하나로 통일돼 있다(frame.tsx 머리말). */
+.tab[aria-current] {
+  color: var(--paper);
+}
+.tab[aria-current]::before {
+  content: "";
+  position: absolute;
+  top: -1px;
+  width: 22px;
+  height: 2px;
+  background: var(--wax);
+}
+/* 터치에는 호버가 없다. 본체는 :active — 60ms 는 NN/g 의 "즉답" 한계 안쪽 */
+.tab:active {
+  background: var(--hover);
+  transition-duration: 60ms;
+}
+@media (hover: hover) {
+  .tab:hover {
+    background: var(--hover);
+    color: var(--paper);
+    transition-duration: 0.12s;
+  }
+}
+
+/* 모션 축소 — 상태는 남기고 움직임만 걷는다. MDN 이 말하는 "reduces, or
+   replaces" 다. 전정기관을 건드리는 건 확대·이동이므로 색은 그대로 둔다 */
+@media (prefers-reduced-motion: reduce) {
+  .nav-item,
+  .nav-link,
+  .tab {
+    transition-duration: 1ms;
+  }
+}

@@ -553,7 +553,8 @@ export function Explorer({
           어두운 지면 위에서 가장 강한 강조는 반전(밝은 면)이다 */}
       {picked.size > 0 ? (
         <>
-          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+1rem)]">
+          {/* 모바일은 하단 탭바(60px) 위에 앉는다 — 그냥 bottom-0 이면 탭 위에 겹친다 */}
+          <div className="pointer-events-none fixed inset-x-0 bottom-0 z-30 pb-[calc(env(safe-area-inset-bottom)+4.75rem)] md:pb-[calc(env(safe-area-inset-bottom)+1rem)]">
             <div className="mx-auto w-full max-w-2xl px-(--gutter) xl:max-w-6xl">
               {/* lg 에서는 리스트 컬럼 폭에 맞춘다 — 지도를 가리지 않는다 */}
               <div className="lg:max-w-[30rem]">

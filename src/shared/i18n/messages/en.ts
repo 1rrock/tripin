@@ -6,14 +6,10 @@ export const en: Messages = {
   brandAria: "Greatripin home",
   nav: {
     region: "Places",
-    regionHint: "By city — every creator who went there on one map",
     channel: "Channels",
-    channelHint: "By creator — only where they went",
     type: "Types",
-    typeHint: "Food, cafés, stays, sights — start by category",
     menu: "Menu",
-    openMenu: "Open menu",
-    closeMenu: "Close menu",
+    tabsAria: "Main sections",
     notice: "Notice",
   },
   home: {

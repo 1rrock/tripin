@@ -4,14 +4,11 @@ export const ko = {
   brandAria: "Greatripin 홈",
   nav: {
     region: "지역",
-    regionHint: "도시별로 — 여러 채널이 간 곳을 한 지도에",
     channel: "채널",
-    channelHint: "유튜버별로 — 그 사람이 간 곳만",
     type: "종류",
-    typeHint: "맛집·카페·숙소·명소 — 유형부터 고르기",
     menu: "메뉴",
-    openMenu: "메뉴 열기",
-    closeMenu: "메뉴 닫기",
+    /** 모바일 하단 탭바 */
+    tabsAria: "주요 화면",
     notice: "고지",
   },
   home: {
@@ -248,14 +245,10 @@ export type Messages = {
   brandAria: string;
   nav: {
     region: string;
-    regionHint: string;
     channel: string;
-    channelHint: string;
     type: string;
-    typeHint: string;
     menu: string;
-    openMenu: string;
-    closeMenu: string;
+    tabsAria: string;
     notice: string;
   };
   home: {

@@ -22,7 +22,9 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <LocaleProvider locale={locale} messages={m}>
-      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col xl:max-w-6xl">
+      {/* 모바일은 하단 탭바(Nav)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
+          않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터 */}
+      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom))] xl:max-w-6xl md:pb-0">
         {/* 스크롤을 따라온다 — 검색은 어느 페이지 어디에서나 손에 닿아야 한다.
             ⚠️ backdrop-filter 를 쓰지 않는다. 전체화면 fixed 그레인 레이어와
                겹치면 그 영역이 통째로 검게 래스터되는 페인트 버그가 난다
@@ -45,10 +47,11 @@ export default async function PublicLayout({ children }: { children: React.React
               헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다 */}
           <SearchBar />
 
+          {/* 언어 전환은 푸터로 갔다 — 첫 진입 언어는 proxy 가 Accept-Language 로
+              정하므로 헤더에서 매번 고를 이유가 없다. 다만 **없애지는 않는다**:
+              자동 감지만 두고 수동 전환을 지우면 브라우저 언어와 다른 언어로 읽고
+              싶은 사람이 갇힌다(W3C i18n 권고). */}
           <div className="flex shrink-0 items-center gap-2 md:gap-3">
-            <Suspense fallback={null}>
-              <LanguageSwitch />
-            </Suspense>
             <Nav />
             <a href="#notice" className="nav-link index hidden md:inline">
               {m.nav.notice}
@@ -83,25 +86,30 @@ export default async function PublicLayout({ children }: { children: React.React
             </Link>
 
             {/* flex-wrap 필수 — 없으면 EN 라벨 4개가 375px 화면 밖으로 나간다 */}
-            <nav
-              aria-label={m.notice.linksAria}
-              className="index flex flex-wrap gap-x-5 gap-y-2.5"
-            >
-              {[
-                { href: "/about", label: m.common.about },
-                { href: "/policy", label: m.common.policy },
-                { href: "/privacy", label: m.common.privacy },
-                { href: "/takedown", label: m.common.takedown },
-              ].map((it) => (
-                <Link
-                  key={it.href}
-                  href={localePath(it.href, locale)}
-                  className="nav-link"
-                >
-                  {it.label}
-                </Link>
-              ))}
-            </nav>
+            <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
+              <nav
+                aria-label={m.notice.linksAria}
+                className="index flex flex-wrap gap-x-5 gap-y-2.5"
+              >
+                {[
+                  { href: "/about", label: m.common.about },
+                  { href: "/policy", label: m.common.policy },
+                  { href: "/privacy", label: m.common.privacy },
+                  { href: "/takedown", label: m.common.takedown },
+                ].map((it) => (
+                  <Link
+                    key={it.href}
+                    href={localePath(it.href, locale)}
+                    className="nav-link"
+                  >
+                    {it.label}
+                  </Link>
+                ))}
+              </nav>
+              <Suspense fallback={null}>
+                <LanguageSwitch />
+              </Suspense>
+            </div>
           </div>
 
           <h2 id="notice-h" className="index mt-(--block)" style={{ color: "var(--dim)" }}>

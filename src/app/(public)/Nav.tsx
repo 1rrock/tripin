@@ -1,52 +1,45 @@
 "use client";
 
 /**
- * 전역 진입점 — 지역 / 채널 / 종류 (로케일 인식).
+ * 전역 진입점 — 홈 / 지역 / 채널 / 종류 (로케일 인식).
+ *
+ * 데스크톱: 헤더 안 텍스트+아이콘 줄. 홈은 브랜드 마크가 대신하므로 항목이 없다.
+ * 모바일: **하단 탭바**. 항목이 셋뿐인 목록을 전체화면 오버레이로 열던 자리였는데,
+ *   여는 버튼(헤더)과 닫는 버튼(오버레이)이 서로 다른 컨테이너에 있어 위치가 어긋났다.
+ *   탭바로 오면 여닫는 버튼 자체가 없어져 그 문제가 원인째 사라진다.
+ *
+ * 아이콘은 두 화면이 같은 걸 쓴다 — 데스크톱만 다른 글리프를 쓰면 같은 목적지가
+ * 화면 폭에 따라 다른 물건으로 보인다.
  */
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Icon, type IconName } from "@/shared/ui/frame";
-import { Mark } from "@/shared/ui/Mark";
-import { Wordmark } from "@/shared/ui/Wordmark";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 
 function isActive(pathname: string, href: string) {
   const bare = stripLocalePrefix(pathname);
+  /** 홈은 정확히 일치할 때만 — startsWith 로 두면 모든 화면에서 홈이 켜진다 */
+  if (href === "/") return bare === "/";
   return bare === href || bare.startsWith(`${href}/`);
 }
 
 export function Nav() {
   const pathname = usePathname() ?? "/";
   const { messages: m, href } = useLocale();
-  const [open, setOpen] = useState(false);
 
-  const items: { path: string; label: string; icon: IconName; hint: string }[] = [
-    { path: "/city", label: m.nav.region, icon: "pin", hint: m.nav.regionHint },
-    { path: "/channels", label: m.nav.channel, icon: "channel", hint: m.nav.channelHint },
-    { path: "/type", label: m.nav.type, icon: "menu", hint: m.nav.typeHint },
+  const items: { path: string; label: string; icon: IconName }[] = [
+    { path: "/", label: m.common.home, icon: "home" },
+    { path: "/city", label: m.nav.region, icon: "pin" },
+    { path: "/channels", label: m.nav.channel, icon: "channel" },
+    { path: "/type", label: m.nav.type, icon: "tag" },
   ];
-
-  useEffect(() => {
-    if (!open) return;
-    const prev = document.body.style.overflow;
-    document.body.style.overflow = "hidden";
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => {
-      document.body.style.overflow = prev;
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
 
   return (
     <>
       <nav aria-label={m.nav.menu} className="hidden items-center gap-1 md:flex">
-        {items.map((it) => {
+        {items.slice(1).map((it) => {
           const on = isActive(pathname, it.path);
           const Glyph = Icon[it.icon];
           return (
@@ -54,12 +47,7 @@ export function Nav() {
               key={it.path}
               href={href(it.path)}
               aria-current={on ? "page" : undefined}
-              className="index flex items-center gap-1.5 px-2.5 py-2 transition-colors"
-              style={{
-                color: on ? "var(--paper)" : "var(--dim)",
-                borderRadius: "var(--r-control)",
-                boxShadow: on ? "inset 0 0 0 1px var(--wax)" : undefined,
-              }}
+              className="nav-item index flex items-center gap-1.5 px-2.5 py-2"
             >
               <Glyph className="size-3.5" />
               {it.label}
@@ -68,83 +56,23 @@ export function Nav() {
         })}
       </nav>
 
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        aria-label={m.nav.openMenu}
-        aria-expanded={open}
-        className="grid size-9 cursor-pointer place-items-center md:hidden"
-        style={{ borderRadius: "var(--r-control)", boxShadow: "inset 0 0 0 1px var(--hairline)" }}
-      >
-        <Icon.menu className="size-[18px]" style={{ color: "var(--paper)" }} />
-      </button>
-
-      {open ? (
-        <div
-          role="dialog"
-          aria-modal="true"
-          aria-label={m.nav.menu}
-          className="fixed inset-0 z-50 flex flex-col md:hidden"
-          style={{ background: "var(--ground)" }}
-        >
-          <div className="flex items-center justify-between px-(--gutter) pt-5 pb-4">
-            <span className="flex items-center gap-2.5" style={{ color: "var(--paper)" }}>
-              <Mark className="size-7 shrink-0" />
-              <Wordmark />
-            </span>
-            <button
-              type="button"
-              onClick={() => setOpen(false)}
-              aria-label={m.nav.closeMenu}
-              autoFocus
-              className="grid size-9 cursor-pointer place-items-center"
-              style={{
-                borderRadius: "var(--r-control)",
-                boxShadow: "inset 0 0 0 1px var(--hairline)",
-              }}
+      <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-30 flex md:hidden">
+        {items.map((it) => {
+          const on = isActive(pathname, it.path);
+          const Glyph = Icon[it.icon];
+          return (
+            <Link
+              key={it.path}
+              href={href(it.path)}
+              aria-current={on ? "page" : undefined}
+              className="tab"
             >
-              <Icon.close className="size-[18px]" />
-            </button>
-          </div>
-
-          <nav aria-label={m.nav.menu} className="flex flex-col px-(--gutter)">
-            {items.map((it) => {
-              const on = isActive(pathname, it.path);
-              const Glyph = Icon[it.icon];
-              return (
-                <Link
-                  key={it.path}
-                  href={href(it.path)}
-                  onClick={() => setOpen(false)}
-                  aria-current={on ? "page" : undefined}
-                  className="flex items-center gap-4 border-b py-5"
-                  style={{ borderColor: "var(--hairline)" }}
-                >
-                  <Glyph
-                    className="size-6 shrink-0"
-                    style={{ color: on ? "var(--wax)" : "var(--dim)" }}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className="block font-bold"
-                      style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em" }}
-                    >
-                      {it.label}
-                    </span>
-                    <span
-                      className="mt-1 block"
-                      style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                    >
-                      {it.hint}
-                    </span>
-                  </span>
-                  <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
-                </Link>
-              );
-            })}
-          </nav>
-        </div>
-      ) : null}
+              <Glyph className="size-[22px]" />
+              <span className="index">{it.label}</span>
+            </Link>
+          );
+        })}
+      </nav>
     </>
   );
 }

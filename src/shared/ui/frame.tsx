@@ -80,6 +80,20 @@ export const Icon = {
   ),
   close: stroke(<path d="m6 6 12 12M18 6 6 18" />),
   menu: stroke(<path d="M4 7h16M4 12h16M4 17h16" />),
+  /** 홈 — 이 사이트의 홈은 '시트'지만, 하단 탭에서 집이 아닌 걸 홈으로 읽는 사람은 없다 */
+  home: stroke(
+    <>
+      <path d="M3.6 10.6 12 3.7l8.4 6.9" />
+      <path d="M5.8 12.2v7.1a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1v-7.1" />
+    </>,
+  ),
+  /** 종류 — 분류 꼬리표. 햄버거(menu)를 쓰면 하단 탭에서 '더보기'로 읽힌다 */
+  tag: stroke(
+    <>
+      <path d="M4 11.3V5.4A1.4 1.4 0 0 1 5.4 4h5.9a2 2 0 0 1 1.4.6l7 7a1.6 1.6 0 0 1 0 2.3l-5.4 5.4a1.6 1.6 0 0 1-2.3 0l-7-7a2 2 0 0 1-.6-1.4Z" />
+      <circle cx="8.3" cy="8.3" r="1.3" />
+    </>,
+  ),
   /** 채널 — 사람이 아니라 '재생 목록'으로 그린다. 이 서비스에서 채널은 롤이다 */
   channel: stroke(
     <>
@@ -186,14 +200,17 @@ export function Index({
   children,
   tone = "dim",
   className = "",
+  style,
 }: {
   children: ReactNode;
   tone?: "dim" | "paper" | "wax";
   className?: string;
+  /** 색 위에 얹는 예외. 색은 `tone` 이 정하므로 여기서 다시 주지 마라 */
+  style?: React.CSSProperties;
 }) {
   const color = tone === "wax" ? "var(--wax)" : tone === "paper" ? "var(--paper)" : "var(--dim)";
   return (
-    <span className={`index ${className}`} style={{ color }}>
+    <span className={`index ${className}`} style={{ color, ...style }}>
       {children}
     </span>
   );

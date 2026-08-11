@@ -373,7 +373,9 @@ function Glyph({ doc }: { doc: SearchDoc }) {
       <Avatar initials={doc.name.slice(0, 1)} accent={doc.accent ?? "#888"} src={doc.avatarUrl} size={30} />
     );
   }
-  const Mark = doc.kind === "city" ? Icon.map : doc.kind === "type" ? Icon.channel : Icon.pin;
+  // 종류(type)에 **채널 아이콘**이 붙어 있던 자리다. 내비·탭바가 종류에 쓰는
+  // 꼬리표로 맞춘다. 도시는 지도, 개별 장소는 핀 — 둘이 같은 글리프면 구분이 죽는다
+  const Mark = doc.kind === "city" ? Icon.map : doc.kind === "type" ? Icon.tag : Icon.pin;
   return (
     <span
       className="grid size-[30px] shrink-0 place-items-center rounded-(--r-frame)"
