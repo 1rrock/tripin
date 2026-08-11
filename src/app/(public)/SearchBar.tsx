@@ -151,11 +151,12 @@ export function SearchBar() {
         onClick={() => setOpen(true)}
         aria-label={m.search.open}
         aria-keyshortcuts="Meta+K Control+K /"
-        /* 모바일은 오른쪽 끝 — 브랜드 옆에 두면 왼손 자리에 붙는데, 폰에서 그 자리는
-           뒤로가기·햄버거의 자리지 검색의 자리가 아니다. md 부터는 브랜드와 내비
-           사이를 채우며 가운데 선다(유튜브 문법) */
-        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) bg-(--sheet) p-2 transition-[box-shadow] duration-150 hover:shadow-[inset_0_0_0_1px_var(--edge)] md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:px-3.5 md:py-2.5"
-        style={{ boxShadow: "inset 0 0 0 1px var(--hairline)", color: "var(--dim)" }}
+        /* 모바일은 오른쪽 끝의 **맨 돋보기** — 브랜드 옆 왼손 자리는 폰에서
+           뒤로가기·햄버거의 자리지 검색의 자리가 아니고, 아이콘 하나를 담으려고
+           판을 깔면 헤더에 이유 없는 상자가 하나 생긴다. 판이 없으니 잉크는
+           --paper 로 올린다(--dim 이면 맨 아이콘이 너무 묽다).
+           md 부터는 브랜드와 내비 사이를 채우는 입력창 모양으로 돌아온다 */
+        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]"
       >
         <Icon.search className="size-[18px] shrink-0" />
         <span className="hidden truncate md:inline" style={{ fontSize: "var(--t-body)" }}>
@@ -202,25 +203,31 @@ export function SearchBar() {
               >
                 <Icon.back className="size-5" />
               </button>
-              <Icon.search
-                className="hidden size-[18px] shrink-0 sm:block"
-                style={{ color: "var(--dim)" }}
-              />
-              <input
-                ref={inputRef}
-                value={query}
-                onChange={(e) => onQuery(e.target.value)}
-                placeholder={m.search.placeholder}
-                aria-label={m.search.open}
-                role="combobox"
-                aria-expanded
-                aria-controls={listId}
-                aria-autocomplete="list"
-                autoComplete="off"
-                enterKeyHint="search"
-                className="w-full bg-transparent outline-none placeholder:text-[color:var(--dim)]"
-                style={{ fontSize: "var(--t-title)" }}
-              />
+              {/* 입력은 헤더 트리거와 같은 판 위에 앉는다 — 전역 왁스 포커스 링이
+                  폭을 다 쓰는 입력에 걸리면 화면을 가로지르는 빨간 사각형이 된다.
+                  판 자신이 테두리를 진하게 해서 포커스를 말한다(.field, globals.css) */}
+              <div className="field flex min-w-0 flex-1 items-center gap-2.5 px-3 py-2">
+                <Icon.search
+                  className="size-[18px] shrink-0"
+                  style={{ color: "var(--dim)" }}
+                />
+                <input
+                  ref={inputRef}
+                  value={query}
+                  onChange={(e) => onQuery(e.target.value)}
+                  placeholder={m.search.placeholder}
+                  aria-label={m.search.open}
+                  role="combobox"
+                  aria-expanded
+                  aria-controls={listId}
+                  aria-autocomplete="list"
+                  autoComplete="off"
+                  enterKeyHint="search"
+                  /* 16px 미만이면 iOS 가 포커스에서 화면을 확대한다 — --t-title(18px) 유지 */
+                  className="w-full min-w-0 bg-transparent outline-none placeholder:text-[color:var(--dim)]"
+                  style={{ fontSize: "var(--t-title)" }}
+                />
+              </div>
               {/* 키캡은 키가 있는 화면에서만 — 모바일에서는 위 뒤로 화살표가 이 일을 한다 */}
               <button
                 type="button"

@@ -160,6 +160,31 @@ body > * { position: relative; z-index: 1; }
 /* 키보드 포커스 — 왁스 링. 레이어 밖이라 유틸리티로 덮이지 않는다 */
 /* outline 은 요소 자신의 border-radius 를 따라가므로 여기서 radius 를 지정하지 않는다 */
 :focus-visible { outline: 2px solid var(--wax); outline-offset: 3px; }
+
+/* ── 입력 판 ──────────────────────────────────────────────────────────
+   위 왁스 링은 **버튼·링크처럼 작은 타깃**을 위한 것이다. 폭을 다 쓰는 텍스트
+   입력에 그대로 걸리면 화면을 가로지르는 빨간 사각형이 되고, 이 월드에서 왁스가
+   면적을 먹지 말아야 한다는 규칙과도 정면으로 부딪힌다.
+
+   그래서 입력은 판을 두르고, **판이 테두리를 진하게 해서** 포커스를 말한다.
+   헤더 검색 버튼(hairline → edge)과 같은 문법이라 두 자리가 한 물건으로 읽힌다.
+   지우는 게 아니라 바꿔 끼우는 것이므로 "보이는 포커스"(WCAG 2.4.7)는 남는다. */
+.field {
+  background: var(--sheet);
+  border-radius: var(--r-control);
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  transition: box-shadow 0.15s ease;
+}
+/* 포커스 색이 --edge 가 아니라 --dim 인 이유: --edge 는 --sheet 위에서 2.8:1 이라
+   1.4.11 의 3:1 을 못 넘긴다. --dim 은 5.9:1 이고 플레이스홀더와 같은 잉크라
+   조용하다. 모바일에서는 패널이 열리자마자 입력이 포커스를 받으므로 이건
+   순간적인 표시가 아니라 **평상시 모습**이다 — 세게 칠하면 안 되는 이유다. */
+.field:focus-within {
+  box-shadow: inset 0 0 0 2px var(--dim);
+}
+.field input:focus-visible {
+  outline: none;
+}
 /* 라이트박스(지도) 위에서는 잉크로 반전 — 웜 페이퍼 월드에선 ground 와 톤이 같아
    기본 왁스 링도 보이지만, 지도 위 컨트롤은 잉크가 더 또렷하다 */
 .on-lightbox :focus-visible { outline-color: var(--lightbox-ink); }
