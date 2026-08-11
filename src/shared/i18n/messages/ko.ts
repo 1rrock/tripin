@@ -22,6 +22,9 @@ export const ko = {
     searchPlaceholder: "가게·음식·도시로 찾기",
     allCities: "전체 도시",
     allChannels: "전체 채널",
+    /** 홈 필터 줄 — 종류·지역·채널이 한 줄에 섞여 있어 "전체"가 셋 다 푼다 */
+    allFilters: "전체",
+    filterAria: "피드 필터 — 종류·지역·채널",
     recentVideos: "최근 영상",
     foundVideos: "찾은 영상 {n}",
     recentPaged: "최근 영상 · {shown} / {total}",
@@ -263,6 +266,8 @@ export type Messages = {
     searchPlaceholder: string;
     allCities: string;
     allChannels: string;
+    allFilters: string;
+    filterAria: string;
     recentVideos: string;
     foundVideos: string;
     recentPaged: string;

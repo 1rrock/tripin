@@ -24,6 +24,8 @@ export const en: Messages = {
     searchPlaceholder: "Search places, food, cities",
     allCities: "All cities",
     allChannels: "All channels",
+    allFilters: "All",
+    filterAria: "Feed filters — types, places, channels",
     recentVideos: "Recent videos",
     foundVideos: "{n} videos found",
     recentPaged: "Recent · {shown} / {total}",

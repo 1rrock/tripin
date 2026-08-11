@@ -55,6 +55,26 @@ export function SearchBar() {
     [index, query],
   );
 
+  // 빈손으로 나간 검색어를 남긴다 — 무슨 말로 찾다가 못 찾았는지가 다음 수집의
+  // 우선순위 신호다(/admin/search-misses). 홈 검색이 헤더로 옮겨 오면서 함께 왔다.
+  // 1.2초 머문 질의만, 마운트당 한 번씩. 타이핑 중간 글자("라멘ㅋ")는 남기지 않는다.
+  const reported = useRef(new Set<string>());
+  const missed = Boolean(index) && query.trim().length > 0 && !results.top;
+  useEffect(() => {
+    const needle = query.trim().toLowerCase();
+    if (!missed || reported.current.has(needle)) return;
+    const timer = setTimeout(() => {
+      reported.current.add(needle);
+      void fetch("/api/search-miss", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ query: needle }),
+        keepalive: true,
+      }).catch(() => {});
+    }, 1200);
+    return () => clearTimeout(timer);
+  }, [missed, query]);
+
   /** 키보드 이동용 평평한 목록 — 화면 순서와 같아야 한다 */
   const flat = useMemo(
     () => (results.top ? [results.top, ...results.groups.flatMap((g) => g.docs)] : []),
