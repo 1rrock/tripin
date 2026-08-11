@@ -28,20 +28,24 @@ export default async function PublicLayout({ children }: { children: React.React
                겹치면 그 영역이 통째로 검게 래스터되는 페인트 버그가 난다
                (globals.css 의 mix-blend-mode 주석과 같은 원인). 불투명 지면으로 간다 */}
         <header
-          className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-(--ground) px-(--gutter) pt-4 pb-3.5"
+          className="sticky top-0 z-30 flex items-center gap-3 border-b bg-(--ground) px-(--gutter) pt-4 pb-3.5"
           style={{ borderColor: "var(--hairline)" }}
         >
           <Link
             href={home}
             aria-label={m.brandAria}
-            className="flex items-center gap-2.5"
+            className="flex shrink-0 items-center gap-2.5"
             style={{ color: "var(--paper)" }}
           >
             <Mark className="size-7 shrink-0" />
             <Wordmark />
           </Link>
-          <div className="flex min-w-0 items-center gap-2 md:gap-3">
-            <SearchBar />
+
+          {/* 검색은 브랜드와 내비 사이를 채우며 가운데 선다(유튜브 문법).
+              헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다 */}
+          <SearchBar />
+
+          <div className="flex shrink-0 items-center gap-2 md:gap-3">
             <Suspense fallback={null}>
               <LanguageSwitch />
             </Suspense>

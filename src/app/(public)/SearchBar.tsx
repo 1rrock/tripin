@@ -151,14 +151,17 @@ export function SearchBar() {
         onClick={() => setOpen(true)}
         aria-label={m.search.open}
         aria-keyshortcuts="Meta+K Control+K /"
-        className="flex cursor-pointer items-center gap-2 rounded-(--r-control) bg-(--sheet) px-2.5 py-2 transition-[box-shadow] duration-150 hover:shadow-[inset_0_0_0_1px_var(--edge)] md:min-w-52"
+        className="flex shrink-0 cursor-pointer items-center gap-2.5 rounded-(--r-control) bg-(--sheet) p-2 transition-[box-shadow] duration-150 hover:shadow-[inset_0_0_0_1px_var(--edge)] md:mx-auto md:w-full md:max-w-xl md:shrink md:px-3.5 md:py-2.5"
         style={{ boxShadow: "inset 0 0 0 1px var(--hairline)", color: "var(--dim)" }}
       >
-        <Icon.search className="size-[17px] shrink-0" />
-        <span className="hidden truncate md:inline" style={{ fontSize: "var(--t-meta)" }}>
+        <Icon.search className="size-[18px] shrink-0" />
+        <span className="hidden truncate md:inline" style={{ fontSize: "var(--t-body)" }}>
           {m.search.trigger}
         </span>
-        <span className="index ml-auto hidden shrink-0 rounded-[3px] px-1.5 py-0.5 md:inline">
+        <span
+          className="index ml-auto hidden shrink-0 rounded-[3px] px-1.5 py-1 md:inline"
+          style={{ boxShadow: "inset 0 0 0 1px var(--hairline)" }}
+        >
           ⌘K
         </span>
       </button>
