@@ -24,6 +24,16 @@ export function thumbHq(youtubeId: string): string {
 }
 
 /**
+ * 320×180 — 검색 결과처럼 손톱만 한 자리용.
+ *
+ * `mq` 는 항상 존재하고 **정확히 16:9** 다. `hq`(480×360)는 4:3 이라 위아래에
+ * 검은 띠가 들어가므로 16:9 프레임에서 쓰면 원본과 다르게 보인다.
+ */
+export function thumbSmall(youtubeId: string): string {
+  return `https://i.ytimg.com/vi/${youtubeId}/mqdefault.jpg`;
+}
+
+/**
  * 채널 프로필 이미지 — 저장된 URL 의 크기 접미사만 바꿔 쓴다.
  *
  * yt3 URL 은 `…=s900-c-k-c0x00ffffff-no-rj` 형태라 s 뒤 숫자가 한 변 픽셀이다.

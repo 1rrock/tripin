@@ -121,6 +121,25 @@ export const ko = {
     other: "기타",
     unknown: "미분류",
   },
+  search: {
+    open: "검색",
+    close: "검색 닫기",
+    /** 헤더 버튼 안 문구 — 좁으면 숨는다. 짧게 */
+    trigger: "채널·영상·지역 찾기",
+    placeholder: "채널 · 영상 · 지역 · 종류 · 장소",
+    hint: "채널·영상·지역·종류·장소를 한 번에 찾습니다. 초성도 됩니다 — ㄷㅋ 로 도쿄, ㅅㅍㄹ 로 삿포로.",
+    empty: "“{q}” 에 맞는 것이 없어요.",
+    /** 질의에 가장 잘 맞는 하나 — 대개 지도나 채널이다 */
+    top: "대표 결과",
+    more: "{n}개 더 보기",
+    kinds: {
+      city: "지역",
+      channel: "채널",
+      type: "종류",
+      place: "장소",
+      video: "영상",
+    },
+  },
   common: {
     openMap: "지도 열기",
     watchVideo: "영상 보기",
@@ -338,6 +357,23 @@ export type Messages = {
     viewpoint: string;
     other: string;
     unknown: string;
+  };
+  search: {
+    open: string;
+    close: string;
+    trigger: string;
+    placeholder: string;
+    hint: string;
+    empty: string;
+    top: string;
+    more: string;
+    kinds: {
+      city: string;
+      channel: string;
+      type: string;
+      place: string;
+      video: string;
+    };
   };
   common: {
     openMap: string;

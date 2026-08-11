@@ -120,6 +120,23 @@ export const en: Messages = {
     other: "Other",
     unknown: "Uncategorized",
   },
+  search: {
+    open: "Search",
+    close: "Close search",
+    trigger: "Search channels, places",
+    placeholder: "Channels · videos · places · types",
+    hint: "Search channels, videos, cities, types, and places all at once.",
+    empty: "Nothing matches “{q}”.",
+    top: "Top result",
+    more: "{n} more",
+    kinds: {
+      city: "Places",
+      channel: "Channels",
+      type: "Types",
+      place: "Spots",
+      video: "Videos",
+    },
+  },
   common: {
     openMap: "Open map",
     watchVideo: "Watch",

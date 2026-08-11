@@ -7,6 +7,7 @@ import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
 import { Nav } from "./Nav";
 import { LanguageSwitch } from "./LanguageSwitch";
+import { SearchBar } from "./SearchBar";
 
 /**
  * 유저 화면 공통 골격 — 콘택트 시트.
@@ -22,7 +23,14 @@ export default async function PublicLayout({ children }: { children: React.React
   return (
     <LocaleProvider locale={locale} messages={m}>
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col xl:max-w-6xl">
-        <header className="flex items-center justify-between px-(--gutter) pt-5 pb-4">
+        {/* 스크롤을 따라온다 — 검색은 어느 페이지 어디에서나 손에 닿아야 한다.
+            ⚠️ backdrop-filter 를 쓰지 않는다. 전체화면 fixed 그레인 레이어와
+               겹치면 그 영역이 통째로 검게 래스터되는 페인트 버그가 난다
+               (globals.css 의 mix-blend-mode 주석과 같은 원인). 불투명 지면으로 간다 */}
+        <header
+          className="sticky top-0 z-30 flex items-center justify-between gap-3 border-b bg-(--ground) px-(--gutter) pt-4 pb-3.5"
+          style={{ borderColor: "var(--hairline)" }}
+        >
           <Link
             href={home}
             aria-label={m.brandAria}
@@ -32,16 +40,13 @@ export default async function PublicLayout({ children }: { children: React.React
             <Mark className="size-7 shrink-0" />
             <Wordmark />
           </Link>
-          <div className="flex items-center gap-2 md:gap-3">
+          <div className="flex min-w-0 items-center gap-2 md:gap-3">
+            <SearchBar />
             <Suspense fallback={null}>
               <LanguageSwitch />
             </Suspense>
             <Nav />
-            <a
-              href="#notice"
-              className="index hidden underline-offset-4 hover:underline md:inline"
-              style={{ color: "var(--dim)" }}
-            >
+            <a href="#notice" className="nav-link index hidden md:inline">
               {m.nav.notice}
             </a>
           </div>
@@ -87,8 +92,7 @@ export default async function PublicLayout({ children }: { children: React.React
                 <Link
                   key={it.href}
                   href={localePath(it.href, locale)}
-                  className="underline-offset-4 transition-colors hover:underline"
-                  style={{ color: "var(--dim)" }}
+                  className="nav-link"
                 >
                   {it.label}
                 </Link>
