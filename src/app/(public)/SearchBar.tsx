@@ -156,9 +156,16 @@ export function SearchBar() {
            판을 깔면 헤더에 이유 없는 상자가 하나 생긴다. 판이 없으니 잉크는
            --paper 로 올린다(--dim 이면 맨 아이콘이 너무 묽다).
            md 부터는 브랜드와 내비 사이를 채우는 입력창 모양으로 돌아온다 */
-        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]"
+        /* -mr-2 는 max-md 로 못 박는다 — md 의 mx-auto 와 같은 속성을 다투게 두면
+           어느 쪽이 이기는지가 Tailwind 유틸 출력 순서에 달리고, 그러면 데스크톱
+           가운데 정렬이 조용히 깨질 수 있다 */
+        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 max-md:-mr-2 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]"
       >
-        <Icon.search className="size-[18px] shrink-0" />
+        {/* 탭바 아이콘과 같은 22px. -mr-2 는 **광학 정렬**이다 — 타깃(40px)은 손가락
+            때문에 아이콘보다 큰데, 그 상자의 오른쪽을 거터에 맞추면 아이콘 자체는
+            거터보다 9px 안쪽에 서서 좌측 브랜드와 여백이 안 맞아 보인다.
+            상자를 8px 당겨 **아이콘의** 오른쪽 끝을 거터에 세운다 */}
+        <Icon.search className="size-[22px] shrink-0 md:size-[18px]" />
         <span className="hidden truncate md:inline" style={{ fontSize: "var(--t-body)" }}>
           {m.search.trigger}
         </span>
