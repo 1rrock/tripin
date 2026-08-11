@@ -151,7 +151,10 @@ export function SearchBar() {
         onClick={() => setOpen(true)}
         aria-label={m.search.open}
         aria-keyshortcuts="Meta+K Control+K /"
-        className="flex shrink-0 cursor-pointer items-center gap-2.5 rounded-(--r-control) bg-(--sheet) p-2 transition-[box-shadow] duration-150 hover:shadow-[inset_0_0_0_1px_var(--edge)] md:mx-auto md:w-full md:max-w-xl md:shrink md:px-3.5 md:py-2.5"
+        /* 모바일은 오른쪽 끝 — 브랜드 옆에 두면 왼손 자리에 붙는데, 폰에서 그 자리는
+           뒤로가기·햄버거의 자리지 검색의 자리가 아니다. md 부터는 브랜드와 내비
+           사이를 채우며 가운데 선다(유튜브 문법) */
+        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) bg-(--sheet) p-2 transition-[box-shadow] duration-150 hover:shadow-[inset_0_0_0_1px_var(--edge)] md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:px-3.5 md:py-2.5"
         style={{ boxShadow: "inset 0 0 0 1px var(--hairline)", color: "var(--dim)" }}
       >
         <Icon.search className="size-[18px] shrink-0" />
@@ -187,7 +190,22 @@ export function SearchBar() {
               className="flex shrink-0 items-center gap-2.5 border-b px-4 py-3.5"
               style={{ borderColor: "var(--hairline)" }}
             >
-              <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
+              {/* 폰에는 ESC 키가 없다. 키캡 모양 칩만 두면 "누르는 것"으로 안 읽히고,
+                  패널이 전체화면이라 스크림도 못 누른다 — 닫을 방법이 사실상 없었다.
+                  안드로이드·유튜브 검색과 같은 자리에 뒤로 화살표를 둔다.
+                  size-11(44px)은 손가락 타깃 최소치 */}
+              <button
+                type="button"
+                onClick={close}
+                aria-label={m.search.close}
+                className="-ml-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-(--r-control) transition-colors active:bg-(--hover) sm:hidden"
+              >
+                <Icon.back className="size-5" />
+              </button>
+              <Icon.search
+                className="hidden size-[18px] shrink-0 sm:block"
+                style={{ color: "var(--dim)" }}
+              />
               <input
                 ref={inputRef}
                 value={query}
@@ -203,10 +221,12 @@ export function SearchBar() {
                 className="w-full bg-transparent outline-none placeholder:text-[color:var(--dim)]"
                 style={{ fontSize: "var(--t-title)" }}
               />
+              {/* 키캡은 키가 있는 화면에서만 — 모바일에서는 위 뒤로 화살표가 이 일을 한다 */}
               <button
                 type="button"
                 onClick={close}
-                className="index shrink-0 cursor-pointer rounded-[4px] px-1.5 py-1"
+                aria-label={m.search.close}
+                className="index hidden shrink-0 cursor-pointer rounded-[4px] px-1.5 py-1 sm:block"
                 style={{ boxShadow: "inset 0 0 0 1px var(--hairline)", color: "var(--dim)" }}
               >
                 ESC

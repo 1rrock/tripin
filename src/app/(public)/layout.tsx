@@ -50,13 +50,15 @@ export default async function PublicLayout({ children }: { children: React.React
           {/* 언어 전환은 푸터로 갔다 — 첫 진입 언어는 proxy 가 Accept-Language 로
               정하므로 헤더에서 매번 고를 이유가 없다. 다만 **없애지는 않는다**:
               자동 감지만 두고 수동 전환을 지우면 브라우저 언어와 다른 언어로 읽고
-              싶은 사람이 갇힌다(W3C i18n 권고). */}
-          <div className="flex shrink-0 items-center gap-2 md:gap-3">
-            <Nav />
-            <a href="#notice" className="nav-link index hidden md:inline">
-              {m.nav.notice}
-            </a>
-          </div>
+              싶은 사람이 갇힌다(W3C i18n 권고).
+
+              내비를 감싸는 div 를 두지 않는다 — 모바일에서 그 안이 통째로 비는데
+              (데스크톱 내비는 hidden, 탭바는 fixed 라 흐름 밖) 껍데기가 헤더 gap 을
+              한 칸 더 먹어서 검색 버튼이 우측 여백 18px 이 아니라 30px 에 섰다. */}
+          <Nav />
+          <a href="#notice" className="nav-link index hidden shrink-0 md:inline">
+            {m.nav.notice}
+          </a>
         </header>
 
         <div className="flex-1">{children}</div>
