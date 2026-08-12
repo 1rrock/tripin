@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import { loadAdminPlaces } from "../_lib/queries";
 import { PlacesClient } from "./PlacesClient";
 
-export const metadata: Metadata = { title: "장소 — Greatripin 어드민" };
+export const metadata: Metadata = { title: "장소 — Eatripin 어드민" };
 export const dynamic = "force-dynamic";
 
 /**

@@ -23,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = locale === "ko" ? "소개" : "About";
   const description =
     locale === "ko"
-      ? "Greatripin이 무엇을, 왜, 어떻게 만드는지. 데이터 출처와 검수 방식."
-      : "What Greatripin is, why it exists, and how the map data is sourced and checked.";
+      ? "Eatripin이 무엇을, 왜, 어떻게 만드는지. 데이터 출처와 검수 방식."
+      : "What Eatripin is, why it exists, and how the map data is sourced and checked.";
   return {
     title,
     description,
@@ -64,7 +64,7 @@ export default async function AboutPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>무엇을 만드나요</h2>
               <p style={body}>
-                Greatripin은 여행 유튜버(채널)를 고르면 그 사람이 영상에서 다녀간 맛집·명소가
+                Eatripin은 여행 유튜버(채널)를 고르면 그 사람이 영상에서 다녀간 맛집·명소가
                 지도에 뜨는 웹 디렉터리입니다. 채널을 골랐을 때 세계 지도가 채워지고, 핀을 누르면
                 그 장소가 나온 영상으로 이어집니다.
               </p>
@@ -102,7 +102,7 @@ export default async function AboutPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>관계 고지</h2>
               <p style={body}>
-                Greatripin은 공개된 영상 정보를 정리한 비공식 디렉터리이며, 다루는 어떤
+                Eatripin은 공개된 영상 정보를 정리한 비공식 디렉터리이며, 다루는 어떤
                 크리에이터·채널과도 제휴 관계가 없습니다. 콘텐츠를 어떤 원칙으로 정리하는지는{" "}
                 <Link
                   href={localePath("/policy", locale)}
@@ -128,7 +128,7 @@ export default async function AboutPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>What this is</h2>
               <p style={body}>
-                Greatripin is a web directory: pick a travel YouTuber (a channel), and the places
+                Eatripin is a web directory: pick a travel YouTuber (a channel), and the places
                 they visited in their videos fill in on a map. Choosing a channel fills the world
                 map, and tapping a pin takes you to the video the place came from.
               </p>
@@ -167,7 +167,7 @@ export default async function AboutPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>Not affiliated</h2>
               <p style={body}>
-                Greatripin is an unofficial directory built from publicly available video
+                Eatripin is an unofficial directory built from publicly available video
                 information. It is not affiliated with any creator or channel it covers. See our{" "}
                 <Link
                   href={localePath("/policy", locale)}

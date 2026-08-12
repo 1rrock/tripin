@@ -52,8 +52,10 @@ if (!creatorSlug || !citySlug || videoIds.length === 0) {
   process.exit(1);
 }
 
-/** 장소를 가리키는 구글 공유링크. 이것만 장소로 친다 (인스타·예약사이트 등은 제외). */
-const MAP_LINK = /^https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+$/;
+/** 장소를 가리키는 구글 공유링크. 이것만 장소로 친다 (인스타·예약사이트 등은 제외).
+ *  쿼리(?g_st=ic 등)가 붙은 줄도 인정하고, 저장 시에는 쿼리를 떼 둔다. */
+const MAP_LINK = /^https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+(?:\?[^\s]*)?$/;
+const stripMapQuery = (url) => url.replace(/\?.*$/, "");
 const ANY_URL = /^https?:\/\//;
 
 /**
@@ -61,7 +63,7 @@ const ANY_URL = /^https?:\/\//;
  * 링크 위쪽으로 올라가며 이름을 찾을 때 이 줄들은 건너뛴다.
  */
 const NOISE =
-  /봐주셔서|좋아요|구독|해상도|사용\s*카메라|안녕하세요|instagram|인스타|예약\s*사이트|문의|이메일|비즈니스|협찬|광고|^[#＃]|^[-=*_·\s]*$|^こんにちは|お仕事/i;
+  /봐주셔서|좋아요|구독|해상도|사용\s*카메라|안녕하세요|instagram|인스타|예약\s*사이트|문의|이메일|비즈니스|협찬|광고|^[#＃]|^[-=*_·\s]*$|^こんにちは|お仕事|^\*?\s*가게\s*정보|^(?:영업\s*시간|주소|전화|예약|휴무|정기\s*휴무)\s*[:：]|^\d{1,2}:\d{2}\s*[~～\-–]\s*\d{1,2}:\d{2}/i;
 
 /**
  * 상호명 앞에 붙는 것들을 떼어낸다.
@@ -123,7 +125,7 @@ const durationSec = (iso) => {
 // 자기 가게·고정 협찬처럼 매 영상에 붙는 링크는 그 영상의 장소가 아니다.
 const linkFreq = new Map();
 for (const it of items) {
-  for (const l of new Set((it.snippet.description.match(/https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+/g) ?? []))) {
+  for (const l of new Set((it.snippet.description.match(/https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+/g) ?? []).map(stripMapQuery))) {
     linkFreq.set(l, (linkFreq.get(l) ?? 0) + 1);
   }
 }
@@ -150,15 +152,25 @@ for (const it of items) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!MAP_LINK.test(line) || boilerplate.has(line) || seen.has(line)) continue;
-    seen.add(line);
+    if (!MAP_LINK.test(line)) continue;
+    const mapUrl = stripMapQuery(line);
+    if (boilerplate.has(mapUrl) || seen.has(mapUrl)) continue;
+    seen.add(mapUrl);
 
     // 링크 위로 올라가며 URL·빈줄·공통문구가 아닌 첫 줄을 상호명으로 본다
+    // (비밀이야 포맷: 상호 → 주소: → 영업 시간: → 맵링크 — NOISE 가 주소/시간을 건너뛴다)
     let name = null;
     let nameLine = -1;
+    let address = null;
     for (let j = i - 1; j >= Math.max(0, i - 6); j--) {
       const c = lines[j];
-      if (!c || ANY_URL.test(c) || NOISE.test(c)) continue;
+      if (!c || ANY_URL.test(c)) continue;
+      const addr = /^(?:주소)\s*[:：]\s*(.+)$/i.exec(c);
+      if (addr) {
+        address = address ?? addr[1].trim();
+        continue;
+      }
+      if (NOISE.test(c)) continue;
       name = stripBullet(c);
       nameLine = j;
       break;
@@ -186,8 +198,8 @@ for (const it of items) {
       placeType: "unknown", // 업종은 사람이 확정 — 제목만 보고 추측하지 않는다
       lat: null,
       lng: null,
-      address: null,
-      googleMapsUrl: line, // backfill-coords 가 좌표로 바꾼다
+      address,
+      googleMapsUrl: mapUrl, // backfill-coords 가 좌표로 바꾼다
       kakaoPlaceId: null,
       naverPlaceId: null,
       timestampSec: ts,

@@ -23,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = locale === "ko" ? "콘텐츠 정책" : "Content policy";
   const description =
     locale === "ko"
-      ? "Greatripin이 영상 정보를 다루는 원칙 — 자막 원문 미보관, 출처 표기, 무변형 원칙."
-      : "How Greatripin handles video-derived information — no raw captions, sourcing, unmodified media.";
+      ? "Eatripin이 영상 정보를 다루는 원칙 — 자막 원문 미보관, 출처 표기, 무변형 원칙."
+      : "How Eatripin handles video-derived information — no raw captions, sourcing, unmodified media.";
   return {
     title,
     description,

@@ -10,7 +10,7 @@ import { SummaryEditor } from "./SummaryEditor";
  * 남는 병목 — 장소당 2~3분. "저장 후 다음"으로 미작성 장소를 연속 처리한다.
  */
 export const metadata: Metadata = {
-  title: "요약 작성 — Greatripin 어드민",
+  title: "요약 작성 — Eatripin 어드민",
 };
 
 export const dynamic = "force-dynamic";

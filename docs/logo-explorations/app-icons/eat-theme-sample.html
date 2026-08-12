@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · EAT app icon · theme sample</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #f0e8db;
+      --sheet: #faf6ef;
+      --hairline: #ddd0bc;
+      --edge: #a89278;
+      --ink: #2a2118;
+      --dim: #6e5c4a;
+      --wax: #c9441a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 48px 28px 88px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: 0.01em;
+    }
+    .lede {
+      margin: 0 0 28px;
+      max-width: 48em;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .lede strong { color: var(--ink); font-weight: 700; }
+    .lede .wax { color: var(--wax); }
+
+    .swatches {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 32px;
+    }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 12px 6px 6px;
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      font-size: 11px;
+      letter-spacing: 0.06em;
+      color: var(--dim);
+    }
+    .swatch i {
+      width: 22px;
+      height: 22px;
+      border-radius: 4px;
+      border: 1px solid rgba(42, 33, 24, 0.12);
+      display: block;
+    }
+
+    .hero {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-bottom: 36px;
+    }
+    @media (max-width: 720px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+    .hero-card {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .hero-card header {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--hairline);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 12px;
+    }
+    .hero-card header strong {
+      font-size: 12px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .hero-card header span {
+      font-size: 12px;
+      color: var(--dim);
+    }
+    .hero-stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 40px 20px;
+      min-height: 300px;
+    }
+    .hero-stage.paper { background: var(--ground); }
+    .hero-stage.ink { background: #2a2118; }
+    .hero-stage img {
+      width: min(220px, 56vw);
+      height: min(220px, 56vw);
+      display: block;
+      border-radius: 22%;
+      box-shadow: 0 12px 32px -12px rgb(60 40 20 / 0.28);
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid var(--hairline);
+      padding-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .card header strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      margin-bottom: 2px;
+    }
+    .card header span {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 14px;
+      min-height: 200px;
+      background: var(--ground);
+    }
+    .stage.ink { background: #2a2118; }
+    .stage img {
+      width: 140px;
+      height: 140px;
+      display: block;
+      border-radius: 22%;
+      box-shadow: 0 8px 22px -10px rgb(60 40 20 / 0.25);
+    }
+
+    .sizes {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      padding: 36px 20px;
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      margin-bottom: 28px;
+    }
+    .size {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .size img {
+      display: block;
+      border-radius: 22%;
+      box-shadow: 0 4px 14px -6px rgb(60 40 20 / 0.22);
+    }
+    .size span {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .size img.s180 { width: 180px; height: 180px; border-radius: 40px; }
+    .size img.s120 { width: 120px; height: 120px; border-radius: 28px; }
+    .size img.s72  { width: 72px;  height: 72px;  border-radius: 16px; }
+    .size img.s40  { width: 40px;  height: 40px;  border-radius: 10px; }
+    .size img.s24  { width: 24px;  height: 24px;  border-radius: 6px; }
+
+    .compare {
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      gap: 16px;
+      align-items: center;
+      margin-bottom: 28px;
+      padding: 24px;
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+    }
+    @media (max-width: 640px) {
+      .compare { grid-template-columns: 1fr; }
+      .compare .vs { transform: rotate(90deg); }
+    }
+    .compare .side {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .compare .side img {
+      width: 120px;
+      height: 120px;
+      border-radius: 22%;
+      box-shadow: 0 6px 18px -8px rgb(60 40 20 / 0.25);
+    }
+    .compare .side.bad img {
+      opacity: 0.55;
+      filter: grayscale(0.2);
+    }
+    .compare .side label {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .compare .side.good label { color: var(--wax); font-weight: 700; }
+    .vs {
+      font-size: 12px;
+      letter-spacing: 0.2em;
+      color: var(--edge);
+      font-weight: 700;
+    }
+
+    .footer {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.65;
+      max-width: 52em;
+    }
+    .footer code {
+      font-size: 11px;
+      color: var(--ink);
+      background: rgba(42, 33, 24, 0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">App icon sample · square</p>
+    <h1>EAT — 프로젝트 테마 색</h1>
+    <p class="lede">
+      <strong>ET 폐기.</strong> 정사각 안에 <strong>EAT</strong> 를 깐다
+      (<span class="wax">T</span> = eat↔trip 공유 접힘, 왁스 표시).
+      색은 앱 토큰 그대로: 웜 페이퍼 지면 · 잉크 · 헤어라인 · 왁스.
+    </p>
+
+    <div class="swatches">
+      <div class="swatch"><i style="background:#f0e8db"></i> ground · #f0e8db</div>
+      <div class="swatch"><i style="background:#faf6ef"></i> sheet · #faf6ef</div>
+      <div class="swatch"><i style="background:#2a2118"></i> ink · #2a2118</div>
+      <div class="swatch"><i style="background:#6e5c4a"></i> dim · #6e5c4a</div>
+      <div class="swatch"><i style="background:#c9441a"></i> wax · #c9441a</div>
+      <div class="swatch"><i style="background:#ddd0bc"></i> hair · #ddd0bc</div>
+    </div>
+
+    <div class="compare">
+      <div class="side bad">
+        <img src="blue-seal-et.svg" alt="old ET blue" />
+        <label>이전 · ET blue seal</label>
+      </div>
+      <div class="vs">→</div>
+      <div class="side good">
+        <img src="eat-theme-02-wax-t.svg" alt="new EAT theme" />
+        <label>지금 · EAT + theme</label>
+      </div>
+    </div>
+
+    <div class="hero">
+      <article class="hero-card">
+        <header>
+          <strong>추천 A · stroke + wax T</strong>
+          <span>기하 EAT, T만 왁스</span>
+        </header>
+        <div class="hero-stage paper">
+          <img src="eat-theme-02-wax-t.svg" alt="EAT wax T" />
+        </div>
+      </article>
+      <article class="hero-card">
+        <header>
+          <strong>추천 B · type + wax T</strong>
+          <span>Archivo 타입, 읽기 쉬움</span>
+        </header>
+        <div class="hero-stage paper">
+          <img src="eat-theme-06-type-wax.svg" alt="EAT type wax" />
+        </div>
+      </article>
+    </div>
+
+    <p class="section-title">All variants · 512×512 square</p>
+    <div class="grid">
+      <article class="card">
+        <header>
+          <strong>01 · Paper stroke</strong>
+          <span>웜 페이퍼 + 잉크 기하</span>
+        </header>
+        <div class="stage"><img src="eat-theme-01-paper.svg" alt="01" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>02 · Wax T</strong>
+          <span>기하 + T 왁스 접힘</span>
+        </header>
+        <div class="stage"><img src="eat-theme-02-wax-t.svg" alt="02" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>03 · Ink field</strong>
+          <span>잉크 지면 + 크림 획</span>
+        </header>
+        <div class="stage ink"><img src="eat-theme-03-ink.svg" alt="03" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>04 · Ink + wax T</strong>
+          <span>다크 지면, T만 채도</span>
+        </header>
+        <div class="stage ink"><img src="eat-theme-04-ink-wax.svg" alt="04" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>05 · Type mono</strong>
+          <span>Archivo 단색</span>
+        </header>
+        <div class="stage"><img src="eat-theme-05-type.svg" alt="05" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>06 · Type wax T</strong>
+          <span>EA 잉크 + T 왁스</span>
+        </header>
+        <div class="stage"><img src="eat-theme-06-type-wax.svg" alt="06" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>07 · Stamp</strong>
+          <span>잉크 블록 스탬프</span>
+        </header>
+        <div class="stage"><img src="eat-theme-07-stamp.svg" alt="07" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>08 · Seal</strong>
+          <span>시일 구조, 테마 색</span>
+        </header>
+        <div class="stage"><img src="eat-theme-08-seal.svg" alt="08" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>09 · Heavy</strong>
+          <span>프레임 없이 꽉 찬 획</span>
+        </header>
+        <div class="stage"><img src="eat-theme-09-heavy.svg" alt="09" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>10 · Corners</strong>
+          <span>콘택트 시트 코너 + 타입</span>
+        </header>
+        <div class="stage"><img src="eat-theme-10-corners.svg" alt="10" /></div>
+      </article>
+    </div>
+
+    <p class="section-title">Size ladder · 02 wax T (앱 아이콘 실사용 검수)</p>
+    <div class="sizes">
+      <div class="size">
+        <img class="s180" src="eat-theme-02-wax-t.svg" alt="180" />
+        <span>180</span>
+      </div>
+      <div class="size">
+        <img class="s120" src="eat-theme-02-wax-t.svg" alt="120" />
+        <span>120</span>
+      </div>
+      <div class="size">
+        <img class="s72" src="eat-theme-02-wax-t.svg" alt="72" />
+        <span>72</span>
+      </div>
+      <div class="size">
+        <img class="s40" src="eat-theme-02-wax-t.svg" alt="40" />
+        <span>40</span>
+      </div>
+      <div class="size">
+        <img class="s24" src="eat-theme-02-wax-t.svg" alt="24" />
+        <span>24</span>
+      </div>
+    </div>
+
+    <p class="footer">
+      파일: <code>docs/logo-explorations/app-icons/eat-theme-*.svg</code><br />
+      프로덕션(<code>Mark.tsx</code> / 파비콘)에는 아직 미반영. 번호 골라 주시면 그때 붙입니다.<br />
+      작은 사이즈에서는 기하 획(02·09)이 타입(05·06)보다 덜 뭉개지는 편입니다.
+    </p>
+  </div>
+</body>
+</html>

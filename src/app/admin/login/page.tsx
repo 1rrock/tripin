@@ -12,7 +12,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export const metadata: Metadata = {
-  title: "로그인 — Greatripin 어드민",
+  title: "로그인 — Eatripin 어드민",
   robots: { index: false, follow: false },
 };
 
@@ -28,7 +28,7 @@ export default async function AdminLoginPage({
   return (
     <main className="flex min-h-dvh items-center justify-center bg-neutral-100 px-6">
       <div className="w-full max-w-sm">
-        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Greatripin 어드민</h1>
+        <h1 className="text-2xl font-bold tracking-tight text-neutral-900">Eatripin 어드민</h1>
         <p className="mt-1 text-sm text-neutral-600">운영자 전용입니다.</p>
 
         <form method="post" action="/api/admin/login" className="mt-8 space-y-4">

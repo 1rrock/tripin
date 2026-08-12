@@ -4,7 +4,7 @@ import { ImageResponse } from "next/og";
  * 기본 공유 카드 (웜 페이퍼) — #f0e8db 지면 + 잉크 타이포 + 왁스(#c9441a) 밑줄 바.
  * 사진·그라디언트 없음. 지면과 타이포 위계만으로 선다.
  */
-export const alt = "여행 유튜버가 간 곳만 지도로 — Greatripin";
+export const alt = "여행 유튜버가 간 곳만 지도로 — Eatripin";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -12,7 +12,7 @@ const HEAD_A = "여행 유튜버가";
 const HEAD_B = "간 곳만";
 const HEAD_C = "지도로.";
 const SUB = "모든 장소에 출처 영상·타임스탬프";
-const FOOT = "Greatripin · 비공식 디렉터리";
+const FOOT = "Eatripin · 비공식 디렉터리";
 
 /**
  * satori 에는 한글 폰트가 없다 — 없으면 두부(tofu)로 렌더된다.
@@ -129,9 +129,9 @@ export default async function OpengraphImage() {
               alignItems: "flex-start",
             }}
           >
-            {/* 라틴 폴백 — GREATRIPIN, 공유 T·P 왁스 */}
+            {/* 라틴 폴백 — EATRIPIN, 공유 T·P 왁스 */}
             <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#2a2118" }}>
-              <span>GREA</span>
+              <span>EA</span>
               <span style={{ color: "#c9441a" }}>T</span>
               <span>RI</span>
               <span style={{ color: "#c9441a" }}>P</span>
@@ -153,7 +153,7 @@ export default async function OpengraphImage() {
             letterSpacing: "0.06em",
           }}
         >
-          {bold ? FOOT : "GREATRIPIN"}
+          {bold ? FOOT : "EATRIPIN"}
         </div>
       </div>
     ),

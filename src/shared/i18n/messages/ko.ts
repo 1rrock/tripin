@@ -1,7 +1,7 @@
 /** 한국어 UI 문자열 — 공개 화면 크롬·라벨. 콘텐츠(요약)는 DB. */
 export const ko = {
-  brand: "Greatripin",
-  brandAria: "Greatripin 홈",
+  brand: "Eatripin",
+  brandAria: "Eatripin 홈",
   nav: {
     region: "지역",
     channel: "채널",
@@ -225,7 +225,7 @@ export const ko = {
     title: "고지",
     linksAria: "정책 문서",
     /* 한 문단에 사실을 세 개씩 넣지 않는다 — 한 줄에 한 가지만. */
-    p1Before: "Greatripin은 공개된 영상을 정리한 ",
+    p1Before: "Eatripin은 공개된 영상을 정리한 ",
     p1Strong: "비공식",
     p1After: " 디렉터리입니다. 어떤 채널과도 제휴하지 않으며, 장소마다 출처 영상을 답니다.",
     p2: "썸네일과 제목은 YouTube 원본 그대로이며, 저작권은 각 채널에 있습니다. 가격·영업 정보는 영상 촬영 시점 기준입니다.",

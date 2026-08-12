@@ -3,7 +3,7 @@ import { publicEnv, serverEnv } from "@/shared/config/env";
 import type { Database } from "./database.types";
 
 /**
- * Supabase 클라이언트 — Greatripin은 두 종류를 쓴다.
+ * Supabase 클라이언트 — Eatripin은 두 종류를 쓴다.
  *
  *   supabase       anon 키. RLS 적용. 읽기 전용 공개 데이터.
  *   supabaseAdmin  service_role 키. RLS 우회. 어드민·스크립트 전용, 서버에서만.

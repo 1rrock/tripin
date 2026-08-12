@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT merge M01 · ET geometric + A in counter · dark</title>
+  <rect width="512" height="512" fill="#0b0b0c"/>
+  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+  <!-- A in E counter -->
+  <g fill="#6e5c4a">
+    <polygon points="200,340 232,340 268,200 236,200"/>
+    <polygon points="252,200 284,200 320,340 288,340"/>
+    <rect x="228" y="278" width="64" height="28"/>
+  </g>
+  <!-- E -->
+  <g fill="#f5f3ef">
+    <rect x="120" y="140" width="48" height="232"/>
+    <rect x="120" y="140" width="168" height="48"/>
+    <rect x="120" y="232" width="132" height="44"/>
+    <rect x="120" y="324" width="168" height="48"/>
+    <rect x="260" y="140" width="140" height="48"/>
+  </g>
+  <!-- T stem wax (shared fold) -->
+  <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+</svg>

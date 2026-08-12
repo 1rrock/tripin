@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · blue seal app icon sample</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --blue: #0A3D91;
+      --blue-deep: #062A66;
+      --paper: #f7f5f0;
+      --dim: rgba(255,255,255,0.55);
+      --hair: rgba(255,255,255,0.12);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: var(--blue-deep);
+      background-image:
+        radial-gradient(ellipse 80% 50% at 50% 0%, #0d4aad 0%, transparent 55%),
+        linear-gradient(180deg, var(--blue-deep) 0%, #041a42 100%);
+      color: var(--paper);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 48px 28px 80px;
+    }
+    .wrap { max-width: 1040px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 10px;
+      font-size: 11px;
+      letter-spacing: 0.28em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .lede {
+      margin: 0 0 36px;
+      max-width: 48em;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    .lede strong { color: var(--paper); font-weight: 600; }
+    .ref {
+      display: inline-block;
+      margin-bottom: 28px;
+      padding: 10px 14px;
+      border: 1px solid var(--hair);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+      background: rgba(0,0,0,0.15);
+    }
+    .ref em { color: #9ec0ff; font-style: normal; }
+
+    /* Hero — full-bleed blue like the PB reference */
+    .hero {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 420px;
+      margin: 0 0 28px;
+      border-radius: 16px;
+      background: var(--blue);
+      border: 1px solid rgba(255,255,255,0.08);
+      box-shadow: 0 24px 60px rgba(0,0,0,0.35);
+      position: relative;
+      overflow: hidden;
+    }
+    .hero img {
+      width: min(320px, 72vw);
+      height: min(320px, 72vw);
+      display: block;
+    }
+    .hero-label {
+      position: absolute;
+      left: 20px;
+      bottom: 16px;
+      font-size: 11px;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.45);
+    }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid var(--hair);
+      padding-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 28px;
+    }
+    @media (max-width: 800px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: rgba(0,0,0,0.22);
+      border: 1px solid var(--hair);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+    .card header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--hair);
+    }
+    .card header strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+      margin-bottom: 3px;
+    }
+    .card header span {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 16px;
+      min-height: 220px;
+      background: var(--blue);
+    }
+    .stage img {
+      width: 160px;
+      height: 160px;
+      display: block;
+      border-radius: 22%;
+      box-shadow: 0 8px 28px rgba(0,0,0,0.28);
+    }
+    .stage.flat img {
+      border-radius: 0;
+      box-shadow: none;
+    }
+
+    .sizes {
+      display: flex;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 22px;
+      flex-wrap: wrap;
+      padding: 32px 20px;
+      background: var(--blue);
+      border-radius: 10px;
+      border: 1px solid var(--hair);
+      margin-bottom: 28px;
+    }
+    .size {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 10px;
+    }
+    .size img {
+      display: block;
+      border-radius: 22%;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.25);
+    }
+    .size span {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .size img.s180 { width: 180px; height: 180px; border-radius: 40px; }
+    .size img.s120 { width: 120px; height: 120px; border-radius: 28px; }
+    .size img.s72  { width: 72px;  height: 72px;  border-radius: 16px; }
+    .size img.s40  { width: 40px;  height: 40px;  border-radius: 10px; }
+    .size img.s24  { width: 24px;  height: 24px;  border-radius: 6px; }
+
+    .swatches {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 20px;
+    }
+    .swatch {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 12px 8px 8px;
+      border: 1px solid var(--hair);
+      border-radius: 8px;
+      background: rgba(0,0,0,0.18);
+      font-size: 12px;
+      color: var(--dim);
+    }
+    .swatch i {
+      width: 28px;
+      height: 28px;
+      border-radius: 6px;
+      display: block;
+      border: 1px solid rgba(255,255,255,0.15);
+    }
+    .footer {
+      margin-top: 8px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.65;
+      max-width: 52em;
+    }
+    .footer code {
+      font-size: 11px;
+      color: #9ec0ff;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Logo sample · app icon</p>
+    <h1>Blue seal — Paris Baguette tone</h1>
+    <p class="lede">
+      참고 이미지의 <strong>진한 로열 블루 필드 + 흰 원형 시일 + 중앙 모노그램</strong> 구조.
+      브랜드명은 <strong>EATRIPIN</strong>, 모노그램은 <strong>ET</strong>.
+      브리프의 “저채도 파랑 대시보드”와 다르게, 여기는 <strong>채도 높은 시일 블루</strong> 샘플이다.
+    </p>
+    <p class="ref">필드 <em>#0A3D91</em> · 획·글자 <em>#FFFFFF</em> · 시안용, 코드 미반영</p>
+
+    <div class="hero">
+      <img src="blue-seal-et.svg" alt="Eatripin blue seal ET" />
+      <span class="hero-label">Hero · stroke monogram + arc type</span>
+    </div>
+
+    <p class="section-title">Variants</p>
+    <div class="grid">
+      <article class="card">
+        <header>
+          <strong>01 · Stroke seal</strong>
+          <span>이중 링 + 아크 타입 + 스트로크 ET. 히어로와 동일.</span>
+        </header>
+        <div class="stage">
+          <img src="blue-seal-et.svg" alt="Stroke seal" />
+        </div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>02 · Solid monogram</strong>
+          <span>면 채움 ET. PB 모노그램 무게감에 가깝게.</span>
+        </header>
+        <div class="stage">
+          <img src="blue-seal-et-solid.svg" alt="Solid monogram" />
+        </div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>03 · Linked ET</strong>
+          <span>E·T 연결 블록. 아크는 DIRECTORY 대신 폴드 문구.</span>
+        </header>
+        <div class="stage">
+          <img src="blue-linked-et.svg" alt="Linked ET" />
+        </div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>04 · Mono only</strong>
+          <span>작은 사이즈용. 아크 글자 없이 ET + 링만.</span>
+        </header>
+        <div class="stage">
+          <img src="blue-mono-et.svg" alt="Mono only" />
+        </div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>05 · Flat square</strong>
+          <span>마스크 없는 정사각 원본 (에셋 검수용).</span>
+        </header>
+        <div class="stage flat">
+          <img src="blue-seal-et.svg" alt="Flat square" style="border-radius:0; box-shadow:none; width:168px; height:168px;" />
+        </div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>06 · Solid flat</strong>
+          <span>면 채움 모노그램 정사각.</span>
+        </header>
+        <div class="stage flat">
+          <img src="blue-seal-et-solid.svg" alt="Solid flat" style="border-radius:0; box-shadow:none; width:168px; height:168px;" />
+        </div>
+      </article>
+    </div>
+
+    <p class="section-title">Size ladder · mono only (앱 아이콘 실사용에 가까움)</p>
+    <div class="sizes">
+      <div class="size">
+        <img class="s180" src="blue-mono-et.svg" alt="180" />
+        <span>180</span>
+      </div>
+      <div class="size">
+        <img class="s120" src="blue-mono-et.svg" alt="120" />
+        <span>120</span>
+      </div>
+      <div class="size">
+        <img class="s72" src="blue-mono-et.svg" alt="72" />
+        <span>72</span>
+      </div>
+      <div class="size">
+        <img class="s40" src="blue-mono-et.svg" alt="40" />
+        <span>40</span>
+      </div>
+      <div class="size">
+        <img class="s24" src="blue-mono-et.svg" alt="24" />
+        <span>24</span>
+      </div>
+    </div>
+
+    <p class="section-title">Palette</p>
+    <div class="swatches">
+      <div class="swatch"><i style="background:#0A3D91"></i> field · #0A3D91</div>
+      <div class="swatch"><i style="background:#062A66"></i> deep · #062A66</div>
+      <div class="swatch"><i style="background:#FFFFFF; border-color:#ccc"></i> ink · #FFFFFF</div>
+    </div>
+
+    <p class="footer">
+      파일: <code>docs/logo-explorations/app-icons/blue-*.svg</code><br />
+      아직 <code>Mark.tsx</code> / <code>public/mark.svg</code> / 파비콘에는 안 넣음 — 시안 확정 후 반영하면 된다.
+      작은 사이즈에서는 아크 글자(EATRIPIN)가 뭉개지므로 앱 아이콘은 <strong>04 mono only</strong> 쪽이 실사용에 가깝다.
+    </p>
+  </div>
+</body>
+</html>

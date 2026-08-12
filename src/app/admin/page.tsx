@@ -13,7 +13,7 @@ import { canRepublishPiece, hasConfirmableStock, isPieceLive } from "./_lib/piec
 import { RecountButton } from "./_ui/RecountButton";
 import { Card, Num, Pill } from "./_ui/kit";
 
-export const metadata: Metadata = { title: "대시보드 — Greatripin 어드민" };
+export const metadata: Metadata = { title: "대시보드 — Eatripin 어드민" };
 
 /** 대시보드는 항상 현재 상태를 보여야 한다 — 정적 캐시 금지. */
 export const dynamic = "force-dynamic";

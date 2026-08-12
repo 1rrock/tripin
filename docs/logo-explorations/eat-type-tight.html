@@ -1,0 +1,819 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · EAT TYPE TIGHT refined</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #f0e8db;
+      --sheet: #faf6ef;
+      --hairline: #ddd0bc;
+      --edge: #a89278;
+      --ink: #2a2118;
+      --dim: #6e5c4a;
+      --wax: #c9441a;
+      --ink-mid: #4a3b2e;
+      --ink-soft: #5c4a3a;
+      --lift: 0 10px 24px -10px rgb(60 40 20 / 0.18), 0 2px 6px -2px rgb(60 40 20 / 0.1);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 48px 28px 96px;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .lede {
+      margin: 0 0 12px;
+      max-width: 54em;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .lede strong { color: var(--ink); }
+    .lede .e { color: var(--ink); font-weight: 800; }
+    .lede .a { color: var(--dim); font-weight: 800; }
+    .lede .t { color: var(--wax); font-weight: 800; }
+    .keep {
+      margin: 0 0 32px;
+      padding: 12px 14px;
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      background: var(--sheet);
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.55;
+      max-width: 54em;
+    }
+    .keep b { color: var(--ink); }
+    .sec { margin: 0 0 40px; }
+    .sec h2 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: var(--dim);
+      border-bottom: 1px solid var(--hairline);
+      padding-bottom: 10px;
+    }
+    .sec > p {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 12px;
+    }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    .grid-3 { grid-template-columns: 1fr 1fr 1fr; }
+    @media (max-width: 900px) {
+      .grid, .grid-3 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .grid, .grid-2, .grid-3 { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card-h {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--hairline);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-h strong {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .card-h span { font-size: 10px; color: var(--dim); line-height: 1.35; }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 16px;
+      min-height: 180px;
+      gap: 16px;
+      flex-wrap: wrap;
+      background: var(--ground);
+    }
+    .stage.sheet { background: var(--sheet); }
+    .stage.ink { background: var(--ink); }
+    .stage.wax { background: var(--wax); }
+    .icon {
+      width: 120px;
+      height: 120px;
+      display: block;
+      border-radius: 22%;
+      box-shadow: var(--lift);
+      flex-shrink: 0;
+    }
+    .icon.sm { width: 64px; height: 64px; border-radius: 16px; }
+    .icon.xs { width: 32px; height: 32px; border-radius: 8px; box-shadow: none; }
+    .icon.xxs { width: 16px; height: 16px; border-radius: 4px; box-shadow: none; }
+    .lock {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .wm {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      line-height: 1;
+      padding-right: 0.22em;
+      white-space: nowrap;
+      color: var(--ink);
+      font-size: 22px;
+    }
+    .wm .fold { color: var(--wax); }
+    .wm.sm { font-size: 13px; }
+    .size-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 22px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .size-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .size-col label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    .note {
+      margin-top: 4px;
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.6;
+      max-width: 54em;
+    }
+    .hero {
+      display: grid;
+      grid-template-columns: 1.1fr 1fr;
+      gap: 14px;
+      margin-bottom: 36px;
+    }
+    @media (max-width: 760px) {
+      .hero { grid-template-columns: 1fr; }
+    }
+    .hero .stage { min-height: 280px; }
+    .hero .icon { width: 168px; height: 168px; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Exploration · keep Slash coral in code</p>
+    <h1>EAT · TYPE TIGHT</h1>
+    <p class="lede">
+      첨부 시안 방향: <span class="e">E</span><span class="a">A</span><span class="t">T</span> 를
+      <strong>거의 한 글자 폭</strong>으로 겹친 모노그램.
+      이름 앞 단어 <strong>eat</strong> + 공유 접힘 <strong>T</strong>(trip) 이 한 덩어리.
+      프로젝트 토큰: ink <code>#2a2118</code> · dim <code>#6e5c4a</code> · wax <code>#c9441a</code> · ground <code>#f0e8db</code>.
+    </p>
+    <p class="keep">
+      <b>코드 상태:</b> 현재 프로덕션 마크는 <b>Slash coral</b> 유지.
+      이 시트는 후보 고도화 — 채택 시 <code>Mark.tsx</code> 교체.
+    </p>
+
+    <!-- ═══ HERO ═══ -->
+    <div class="hero">
+      <article class="card">
+        <div class="card-h">
+          <strong>00 · Reference rebuild</strong>
+          <span>첨부 07 TYPE TIGHT 재구성 · 기하 패스</span>
+        </div>
+        <div class="stage">
+          <!-- Canonical geometric EAT tight monogram -->
+          <svg class="icon" viewBox="0 0 512 512" role="img" aria-label="EAT type tight">
+            <rect width="512" height="512" fill="#f0e8db"/>
+            <!-- A (back, dim) — counter form, center -->
+            <g fill="#6e5c4a">
+              <!-- A left diagonal bar -->
+              <polygon points="168,360 208,360 268,160 228,160"/>
+              <!-- A right diagonal bar -->
+              <polygon points="244,160 284,160 344,360 304,360"/>
+              <!-- A crossbar -->
+              <rect x="210" y="268" width="92" height="36"/>
+            </g>
+            <!-- E (ink) — left, readable outer edge -->
+            <g fill="#2a2118">
+              <rect x="148" y="150" width="44" height="220"/>
+              <rect x="148" y="150" width="118" height="40"/>
+              <rect x="148" y="240" width="96" height="36"/>
+              <rect x="148" y="330" width="118" height="40"/>
+            </g>
+            <!-- T (wax) — shared fold, front right -->
+            <g fill="#c9441a">
+              <rect x="236" y="150" width="148" height="40"/>
+              <rect x="292" y="150" width="40" height="220"/>
+            </g>
+          </svg>
+        </div>
+      </article>
+
+      <article class="card">
+        <div class="card-h">
+          <strong>00b · With wordmark</strong>
+          <span>헤더 락업 가정</span>
+        </div>
+        <div class="stage" style="flex-direction:column;gap:22px;">
+          <div class="lock">
+            <svg width="44" height="44" viewBox="0 0 512 512" style="border-radius:10px;box-shadow:var(--lift)">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+            <p class="wm sm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          </div>
+          <p style="margin:0;font-size:11px;color:var(--dim);letter-spacing:0.08em;">
+            EAT 덩어리 = 이름 앞 · 마크만으로도 eat 읽힘
+          </p>
+        </div>
+      </article>
+    </div>
+
+    <!-- ═══ 01 COLOR LAYERS ═══ -->
+    <section class="sec">
+      <h2>01 · Color layering</h2>
+      <p>같은 기하, 층 순서·채도만 조절. E 가독성 vs 한 덩어리 느낌 트레이드오프.</p>
+      <div class="grid">
+
+        <article class="card">
+          <div class="card-h"><strong>C01 · Canon</strong><span>E ink / A dim / T wax</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C02 · A soft</strong><span>A opacity 낮춤 · E 더 읽힘</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.55">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C03 · T last</strong><span>접힘 T 가 맨 앞</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#6e5c4a" opacity="0.7">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C04 · Ink only + wax T</strong><span>A 도 잉크 · 채도 절약</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#2a2118" opacity="0.35">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C05 · Mono ink</strong><span>1도 · 접힘 없이</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#2a2118" opacity="0.4">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C06 · Ink ground</strong><span>다크 앱 아이콘</span></div>
+          <div class="stage ink">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#2a2118"/>
+              <g fill="#a89278">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#f0e8db">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C07 · Wax ground</strong><span>면 전체 왁스 · 위험 체크</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#c9441a"/>
+              <g fill="#2a2118" opacity="0.45">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#f0e8db">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>C08 · Sheet cell</strong><span>hairline 콘택트 셀</span></div>
+          <div class="stage sheet">
+            <svg class="icon" viewBox="0 0 512 512" style="box-shadow:none;border:1px solid #ddd0bc;border-radius:12px">
+              <rect width="512" height="512" fill="#faf6ef"/>
+              <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+              <g fill="#6e5c4a" opacity="0.6">
+                <polygon points="168,360 208,360 268,160 228,160"/>
+                <polygon points="244,160 284,160 344,360 304,360"/>
+                <rect x="210" y="268" width="92" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="148" y="150" width="44" height="220"/>
+                <rect x="148" y="150" width="118" height="40"/>
+                <rect x="148" y="240" width="96" height="36"/>
+                <rect x="148" y="330" width="118" height="40"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="236" y="150" width="148" height="40"/>
+                <rect x="292" y="150" width="40" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══ 02 GEOMETRY ═══ -->
+    <section class="sec">
+      <h2>02 · Geometry refinements</h2>
+      <p>폭·기울기·바 두께. “한 글자 폭” 강도를 조절.</p>
+      <div class="grid">
+
+        <article class="card">
+          <div class="card-h"><strong>G01 · Tighter</strong><span>더 좁게 · 거의 1em</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.65">
+                <polygon points="188,360 220,360 268,160 236,160"/>
+                <polygon points="248,160 280,160 328,360 296,360"/>
+                <rect x="222" y="268" width="68" height="34"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="168" y="150" width="40" height="220"/>
+                <rect x="168" y="150" width="100" height="38"/>
+                <rect x="168" y="242" width="84" height="34"/>
+                <rect x="168" y="332" width="100" height="38"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="248" y="150" width="120" height="38"/>
+                <rect x="292" y="150" width="36" height="220"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G02 · Looser</strong><span>숨 쉴 공간 · 3글자 더 읽힘</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.6">
+                <polygon points="150,360 198,360 268,150 220,150"/>
+                <polygon points="240,150 288,150 358,360 310,360"/>
+                <rect x="200" y="266" width="112" height="36"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="120" y="140" width="46" height="240"/>
+                <rect x="120" y="140" width="128" height="42"/>
+                <rect x="120" y="240" width="104" height="36"/>
+                <rect x="120" y="338" width="128" height="42"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="230" y="140" width="168" height="42"/>
+                <rect x="296" y="140" width="42" height="240"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G03 · Heavy bars</strong><span>바 더 굵게 · 16px 친화</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.55">
+                <polygon points="160,370 220,370 275,150 215,150"/>
+                <polygon points="235,150 295,150 350,370 290,370"/>
+                <rect x="200" y="260" width="110" height="48"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="140" y="140" width="56" height="240"/>
+                <rect x="140" y="140" width="130" height="52"/>
+                <rect x="140" y="234" width="108" height="48"/>
+                <rect x="140" y="328" width="130" height="52"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="228" y="140" width="160" height="52"/>
+                <rect x="286" y="140" width="52" height="240"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G04 · Thin modern</strong><span>가는 바 · 편집 느낌</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.65">
+                <polygon points="180,350 204,350 262,170 238,170"/>
+                <polygon points="252,170 276,170 334,350 310,350"/>
+                <rect x="220" y="270" width="72" height="24"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="160" y="160" width="28" height="200"/>
+                <rect x="160" y="160" width="100" height="28"/>
+                <rect x="160" y="246" width="84" height="26"/>
+                <rect x="160" y="332" width="100" height="28"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="250" y="160" width="120" height="28"/>
+                <rect x="300" y="160" width="28" height="200"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G05 · Rounded A</strong><span>A 를 라운드 카운터로</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <!-- softer A via thick strokes as rounded rects approximated -->
+              <g fill="#6e5c4a" opacity="0.6">
+                <path d="M200 360 L240 360 L270 200 L230 200 Z"/>
+                <path d="M250 200 L290 200 L320 360 L280 360 Z"/>
+                <rect x="218" y="270" width="84" height="32" rx="4"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="150" y="150" width="42" height="220" rx="4"/>
+                <rect x="150" y="150" width="114" height="38" rx="4"/>
+                <rect x="150" y="242" width="94" height="34" rx="4"/>
+                <rect x="150" y="332" width="114" height="38" rx="4"/>
+              </g>
+              <g fill="#c9441a">
+                <rect x="240" y="150" width="140" height="38" rx="4"/>
+                <rect x="294" y="150" width="38" height="220" rx="4"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G06 · Shared spine</strong><span>E·T 가 한 줄기 공유</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.5">
+                <polygon points="170,360 210,360 270,160 230,160"/>
+                <polygon points="246,160 286,160 346,360 306,360"/>
+                <rect x="212" y="268" width="88" height="34"/>
+              </g>
+              <!-- shared vertical as wax (fold) -->
+              <rect x="286" y="150" width="40" height="220" fill="#c9441a"/>
+              <g fill="#2a2118">
+                <rect x="150" y="150" width="40" height="220"/>
+                <rect x="150" y="150" width="176" height="38"/>
+                <rect x="150" y="242" width="140" height="34"/>
+                <rect x="150" y="332" width="176" height="38"/>
+              </g>
+              <!-- T top only wax extends right -->
+              <rect x="286" y="150" width="96" height="38" fill="#c9441a"/>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G07 · Type render</strong><span>Archivo text 겹침 · 원본 07</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g font-family="Archivo, Helvetica, Arial, sans-serif" font-weight="800" font-size="300" text-anchor="middle">
+                <text x="228" y="348" fill="#2a2118">E</text>
+                <text x="256" y="348" fill="#6e5c4a" opacity="0.9">A</text>
+                <text x="284" y="348" fill="#c9441a">T</text>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>G08 · Type + order</strong><span>A→T→E 레이어 · 가독</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g font-family="Archivo, Helvetica, Arial, sans-serif" font-weight="800" font-size="300" text-anchor="middle">
+                <text x="256" y="348" fill="#6e5c4a" opacity="0.5">A</text>
+                <text x="292" y="348" fill="#c9441a" opacity="0.95">T</text>
+                <text x="214" y="348" fill="#2a2118">E</text>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══ 03 SCALE ═══ -->
+    <section class="sec">
+      <h2>03 · Scale</h2>
+      <p>한 글자 폭 모노그램은 작아질수록 뭉개짐. Heavy(G03) 가 유리할 수 있음.</p>
+      <div class="grid">
+        <article class="card wide">
+          <div class="card-h"><strong>Canon scale</strong><span>120 · 64 · 32 · 16</span></div>
+          <div class="stage">
+            <div class="size-row">
+              <div class="size-col">
+                <svg class="icon" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#f0e8db"/>
+                  <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+                  <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+                  <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+                </svg>
+                <label>120</label>
+              </div>
+              <div class="size-col">
+                <svg class="icon sm" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#f0e8db"/>
+                  <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+                  <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+                  <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+                </svg>
+                <label>64</label>
+              </div>
+              <div class="size-col">
+                <svg class="icon xs" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#f0e8db"/>
+                  <g fill="#6e5c4a" opacity="0.5"><polygon points="160,370 220,370 275,150 215,150"/><polygon points="235,150 295,150 350,370 290,370"/><rect x="200" y="260" width="110" height="48"/></g>
+                  <g fill="#2a2118"><rect x="140" y="140" width="56" height="240"/><rect x="140" y="140" width="130" height="52"/><rect x="140" y="234" width="108" height="48"/><rect x="140" y="328" width="130" height="52"/></g>
+                  <g fill="#c9441a"><rect x="228" y="140" width="160" height="52"/><rect x="286" y="140" width="52" height="240"/></g>
+                </svg>
+                <label>32 heavy</label>
+              </div>
+              <div class="size-col">
+                <svg class="icon xxs" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#f0e8db"/>
+                  <g fill="#2a2118"><rect x="130" y="130" width="70" height="260"/><rect x="130" y="130" width="150" height="64"/><rect x="130" y="230" width="120" height="56"/><rect x="130" y="326" width="150" height="64"/></g>
+                  <g fill="#c9441a"><rect x="220" y="130" width="180" height="64"/><rect x="280" y="130" width="64" height="260"/></g>
+                </svg>
+                <label>16 ET only</label>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 04 LOCKUPS ═══ -->
+    <section class="sec">
+      <h2>04 · Lockups</h2>
+      <p>마크 + 워드. Slash coral 대신 이 마크를 쓸 때 헤더 모습.</p>
+      <div class="grid grid-2">
+        <article class="card">
+          <div class="card-h"><strong>L01 · Header</strong><span>웜 페이퍼 헤더</span></div>
+          <div class="stage">
+            <div class="lock">
+              <svg width="36" height="36" viewBox="0 0 512 512" style="border-radius:8px;box-shadow:var(--lift)">
+                <rect width="512" height="512" fill="#f0e8db"/>
+                <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+                <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+                <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+              </svg>
+              <p class="wm sm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+            </div>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>L02 · Stacked</strong><span>OG / 랜딩</span></div>
+          <div class="stage" style="flex-direction:column;gap:16px;">
+            <svg width="72" height="72" viewBox="0 0 512 512" style="border-radius:16px;box-shadow:var(--lift)">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+              <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+              <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+            </svg>
+            <p class="wm sm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>L03 · Mark only</strong><span>워드 없이 · 이름 내장</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+              <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+              <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>L04 · vs Slash coral</strong><span>현재 채택안과 나란히</span></div>
+          <div class="stage">
+            <div class="size-col">
+              <svg class="icon sm" viewBox="0 0 512 512">
+                <rect width="512" height="512" fill="#c9441a"/>
+                <path d="M 138 386 L 374 126" fill="none" stroke="#2a2118" stroke-width="72" stroke-linecap="square"/>
+              </svg>
+              <label>slash coral</label>
+            </div>
+            <div class="size-col">
+              <svg class="icon sm" viewBox="0 0 512 512">
+                <rect width="512" height="512" fill="#f0e8db"/>
+                <g fill="#6e5c4a" opacity="0.6"><polygon points="168,360 208,360 268,160 228,160"/><polygon points="244,160 284,160 344,360 304,360"/><rect x="210" y="268" width="92" height="36"/></g>
+                <g fill="#2a2118"><rect x="148" y="150" width="44" height="220"/><rect x="148" y="150" width="118" height="40"/><rect x="148" y="240" width="96" height="36"/><rect x="148" y="330" width="118" height="40"/></g>
+                <g fill="#c9441a"><rect x="236" y="150" width="148" height="40"/><rect x="292" y="150" width="40" height="220"/></g>
+              </svg>
+              <label>eat tight</label>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 05 WHY ═══ -->
+    <section class="sec">
+      <h2>05 · 왜 이게 Slash 보다 강한가</h2>
+      <div class="grid grid-3">
+        <article class="card">
+          <div class="card-h"><strong>이름</strong><span>eat 이 마크 안에 있음</span></div>
+          <div class="stage" style="min-height:120px;padding:20px;text-align:left;display:block;font-size:12px;color:var(--dim);line-height:1.55;">
+            슬래시는 설명이 필요함.<br/>
+            EAT 겹침은 <b style="color:var(--ink)">이름 앞 단어</b>가 곧 마크.
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>접힘</strong><span>T = trip 공유</span></div>
+          <div class="stage" style="min-height:120px;padding:20px;text-align:left;display:block;font-size:12px;color:var(--dim);line-height:1.55;">
+            왁스 T 가 워드마크의<br/>
+            <b style="color:var(--wax)">공유 접힘</b>과 같은 문법.
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>유일성</strong><span>DB 슬래시와 갈라짐</span></div>
+          <div class="stage" style="min-height:120px;padding:20px;text-align:left;display:block;font-size:12px;color:var(--dim);line-height:1.55;">
+            기하 공용이 아니라<br/>
+            <b style="color:var(--ink)">커스텀 합자</b>에 가까움.
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="note">
+      파일: <code>docs/logo-explorations/eat-type-tight.html</code> ·
+      코드는 아직 Slash coral. 채택 후보 번호(C01, G03, G08 …) 알려주시면
+      <code>Mark.tsx</code> / 파비콘에 반영합니다.
+    </p>
+  </div>
+</body>
+</html>

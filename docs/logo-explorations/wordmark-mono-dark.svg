@@ -1,26 +1,14 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 200" role="img" aria-label="GREATRIPIN">
-  <title>GREATRIPIN — monochrome / letterpress (dark)</title>
-  <desc>No color accent. Shared fold shown by weight contrast only — mono-safe.</desc>
-  <rect width="920" height="200" fill="#0b0b0c"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 200" role="img" aria-label="EATRIPIN">
+  <title>EATRIPIN — monochrome / letterpress (dark)</title>
+  <desc>Shared fold via weight only — no color accent</desc>
+  <rect width="780" height="200" fill="#0b0b0c"/>
   <text
-    x="460" y="104"
+    x="390" y="110"
     text-anchor="middle"
     font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     font-size="72"
     letter-spacing="0.22em"
   >
-    <tspan fill="#f5f3ef" font-weight="500">GREA</tspan><tspan fill="#f5f3ef" font-weight="800">T</tspan><tspan fill="#f5f3ef" font-weight="500">RI</tspan><tspan fill="#f5f3ef" font-weight="800">P</tspan><tspan fill="#f5f3ef" font-weight="500">IN</tspan>
+    <tspan fill="#f5f3ef" font-weight="500">EA</tspan><tspan fill="#f5f3ef" font-weight="800">T</tspan><tspan fill="#f5f3ef" font-weight="500">RI</tspan><tspan fill="#f5f3ef" font-weight="800">P</tspan><tspan fill="#f5f3ef" font-weight="500">IN</tspan>
   </text>
-  <!-- micro index under shared letters — contact-sheet habit, not a decoration -->
-  <g
-    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
-    font-weight="500"
-    font-size="11"
-    fill="#9a9892"
-    letter-spacing="0.18em"
-    text-anchor="middle"
-  >
-    <text x="430" y="148">01</text>
-    <text x="560" y="148">02</text>
-  </g>
 </svg>

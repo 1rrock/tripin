@@ -1,6 +1,8 @@
 /**
- * GREATRIPIN 워드마크 — great+trip+pin, 공유 T·P 만 왁스.
- * 철자 GREATRIPIN (t·p 각 1). 오타 수정 금지.
+ * EATRIPIN 워드마크 — slash coral 마크와 짝.
+ *
+ * 철자 EATRIPIN (t·p 각 1). 공유 T·P 만 왁스 — 이름 접힘 장치.
+ * 마크가 이미 왁스 면이라 워드의 왁스는 글자 두 개에만 (면적 남발 금지).
  */
 
 import type { CSSProperties } from "react";
@@ -30,7 +32,7 @@ export function Wordmark({ className, style, decorative = true }: WordmarkProps)
         ...style,
       }}
     >
-      GREA
+      EA
       <span style={{ color: "var(--wax)" }}>T</span>
       RI
       <span style={{ color: "var(--wax)" }}>P</span>

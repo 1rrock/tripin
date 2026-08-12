@@ -335,13 +335,6 @@ export function CityExplorer({
                             </span>
                           ) : null}
                         </span>
-                        <Icon.chevron
-                          className="mt-1 size-4 shrink-0 transition-transform"
-                          style={{
-                            color: "var(--dim)",
-                            transform: active ? "rotate(90deg)" : undefined,
-                          }}
-                        />
                       </button>
 
                       <SummaryBlock className="pl-10" display={place.summary} showPriceHint={false} />

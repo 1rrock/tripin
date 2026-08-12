@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>c15 · paper · E ink / A dim / T wax · tighter stack (E still out)</title>
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+  <!-- slightly tighter than c01 but E still left-leading -->
+  <g font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="800" font-size="300" text-anchor="middle">
+    <text x="256" y="348" fill="#6e5c4a" opacity="0.5">A</text>
+    <text x="286" y="348" fill="#c9441a" opacity="0.9">T</text>
+    <text x="220" y="348" fill="#2a2118">E</text>
+  </g>
+</svg>

@@ -21,7 +21,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoDetail, VideoStop } from "@/shared/api/videos";
-import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
+import { Act, Chip, FrameNo, Rule } from "@/shared/ui/frame";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 
@@ -88,12 +88,6 @@ function StopRow({
           </span>
         ) : null}
       </span>
-      {selectable ? (
-        <Icon.chevron
-          className="mt-1 size-4 shrink-0 transition-transform"
-          style={{ color: "var(--dim)", transform: active ? "rotate(90deg)" : undefined }}
-        />
-      ) : null}
     </>
   );
 

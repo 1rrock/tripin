@@ -341,11 +341,25 @@ body > * { position: relative; z-index: 1; }
     background-color 0.22s ease,
     color 0.22s ease;
 }
-/* 현재 위치 = 잉크가 진해지고 **왁스 눈금**이 바 윗변에 하나 찍힌다.
-   면을 칠하거나 아이콘 굵기를 바꾸지 않는다 — 왁스는 표시이지 배경이 아니고,
-   아이콘 세트는 stroke 1.6 하나로 통일돼 있다(frame.tsx 머리말). */
+
+/* ── dual 아이콘 채움 (시안 7 · Classic + Ink Solid)
+   `.ig-body` 는 닫힌 실루엣. 기본 fill:none(부모 svg), 활성에서 currentColor.
+   구멍은 evenodd 라 탭 배경(--ground / --hover)이 그대로 비친다.
+   왁스 눈금은 그대로 “표시”, 아이콘 면 채움은 잉크(paper/dim currentColor). */
+.ig-body {
+  fill: none;
+  transition:
+    fill 0.15s ease,
+    stroke-width 0.15s ease;
+}
+
+/* 현재 위치 = 잉크 진함 + 아이콘 내부 채움 + **왁스 눈금** */
 .tab[aria-current] {
   color: var(--paper);
+}
+.tab[aria-current] .ig-body {
+  fill: currentColor;
+  stroke-width: 1.15;
 }
 .tab[aria-current]::before {
   content: "";
@@ -355,6 +369,13 @@ body > * { position: relative; z-index: 1; }
   height: 2px;
   background: var(--wax);
 }
+
+/* 데스크톱 헤더 메뉴도 같은 채움 — 같은 목적지가 폭에 따라 다른 물건이면 안 된다 */
+.nav-item[aria-current] .ig-body {
+  fill: currentColor;
+  stroke-width: 1.15;
+}
+
 /* 터치에는 호버가 없다. 본체는 :active — 60ms 는 NN/g 의 "즉답" 한계 안쪽 */
 .tab:active {
   background: var(--hover);
@@ -366,6 +387,11 @@ body > * { position: relative; z-index: 1; }
     color: var(--paper);
     transition-duration: 0.12s;
   }
+  /* 호버 예고 워시 — 이미 활성인 탭은 솔리드를 유지 */
+  .tab:hover:not([aria-current]) .ig-body,
+  .nav-item:hover:not([aria-current]) .ig-body {
+    fill: color-mix(in srgb, currentColor 14%, transparent);
+  }
 }
 
 /* 모션 축소 — 상태는 남기고 움직임만 걷는다. MDN 이 말하는 "reduces, or
@@ -373,7 +399,8 @@ body > * { position: relative; z-index: 1; }
 @media (prefers-reduced-motion: reduce) {
   .nav-item,
   .nav-link,
-  .tab {
+  .tab,
+  .ig-body {
     transition-duration: 1ms;
   }
 }

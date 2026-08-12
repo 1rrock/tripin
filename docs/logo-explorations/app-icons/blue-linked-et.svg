@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Eatripin">
+  <title>Eatripin app icon — blue linked ET (PB-style monogram)</title>
+  <rect width="512" height="512" fill="#0A3D91"/>
+
+  <circle cx="256" cy="256" r="196" fill="none" stroke="#FFFFFF" stroke-width="6"/>
+  <circle cx="256" cy="256" r="170" fill="none" stroke="#FFFFFF" stroke-width="2.5"/>
+
+  <g stroke="#FFFFFF" stroke-width="3.5" fill="none">
+    <line x1="96" y1="238" x2="128" y2="238"/>
+    <line x1="96" y1="252" x2="128" y2="252"/>
+    <line x1="96" y1="266" x2="128" y2="266"/>
+    <line x1="384" y1="238" x2="416" y2="238"/>
+    <line x1="384" y1="252" x2="416" y2="252"/>
+    <line x1="384" y1="266" x2="416" y2="266"/>
+  </g>
+
+  <defs>
+    <path id="arcTopL" d="M 128,256 A 128,128 0 0,1 384,256" fill="none"/>
+    <path id="arcBotL" d="M 384,256 A 128,128 0 0,1 128,256" fill="none"/>
+  </defs>
+  <text fill="#FFFFFF" font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="700" font-size="26" letter-spacing="0.36em">
+    <textPath href="#arcTopL" startOffset="50%" text-anchor="middle">EATRIPIN</textPath>
+  </text>
+  <text fill="#FFFFFF" font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif" font-weight="600" font-size="17" letter-spacing="0.3em">
+    <textPath href="#arcBotL" startOffset="50%" text-anchor="middle">EAT · TRIP · PIN</textPath>
+  </text>
+
+  <!-- Linked ET: E and T share the vertical as one continuous monogram (PB PB-ligature feel) -->
+  <g fill="#FFFFFF">
+    <!-- outer rounded-rect frame of monogram block -->
+    <!-- E vertical -->
+    <path d="
+      M 190 198
+      H 250
+      V 220
+      H 212
+      V 244
+      H 242
+      V 266
+      H 212
+      V 290
+      H 250
+      V 312
+      H 190
+      Z
+    "/>
+    <!-- T: bar connects into E mid zone, stem drops -->
+    <path d="
+      M 248 198
+      H 334
+      V 220
+      H 304
+      V 312
+      H 282
+      V 220
+      H 248
+      Z
+    "/>
+  </g>
+</svg>

@@ -6,11 +6,11 @@ import { cachePublic } from "@/shared/api/cache";
  * 조각(채널×도시) 공유 카드 — "{크리에이터}의 {도시}" + "간 곳 {n}곳".
  * 웜 페이퍼: #f0e8db 지면, 잉크 타이포, 도시명에 왁스(#c9441a) 밑줄 바. 사진 없음.
  */
-export const alt = "크리에이터가 간 곳 지도 — Greatripin";
+export const alt = "크리에이터가 간 곳 지도 — Eatripin";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const FOOT = "Greatripin · 비공식 디렉터리";
+const FOOT = "Eatripin · 비공식 디렉터리";
 
 /**
  * satori 에는 한글 폰트가 없다 — 없으면 두부(tofu)로 렌더된다.
@@ -191,7 +191,7 @@ export default async function PieceOpengraphImage({
             }}
           >
             <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#2a2118" }}>
-              <span>GREA</span>
+              <span>EA</span>
               <span style={{ color: "#c9441a" }}>T</span>
               <span>RI</span>
               <span style={{ color: "#c9441a" }}>P</span>
@@ -216,7 +216,7 @@ export default async function PieceOpengraphImage({
             letterSpacing: "0.06em",
           }}
         >
-          {bold ? FOOT : "GREATRIPIN"}
+          {bold ? FOOT : "EATRIPIN"}
         </div>
       </div>
     ),

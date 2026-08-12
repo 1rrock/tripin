@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT overlap · solid glyphs · ET width · color layers</title>
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+
+  <!-- Solid E (ink) — left of ET box -->
+  <g fill="#2a2118">
+    <rect x="132" y="152" width="36" height="208"/>
+    <rect x="132" y="152" width="140" height="36"/>
+    <rect x="132" y="238" width="110" height="36"/>
+    <rect x="132" y="324" width="140" height="36"/>
+  </g>
+
+  <!-- Solid A (dim) — centered, overlaps E and T -->
+  <g fill="#6e5c4a">
+    <!-- left leg -->
+    <polygon points="188,360 224,360 268,168 232,168"/>
+    <!-- right leg -->
+    <polygon points="292,168 256,168 300,360 336,360"/>
+    <!-- crossbar -->
+    <rect x="214" y="268" width="84" height="32"/>
+  </g>
+
+  <!-- Solid T (wax) — right of ET box, stem cuts through A -->
+  <g fill="#c9441a">
+    <rect x="248" y="152" width="140" height="36"/>
+    <rect x="300" y="152" width="36" height="208"/>
+  </g>
+</svg>

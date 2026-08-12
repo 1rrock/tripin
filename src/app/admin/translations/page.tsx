@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { loadAdminCityIntros, loadAdminTranslations } from "../_lib/queries";
 import { TranslationsClient } from "./TranslationsClient";
 
-export const metadata: Metadata = { title: "번역 검수 — Greatripin 어드민" };
+export const metadata: Metadata = { title: "번역 검수 — Eatripin 어드민" };
 export const dynamic = "force-dynamic";
 
 /**

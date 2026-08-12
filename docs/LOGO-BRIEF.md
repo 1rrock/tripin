@@ -1,4 +1,4 @@
-# Greatripin 로고 브리프
+# Eatripin 로고 브리프
 
 > 여러 곳(디자이너·에이전시·AI 툴)에 돌리기 위한 의뢰서.
 > 상대에 따라 §A(짧은 프롬프트) 또는 §B(전체 브리프)를 복사해 쓴다.
@@ -8,15 +8,15 @@
 
 ## ⚠️ 의뢰 전 반드시 전달할 것 — 이름은 오타가 아니다
 
-**`GREATRIPIN` 의 글자 겹침은 의도된 장치다.** 이걸 모르면 받는 쪽이 100% "고쳐서" 준다.
+**`EATRIPIN` 의 글자 겹침은 의도된 장치다.** 이걸 모르면 받는 쪽이 100% "고쳐서" 준다.
 
 ```
-great + trip + pin
+eat + trip + pin
   └ t 공유 ┘  └ p 공유 ┘
-= GREATRIPIN
+= EATRIPIN
 ```
 
-`GREATTRIPIN`(t 두 개)이나 `GREATTRIPPIN` 으로 바꾸면 **틀린 것이다.**
+`EATTRIPIN`(t 두 개)이나 `EATRIPPIN` 으로 바꾸면 **틀린 것이다.**
 
 ---
 
@@ -26,8 +26,8 @@ great + trip + pin
 > 로고에 글자를 넣는 건 AI 가 자주 틀리므로, **철자를 반드시 검수**할 것.
 
 ```
-Wordmark logo for "GREATRIPIN", a travel directory that maps places
-Korean YouTubers actually visited.
+Wordmark logo for "EATRIPIN", a travel directory that maps places
+Korean YouTubers actually visited (food, sights, routes).
 
 Style: darkroom contact sheet. Deep charcoal ground (#0b0b0c), warm
 off-white type (#f5f3ef). Grotesque sans-serif, heavy weight, wide
@@ -35,7 +35,7 @@ letter-spacing. Flat, matte, printed-on-paper feel — like silver halide
 photography, not neon.
 
 Key device: the letters T and P are SHARED between words
-(great+trip+pin). Highlight exactly those two letters in a single
+(eat+trip+pin). Highlight exactly those two letters in a single
 vermilion accent (#ff3d14) while all other letters stay off-white.
 
 Must be legible at 16x16px. No gradients, no glow, no drop shadows,
@@ -45,7 +45,7 @@ Monochrome-safe.
 
 **변형을 받고 싶으면** 마지막에 한 줄씩 바꿔 붙인다:
 
-- `Variation: square app icon, letters cropped to GT monogram.`
+- `Variation: square app icon, letters cropped to ET monogram.`
 - `Variation: the shared letters are boxed with a thin rule instead of colored.`
 - `Variation: letterpress / ink-on-paper texture, no color accent.`
 
@@ -55,7 +55,7 @@ Monochrome-safe.
 
 ### 1. 무엇을 만드는가
 
-**Greatripin** — 여행 유튜버가 실제로 다녀간 장소를 지도로 정리하는 비공식 디렉터리.
+**Eatripin** — 여행 유튜버가 실제로 다녀간 장소를 지도로 정리하는 비공식 디렉터리.
 
 채널을 고르면 그 사람이 전 세계에서 간 곳이 지도에 뜨고, 핀을 누르면 그 장면의 영상으로
 넘어간다. 신뢰를 자체 큐레이션이 아니라 **이미 구독 중인 크리에이터**에 기댄다.
@@ -63,11 +63,11 @@ Monochrome-safe.
 ### 2. 이름 — 이게 로고의 전부다
 
 ```
-great + trip + pin  →  GREATRIPIN
+eat + trip + pin  →  EATRIPIN
 ```
 
-앞 단어의 끝 글자와 뒤 단어의 첫 글자를 **겹쳐 쓴다**(t, p). "좋은 여행 핀"이라는 뜻이
-한 단어 안에 접혀 있다.
+앞 단어의 끝 글자와 뒤 단어의 첫 글자를 **겹쳐 쓴다**(t, p). "먹고 다니는 여행 핀"이라는
+뜻이 한 단어 안에 접혀 있다.
 
 **로고의 과제는 이 접힘을 눈에 보이게 만드는 것이다.** 지금은 그냥 대문자 텍스트라
 아무도 눈치채지 못한다.
@@ -108,7 +108,7 @@ great + trip + pin  →  GREATRIPIN
 
 ### 5. 반드시 만족할 것
 
-- **16×16px 파비콘에서 읽힐 것.** 워드마크가 안 되면 모노그램(GT 등) 대안을 함께
+- **16×16px 파비콘에서 읽힐 것.** 워드마크가 안 되면 모노그램(ET 등) 대안을 함께
 - **어두운 지면이 기본.** 밝은 배경 버전도 필요하지만 주 사용처는 `#0b0b0c`
 - **모노크롬으로도 성립할 것.** 색이 빠져도 장치가 죽지 않아야 한다
 - 가로형(네비용) + 정사각(앱 아이콘/파비콘용) 두 벌
@@ -134,7 +134,7 @@ great + trip + pin  →  GREATRIPIN
 
 ### 8. 참고
 
-- 브랜드명 표기는 **Greatripin**(문장 중), **GREATRIPIN**(워드마크)
+- 브랜드명 표기는 **Eatripin**(문장 중), **EATRIPIN**(워드마크)
 - 서비스는 각 크리에이터와 **제휴 관계가 없다.** 특정 채널을 연상시키는 요소 금지
 - 톤: 정보 나열형. 과장·감탄 없음
 
@@ -144,7 +144,7 @@ great + trip + pin  →  GREATRIPIN
 
 받은 시안을 이 순서로 본다.
 
-- [ ] **철자가 `GREATRIPIN` 인가** (t·p 각 하나씩 — AI 툴은 여기서 자주 틀린다)
+- [ ] **철자가 `EATRIPIN` 인가** (t·p 각 하나씩 — AI 툴은 여기서 자주 틀린다)
 - [ ] 글자 겹침 장치가 **설명 없이** 읽히는가
 - [ ] 16px 로 줄여도 뭉개지지 않는가
 - [ ] 색을 빼도 장치가 살아 있는가

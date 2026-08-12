@@ -2,8 +2,8 @@ import type { Messages } from "./ko";
 
 /** English UI chrome — content (summaries) stays in DB with fallback. */
 export const en: Messages = {
-  brand: "Greatripin",
-  brandAria: "Greatripin home",
+  brand: "Eatripin",
+  brandAria: "Eatripin home",
   nav: {
     region: "Places",
     channel: "Channels",
@@ -219,7 +219,7 @@ export const en: Messages = {
   notice: {
     title: "Notice",
     linksAria: "Policies",
-    p1Before: "Greatripin is an ",
+    p1Before: "Eatripin is an ",
     p1Strong: "unofficial",
     p1After:
       " directory of publicly posted videos. We aren't affiliated with any channel, and every place links back to its source video.",

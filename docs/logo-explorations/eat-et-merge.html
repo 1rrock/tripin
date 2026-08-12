@@ -1,0 +1,785 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · ET + A merge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #f0e8db;
+      --sheet: #faf6ef;
+      --hairline: #ddd0bc;
+      --ink: #2a2118;
+      --dim: #6e5c4a;
+      --wax: #c9441a;
+      /* image palette */
+      --void: #0b0b0c;
+      --paper: #f5f3ef;
+      --orange: #e23a1a;
+      --lift: 0 12px 28px -12px rgb(0 0 0 / 0.45);
+      --lift-warm: 0 10px 24px -10px rgb(60 40 20 / 0.18);
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: #121212;
+      color: var(--paper);
+      font-family: Archivo, system-ui, sans-serif;
+      padding: 48px 28px 96px;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: #8a8680;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    .lede {
+      margin: 0 0 28px;
+      max-width: 54em;
+      color: #9a9892;
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .lede strong { color: var(--paper); }
+    .lede .e { color: var(--paper); font-weight: 800; }
+    .lede .a { color: #9a9892; font-weight: 800; }
+    .lede .t { color: var(--wax); font-weight: 800; }
+    .keep {
+      margin: 0 0 32px;
+      padding: 12px 14px;
+      border: 1px solid #2c2c31;
+      border-radius: 6px;
+      background: #1a1a1c;
+      font-size: 12px;
+      color: #9a9892;
+      line-height: 1.55;
+      max-width: 54em;
+    }
+    .keep b { color: var(--paper); }
+    .sec { margin: 0 0 40px; }
+    .sec h2 {
+      margin: 0 0 6px;
+      font-size: 11px;
+      letter-spacing: 0.18em;
+      text-transform: uppercase;
+      font-weight: 700;
+      color: #8a8680;
+      border-bottom: 1px solid #2c2c31;
+      padding-bottom: 10px;
+    }
+    .sec > p {
+      margin: 0 0 14px;
+      font-size: 12px;
+      color: #8a8680;
+      line-height: 1.5;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+    }
+    .grid-4 { grid-template-columns: repeat(4, 1fr); }
+    .grid-2 { grid-template-columns: 1fr 1fr; }
+    @media (max-width: 900px) {
+      .grid, .grid-4 { grid-template-columns: 1fr 1fr; }
+    }
+    @media (max-width: 520px) {
+      .grid, .grid-4, .grid-2 { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: #1a1a1c;
+      border: 1px solid #2c2c31;
+      border-radius: 8px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card-h {
+      padding: 10px 12px;
+      border-bottom: 1px solid #2c2c31;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card-h strong {
+      font-size: 10px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .card-h span { font-size: 10px; color: #8a8680; line-height: 1.35; }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px 18px;
+      min-height: 200px;
+      gap: 20px;
+      flex-wrap: wrap;
+      background: #0b0b0c;
+    }
+    .stage.warm { background: var(--ground); }
+    .stage.sheet { background: var(--sheet); }
+    .stage.mid { background: #1a1a1c; }
+    .icon {
+      width: 140px;
+      height: 140px;
+      display: block;
+      border-radius: 10px;
+      box-shadow: var(--lift);
+      flex-shrink: 0;
+    }
+    .icon.sm { width: 72px; height: 72px; border-radius: 8px; }
+    .icon.xs { width: 36px; height: 36px; border-radius: 6px; box-shadow: none; }
+    .icon.round { border-radius: 22%; }
+    .lock {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .wm {
+      margin: 0;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      line-height: 1;
+      padding-right: 0.22em;
+      white-space: nowrap;
+      color: var(--paper);
+      font-size: 20px;
+    }
+    .wm .fold { color: var(--wax); }
+    .wm.ink { color: var(--ink); }
+    .wm.sm { font-size: 13px; }
+    .size-row {
+      display: flex;
+      align-items: flex-end;
+      gap: 24px;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .size-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+    .size-col label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #8a8680;
+    }
+    .note {
+      margin-top: 8px;
+      font-size: 12px;
+      color: #8a8680;
+      line-height: 1.6;
+      max-width: 54em;
+    }
+    .pair {
+      display: flex;
+      gap: 16px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .pair figcaption {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: #8a8680;
+      text-align: center;
+      margin-top: 8px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Merge · ET geometric + mid A</p>
+    <h1>E + A + T · 한 덩어리</h1>
+    <p class="lede">
+      첨부 <strong>ET 기하</strong>(공유 세로 줄기 · 왁스 액센트)에
+      가운데 <span class="a">A</span> 를 끼운 합체.
+      <span class="e">E</span> 카운터 안·공유 stem 뒤로
+      <span class="a">A</span> 가 비치고, 오른쪽
+      <span class="t">T</span> 줄기가 접힘(공유) 표시.
+    </p>
+    <p class="keep">
+      <b>코드:</b> Slash coral 유지. 이 시트는 후보 합체 시안.
+      색: 첨부 다크/라이트 + 프로젝트 웜 페이퍼 토큰.
+    </p>
+
+    <!-- ═══ 01 REF ET (from image language) ═══ -->
+    <section class="sec">
+      <h2>01 · ET base (첨부 문법)</h2>
+      <p>합치기 전 뼈대. E 카운터 + 공유 세로 + T 바. 가운데 줄기가 왁스.</p>
+      <div class="grid">
+        <article class="card">
+          <div class="card-h"><strong>ET · dark</strong><span>첨부 1번</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="ET dark">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- E white -->
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="140" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+              </g>
+              <!-- T bar white + stem wax -->
+              <rect x="260" y="140" width="140" height="48" fill="#f5f3ef"/>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>ET · light</strong><span>첨부 2번</span></div>
+          <div class="stage" style="background:#f5f3ef">
+            <svg class="icon" viewBox="0 0 512 512" style="box-shadow:var(--lift-warm)" aria-label="ET light">
+              <rect width="512" height="512" fill="#f5f3ef"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+              <g fill="#0b0b0c">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="140" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+              </g>
+              <rect x="260" y="140" width="140" height="48" fill="#0b0b0c"/>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>ET · mono</strong><span>첨부 3번</span></div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="ET mono">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="140" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+                <rect x="260" y="140" width="140" height="48"/>
+                <rect x="316" y="140" width="48" height="232"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 02 MERGE: A in the middle ═══ -->
+    <section class="sec">
+      <h2>02 · Merge · 가운데 A</h2>
+      <p>ET 골격 그대로, E–T 사이(카운터·공유 stem 영역)에 A 삽입. 한 덩어리로 읽히게.</p>
+      <div class="grid">
+
+        <!-- M01 primary dark -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M01 · A in counter</strong>
+            <span>E 안쪽에 A · dark · 권장 후보</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M01">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- A sits in E's open counter, dim gray -->
+              <g fill="#6e5c4a">
+                <!-- left leg -->
+                <polygon points="200,340 232,340 268,200 236,200"/>
+                <!-- right leg -->
+                <polygon points="252,200 284,200 320,340 288,340"/>
+                <!-- crossbar -->
+                <rect x="228" y="278" width="64" height="28"/>
+              </g>
+              <!-- E white -->
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="132" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+              </g>
+              <!-- T bar white + stem wax (shared fold) -->
+              <rect x="260" y="140" width="140" height="48" fill="#f5f3ef"/>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M02 light -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M02 · A in counter · light</strong>
+            <span>첨부 2 지면 + A dim</span>
+          </div>
+          <div class="stage" style="background:#f5f3ef">
+            <svg class="icon" viewBox="0 0 512 512" style="box-shadow:var(--lift-warm)" aria-label="EAT M02">
+              <rect width="512" height="512" fill="#f5f3ef"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+              <g fill="#a89278">
+                <polygon points="200,340 232,340 268,200 236,200"/>
+                <polygon points="252,200 284,200 320,340 288,340"/>
+                <rect x="228" y="278" width="64" height="28"/>
+              </g>
+              <g fill="#0b0b0c">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="132" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+              </g>
+              <rect x="260" y="140" width="140" height="48" fill="#0b0b0c"/>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M03 project warm -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M03 · Project warm</strong>
+            <span>웜 페이퍼 토큰 전용</span>
+          </div>
+          <div class="stage warm">
+            <svg class="icon round" viewBox="0 0 512 512" style="box-shadow:var(--lift-warm)" aria-label="EAT M03">
+              <rect width="512" height="512" fill="#f0e8db"/>
+              <g fill="#6e5c4a" opacity="0.75">
+                <polygon points="200,340 232,340 268,200 236,200"/>
+                <polygon points="252,200 284,200 320,340 288,340"/>
+                <rect x="228" y="278" width="64" height="28"/>
+              </g>
+              <g fill="#2a2118">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="132" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+              </g>
+              <rect x="260" y="140" width="140" height="48" fill="#2a2118"/>
+              <rect x="316" y="140" width="48" height="232" fill="#c9441a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M04 A as negative cut -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M04 · A cutout</strong>
+            <span>A 가 빠진 공간 · 네거티브</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M04">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- solid E+T block then punch A? simpler: A drawn as ground-colored on mid bar zone -->
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="200" height="48"/>
+                <rect x="120" y="232" width="160" height="44"/>
+                <rect x="120" y="324" width="200" height="48"/>
+                <rect x="280" y="140" width="120" height="48"/>
+              </g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+              <!-- A cut with void color -->
+              <g fill="#0b0b0c">
+                <polygon points="198,318 226,318 258,210 230,210"/>
+                <polygon points="246,210 274,210 306,318 278,318"/>
+                <rect x="224" y="268" width="56" height="22"/>
+              </g>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M05 A between stems - more readable -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M05 · A between stems</strong>
+            <span>E 줄기 · A · T 줄기 3분할</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M05">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- A center, more open -->
+              <g fill="#8a7a6a">
+                <polygon points="210,350 244,350 278,175 244,175"/>
+                <polygon points="266,175 300,175 334,350 300,350"/>
+                <rect x="236" y="272" width="72" height="30"/>
+              </g>
+              <!-- E -->
+              <g fill="#f5f3ef">
+                <rect x="110" y="140" width="48" height="232"/>
+                <rect x="110" y="140" width="150" height="48"/>
+                <rect x="110" y="232" width="120" height="44"/>
+                <rect x="110" y="324" width="150" height="48"/>
+              </g>
+              <!-- T -->
+              <rect x="290" y="140" width="130" height="48" fill="#f5f3ef"/>
+              <rect x="340" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M06 shared spine is A peak -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M06 · A peak = T stem</strong>
+            <span>A 정점이 왁스 줄기와 만남</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M06">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- A: peak under T stem -->
+              <g fill="#6e5c4a">
+                <polygon points="190,350 228,350 300,175 262,175"/>
+                <polygon points="300,175 338,175 300,350 262,350"/>
+                <rect x="230" y="278" width="80" height="28"/>
+              </g>
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="160" height="48"/>
+                <rect x="120" y="232" width="128" height="44"/>
+                <rect x="120" y="324" width="160" height="48"/>
+                <rect x="250" y="140" width="150" height="48"/>
+              </g>
+              <rect x="300" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M07 ghost A opacity -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M07 · Ghost A</strong>
+            <span>A 아주 옅게 · ET 우선</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M07">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <g fill="#f5f3ef" opacity="0.28">
+                <polygon points="200,340 232,340 268,200 236,200"/>
+                <polygon points="252,200 284,200 320,340 288,340"/>
+                <rect x="228" y="278" width="64" height="28"/>
+              </g>
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="132" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+                <rect x="260" y="140" width="140" height="48"/>
+              </g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M08 A wax soft -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M08 · Soft wax A</strong>
+            <span>A 도 코랄 틴트 · T 가 더 진함</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M08">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <g fill="#c9441a" opacity="0.45">
+                <polygon points="200,340 232,340 268,200 236,200"/>
+                <polygon points="252,200 284,200 320,340 288,340"/>
+                <rect x="228" y="278" width="64" height="28"/>
+              </g>
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="168" height="48"/>
+                <rect x="120" y="232" width="132" height="44"/>
+                <rect x="120" y="324" width="168" height="48"/>
+                <rect x="260" y="140" width="140" height="48"/>
+              </g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+        <!-- M09 block A geometric -->
+        <article class="card">
+          <div class="card-h">
+            <strong>M09 · Block A</strong>
+            <span>A 를 사각 카운터로 · 같은 문법</span>
+          </div>
+          <div class="stage">
+            <svg class="icon" viewBox="0 0 512 512" aria-label="EAT M09">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+              <!-- geometric block A: two uprights + bar + peak flat -->
+              <g fill="#6e5c4a">
+                <rect x="210" y="200" width="36" height="140"/>
+                <rect x="274" y="200" width="36" height="140"/>
+                <rect x="210" y="258" width="100" height="32"/>
+                <rect x="210" y="200" width="100" height="32"/>
+              </g>
+              <g fill="#f5f3ef">
+                <rect x="120" y="140" width="48" height="232"/>
+                <rect x="120" y="140" width="160" height="48"/>
+                <rect x="120" y="232" width="128" height="44"/>
+                <rect x="120" y="324" width="160" height="48"/>
+                <rect x="260" y="140" width="140" height="48"/>
+              </g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <!-- ═══ 03 BEST TRIO ═══ -->
+    <section class="sec">
+      <h2>03 · Hero set · 첨부 3색에 A 합체</h2>
+      <p>이미지와 같은 3단 비교. 가운데만 A 가 들어감.</p>
+      <div class="grid">
+        <article class="card wide">
+          <div class="card-h">
+            <strong>Hero · dark / light / mono</strong>
+            <span>M01 기하 고정 · 색만 첨부 팔레트</span>
+          </div>
+          <div class="stage mid">
+            <div class="pair">
+              <div>
+                <svg class="icon" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#0b0b0c"/>
+                  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+                  <g fill="#6e5c4a">
+                    <polygon points="200,340 232,340 268,200 236,200"/>
+                    <polygon points="252,200 284,200 320,340 288,340"/>
+                    <rect x="228" y="278" width="64" height="28"/>
+                  </g>
+                  <g fill="#f5f3ef">
+                    <rect x="120" y="140" width="48" height="232"/>
+                    <rect x="120" y="140" width="168" height="48"/>
+                    <rect x="120" y="232" width="132" height="44"/>
+                    <rect x="120" y="324" width="168" height="48"/>
+                    <rect x="260" y="140" width="140" height="48"/>
+                  </g>
+                  <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+                </svg>
+                <figcaption>dark + wax stem</figcaption>
+              </div>
+              <div>
+                <svg class="icon" viewBox="0 0 512 512" style="box-shadow:var(--lift-warm)">
+                  <rect width="512" height="512" fill="#f5f3ef"/>
+                  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+                  <g fill="#a89278">
+                    <polygon points="200,340 232,340 268,200 236,200"/>
+                    <polygon points="252,200 284,200 320,340 288,340"/>
+                    <rect x="228" y="278" width="64" height="28"/>
+                  </g>
+                  <g fill="#0b0b0c">
+                    <rect x="120" y="140" width="48" height="232"/>
+                    <rect x="120" y="140" width="168" height="48"/>
+                    <rect x="120" y="232" width="132" height="44"/>
+                    <rect x="120" y="324" width="168" height="48"/>
+                    <rect x="260" y="140" width="140" height="48"/>
+                  </g>
+                  <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+                </svg>
+                <figcaption>light + wax stem</figcaption>
+              </div>
+              <div>
+                <svg class="icon" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#0b0b0c"/>
+                  <rect x="28" y="28" width="456" height="456" fill="none" stroke="#2c2c31" stroke-width="2"/>
+                  <g fill="#f5f3ef" opacity="0.35">
+                    <polygon points="200,340 232,340 268,200 236,200"/>
+                    <polygon points="252,200 284,200 320,340 288,340"/>
+                    <rect x="228" y="278" width="64" height="28"/>
+                  </g>
+                  <g fill="#f5f3ef">
+                    <rect x="120" y="140" width="48" height="232"/>
+                    <rect x="120" y="140" width="168" height="48"/>
+                    <rect x="120" y="232" width="132" height="44"/>
+                    <rect x="120" y="324" width="168" height="48"/>
+                    <rect x="260" y="140" width="140" height="48"/>
+                    <rect x="316" y="140" width="48" height="232"/>
+                  </g>
+                </svg>
+                <figcaption>mono · ghost A</figcaption>
+              </div>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 04 SCALE + LOCKUP ═══ -->
+    <section class="sec">
+      <h2>04 · Scale · lockup</h2>
+      <div class="grid grid-2">
+        <article class="card">
+          <div class="card-h"><strong>Scale · M01</strong><span>140 · 72 · 36</span></div>
+          <div class="stage">
+            <div class="size-row">
+              <div class="size-col">
+                <svg class="icon" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#0b0b0c"/>
+                  <g fill="#6e5c4a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+                  <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+                  <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+                </svg>
+                <label>140</label>
+              </div>
+              <div class="size-col">
+                <svg class="icon sm" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#0b0b0c"/>
+                  <g fill="#6e5c4a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+                  <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+                  <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+                </svg>
+                <label>72</label>
+              </div>
+              <div class="size-col">
+                <svg class="icon xs" viewBox="0 0 512 512">
+                  <rect width="512" height="512" fill="#0b0b0c"/>
+                  <!-- simplified: E + wax stem only at tiny size, A becomes mid bar break -->
+                  <g fill="#f5f3ef">
+                    <rect x="110" y="130" width="56" height="250"/>
+                    <rect x="110" y="130" width="180" height="56"/>
+                    <rect x="110" y="230" width="140" height="50"/>
+                    <rect x="110" y="324" width="180" height="56"/>
+                    <rect x="250" y="130" width="150" height="56"/>
+                  </g>
+                  <rect x="310" y="130" width="56" height="250" fill="#e23a1a"/>
+                </svg>
+                <label>36 · simplify</label>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>Lockup · dark header</strong><span>워드 + 마크</span></div>
+          <div class="stage">
+            <div class="lock">
+              <svg width="40" height="40" viewBox="0 0 512 512" style="border-radius:6px">
+                <rect width="512" height="512" fill="#0b0b0c"/>
+                <g fill="#6e5c4a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+                <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+                <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+              </svg>
+              <p class="wm sm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>Lockup · warm product</strong><span>현재 UI 지면</span></div>
+          <div class="stage warm">
+            <div class="lock">
+              <svg width="40" height="40" viewBox="0 0 512 512" style="border-radius:8px;box-shadow:var(--lift-warm)">
+                <rect width="512" height="512" fill="#f0e8db"/>
+                <g fill="#6e5c4a" opacity="0.8"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+                <g fill="#2a2118"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+                <rect x="316" y="140" width="48" height="232" fill="#c9441a"/>
+              </svg>
+              <p class="wm sm ink">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+            </div>
+          </div>
+        </article>
+
+        <article class="card">
+          <div class="card-h"><strong>vs Slash coral</strong><span>현재 채택안과 비교</span></div>
+          <div class="stage">
+            <div class="size-col">
+              <svg class="icon sm" viewBox="0 0 512 512">
+                <rect width="512" height="512" fill="#c9441a"/>
+                <path d="M 138 386 L 374 126" fill="none" stroke="#2a2118" stroke-width="72" stroke-linecap="square"/>
+              </svg>
+              <label>slash</label>
+            </div>
+            <div class="size-col">
+              <svg class="icon sm" viewBox="0 0 512 512">
+                <rect width="512" height="512" fill="#0b0b0c"/>
+                <g fill="#6e5c4a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+                <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+                <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+              </svg>
+              <label>EAT merge</label>
+            </div>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ═══ 05 TIGHT vs OPEN ═══ -->
+    <section class="sec">
+      <h2>05 · A 강도 (안 넣음 ↔ 세게 넣음)</h2>
+      <p>같은 ET, A 만 조절. “넣은 느낌”의 세기 고르기.</p>
+      <div class="grid grid-4">
+        <article class="card">
+          <div class="card-h"><strong>A0 · none</strong><span>ET only</span></div>
+          <div class="stage">
+            <svg class="icon sm" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="140" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>A1 · whisper</strong><span>opacity 0.2</span></div>
+          <div class="stage">
+            <svg class="icon sm" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <g fill="#f5f3ef" opacity="0.22"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+              <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>A2 · mid</strong><span>M01 기본</span></div>
+          <div class="stage">
+            <svg class="icon sm" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <g fill="#6e5c4a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+              <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="132" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+        <article class="card">
+          <div class="card-h"><strong>A3 · strong</strong><span>A 불투명 · E 앞</span></div>
+          <div class="stage">
+            <svg class="icon sm" viewBox="0 0 512 512">
+              <rect width="512" height="512" fill="#0b0b0c"/>
+              <g fill="#f5f3ef"><rect x="120" y="140" width="48" height="232"/><rect x="120" y="140" width="168" height="48"/><rect x="120" y="232" width="120" height="44"/><rect x="120" y="324" width="168" height="48"/><rect x="260" y="140" width="140" height="48"/></g>
+              <g fill="#9a8a7a"><polygon points="200,340 232,340 268,200 236,200"/><polygon points="252,200 284,200 320,340 288,340"/><rect x="228" y="278" width="64" height="28"/></g>
+              <rect x="316" y="140" width="48" height="232" fill="#e23a1a"/>
+            </svg>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <p class="note">
+      파일: <code>docs/logo-explorations/eat-et-merge.html</code><br/>
+      합체 요지: <b>ET 기하(첨부)</b> + <b>카운터 안 A</b> + <b>왁스 T 줄기 = 접힘</b>.
+      코드는 Slash coral 유지. 채택 시 M01/M03 번호로 알려주세요.
+    </p>
+  </div>
+</body>
+</html>

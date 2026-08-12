@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · pin icon logo samples</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #0b0b0c;
+      --sheet: #141416;
+      --hairline: #2c2c31;
+      --paper: #f5f3ef;
+      --dim: #9a9892;
+      --wax: #ff3d14;
+      --warm: #f0e8db;
+      --ink: #2a2118;
+      --warm-line: #ddd0bc;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--paper);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 48px 32px 96px;
+    }
+    .wrap { max-width: 1180px; margin: 0 auto; }
+    .eyebrow {
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+      margin: 0 0 10px;
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 28px;
+      font-weight: 700;
+      letter-spacing: 0.04em;
+    }
+    .lede {
+      margin: 0 0 18px;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.55;
+      max-width: 54em;
+    }
+    .lede strong { color: var(--paper); font-weight: 700; }
+    .fold { color: var(--wax); }
+    .note {
+      margin: 0 0 36px;
+      padding: 12px 16px;
+      border: 1px solid var(--hairline);
+      border-radius: 4px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.55;
+      max-width: 54em;
+    }
+    .note b { color: var(--wax); font-weight: 700; }
+    .grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+    }
+    @media (max-width: 820px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      overflow: hidden;
+      min-height: 240px;
+      display: flex;
+      flex-direction: column;
+    }
+    .card.wide { grid-column: 1 / -1; }
+    .card-h {
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--hairline);
+      display: flex;
+      justify-content: space-between;
+      gap: 12px;
+      align-items: baseline;
+    }
+    .card-h strong {
+      font-size: 11px;
+      letter-spacing: 0.16em;
+      text-transform: uppercase;
+    }
+    .card-h span {
+      font-size: 11px;
+      color: var(--dim);
+      text-align: right;
+    }
+    .stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 36px 24px;
+      min-height: 180px;
+      gap: 28px;
+      flex-wrap: wrap;
+    }
+    .stage.light { background: var(--warm); color: var(--ink); }
+    .stage.col {
+      flex-direction: column;
+      gap: 20px;
+    }
+    .stage svg { display: block; flex-shrink: 0; }
+    .lockup {
+      display: flex;
+      align-items: center;
+      gap: 16px;
+    }
+    .wm {
+      margin: 0;
+      font-weight: 700;
+      font-size: 36px;
+      letter-spacing: 0.2em;
+      line-height: 1;
+      padding-right: 0.2em;
+      white-space: nowrap;
+    }
+    .wm.sm { font-size: 24px; letter-spacing: 0.18em; }
+    .wm.xs { font-size: 14px; letter-spacing: 0.16em; color: var(--dim); }
+    .stage.light .wm { color: var(--ink); }
+    .stage.light .fold { color: #c9441a; }
+    .sizes {
+      display: flex;
+      align-items: flex-end;
+      gap: 20px;
+    }
+    .size-label {
+      font-size: 10px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--dim);
+      text-align: center;
+      margin-top: 8px;
+    }
+    .size-col {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+    .footer-note {
+      margin-top: 28px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.6;
+      max-width: 54em;
+    }
+    .pair {
+      display: flex;
+      gap: 40px;
+      align-items: center;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Logo explorations · pin icon branch</p>
+    <h1>Pin icon samples</h1>
+    <p class="lede">
+      이름 구조 <strong>eat + trip + pin → EATRIPIN</strong> 에서
+      <strong>pin</strong> 을 시각 장치로 쓴 시안.
+      공유 글자 T·P 는 오타가 아니라 접힘.
+    </p>
+    <p class="note">
+      <b>브리프 주의:</b> <code>LOGO-BRIEF.md</code> 는 핀·위치 마커를
+      “여행 앱 클리셰 / 이름에 pin 이 있어 중복”으로 금지한다.
+      이 시트는 그 금지를 의식적으로 깨 본 <b>탐색 시안</b>이다. 채택이 아니라 비교용.
+    </p>
+
+    <div class="grid">
+
+      <!-- 01 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>01 · Classic pin · wax tip</strong>
+          <span>원형 헤드 + 왁스 포인트</span>
+        </div>
+        <div class="stage">
+          <svg width="120" height="148" viewBox="0 0 120 148" fill="none" aria-label="pin 01">
+            <path d="M60 8 C32 8 12 30 12 56 C12 88 60 140 60 140 C60 140 108 88 108 56 C108 30 88 8 60 8 Z"
+                  fill="#f5f3ef"/>
+            <circle cx="60" cy="54" r="22" fill="#0b0b0c"/>
+            <circle cx="60" cy="140" r="5" fill="#ff3d14"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 02 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>02 · Geometric pin</strong>
+          <span>원 + 역삼각 · 플랫</span>
+        </div>
+        <div class="stage">
+          <svg width="120" height="148" viewBox="0 0 120 148" fill="none" aria-label="pin 02">
+            <circle cx="60" cy="48" r="40" fill="#f5f3ef"/>
+            <path d="M28 70 L60 140 L92 70 Z" fill="#f5f3ef"/>
+            <circle cx="60" cy="48" r="16" fill="#0b0b0c"/>
+            <circle cx="60" cy="48" r="6" fill="#ff3d14"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 03 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>03 · Outline pin · ET</strong>
+          <span>헤드에 모노그램</span>
+        </div>
+        <div class="stage">
+          <svg width="120" height="148" viewBox="0 0 120 148" fill="none" aria-label="pin 03">
+            <path d="M60 10 C34 10 14 32 14 56 C14 86 60 138 60 138 C60 138 106 86 106 56 C106 32 86 10 60 10 Z"
+                  stroke="#f5f3ef" stroke-width="4" fill="none"/>
+            <!-- E -->
+            <g stroke="#f5f3ef" stroke-width="5" stroke-linecap="square">
+              <path d="M38 40 V72"/>
+              <path d="M38 40 H58"/>
+              <path d="M38 56 H54"/>
+              <path d="M38 72 H58"/>
+            </g>
+            <!-- T bar + wax stem (shared fold) -->
+            <path d="M54 40 H82" stroke="#f5f3ef" stroke-width="5" stroke-linecap="square"/>
+            <path d="M72 40 V72" stroke="#ff3d14" stroke-width="5" stroke-linecap="square"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 04 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>04 · Solid pin · ET cutout</strong>
+          <span>네거티브 공간 모노그램</span>
+        </div>
+        <div class="stage">
+          <svg width="120" height="148" viewBox="0 0 120 148" fill="none" aria-label="pin 04">
+            <path d="M60 8 C32 8 12 30 12 56 C12 88 60 140 60 140 C60 140 108 88 108 56 C108 30 88 8 60 8 Z"
+                  fill="#f5f3ef"/>
+            <g stroke="#0b0b0c" stroke-width="6" stroke-linecap="square" stroke-linejoin="miter">
+              <path d="M36 38 V74"/>
+              <path d="M36 38 H58"/>
+              <path d="M36 56 H54"/>
+              <path d="M36 74 H58"/>
+              <path d="M54 38 H84"/>
+            </g>
+            <path d="M72 38 V74" stroke="#ff3d14" stroke-width="6" stroke-linecap="square"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 05 -->
+      <section class="card wide">
+        <div class="card-h">
+          <strong>05 · Lockup · pin + wax wordmark</strong>
+          <span>헤더용 가로형</span>
+        </div>
+        <div class="stage">
+          <div class="lockup">
+            <svg width="44" height="56" viewBox="0 0 120 148" fill="none" aria-hidden="true">
+              <path d="M60 8 C32 8 12 30 12 56 C12 88 60 140 60 140 C60 140 108 88 108 56 C108 30 88 8 60 8 Z"
+                    fill="#f5f3ef"/>
+              <circle cx="60" cy="54" r="18" fill="#0b0b0c"/>
+              <circle cx="60" cy="54" r="7" fill="#ff3d14"/>
+            </svg>
+            <p class="wm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 06 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>06 · Dot pin (minimal)</strong>
+          <span>클리셰 회피 · 점 + 드롭</span>
+        </div>
+        <div class="stage">
+          <svg width="100" height="140" viewBox="0 0 100 140" fill="none" aria-label="pin 06">
+            <circle cx="50" cy="42" r="28" fill="#f5f3ef"/>
+            <circle cx="50" cy="42" r="10" fill="#ff3d14"/>
+            <path d="M50 70 V128" stroke="#f5f3ef" stroke-width="4" stroke-linecap="square"/>
+            <circle cx="50" cy="132" r="4" fill="#ff3d14"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 07 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>07 · Pin as letter i</strong>
+          <span>EATRIPIN 의 i 자리에 핀</span>
+        </div>
+        <div class="stage col">
+          <div style="display:flex;align-items:flex-end;gap:2px;font-weight:700;font-size:40px;letter-spacing:0.14em;line-height:1;">
+            <span>EA<span class="fold">T</span>R</span>
+            <span class="fold" style="letter-spacing:0;">P</span>
+            <!-- pin as i -->
+            <svg width="22" height="52" viewBox="0 0 22 52" style="margin:0 2px 2px;" aria-hidden="true">
+              <circle cx="11" cy="7" r="5" fill="#ff3d14"/>
+              <path d="M11 16 C11 16 4 28 4 34 C4 40 11 48 11 48 C11 48 18 40 18 34 C18 28 11 16 11 16 Z"
+                    fill="#f5f3ef"/>
+            </svg>
+            <span>N</span>
+          </div>
+          <p class="wm xs" style="margin:0;">E A T R I P  ·  pin 이 i</p>
+        </div>
+      </section>
+
+      <!-- 08 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>08 · P is the pin</strong>
+          <span>공유 P 가 핀 헤드</span>
+        </div>
+        <div class="stage col">
+          <svg width="320" height="72" viewBox="0 0 320 72" fill="none" aria-label="pin 08">
+            <text x="0" y="52" fill="#f5f3ef" font-family="Archivo, Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="40" letter-spacing="8">EA</text>
+            <text x="72" y="52" fill="#ff3d14" font-family="Archivo, Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="40" letter-spacing="8">T</text>
+            <text x="108" y="52" fill="#f5f3ef" font-family="Archivo, Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="40" letter-spacing="8">RI</text>
+            <!-- P as pin: bowl is pin head, stem drops to tip -->
+            <g transform="translate(188,8)">
+              <path d="M4 8 V56" stroke="#ff3d14" stroke-width="6" stroke-linecap="square"/>
+              <path d="M4 8 H28 C40 8 48 16 48 26 C48 36 40 44 28 44 H4"
+                    fill="none" stroke="#ff3d14" stroke-width="6" stroke-linejoin="miter"/>
+              <path d="M4 56 L4 64 L12 56" fill="#ff3d14"/>
+              <circle cx="4" cy="66" r="3" fill="#ff3d14"/>
+            </g>
+            <text x="250" y="52" fill="#f5f3ef" font-family="Archivo, Helvetica, Arial, sans-serif"
+                  font-weight="700" font-size="40" letter-spacing="8">IN</text>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 09 -->
+      <section class="card">
+        <div class="card-h">
+          <strong>09 · Stamp pin</strong>
+          <span>인감/스탬프 · 원형</span>
+        </div>
+        <div class="stage">
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" aria-label="pin 09">
+            <circle cx="70" cy="70" r="64" stroke="#f5f3ef" stroke-width="3" fill="none"/>
+            <circle cx="70" cy="70" r="56" stroke="#2c2c31" stroke-width="1" fill="none"/>
+            <!-- mini pin -->
+            <path d="M70 28 C52 28 40 42 40 58 C40 78 70 112 70 112 C70 112 100 78 100 58 C100 42 88 28 70 28 Z"
+                  fill="#f5f3ef"/>
+            <circle cx="70" cy="56" r="12" fill="#0b0b0c"/>
+            <circle cx="70" cy="56" r="4" fill="#ff3d14"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 10 app icons -->
+      <section class="card wide">
+        <div class="card-h">
+          <strong>10 · App icon set</strong>
+          <span>정사각 512 기준 · 다크 / 웜 / 모노</span>
+        </div>
+        <div class="stage">
+          <div class="pair">
+            <!-- dark -->
+            <div class="size-col">
+              <svg width="112" height="112" viewBox="0 0 512 512" aria-label="app dark">
+                <rect width="512" height="512" fill="#0b0b0c"/>
+                <rect x="36" y="36" width="440" height="440" fill="none" stroke="#2c2c31" stroke-width="2"/>
+                <path d="M256 96 C178 96 124 156 124 224 C124 312 256 416 256 416 C256 416 388 312 388 224 C388 156 334 96 256 96 Z"
+                      fill="#f5f3ef"/>
+                <circle cx="256" cy="216" r="52" fill="#0b0b0c"/>
+                <circle cx="256" cy="216" r="18" fill="#ff3d14"/>
+              </svg>
+              <div class="size-label">dark</div>
+            </div>
+            <!-- warm paper -->
+            <div class="size-col">
+              <svg width="112" height="112" viewBox="0 0 512 512" aria-label="app warm">
+                <rect width="512" height="512" fill="#f0e8db"/>
+                <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+                <path d="M256 96 C178 96 124 156 124 224 C124 312 256 416 256 416 C256 416 388 312 388 224 C388 156 334 96 256 96 Z"
+                      fill="#2a2118"/>
+                <circle cx="256" cy="216" r="52" fill="#f0e8db"/>
+                <circle cx="256" cy="216" r="18" fill="#c9441a"/>
+              </svg>
+              <div class="size-label">warm paper</div>
+            </div>
+            <!-- mono -->
+            <div class="size-col">
+              <svg width="112" height="112" viewBox="0 0 512 512" aria-label="app mono">
+                <rect width="512" height="512" fill="#0b0b0c"/>
+                <rect x="36" y="36" width="440" height="440" fill="none" stroke="#2c2c31" stroke-width="2"/>
+                <path d="M256 96 C178 96 124 156 124 224 C124 312 256 416 256 416 C256 416 388 312 388 224 C388 156 334 96 256 96 Z"
+                      fill="#f5f3ef"/>
+                <circle cx="256" cy="216" r="52" fill="#0b0b0c"/>
+                <circle cx="256" cy="216" r="18" fill="#f5f3ef"/>
+              </svg>
+              <div class="size-label">mono</div>
+            </div>
+            <!-- ET in pin -->
+            <div class="size-col">
+              <svg width="112" height="112" viewBox="0 0 512 512" aria-label="app et pin">
+                <rect width="512" height="512" fill="#0b0b0c"/>
+                <rect x="36" y="36" width="440" height="440" fill="none" stroke="#2c2c31" stroke-width="2"/>
+                <path d="M256 88 C172 88 116 152 116 224 C116 320 256 432 256 432 C256 432 396 320 396 224 C396 152 340 88 256 88 Z"
+                      fill="none" stroke="#f5f3ef" stroke-width="16"/>
+                <g stroke="#f5f3ef" stroke-width="22" stroke-linecap="square" fill="none">
+                  <path d="M178 168 V280"/>
+                  <path d="M178 168 H258"/>
+                  <path d="M178 224 H246"/>
+                  <path d="M178 280 H258"/>
+                  <path d="M250 168 H336"/>
+                </g>
+                <path d="M302 168 V280" stroke="#ff3d14" stroke-width="22" stroke-linecap="square"/>
+              </svg>
+              <div class="size-label">ET · outline</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 11 scale -->
+      <section class="card wide">
+        <div class="card-h">
+          <strong>11 · Favicon scale</strong>
+          <span>64 · 32 · 16 — 뭉개지는 크기 확인</span>
+        </div>
+        <div class="stage">
+          <div class="sizes">
+            <div class="size-col">
+              <svg width="64" height="64" viewBox="0 0 64 64">
+                <rect width="64" height="64" fill="#0b0b0c"/>
+                <path d="M32 8 C18 8 10 18 10 28 C10 42 32 56 32 56 C32 56 54 42 54 28 C54 18 46 8 32 8 Z" fill="#f5f3ef"/>
+                <circle cx="32" cy="26" r="8" fill="#0b0b0c"/>
+                <circle cx="32" cy="26" r="3" fill="#ff3d14"/>
+              </svg>
+              <div class="size-label">64</div>
+            </div>
+            <div class="size-col">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <rect width="32" height="32" fill="#0b0b0c"/>
+                <path d="M16 4 C9 4 5 9 5 14 C5 21 16 28 16 28 C16 28 27 21 27 14 C27 9 23 4 16 4 Z" fill="#f5f3ef"/>
+                <circle cx="16" cy="13" r="4" fill="#0b0b0c"/>
+                <circle cx="16" cy="13" r="1.5" fill="#ff3d14"/>
+              </svg>
+              <div class="size-label">32</div>
+            </div>
+            <div class="size-col">
+              <svg width="16" height="16" viewBox="0 0 16 16">
+                <rect width="16" height="16" fill="#0b0b0c"/>
+                <path d="M8 2 C4.5 2 2.5 4.5 2.5 7 C2.5 10.5 8 14 8 14 C8 14 13.5 10.5 13.5 7 C13.5 4.5 11.5 2 8 2 Z" fill="#f5f3ef"/>
+                <circle cx="8" cy="6.5" r="2" fill="#ff3d14"/>
+              </svg>
+              <div class="size-label">16</div>
+            </div>
+            <!-- ET pin small -->
+            <div class="size-col">
+              <svg width="64" height="64" viewBox="0 0 64 64">
+                <rect width="64" height="64" fill="#0b0b0c"/>
+                <path d="M32 6 C17 6 10 16 10 26 C10 40 32 56 32 56 C32 56 54 40 54 26 C54 16 47 6 32 6 Z"
+                      fill="none" stroke="#f5f3ef" stroke-width="2.5"/>
+                <g stroke="#f5f3ef" stroke-width="3" stroke-linecap="square" fill="none">
+                  <path d="M22 18 V34"/>
+                  <path d="M22 18 H32"/>
+                  <path d="M22 26 H30"/>
+                  <path d="M22 34 H32"/>
+                  <path d="M30 18 H42"/>
+                </g>
+                <path d="M38 18 V34" stroke="#ff3d14" stroke-width="3" stroke-linecap="square"/>
+              </svg>
+              <div class="size-label">ET pin 64</div>
+            </div>
+            <div class="size-col">
+              <svg width="32" height="32" viewBox="0 0 32 32">
+                <rect width="32" height="32" fill="#0b0b0c"/>
+                <path d="M16 3 C8.5 3 5 8 5 13 C5 20 16 28 16 28 C16 28 27 20 27 13 C27 8 23.5 3 16 3 Z"
+                      fill="none" stroke="#f5f3ef" stroke-width="1.5"/>
+                <g stroke="#f5f3ef" stroke-width="1.8" stroke-linecap="square" fill="none">
+                  <path d="M11 9 V17"/>
+                  <path d="M11 9 H16"/>
+                  <path d="M11 13 H15"/>
+                  <path d="M11 17 H16"/>
+                  <path d="M15 9 H21"/>
+                </g>
+                <path d="M19 9 V17" stroke="#ff3d14" stroke-width="1.8" stroke-linecap="square"/>
+              </svg>
+              <div class="size-label">ET 32</div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- 12 light lockup -->
+      <section class="card wide">
+        <div class="card-h">
+          <strong>12 · Light ground lockup</strong>
+          <span>웜 페이퍼 · 헤더 대안</span>
+        </div>
+        <div class="stage light">
+          <div class="lockup">
+            <svg width="44" height="56" viewBox="0 0 120 148" fill="none" aria-hidden="true">
+              <path d="M60 8 C32 8 12 30 12 56 C12 88 60 140 60 140 C60 140 108 88 108 56 C108 30 88 8 60 8 Z"
+                    fill="#2a2118"/>
+              <circle cx="60" cy="54" r="18" fill="#f0e8db"/>
+              <circle cx="60" cy="54" r="7" fill="#c9441a"/>
+            </svg>
+            <p class="wm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- 13 abstract -->
+      <section class="card">
+        <div class="card-h">
+          <strong>13 · Abstract tear</strong>
+          <span>지도 핀이 아닌 방울 형태</span>
+        </div>
+        <div class="stage">
+          <svg width="100" height="140" viewBox="0 0 100 140" fill="none" aria-label="pin 13">
+            <path d="M50 8
+                     C22 8 8 36 8 58
+                     C8 92 50 132 50 132
+                     C50 132 92 92 92 58
+                     C92 36 78 8 50 8 Z"
+                  fill="#f5f3ef"/>
+            <!-- wax slash = fold mark, not bullseye -->
+            <path d="M34 48 L66 72" stroke="#ff3d14" stroke-width="8" stroke-linecap="square"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 14 hairline map cell -->
+      <section class="card">
+        <div class="card-h">
+          <strong>14 · Contact-sheet pin</strong>
+          <span>콘택트 시트 셀 + 핀</span>
+        </div>
+        <div class="stage">
+          <svg width="140" height="140" viewBox="0 0 140 140" fill="none" aria-label="pin 14">
+            <rect x="8" y="8" width="124" height="124" stroke="#2c2c31" stroke-width="1" fill="none"/>
+            <rect x="16" y="16" width="108" height="108" stroke="#2c2c31" stroke-width="1" fill="none"/>
+            <!-- grid hints -->
+            <path d="M16 52 H124 M16 88 H124 M52 16 V124 M88 16 V124"
+                  stroke="#2c2c31" stroke-width="1"/>
+            <!-- pin on a cell -->
+            <path d="M70 36 C56 36 46 48 46 60 C46 76 70 104 70 104 C70 104 94 76 94 60 C94 48 84 36 70 36 Z"
+                  fill="#f5f3ef"/>
+            <circle cx="70" cy="58" r="10" fill="#0b0b0c"/>
+            <circle cx="70" cy="58" r="4" fill="#ff3d14"/>
+          </svg>
+        </div>
+      </section>
+
+      <!-- 15 stacked brand -->
+      <section class="card wide">
+        <div class="card-h">
+          <strong>15 · Stacked mark + word</strong>
+          <span>랜딩 / OG 용 세로 락업</span>
+        </div>
+        <div class="stage col">
+          <svg width="72" height="92" viewBox="0 0 120 148" fill="none" aria-hidden="true">
+            <path d="M60 8 C32 8 12 30 12 56 C12 88 60 140 60 140 C60 140 108 88 108 56 C108 30 88 8 60 8 Z"
+                  fill="#f5f3ef"/>
+            <circle cx="60" cy="54" r="20" fill="#0b0b0c"/>
+            <circle cx="60" cy="54" r="8" fill="#ff3d14"/>
+          </svg>
+          <p class="wm sm">EA<span class="fold">T</span>RI<span class="fold">P</span>IN</p>
+          <p class="wm xs" style="margin:0;">eat · trip · pin</p>
+        </div>
+      </section>
+
+    </div>
+
+    <p class="footer-note">
+      비교 기준: ① 16px 에서 뭉개지지 않는가 ② 색을 빼도 핀이 핀으로 읽히는가
+      ③ 유튜브 빨강/재생 버튼과 안 겹치는가 ④ 현재 채택안(ET monogram + wax wordmark)보다
+      이름 접힘(T·P)을 더 잘 설명하는가.
+      파일: <code>docs/logo-explorations/pin-samples.html</code>
+    </p>
+  </div>
+</body>
+</html>

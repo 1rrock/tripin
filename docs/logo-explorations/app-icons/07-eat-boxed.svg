@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT app icon — three contact cells</title>
+  <rect width="512" height="512" fill="#0b0b0c"/>
+  <!-- three cells -->
+  <rect x="48" y="168" width="124" height="176" fill="none" stroke="#2c2c31" stroke-width="2"/>
+  <rect x="194" y="168" width="124" height="176" fill="none" stroke="#2c2c31" stroke-width="2"/>
+  <rect x="340" y="168" width="124" height="176" fill="none" stroke="#2c2c31" stroke-width="2"/>
+  <g
+    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="92"
+    text-anchor="middle"
+    fill="#f5f3ef"
+  >
+    <text x="110" y="286">E</text>
+    <text x="256" y="286">A</text>
+    <text x="402" y="286" fill="#ff3d14">T</text>
+  </g>
+</svg>

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT overlap · opacity so every letter reads through</title>
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+
+  <!-- Same geometry as 01; semi-transparent so overlaps mix instead of covering -->
+  <g fill="none" stroke="#2a2118" stroke-width="42" stroke-linecap="square" stroke-linejoin="miter" opacity="0.92">
+    <path d="M 140 160 V 352"/>
+    <path d="M 140 160 H 280"/>
+    <path d="M 140 256 H 250"/>
+    <path d="M 140 352 H 280"/>
+  </g>
+  <g fill="none" stroke="#6e5c4a" stroke-width="42" stroke-linecap="square" stroke-linejoin="miter" opacity="0.78">
+    <path d="M 190 352 L 260 160 L 330 352"/>
+    <path d="M 220 286 H 300"/>
+  </g>
+  <g fill="none" stroke="#c9441a" stroke-width="42" stroke-linecap="square" stroke-linejoin="miter" opacity="0.9">
+    <path d="M 250 160 H 380"/>
+    <path d="M 320 160 V 352"/>
+  </g>
+</svg>

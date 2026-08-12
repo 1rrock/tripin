@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { ConfirmClient, type City, type Creator, type Video } from "./ConfirmClient";
 
-export const metadata: Metadata = { title: "손입력 — Greatripin 어드민" };
+export const metadata: Metadata = { title: "손입력 — Eatripin 어드민" };
 export const dynamic = "force-dynamic";
 
 /**

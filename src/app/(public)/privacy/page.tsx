@@ -23,8 +23,8 @@ export async function generateMetadata(): Promise<Metadata> {
   const title = locale === "ko" ? "개인정보처리방침" : "Privacy";
   const description =
     locale === "ko"
-      ? "Greatripin이 수집하는 개인정보와 쿠키에 대한 안내."
-      : "What personal data and cookies Greatripin collects.";
+      ? "Eatripin이 수집하는 개인정보와 쿠키에 대한 안내."
+      : "What personal data and cookies Eatripin collects.";
   return {
     title,
     description,

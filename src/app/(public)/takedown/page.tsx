@@ -21,7 +21,7 @@ const body = {
 
 /** siteUrl 이 아직 로컬(localhost)이면 브랜드 도메인으로 대체 — 실제 배포 도메인이 정해지면 자연히 그 값을 쓴다. */
 function contactEmail(): string {
-  let host = "greatripin.app";
+  let host = "eatripin.app";
   try {
     const parsed = new URL(publicEnv.siteUrl);
     if (parsed.hostname !== "localhost") host = parsed.hostname;

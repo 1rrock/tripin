@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · EAT type07 color combos</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #f0e8db;
+      --sheet: #faf6ef;
+      --hairline: #ddd0bc;
+      --edge: #a89278;
+      --ink: #2a2118;
+      --dim: #6e5c4a;
+      --wax: #c9441a;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--ink);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 48px 28px 88px;
+    }
+    .wrap { max-width: 1120px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.24em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    h1 {
+      margin: 0 0 10px;
+      font-size: 26px;
+      font-weight: 800;
+    }
+    .lede {
+      margin: 0 0 24px;
+      max-width: 50em;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.65;
+    }
+    .lede strong { color: var(--ink); }
+
+    .fix {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+      font-size: 12px;
+    }
+    .fix span {
+      padding: 6px 10px;
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 6px;
+      color: var(--dim);
+    }
+    .fix em {
+      font-style: normal;
+      color: var(--ink);
+      font-weight: 700;
+    }
+
+    .before-after {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 700px) {
+      .before-after { grid-template-columns: 1fr; }
+    }
+    .ba {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .ba header {
+      padding: 12px 14px;
+      border-bottom: 1px solid var(--hairline);
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .ba header.old { color: var(--dim); }
+    .ba header.new { color: var(--wax); font-weight: 700; }
+    .ba .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 32px;
+      min-height: 240px;
+      background: var(--ground);
+    }
+    .ba .stage img {
+      width: 168px;
+      height: 168px;
+      border-radius: 22%;
+      box-shadow: 0 10px 28px -12px rgb(60 40 20 / 0.28);
+    }
+    .ba .stage.old img { opacity: 0.75; }
+
+    .section-title {
+      margin: 0 0 14px;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 0.2em;
+      text-transform: uppercase;
+      color: var(--dim);
+      border-bottom: 1px solid var(--hairline);
+      padding-bottom: 10px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 14px;
+      margin-bottom: 32px;
+    }
+    @media (max-width: 960px) {
+      .grid { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 520px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .card {
+      background: var(--sheet);
+      border: 1px solid var(--hairline);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    .card header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--hairline);
+    }
+    .card header strong {
+      display: block;
+      font-size: 11px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      margin-bottom: 4px;
+    }
+    .card header span {
+      font-size: 12px;
+      color: var(--dim);
+      line-height: 1.4;
+    }
+    .dots {
+      display: flex;
+      gap: 4px;
+      margin-top: 6px;
+    }
+    .dots i {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      border: 1px solid rgba(42,33,24,0.15);
+      display: block;
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 12px;
+      min-height: 210px;
+      background: var(--ground);
+    }
+    .stage.ink { background: #2a2118; }
+    .stage.sheet { background: #faf6ef; }
+    .stage img {
+      width: 148px;
+      height: 148px;
+      border-radius: 22%;
+      box-shadow: 0 8px 22px -10px rgb(60 40 20 / 0.25);
+    }
+
+    .footer {
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.65;
+      max-width: 52em;
+    }
+    .footer code {
+      font-size: 11px;
+      color: var(--ink);
+      background: rgba(42, 33, 24, 0.06);
+      padding: 1px 5px;
+      border-radius: 3px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">Type07 lockup · color matrix</p>
+    <h1>07 느낌 유지 · E 보이게 · 색 조합</h1>
+    <p class="lede">
+      겹침 구조는 07과 같고, <strong>E를 왼쪽·맨 앞·불투명</strong>으로 두어 읽히게 했다.
+      <strong>A는 가운데·반투명</strong>이라 E 위로 겹쳐도 E가 비친다.
+      아래는 같은 자리값에 색만 바꾼 시안.
+    </p>
+
+    <div class="fix">
+      <span>위치 <em>E 214 · A 256 · T 292</em></span>
+      <span>크기 <em>300 / 800</em></span>
+      <span>A 기본 투명도 <em>~0.5</em></span>
+    </div>
+
+    <div class="before-after">
+      <article class="ba">
+        <header class="old">이전 07 · E 가려짐</header>
+        <div class="stage old">
+          <img src="eat-overlap-07-type-tight.svg" alt="old 07" />
+        </div>
+      </article>
+      <article class="ba">
+        <header class="new">개선 · E 앞 + A 투명</header>
+        <div class="stage">
+          <img src="eat-type07-c01.svg" alt="improved" />
+        </div>
+      </article>
+    </div>
+
+    <p class="section-title">Paper ground · color swaps</p>
+    <div class="grid">
+      <article class="card">
+        <header>
+          <strong>C01 · 기본</strong>
+          <span>E ink · A dim · T wax</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c01.svg" alt="c01" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C02 · A 왁스</strong>
+          <span>E ink · A wax · T dim</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#c9441a"></i>
+            <i style="background:#6e5c4a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c02.svg" alt="c02" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C03 · E 왁스</strong>
+          <span>E wax · A dim · T ink</span>
+          <div class="dots">
+            <i style="background:#c9441a"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#2a2118"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c03.svg" alt="c03" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C04 · E dim</strong>
+          <span>E dim · A ink soft · T wax</span>
+          <div class="dots">
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#2a2118"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c04.svg" alt="c04" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C05 · A edge</strong>
+          <span>E ink · A edge · T wax</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#a89278"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c05.svg" alt="c05" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C06 · A 더 옅게</strong>
+          <span>E ink · A edge light · T wax</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#a89278"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c06.svg" alt="c06" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C07 · sheet 지면</strong>
+          <span>크림 시트 위 기본 팔레트</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage sheet"><img src="eat-type07-c07.svg" alt="c07" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C11 · 1도 잉크</strong>
+          <span>색 없이 opacity 계층만</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#2a2118;opacity:.4"></i>
+            <i style="background:#2a2118;opacity:.6"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c11.svg" alt="c11" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C12 · A 더 진하게</strong>
+          <span>E ink · A dim 0.72 · T wax</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c12.svg" alt="c12" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C13 · A soft</strong>
+          <span>E ink · A 0.4 · T wax solid</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c13.svg" alt="c13" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C14 · 접힘 A 왁스</strong>
+          <span>E+T ink · A wax soft</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#c9441a"></i>
+            <i style="background:#2a2118"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c14.svg" alt="c14" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C15 · 더 타이트</strong>
+          <span>위치 조금 더 붙임, E 유지</span>
+          <div class="dots">
+            <i style="background:#2a2118"></i>
+            <i style="background:#6e5c4a"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage"><img src="eat-type07-c15.svg" alt="c15" /></div>
+      </article>
+    </div>
+
+    <p class="section-title">Ink field · dark app-icon feel</p>
+    <div class="grid">
+      <article class="card">
+        <header>
+          <strong>C08 · cream E</strong>
+          <span>E cream · A edge · T wax</span>
+          <div class="dots">
+            <i style="background:#f0e8db"></i>
+            <i style="background:#a89278"></i>
+            <i style="background:#c9441a"></i>
+          </div>
+        </header>
+        <div class="stage ink"><img src="eat-type07-c08.svg" alt="c08" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C09 · wax E</strong>
+          <span>E wax · A cream soft · T edge</span>
+          <div class="dots">
+            <i style="background:#c9441a"></i>
+            <i style="background:#f0e8db"></i>
+            <i style="background:#a89278"></i>
+          </div>
+        </header>
+        <div class="stage ink"><img src="eat-type07-c09.svg" alt="c09" /></div>
+      </article>
+      <article class="card">
+        <header>
+          <strong>C10 · wax A</strong>
+          <span>E cream · A wax · T edge</span>
+          <div class="dots">
+            <i style="background:#f0e8db"></i>
+            <i style="background:#c9441a"></i>
+            <i style="background:#a89278"></i>
+          </div>
+        </header>
+        <div class="stage ink"><img src="eat-type07-c10.svg" alt="c10" /></div>
+      </article>
+    </div>
+
+    <p class="footer">
+      구조: A 먼저(반투명) → T → E 마지막(불투명, 왼쪽). 그래서 E 왼쪽 카운터가 항상 보임.<br />
+      파일: <code>eat-type07-c01.svg</code> … <code>c15.svg</code> · 프로덕션 미반영. 번호 알려주시면 그걸로 붙입니다.
+    </p>
+  </div>
+</body>
+</html>

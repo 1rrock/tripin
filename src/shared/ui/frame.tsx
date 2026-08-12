@@ -4,10 +4,11 @@
  * 서버 컴포넌트에서도 쓸 수 있도록 훅이 없다. 핸들러가 필요한 컨트롤은
  * 쓰는 쪽(클라이언트 컴포넌트)에서 onClick 을 넘긴다.
  *
- * 아이콘은 직접 그린 스트로크 세트다. 이전 월드의 꽉 찬 검정 픽토그램과 반대로,
- * 여기서는 선이 얇고 열려 있어야 한다 — 왁스 연필로 그은 주석에 가깝다.
- * 전부 24 그리드 / stroke 1.6 / round cap 으로 통일. 이 값을 아이콘마다
- * 다르게 주기 시작하면 세트가 아니라 그림 모음이 된다.
+ * 아이콘 두 층:
+ *  · **stroke** — 열린 선. 액션·메타 등 장식용. 24 / 1.6 / round.
+ *  · **dual**   — 닫힌 패스(`.ig-body`). 기본은 외곽선, 탭·헤더 활성에서
+ *                 내부를 currentColor 로 채운다(시안 7 · Classic Nav + Ink).
+ *                 구멍은 evenodd 로 패스에 심어 배경색에 묶이지 않게 한다.
  */
 
 import Link from "next/link";
@@ -18,7 +19,7 @@ import { channelAvatar } from "@/shared/lib/youtube";
 
 type IconProps = React.SVGProps<SVGSVGElement>;
 
-function stroke(path: ReactNode) {
+function glyph(path: ReactNode) {
   return function Glyph(props: IconProps) {
     return (
       <svg
@@ -38,70 +39,87 @@ function stroke(path: ReactNode) {
 }
 
 export const Icon = {
-  search: stroke(
+  search: glyph(
     <>
       <circle cx="10.5" cy="10.5" r="6.5" />
       <path d="M15.4 15.4 20 20" />
     </>,
   ),
-  chevron: stroke(<path d="m9 5 7 7-7 7" />),
-  back: stroke(
+  chevron: glyph(<path d="m9 5 7 7-7 7" />),
+  back: glyph(
     <>
       <path d="M20 12H4" />
       <path d="m10 6-6 6 6 6" />
     </>,
   ),
   /** 사이트 밖으로 나가는 링크 — 유튜브·지도 앱 */
-  out: stroke(
+  out: glyph(
     <>
       <path d="M8 16 20 4" />
       <path d="M14 4h6v6" />
       <path d="M18 14v5a1 1 0 0 1-1 1H5a1 1 0 0 1-1-1V7a1 1 0 0 1 1-1h5" />
     </>,
   ),
-  pin: stroke(
-    <>
-      <path d="M12 21s7-6.2 7-11a7 7 0 1 0-14 0c0 4.8 7 11 7 11Z" />
-      <circle cx="12" cy="10" r="2.6" />
-    </>,
+  /** 지역 — 지도 핀. 구멍 evenodd → 탭 활성 시 내부 채움 */
+  pin: glyph(
+    <path
+      className="ig-body"
+      fillRule="evenodd"
+      d="M12 21s6.2-5.6 6.2-10.2a6.2 6.2 0 1 0-12.4 0C5.8 15.4 12 21 12 21zm0-8.65a2.15 2.15 0 1 0 0-4.3 2.15 2.15 0 0 0 0 4.3z"
+    />,
   ),
-  clock: stroke(
+  clock: glyph(
     <>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M12 7v5.2l3.2 2" />
     </>,
   ),
-  play: stroke(<path d="M8 5.5v13l11-6.5-11-6.5Z" />),
-  map: stroke(
+  play: glyph(<path d="M8 5.5v13l11-6.5-11-6.5Z" />),
+  map: glyph(
     <>
       <path d="M9 4 3.6 6.2v13.4L9 17.4l6 2.2 5.4-2.2V4L15 6.2 9 4Z" />
       <path d="M9 4v13.4M15 6.2V19.6" />
     </>,
   ),
-  close: stroke(<path d="m6 6 12 12M18 6 6 18" />),
-  menu: stroke(<path d="M4 7h16M4 12h16M4 17h16" />),
-  /** 홈 — 이 사이트의 홈은 '시트'지만, 하단 탭에서 집이 아닌 걸 홈으로 읽는 사람은 없다 */
-  home: stroke(
+  close: glyph(<path d="m6 6 12 12M18 6 6 18" />),
+  menu: glyph(<path d="M4 7h16M4 12h16M4 17h16" />),
+  /**
+   * 홈 — 집. 하단 탭에서 집이 아닌 걸 홈으로 읽는 사람은 없다.
+   * 문 구멍 evenodd → 채움 시 배경이 비친다.
+   */
+  home: glyph(
+    <path
+      className="ig-body"
+      fillRule="evenodd"
+      d="M3.5 10.8 12 3.6l8.5 7.2v9.1a.9.9 0 0 1-.9.9H4.4a.9.9 0 0 1-.9-.9v-9.1zm6 3.7h5v6.6h-5z"
+    />,
+  ),
+  /**
+   * 종류 — 분류 꼬리표. 햄버거(menu)를 쓰면 하단 탭에서 '더보기'로 읽힌다.
+   * 구멍 evenodd.
+   */
+  tag: glyph(
+    <path
+      className="ig-body"
+      fillRule="evenodd"
+      d="M3.6 11V5.1A1.1 1.1 0 0 1 4.7 4h5.5c.3 0 .6.12.82.34l7.35 7.35a1.4 1.4 0 0 1 0 1.98l-5.1 5.1a1.4 1.4 0 0 1-1.98 0L3.94 11.42A1.1 1.1 0 0 1 3.6 11zm4.3-1.65a1.35 1.35 0 1 0 0-2.7 1.35 1.35 0 0 0 0 2.7z"
+    />,
+  ),
+  /**
+   * 채널 — 재생 목록(카드 + 재생 삼각). 목록 줄은 evenodd 구멍.
+   * 이 서비스에서 채널은 사람 아바타가 아니라 롤(목록)이다.
+   */
+  channel: glyph(
     <>
-      <path d="M3.6 10.6 12 3.7l8.4 6.9" />
-      <path d="M5.8 12.2v7.1a1 1 0 0 0 1 1h10.4a1 1 0 0 0 1-1v-7.1" />
+      <path
+        className="ig-body"
+        fillRule="evenodd"
+        d="M3.2 5h12v14H3.2zm2.5 3.5h6.8v1.5H5.7zm0 3.1h6.8v1.5H5.7zm0 3.1h4.4v1.5H5.7z"
+      />
+      <path className="ig-body" d="M16.4 9.4 21 12.3l-4.6 2.9z" />
     </>,
   ),
-  /** 종류 — 분류 꼬리표. 햄버거(menu)를 쓰면 하단 탭에서 '더보기'로 읽힌다 */
-  tag: stroke(
-    <>
-      <path d="M4 11.3V5.4A1.4 1.4 0 0 1 5.4 4h5.9a2 2 0 0 1 1.4.6l7 7a1.6 1.6 0 0 1 0 2.3l-5.4 5.4a1.6 1.6 0 0 1-2.3 0l-7-7a2 2 0 0 1-.6-1.4Z" />
-      <circle cx="8.3" cy="8.3" r="1.3" />
-    </>,
-  ),
-  /** 채널 — 사람이 아니라 '재생 목록'으로 그린다. 이 서비스에서 채널은 롤이다 */
-  channel: stroke(
-    <>
-      <path d="M4 6h11M4 12h11M4 18h7" />
-      <path d="m17 11 4 2.5-4 2.5v-5Z" />
-    </>,
-  ),
-  globe: stroke(
+  globe: glyph(
     <>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M3.5 12h17" />

@@ -1,8 +1,11 @@
 /**
- * GREATRIPIN 마크 — GT monogram (logo explorations §07).
+ * EATRIPIN 마크 — Slash coral.
  *
- * G + T. T 줄기만 왁스(공유 접힘). 핀·지도 아이콘 아님.
- * 인라인용: 배경 없음, 획은 currentColor, stem 은 --wax.
+ * 왁스 면 + 잉크 슬래시 한 획. 콘택트 시트 "표시" 제스처.
+ * 핀·지도 아이콘 아님.
+ *
+ * 인라인(헤더): 왁스 면 + 잉크 슬래시 (--paper).
+ * 앱 아이콘: 고정 헥스 (파비콘·OG 는 CSS 변수 없음).
  */
 
 type MarkProps = {
@@ -12,78 +15,46 @@ type MarkProps = {
   title?: string;
 };
 
+/**
+ * 512 기준 광학 중심 −45° 슬래시.
+ * 끝단을 안쪽으로 두어 square cap 이 모서리에 붙지 않게.
+ * stroke 68 — 72 보다 살짝 가볍게, 16px 에서도 한 획으로 남음.
+ */
+const SLASH = "M 148 364 L 364 148";
+const SLASH_WIDTH = 68;
+
 export function Mark({ className, decorative = true, title }: MarkProps) {
   return (
     <svg
-      viewBox="120 140 280 232"
+      viewBox="0 0 512 512"
       className={className}
       fill="none"
       aria-hidden={decorative ? true : undefined}
       role={decorative ? undefined : "img"}
     >
       {!decorative && title ? <title>{title}</title> : null}
-      {/* G: square C + chin + spur (E 로 읽히지 않게 중바는 왼쪽에서 안 뺀다) */}
-      <g
-        stroke="currentColor"
-        strokeWidth="40"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      >
-        <path d="M 140 160 H 292" />
-        <path d="M 140 160 V 352" />
-        <path d="M 140 352 H 292" />
-        <path d="M 292 352 V 256 H 220" />
-      </g>
-      {/* T bar */}
+      {/* 헤더 28px 에서도 면으로 읽히게 약한 라운드 */}
+      <rect width="512" height="512" rx="88" fill="var(--wax)" />
       <path
-        d="M 260 160 H 380"
-        stroke="currentColor"
-        strokeWidth="40"
-        strokeLinecap="square"
-      />
-      {/* shared fold stem — wax */}
-      <path
-        d="M 328 160 V 352"
-        stroke="var(--wax)"
-        strokeWidth="40"
+        d={SLASH}
+        stroke="var(--paper)"
+        strokeWidth={SLASH_WIDTH}
         strokeLinecap="square"
       />
     </svg>
   );
 }
 
-/** 앱 아이콘·파비콘용 풀 프레임 (웜 페이퍼 지면 + hairline 셀) */
+/** 앱 아이콘·파비콘용 (웜 페이퍼 월드 토큰 고정) */
 export function MarkAppIcon({ className }: { className?: string }) {
   return (
-    <svg viewBox="0 0 512 512" className={className} role="img" aria-label="Greatripin">
-      <rect width="512" height="512" fill="#f0e8db" />
-      <rect
-        x="36"
-        y="36"
-        width="440"
-        height="440"
-        fill="none"
-        stroke="#ddd0bc"
-        strokeWidth="2"
-      />
-      <g
+    <svg viewBox="0 0 512 512" className={className} role="img" aria-label="Eatripin">
+      <rect width="512" height="512" fill="#c9441a" />
+      <path
+        d={SLASH}
         fill="none"
         stroke="#2a2118"
-        strokeWidth="40"
-        strokeLinecap="square"
-        strokeLinejoin="miter"
-      >
-        <path d="M 140 160 H 292" />
-        <path d="M 140 160 V 352" />
-        <path d="M 140 352 H 292" />
-        <path d="M 292 352 V 256 H 220" />
-        <path d="M 260 160 H 380" />
-      </g>
-      <path
-        d="M 328 160 V 352"
-        fill="none"
-        stroke="#c9441a"
-        strokeWidth="40"
+        strokeWidth={SLASH_WIDTH}
         strokeLinecap="square"
       />
     </svg>

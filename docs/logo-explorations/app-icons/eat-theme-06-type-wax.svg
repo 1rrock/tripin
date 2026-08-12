@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT · type with wax T</title>
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+  <!-- EA ink + T wax via two text runs for exact fold mark -->
+  <text
+    x="256" y="298"
+    text-anchor="middle"
+    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="148"
+    letter-spacing="0.06em"
+  >
+    <tspan fill="#2a2118">EA</tspan><tspan fill="#c9441a">T</tspan>
+  </text>
+</svg>

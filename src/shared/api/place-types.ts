@@ -16,6 +16,11 @@ export interface TypeRow {
   placeCount: number;
   cityCount: number;
   creatorCount: number;
+  videoCount: number;
+  /** 최근 영상 순 — 종류 인덱스의 컷 스트립이 이 컷들을 쓴다. 제목은 alt 용 원문 그대로 */
+  recentVideos: { youtubeId: string; title: string }[];
+  /** 이 종류가 도시별로 어떻게 갈렸는지 — 많은 순. 인덱스에서 분포를 보여줄 때 쓴다 */
+  cities: { slug: string; name: string; nameEn: string; count: number }[];
 }
 
 export interface TypePlaceSource {
@@ -59,7 +64,7 @@ const loadGraph = cachePublic(async () => {
     await Promise.all([
       supabase.from("cities").select("id, slug, name, name_en"),
       supabase.from("creators").select("id, slug, display_name"),
-      supabase.from("videos").select("id, youtube_video_id, title, creator_id"),
+      supabase.from("videos").select("id, youtube_video_id, title, creator_id, published_at"),
       supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
       supabase
         .from("places")
@@ -98,9 +103,26 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
     set.add(video.creator_id);
   }
 
+  // place → 그 장소가 나온 영상들 (컷 스트립의 재료)
+  const placeVideos = new Map<string, Set<string>>();
+  for (const link of links) {
+    const video = videoById.get(link.video_id);
+    if (!video || !creatorById.has(video.creator_id)) continue;
+    let set = placeVideos.get(link.place_id);
+    if (!set) placeVideos.set(link.place_id, (set = new Set()));
+    set.add(video.id);
+  }
+
+  const typeOfPlace = new Map(places.map((p) => [p.id, p.place_type as PlaceType]));
+
   const byType = new Map<
     PlaceType,
-    { places: Set<string>; cities: Set<string>; creators: Set<string> }
+    {
+      places: Set<string>;
+      cities: Map<string, number>;
+      creators: Set<string>;
+      videos: Set<string>;
+    }
   >();
 
   for (const p of places) {
@@ -110,12 +132,13 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
     if (!FILTERABLE_TYPES.includes(type)) continue;
     let bucket = byType.get(type);
     if (!bucket) {
-      bucket = { places: new Set(), cities: new Set(), creators: new Set() };
+      bucket = { places: new Set(), cities: new Map(), creators: new Set(), videos: new Set() };
       byType.set(type, bucket);
     }
     bucket.places.add(p.id);
-    bucket.cities.add(p.city_id);
+    bucket.cities.set(p.city_id, (bucket.cities.get(p.city_id) ?? 0) + 1);
     for (const cid of placeCreators.get(p.id)!) bucket.creators.add(cid);
+    for (const vid of placeVideos.get(p.id) ?? []) bucket.videos.add(vid);
   }
 
   return FILTERABLE_TYPES.map((type) => {
@@ -126,6 +149,32 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
       placeCount: b.places.size,
       cityCount: b.cities.size,
       creatorCount: b.creators.size,
+      videoCount: b.videos.size,
+      /* 최근순이 아니라 **대표성순**이다. 최근순으로 뽑으면 한 영상이 여러 종류의
+         컷을 동시에 차지한다 — 실제로 '일본 1박 만원숙소' 한 편이 명소·숙소 양쪽의
+         첫 컷이 됐다. 그 영상 안에서 이 종류의 장소를 몇 곳 다녔는지로 먼저 줄을
+         세우면, 종류마다 그 종류를 가장 많이 다룬 편이 앞으로 온다. */
+      recentVideos: [...b.videos]
+        .map((id) => videoById.get(id)!)
+        .map((v) => ({
+          v,
+          weight: links.filter(
+            (l) => l.video_id === v.id && typeOfPlace.get(l.place_id) === type,
+          ).length,
+        }))
+        .sort(
+          (a, b2) =>
+            b2.weight - a.weight ||
+            (b2.v.published_at ?? "").localeCompare(a.v.published_at ?? ""),
+        )
+        .slice(0, 4)
+        .map(({ v }) => ({ youtubeId: v.youtube_video_id, title: v.title })),
+      cities: [...b.cities.entries()]
+        .map(([cityId, count]) => {
+          const c = cityById.get(cityId)!;
+          return { slug: c.slug, name: c.name, nameEn: c.name_en, count };
+        })
+        .sort((a, b2) => b2.count - a.count),
     } satisfies TypeRow;
   }).filter((r): r is TypeRow => r !== null);
 }

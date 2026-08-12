@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT · warm paper ground · ink stroke</title>
+  <!-- theme: --ground #f0e8db · --paper #2a2118 · --hairline #ddd0bc -->
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+
+  <!-- EAT geometric stroke, balanced in square -->
+  <g fill="none" stroke="#2a2118" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter">
+    <!-- E -->
+    <path d="M 72 156 V 356"/>
+    <path d="M 72 156 H 168"/>
+    <path d="M 72 256 H 152"/>
+    <path d="M 72 356 H 168"/>
+    <!-- A -->
+    <path d="M 212 356 L 268 156 L 324 356"/>
+    <path d="M 234 292 H 302"/>
+    <!-- T -->
+    <path d="M 360 156 H 456"/>
+    <path d="M 408 156 V 356"/>
+  </g>
+</svg>

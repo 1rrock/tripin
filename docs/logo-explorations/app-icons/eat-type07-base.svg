@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT type-overlap base · E readable · A translucent · T wax</title>
+  <!--
+    07 느낌 유지: 세 글자가 거의 한 폭으로 겹침.
+    E 가시성: ① E를 조금 더 왼쪽 ② A 투명도 낮춤 ③ 그리는 순서 A→T→E 아님, A 뒤로 E·T 앞이되
+       왼쪽 외곽은 E가 덮이지 않게 오프셋.
+  -->
+  <rect width="512" height="512" fill="#f0e8db"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#ddd0bc" stroke-width="2"/>
+
+  <g
+    font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
+    font-weight="800"
+    font-size="300"
+    text-anchor="middle"
+  >
+    <!-- A back, translucent so E spine/counter shows through -->
+    <text x="256" y="348" fill="#6e5c4a" opacity="0.55">A</text>
+    <!-- T right -->
+    <text x="292" y="348" fill="#c9441a" opacity="0.92">T</text>
+    <!-- E last on left — left edge fully readable -->
+    <text x="214" y="348" fill="#2a2118">E</text>
+  </g>
+</svg>

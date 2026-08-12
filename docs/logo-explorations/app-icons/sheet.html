@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Eatripin · app icon samples (EAT)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Archivo:wght@600;700;800&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --ground: #0b0b0c;
+      --sheet: #141416;
+      --hair: #2c2c31;
+      --paper: #f5f3ef;
+      --dim: #9a9892;
+      --wax: #ff3d14;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      background: var(--ground);
+      color: var(--paper);
+      font-family: Archivo, "Helvetica Neue", Helvetica, Arial, sans-serif;
+      padding: 44px 36px 72px;
+    }
+    .wrap { max-width: 1080px; margin: 0 auto; }
+    .eyebrow {
+      margin: 0 0 8px;
+      font-size: 11px;
+      letter-spacing: 0.22em;
+      text-transform: uppercase;
+      color: var(--dim);
+    }
+    h1 {
+      margin: 0 0 8px;
+      font-size: 26px;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .lede {
+      margin: 0 0 32px;
+      max-width: 52em;
+      color: var(--dim);
+      font-size: 14px;
+      line-height: 1.55;
+    }
+    .lede strong { color: var(--paper); }
+    .note {
+      display: inline-block;
+      margin-bottom: 28px;
+      padding: 10px 14px;
+      border: 1px solid var(--hair);
+      border-radius: 4px;
+      font-size: 12px;
+      color: var(--dim);
+      letter-spacing: 0.04em;
+    }
+    .note em { color: var(--wax); font-style: normal; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+    }
+    .card {
+      background: var(--sheet);
+      border: 1px solid var(--hair);
+      border-radius: 6px;
+      overflow: hidden;
+    }
+    .card header {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--hair);
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .card header strong {
+      font-size: 11px;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+    }
+    .card header span {
+      font-size: 11px;
+      color: var(--dim);
+    }
+    .stage {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 28px 16px;
+      min-height: 200px;
+    }
+    .stage img {
+      width: 148px;
+      height: 148px;
+      display: block;
+      border-radius: 22%;
+      /* iOS-ish mask feel without cropping content too hard */
+      box-shadow: 0 0 0 1px rgba(255,255,255,0.04);
+    }
+    .stage.sizes {
+      gap: 18px;
+      flex-wrap: wrap;
+    }
+    .stage.sizes img.lg { width: 120px; height: 120px; border-radius: 26px; }
+    .stage.sizes img.md { width: 72px; height: 72px; border-radius: 16px; }
+    .stage.sizes img.sm { width: 40px; height: 40px; border-radius: 10px; }
+    .stage.sizes img.xs { width: 24px; height: 24px; border-radius: 6px; }
+    .wide { grid-column: 1 / -1; }
+    .footer {
+      margin-top: 28px;
+      color: var(--dim);
+      font-size: 12px;
+      line-height: 1.6;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <p class="eyebrow">App icon only · monogram samples</p>
+    <h1>EAT — not ET</h1>
+    <p class="lede">
+      앱 아이콘 후보. <strong>EAT</strong> 로 읽히게 (영화 ET 연상 회피).
+      웹 워드마크 <strong>EATRIPIN</strong> 은 그대로 유지.
+      이름 첫 덩어리 <em>eat</em> + 공유 T(trip 접힘)를 아이콘에 담는 방향.
+    </p>
+    <div class="note">시안 12종 · 프로덕션 <code>Mark.tsx</code> / 파비콘은 <em>아직 안 바꿈</em></div>
+
+    <div class="grid">
+      <section class="card">
+        <header>
+          <strong>01 · Stroke geometry</strong>
+          <span>기하 획 · 다크</span>
+        </header>
+        <div class="stage"><img src="01-eat-stroke-dark.svg" alt="01" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>02 · Wax T</strong>
+          <span>기하 + T만 왁스</span>
+        </header>
+        <div class="stage"><img src="02-eat-wax-t.svg" alt="02" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>03 · Type dark</strong>
+          <span>Archivo 800</span>
+        </header>
+        <div class="stage"><img src="03-eat-type-dark.svg" alt="03" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>04 · Type + wax T</strong>
+          <span>EA 페이퍼 · T 왁스</span>
+        </header>
+        <div class="stage"><img src="04-eat-type-wax.svg" alt="04" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>05 · Warm paper</strong>
+          <span>앱 기본 지면과 동일</span>
+        </header>
+        <div class="stage"><img src="05-eat-warm-paper.svg" alt="05" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>06 · Stacked</strong>
+          <span>세로 3단 · T 왁스</span>
+        </header>
+        <div class="stage"><img src="06-eat-stacked.svg" alt="06" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>07 · Contact cells</strong>
+          <span>3칸 콘택트 시트</span>
+        </header>
+        <div class="stage"><img src="07-eat-boxed.svg" alt="07" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>08 · Heavy mono</strong>
+          <span>프레임 없음 · 꽉 찬 타입</span>
+        </header>
+        <div class="stage"><img src="08-eat-mono-heavy.svg" alt="08" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>09 · Outline</strong>
+          <span>외곽선 + 프레임</span>
+        </header>
+        <div class="stage"><img src="09-eat-outline-only.svg" alt="09" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>10 · Stamp</strong>
+          <span>잉크 스탬프 블록</span>
+        </header>
+        <div class="stage"><img src="10-eat-stamp.svg" alt="10" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>11 · Corner mark</strong>
+          <span>왁스 인덱스 점</span>
+        </header>
+        <div class="stage"><img src="11-eat-corner-mark.svg" alt="11" /></div>
+      </section>
+
+      <section class="card">
+        <header>
+          <strong>12 · Tight track</strong>
+          <span>자간 압축</span>
+        </header>
+        <div class="stage"><img src="12-eat-tight-track.svg" alt="12" /></div>
+      </section>
+
+      <section class="card wide">
+        <header>
+          <strong>Scale check · 04 Type + wax T</strong>
+          <span>120 · 72 · 40 · 24 — 작아도 EAT 로 읽히는지</span>
+        </header>
+        <div class="stage sizes">
+          <img class="lg" src="04-eat-type-wax.svg" alt="120" />
+          <img class="md" src="04-eat-type-wax.svg" alt="72" />
+          <img class="sm" src="04-eat-type-wax.svg" alt="40" />
+          <img class="xs" src="04-eat-type-wax.svg" alt="24" />
+        </div>
+      </section>
+    </div>
+
+    <p class="footer">
+      파일: <code>docs/logo-explorations/app-icons/</code> ·
+      웹 워드마크·헤더는 변경 없음.
+    </p>
+  </div>
+</body>
+</html>

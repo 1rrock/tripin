@@ -1,0 +1,16 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="EAT">
+  <title>EAT · ink field · cream type</title>
+  <rect width="512" height="512" fill="#2a2118"/>
+  <rect x="36" y="36" width="440" height="440" fill="none" stroke="#4a3c30" stroke-width="2"/>
+
+  <g fill="none" stroke="#f0e8db" stroke-width="34" stroke-linecap="square" stroke-linejoin="miter">
+    <path d="M 72 156 V 356"/>
+    <path d="M 72 156 H 168"/>
+    <path d="M 72 256 H 152"/>
+    <path d="M 72 356 H 168"/>
+    <path d="M 212 356 L 268 156 L 324 356"/>
+    <path d="M 234 292 H 302"/>
+    <path d="M 360 156 H 456"/>
+    <path d="M 408 156 V 356"/>
+  </g>
+</svg>

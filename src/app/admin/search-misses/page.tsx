@@ -3,7 +3,7 @@ import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { Card } from "../_ui/kit";
 import { dismissSearchMissForm } from "./actions";
 
-export const metadata: Metadata = { title: "검색 실패어 — Greatripin 어드민" };
+export const metadata: Metadata = { title: "검색 실패어 — Eatripin 어드민" };
 
 /** 실패어는 실시간 신호다 — 정적 캐시 금지. */
 export const dynamic = "force-dynamic";

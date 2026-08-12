@@ -1,11 +1,13 @@
 import type { Metadata } from "next";
+import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadTypeDetail, parsePlaceType } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
-import { Act, Chip, Icon, Rule } from "@/shared/ui/frame";
+import { Act, Chip, Frame, Icon, Index, Rule } from "@/shared/ui/frame";
+import { Thumb } from "@/shared/ui/Thumb";
 
 /* `export const revalidate` 를 두지 않는다 — 이 트리는 레이아웃이 headers() 를 읽어
    요청마다 렌더되므로 아무 일도 하지 않는 죽은 선언이 된다(shared/api/cache.ts).
@@ -132,32 +134,43 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                 </Chip>
               </div>
 
-              <ol>
-                {g.places.slice(0, VISIBLE_PER_CITY).map((place, i) => (
-                  <li key={place.id}>
-                    <Rule />
-                    <div className="flex flex-col gap-2.5 py-4">
-                      <div className="flex items-start gap-3">
-                        <span
-                          className="index tnum shrink-0 pt-0.5"
-                          style={{ color: "var(--dim)", minWidth: "1.5rem" }}
-                        >
-                          {i + 1}
-                        </span>
+              <ol className="flex flex-col">
+                {g.places.slice(0, VISIBLE_PER_CITY).map((place, i) => {
+                  /* 대표 컷 — 이 장소를 실은 첫 출처 영상. 썸네일이 이 월드의 서명인데
+                     이 화면만 텍스트 목록이었다. 컷은 원본 그대로여야 하므로
+                     프레임 비율(16:9)을 건드리지 않는다(LEGAL.md 4.5) */
+                  const cut = place.sources[0];
+                  return (
+                    <li key={place.id} className="develop" style={{ "--i": i } as CSSProperties}>
+                      <Rule />
+                      <div className="flex items-start gap-3.5 py-(--stack)">
+                        {cut ? (
+                          <span className="w-[104px] shrink-0 sm:w-[132px]">
+                            <Frame>
+                              <Thumb youtubeId={cut.youtubeId} alt={cut.videoTitle} />
+                            </Frame>
+                          </span>
+                        ) : null}
+
                         <div className="min-w-0 flex-1">
-                          <p
-                            className="font-bold"
-                            style={{
-                              fontSize: "var(--t-title)",
-                              letterSpacing: "-0.025em",
-                              lineHeight: 1.3,
-                            }}
-                          >
-                            {displayPlaceName(place, locale)}
-                          </p>
+                          <div className="flex items-baseline gap-2">
+                            <Index tone="wax" className="tnum shrink-0">
+                              {String(i + 1).padStart(2, "0")}
+                            </Index>
+                            <p
+                              className="min-w-0 font-bold"
+                              style={{
+                                fontSize: "var(--t-title)",
+                                letterSpacing: "-0.025em",
+                                lineHeight: 1.3,
+                              }}
+                            >
+                              {displayPlaceName(place, locale)}
+                            </p>
+                          </div>
                           {displayPlaceSecondary(place, locale) ? (
                             <p
-                              className="mt-0.5"
+                              className="mt-1"
                               style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                             >
                               {displayPlaceSecondary(place, locale)}
@@ -171,44 +184,44 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                               {place.address}
                             </p>
                           ) : null}
+
+                          <div className="mt-2 flex flex-wrap items-center gap-2">
+                            {place.sources.map((s, si) => (
+                              <Act
+                                key={`${s.youtubeId}-${si}`}
+                                icon="play"
+                                href={youtubeUrl(s.youtubeId, s.timestampSec)}
+                                title={s.videoTitle}
+                              >
+                                {s.creatorName}
+                                {s.timestampSec !== null ? ` ${fmt(s.timestampSec)}` : ""}
+                              </Act>
+                            ))}
+                            {place.mapUrl ? (
+                              <Act icon="out" href={place.mapUrl}>
+                                {m.typeDetail.openMap}
+                              </Act>
+                            ) : null}
+                            {cut ? (
+                              <Chip
+                                href={localePath(
+                                  `/c/${cut.creatorSlug}/${place.citySlug}`,
+                                  locale,
+                                )}
+                              >
+                                {m.typeDetail.channelMap}
+                              </Chip>
+                            ) : null}
+                          </div>
                         </div>
                       </div>
-
-                      <div className="flex flex-wrap items-center gap-2 pl-9">
-                        {place.sources.map((s, si) => (
-                          <Act
-                            key={`${s.youtubeId}-${si}`}
-                            icon="play"
-                            href={youtubeUrl(s.youtubeId, s.timestampSec)}
-                            title={s.videoTitle}
-                          >
-                            {s.creatorName}
-                            {s.timestampSec !== null ? ` ${fmt(s.timestampSec)}` : ""}
-                          </Act>
-                        ))}
-                        {place.mapUrl ? (
-                          <Act icon="out" href={place.mapUrl}>
-                            {m.typeDetail.openMap}
-                          </Act>
-                        ) : null}
-                        {place.sources[0] ? (
-                          <Chip
-                            href={localePath(
-                              `/c/${place.sources[0].creatorSlug}/${place.citySlug}`,
-                              locale,
-                            )}
-                          >
-                            {m.typeDetail.channelMap}
-                          </Chip>
-                        ) : null}
-                      </div>
-                    </div>
-                  </li>
-                ))}
+                    </li>
+                  );
+                })}
                 {g.places.length > VISIBLE_PER_CITY ? (
                   <li>
                     <Rule />
-                    <div className="py-4 pl-9">
+                    <div className="py-(--stack)">
                       <Chip href={localePath(`/city/${g.citySlug}?type=${type}`, locale)}>
                         {t(m.typeDetail.moreInCity, { n: g.places.length - VISIBLE_PER_CITY })}
                       </Chip>

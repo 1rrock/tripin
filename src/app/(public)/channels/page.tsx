@@ -61,6 +61,9 @@ export default async function ChannelsPage() {
                   places: c.placeCount,
                 })}
               >
+                {/* 이름+핸들 묶음을 타이트하게 두고 아바타와 세로 중앙.
+                    핸들 간격이 넓으면 블록이 아래로 처져 프로필과 어긋난다.
+                    영상/곳 수는 이름과 같은 줄. */}
                 <span className="flex items-center gap-3.5">
                   <Avatar
                     initials={c.initials}
@@ -69,13 +72,25 @@ export default async function ChannelsPage() {
                     size={42}
                   />
                   <span className="min-w-0 flex-1">
-                    <span
-                      className="block truncate font-bold"
-                      style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}
-                    >
-                      {c.displayName}
+                    <span className="flex items-baseline justify-between gap-3">
+                      <span
+                        className="min-w-0 truncate font-bold"
+                        style={{
+                          fontSize: "var(--t-title)",
+                          letterSpacing: "-0.025em",
+                          lineHeight: 1.15,
+                        }}
+                      >
+                        {c.displayName}
+                      </span>
+                      <Index className="tnum shrink-0">
+                        {t(m.channels.rollMeta, {
+                          videos: c.videoCount,
+                          places: c.placeCount,
+                        })}
+                      </Index>
                     </span>
-                    <span className="mt-1.5 block truncate">
+                    <span className="mt-0.5 block truncate leading-none">
                       <Index>
                         {[c.handle, ...c.cities.map((x) => displayCityName(x, locale))]
                           .filter(Boolean)
@@ -83,9 +98,6 @@ export default async function ChannelsPage() {
                       </Index>
                     </span>
                   </span>
-                  <Index className="tnum shrink-0">
-                    {t(m.channels.rollMeta, { videos: c.videoCount, places: c.placeCount })}
-                  </Index>
                 </span>
 
                 <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
