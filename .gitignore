@@ -59,4 +59,7 @@ next-env.d.ts
 # 파생물(png 변환·확대·크롭)만 제외: 스크립트가 언제든 다시 만든다.
 /.impeccable/refs/*.png
 /.impeccable/mocks/desktop-A-v*.png
-tmp-closed-report.json
+
+# 로컬 임시·배치 리포트 (커밋하지 않음)
+/tmp/
+/tmp-*.json

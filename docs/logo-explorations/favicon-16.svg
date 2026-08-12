@@ -1,9 +1,0 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 16 16" role="img" aria-label="ET">
-  <title>EATRIPIN favicon 16</title>
-  <rect width="16" height="16" fill="#f0e8db"/>
-  <!-- E -->
-  <path d="M3 3 V13 M3 3 H8 M3 8 H7 M3 13 H8" fill="none" stroke="#2a2118" stroke-width="1.6" stroke-linecap="square"/>
-  <!-- T bar + wax stem -->
-  <path d="M7.5 3 H13" fill="none" stroke="#2a2118" stroke-width="1.6" stroke-linecap="square"/>
-  <path d="M10.5 3 V13" fill="none" stroke="#c9441a" stroke-width="1.6" stroke-linecap="square"/>
-</svg>
