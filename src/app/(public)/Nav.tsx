@@ -1,78 +1,107 @@
 "use client";
 
 /**
- * 전역 진입점 — 홈 / 지역 / 채널 (로케일 인식).
+ * 전역 진입점 — 홈 / 지역 / 채널.
  *
- * 데스크톱: 헤더 안 텍스트+아이콘 줄. 홈은 브랜드 마크가 대신하므로 항목이 없다.
- * 모바일: **하단 탭바**.
- *
- * 종류(`/type`)는 도시·조각 안 필터와 검색으로만 간다. 홈에서 뺀 축을
- * 엄지 존 1/4에 두면 맛집 앱으로 읽힌다. 라우트 자체는 산다.
- *
- * 아이콘은 두 화면이 같은 걸 쓴다 — 데스크톱만 다른 글리프를 쓰면 같은 목적지가
- * 화면 폭에 따라 다른 물건으로 보인다.
+ * 데스크톱: 헤더 안 텍스트+아이콘.
+ * 모바일: 하단 탭바 — 헤더 밖에 둔다. 헤더 backdrop-filter 안에 fixed 를 두면
+ * 뷰포트가 아니라 헤더 바닥에 붙는다.
  */
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Icon, type IconName } from "@/shared/ui/frame";
+import { House, MapPin, Playlist, SquaresFour } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 
+const ITEMS = [
+  { path: "/", icon: House, labelKey: "home" },
+  { path: "/city", icon: MapPin, labelKey: "region" },
+  { path: "/type", icon: SquaresFour, labelKey: "type" },
+  { path: "/channels", icon: Playlist, labelKey: "channel" },
+] as const;
+
 function isActive(pathname: string, href: string) {
   const bare = stripLocalePrefix(pathname);
-  /** 홈은 정확히 일치할 때만 — startsWith 로 두면 모든 화면에서 홈이 켜진다 */
   if (href === "/") return bare === "/";
   return bare === href || bare.startsWith(`${href}/`);
 }
 
+function useNavItems() {
+  const { messages: m, href } = useLocale();
+  return ITEMS.map((it) => ({
+    path: it.path,
+    href: href(it.path),
+    label: it.labelKey === "home" ? m.common.home : m.nav[it.labelKey],
+    Icon: it.icon,
+  }));
+}
+
 export function Nav() {
   const pathname = usePathname() ?? "/";
-  const { messages: m, href } = useLocale();
-
-  const items: { path: string; label: string; icon: IconName }[] = [
-    { path: "/", label: m.common.home, icon: "home" },
-    { path: "/city", label: m.nav.region, icon: "pin" },
-    { path: "/channels", label: m.nav.channel, icon: "channel" },
-  ];
+  const { messages: m } = useLocale();
+  const items = useNavItems();
 
   return (
-    <>
-      <nav aria-label={m.nav.menu} className="hidden items-center gap-1 md:flex">
-        {items.slice(1).map((it) => {
-          const on = isActive(pathname, it.path);
-          const Glyph = Icon[it.icon];
-          return (
-            <Link
-              key={it.path}
-              href={href(it.path)}
-              aria-current={on ? "page" : undefined}
-              className="nav-item index flex items-center gap-1.5 px-2.5 py-2"
-            >
-              <Glyph className="size-3.5" />
-              {it.label}
-            </Link>
-          );
-        })}
-      </nav>
+    <nav aria-label={m.nav.menu} className="hidden items-center gap-0.5 md:flex">
+      {items.slice(1).map((it) => {
+        const on = isActive(pathname, it.path);
+        const Glyph = it.Icon;
+        return (
+          <Link
+            key={it.path}
+            href={it.href}
+            aria-current={on ? "page" : undefined}
+            className="nav-item index flex items-center gap-1.5 px-2.5 py-2"
+          >
+            <Glyph className="size-3.5" weight={on ? "fill" : "regular"} />
+            {it.label}
+          </Link>
+        );
+      })}
+    </nav>
+  );
+}
 
-      <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-30 flex md:hidden">
+export function TabDock() {
+  const pathname = usePathname() ?? "/";
+  const { messages: m } = useLocale();
+  const items = useNavItems();
+  const activeIndex = items.findIndex((it) => isActive(pathname, it.path));
+
+  return (
+    <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-50 md:hidden">
+      <div className="relative mx-auto flex h-14 max-w-2xl items-stretch">
+        {activeIndex >= 0 ? (
+          <div
+            aria-hidden
+            className="absolute inset-y-0 left-0 w-1/4 transition-transform duration-[400ms] ease-[cubic-bezier(0.3,1.28,0.45,1)] motion-reduce:transition-none"
+            style={{ transform: `translateX(${activeIndex * 100}%)` }}
+          >
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
+              <div
+                key={activeIndex}
+                className="animate-nav-pill-liquid h-9 w-16 rounded-full bg-(--halo)"
+              />
+            </div>
+          </div>
+        ) : null}
         {items.map((it) => {
           const on = isActive(pathname, it.path);
-          const Glyph = Icon[it.icon];
+          const Glyph = it.Icon;
           return (
             <Link
               key={it.path}
-              href={href(it.path)}
+              href={it.href}
               aria-current={on ? "page" : undefined}
-              className="tab"
+              className="tab relative z-[1]"
             >
-              <Glyph className="size-[22px]" />
+              <Glyph className="size-[22px]" weight={on ? "fill" : "regular"} />
               <span className="index">{it.label}</span>
             </Link>
           );
         })}
-      </nav>
-    </>
+      </div>
+    </nav>
   );
 }

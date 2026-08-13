@@ -45,7 +45,7 @@ export function Mark({ className, decorative = true, title }: MarkProps) {
   );
 }
 
-/** 앱 아이콘·파비콘용 (웜 페이퍼 월드 토큰 고정) */
+/** 앱 아이콘·파비콘용 (CSS 변수 없음 — 고정 헥스) */
 export function MarkAppIcon({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 512 512" className={className} role="img" aria-label="Eatripin">
@@ -53,7 +53,7 @@ export function MarkAppIcon({ className }: { className?: string }) {
       <path
         d={SLASH}
         fill="none"
-        stroke="#2a2118"
+        stroke="#171717"
         strokeWidth={SLASH_WIDTH}
         strokeLinecap="square"
       />

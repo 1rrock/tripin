@@ -8,9 +8,9 @@
  * 서버 컴포넌트. 훅 없음.
  */
 
-function TileBones({ n }: { n: number }) {
+function TileBones({ n, className = "mt-(--stack)" }: { n: number; className?: string }) {
   return (
-    <ul className="mt-(--stack) grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 md:gap-y-10">
+    <ul className={`${className} grid grid-cols-2 gap-x-3 gap-y-6 md:grid-cols-3 md:gap-x-4 md:gap-y-8`}>
       {Array.from({ length: n }, (_, i) => (
         <li key={i} className="min-w-0">
           <span className="mb-2 flex items-baseline justify-between gap-2">
@@ -75,16 +75,18 @@ export function HomeSkeleton({ label }: { label: string }) {
 export function CitySkeleton({ label }: { label: string }) {
   return (
     <div
-      className="flex flex-col px-(--gutter) pt-(--stack)"
+      className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4"
       role="status"
       aria-busy="true"
       aria-label={label}
     >
       <span className="sr-only">{label}</span>
-      <TitleRow />
-      <TileBones n={6} />
+      <span className="bone-line w-10" style={{ height: "1.25rem" }} />
+      <span className="bone-line mt-1.5 w-[6.5rem]" />
+      <TileBones n={6} className="mt-5" />
       <section className="mt-(--block)">
-        <span className="bone-line w-[3.6rem]" />
+        <hr className="rule" />
+        <span className="bone-line mt-(--stack) w-[3.6rem]" />
         <ul className="mt-(--stack) flex flex-col">
           {Array.from({ length: 4 }, (_, i) => (
             <li

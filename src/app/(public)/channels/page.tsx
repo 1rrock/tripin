@@ -46,7 +46,7 @@ export default async function ChannelsPage() {
   const { creators } = await loadHomeFeed();
 
   return (
-    <main className="flex flex-col px-(--gutter) pt-(--stack)">
+    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4">
       <JsonLd
         data={[
           breadcrumbList([
@@ -65,18 +65,15 @@ export default async function ChannelsPage() {
       {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 걷어냈어도
           스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
           `title` 은 훅("누구 따라갈까요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
-      <h1 className="sr-only">{m.channels.srHeading}</h1>
+      <header className="pb-3">
+        <h1 className="text-xl font-bold tracking-[-0.03em]">{m.nav.channel}</h1>
+        <p className="sr-only">{m.channels.srHeading}</p>
+      </header>
 
       {creators.length === 0 ? (
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.channels.empty}</p>
       ) : (
         <>
-          <h2
-            className="font-bold"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
-          >
-            {m.channels.title}
-          </h2>
           <ul className="mt-(--stack) flex flex-col">
           {creators.map((c, i) => (
             <li key={c.slug}>

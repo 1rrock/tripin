@@ -73,7 +73,7 @@ export default async function OpengraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          background: "#f0e8db",
+          background: "#ffffff",
           padding: "76px 84px",
           fontFamily: "KR",
           letterSpacing: "-0.035em",

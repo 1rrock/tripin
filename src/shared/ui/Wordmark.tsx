@@ -1,17 +1,15 @@
 /**
- * EATRIPIN 워드마크 — slash coral 마크와 짝.
+ * EATRIPIN 워드마크 — Slash coral 마크와 짝.
  *
- * 철자 EATRIPIN (t·p 각 1). 공유 T·P 만 왁스 — 이름 접힘 장치.
- * 마크가 이미 왁스 면이라 워드의 왁스는 글자 두 개에만 (면적 남발 금지).
+ * 철자 EATRIPIN (t·p 각 1). 화면은 로마자, 읽히는 이름은 부모 aria.
+ * 산호는 글자 두 개(T·P)에만 — 면적을 먹지 않는다.
  */
 
 import type { CSSProperties } from "react";
 
 type WordmarkProps = {
   className?: string;
-  /** 기본 13px — 헤더 기준 */
   style?: CSSProperties;
-  /** 부모 링크에 aria 가 있으면 true */
   decorative?: boolean;
 };
 
@@ -21,22 +19,20 @@ export function Wordmark({ className, style, decorative = true }: WordmarkProps)
       className={className}
       aria-hidden={decorative ? true : undefined}
       style={{
-        fontFamily: "var(--font-archivo), sans-serif",
+        fontFamily: "var(--font-paper), var(--font-archivo), sans-serif",
         fontWeight: 700,
-        letterSpacing: "0.22em",
-        fontSize: "13px",
+        letterSpacing: "-0.035em",
+        fontSize: "17px",
         lineHeight: 1,
         color: "var(--paper)",
-        /* tracking 끝 글자 광학 보정 */
-        paddingRight: "0.22em",
         ...style,
       }}
     >
-      EA
-      <span style={{ color: "var(--wax)" }}>T</span>
-      RI
-      <span style={{ color: "var(--wax)" }}>P</span>
-      IN
+      ea
+      <span style={{ color: "var(--wax)" }}>t</span>
+      ri
+      <span style={{ color: "var(--wax)" }}>p</span>
+      in
     </span>
   );
 }

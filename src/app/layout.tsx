@@ -10,18 +10,12 @@ import { JsonLd, organizationNode, websiteNode } from "@/shared/seo/json-ld";
 import "./globals.css";
 
 /**
- * 콘택트 시트의 서체.
+ * 서체.
  *
- * 페이퍼로지(Paperlogy) — 한글. 종이·인화 뉘앙스의 산스, Thin~Black 9단.
- * 웜 페이퍼 지면(#f0e8db)과 이름·결이 맞고, 고딕 A1 의 딱딱함·장식 세리프의
- * 감성 과잉 사이를 피한다. OFL.
+ * 페이퍼로지(Paperlogy) — 한글 구조와 본문. 굵기로 얼굴을 가른다(700/800 제목, 400/500 본문).
+ * Archivo — 라틴 숫자 tabular. 타임코드·개수 정렬.
  *
- * Archivo — 라틴·숫자 전용. 인덱스 번호·타임코드·개수가 이 월드에서 자주
- * 주인공이 되는데(콘택트 시트의 프레임 번호), 한글 폰트의 라틴 숫자는 대체로
- * 폭이 좁고 밋밋하다. Archivo 는 그로테스크에 tabular numerals 가 있어
- * 표처럼 줄 세워도 흔들리지 않는다. 워드마크도 Archivo.
- *
- * 브랜드 마크: Slash coral (왁스 면 + 잉크 슬래시).
+ * 브랜드 마크: Slash coral (산호 면 + 잉크 슬래시). 워드마크는 Paperlogy.
  *
  * next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
  */
@@ -115,11 +109,11 @@ export default async function RootLayout({
           hidden
           dangerouslySetInnerHTML={{
             __html: `<!--
-THESIS: 이 서비스가 가진 유일한 시각 재료는 영상 썸네일이다. 그래서 썸네일을 늘어놓는 게 본업인 물건 — 인화지·노트 위의 콘택트 시트 — 을 지면으로 삼는다. 거부하는 배치: 픽토그램과 괘선으로 화면을 채우는 정보 서비스 캐논, 지도 퍼스트 여행 앱, 쿨블랙 암실 기본값.
-OWN-WORLD: 웜 페이퍼 지면 #f0e8db 위에 16:9 프레임이 놓인다. 잉크 #2a2118 가 제목과 인덱스, 왁스 연필 #c9441a 는 **표시에만** — 링·밑줄·활성 인덱스이지 버튼 배경이 아니다. 예외: 브랜드 마크 Slash coral 은 왁스 면 + 잉크 슬래시(앱 아이콘·헤더 마크). 발광 금지. 라운드 4px, 따뜻한 오프셋 그림자, 아주 약한 종이 그레인. 페이퍼로지(한글 100~900) + Archivo(라틴·숫자 tabular).
+THESIS: 유튜브에서 본 가게를 상호와 지도로 연결한다. 흰 종이 위의 사실 목록이고, 산호는 핀 하나로만 켜진다. 거부하는 배치: 웜 페이퍼 콘택트 시트, 베이지 그레인, 인덱스 자간 코스튬, 지도 퍼스트 여행 앱.
+OWN-WORLD: 순백 #fff + 무채 잉크 #171717. 산호 #c9441a 는 마크·활성·주 CTA 만. 구분은 1px 헤어라인. 카드 크롬 없음. Phosphor weight 가 상태. Paperlogy 구조/본문 + 숫자 tabular. 16:9 프레임만 원본 비율.
 STORY: 여행 영상을 보던 사람이 "그 가게 어디였지"로 들어와, 프레임을 훑고 → 그 아래 실제 상호명을 보고 → 타임코드가 붙은 영상과 지도로 나간다.
-FIRST VIEWPORT: 홈 — 제목 두 줄과 규모 한 줄 아래로 곧장 영상 프레임 시트. 첫 프레임은 전폭, 각 프레임 아래에 그 영상에 나온 실제 상호명이 붙어 메커니즘을 즉시 증명한다.
-FORM: 콘택트 시트(웜 페이퍼 계열). 룰렛 배정 아님.
+FIRST VIEWPORT: 홈 — 검색 한 칸, 도시 타일, 채널×도시 조각. 썸네일 아래 상호명이 헤드라인.
+FORM: 핀 하나만 산호 (hidden-spot 시스템 규율, Eatripin 브랜드). 유저 지정.
 FINISH: unreviewed and undocumented is unfinished; this build ends with the finish review, the verdict, and DESIGN.md
 -->`,
           }}

@@ -9,7 +9,7 @@ import { displayCityName, displaySummary } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
-import { Icon } from "@/shared/ui/frame";
+import { Icon } from "@/shared/ui/icons";
 import { CityExplorer, type CityPlace } from "./CityExplorer";
 
 
@@ -134,7 +134,7 @@ export default async function CityPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-3 px-(--gutter) pt-2 pb-1 lg:px-(--gutter)">
+      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:px-(--gutter)">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link
             href={localePath("/", locale)}

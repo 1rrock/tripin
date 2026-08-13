@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Eatripin">
-  <!-- Slash coral · wax #c9441a · ink #2a2118 · optical -45° -->
+  <!-- Slash coral · wax #c9441a · ink #171717 · optical -45° -->
   <rect width="512" height="512" fill="#c9441a"/>
-  <path d="M 148 364 L 364 148" fill="none" stroke="#2a2118" stroke-width="68" stroke-linecap="square"/>
+  <path d="M 148 364 L 364 148" fill="none" stroke="#171717" stroke-width="68" stroke-linecap="square"/>
 </svg>

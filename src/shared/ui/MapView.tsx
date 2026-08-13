@@ -388,7 +388,7 @@ export function MapView({
           viewBox="0 0 600 600"
           preserveAspectRatio="xMidYMid slice"
         >
-          <g stroke="#e2e0d9" strokeWidth="7" fill="none" strokeLinecap="round">
+          <g stroke="#e6e6e6" strokeWidth="7" fill="none" strokeLinecap="round">
             <path d="M-20 170 C 140 140, 320 210, 620 150" />
             <path d="M-20 400 C 180 370, 380 450, 620 380" />
             <path d="M170 -20 C 190 180, 140 400, 190 620" />
@@ -429,12 +429,12 @@ export function MapView({
         <div aria-hidden className="pointer-events-none absolute inset-0 animate-pulse">
           {/* 문구 대신 형태로 기다린다 — 지도의 뼈대(도로선·핀 자리) 스켈레톤.
               라이트박스 위이므로 밝은 지면에 회색 선이다 */}
-          <div className="absolute top-1/3 left-0 h-1.5 w-full bg-[#e2e0d9]" />
-          <div className="absolute top-2/3 left-0 h-1 w-full bg-[#e2e0d9]" />
-          <div className="absolute top-0 left-1/3 h-full w-1.5 bg-[#e2e0d9]" />
-          <div className="absolute top-0 left-2/3 h-full w-1 bg-[#e2e0d9]" />
+          <div className="absolute top-1/3 left-0 h-1.5 w-full bg-[#e6e6e6]" />
+          <div className="absolute top-2/3 left-0 h-1 w-full bg-[#e6e6e6]" />
+          <div className="absolute top-0 left-1/3 h-full w-1.5 bg-[#e6e6e6]" />
+          <div className="absolute top-0 left-2/3 h-full w-1 bg-[#e6e6e6]" />
           <div
-            className="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 bg-[#d5d2c9]"
+            className="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 bg-[#ededed]"
             style={{ borderRadius: "var(--r-frame)" }}
           />
         </div>

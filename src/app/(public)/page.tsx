@@ -33,7 +33,7 @@ export default async function HomePage() {
 
   if (videos.length === 0) {
     return (
-      <main className="px-(--gutter) pt-6 pb-20">
+      <main className="px-(--gutter) pt-4">
         <h1
           className="font-black"
           style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
@@ -58,7 +58,7 @@ export default async function HomePage() {
           })),
         )}
       />
-      <HomeSheet pieces={pieces} cities={cities} />
+      <HomeSheet pieces={pieces} cities={cities} videos={videos} />
     </main>
   );
 }

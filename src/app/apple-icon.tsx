@@ -8,7 +8,7 @@ export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
 const wax = "#c9441a";
-const ink = "#2a2118";
+const ink = "#171717";
 
 export default function AppleIcon() {
   // 68/512 * 180 ≈ 23.9

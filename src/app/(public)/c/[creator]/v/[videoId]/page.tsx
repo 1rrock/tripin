@@ -2,7 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadVideoDetail } from "@/shared/api/videos";
-import { Chip, Frame, Icon } from "@/shared/ui/frame";
+import { Chip, Frame } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { Thumb } from "@/shared/ui/Thumb";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
@@ -71,7 +72,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
   return (
     <main
-      className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20"
+      className="flex flex-col gap-(--block) px-(--gutter) pt-4"
       style={{ "--hl": ch.accentColor } as React.CSSProperties}
     >
       <nav className="index flex flex-wrap items-center gap-1.5" style={{ color: "var(--dim)" }}>

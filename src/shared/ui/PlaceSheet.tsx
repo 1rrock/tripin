@@ -19,7 +19,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Avatar, Icon } from "@/shared/ui/frame";
+import { Avatar } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";

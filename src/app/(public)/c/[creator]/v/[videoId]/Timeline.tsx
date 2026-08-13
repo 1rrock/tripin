@@ -21,7 +21,8 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoDetail, VideoStop } from "@/shared/api/videos";
-import { Act, Chip, FrameNo, Rule } from "@/shared/ui/frame";
+import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { Act } from "@/shared/ui/icons";
 import { MapView, type MapPin } from "@/shared/ui/MapView";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";

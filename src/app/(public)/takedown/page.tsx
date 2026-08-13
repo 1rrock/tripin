@@ -4,7 +4,7 @@ import { publicEnv } from "@/shared/config/env";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta } from "@/shared/seo/page-meta";
-import { Icon } from "@/shared/ui/frame";
+import { Icon } from "@/shared/ui/icons";
 
 
 const h2 = {
@@ -53,7 +53,7 @@ export default async function TakedownPage() {
   const email = contactEmail();
 
   return (
-    <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-(--block) px-(--gutter) pt-4">
       <header className="flex flex-col gap-3 pb-1">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">

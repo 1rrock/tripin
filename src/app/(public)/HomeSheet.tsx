@@ -1,24 +1,33 @@
 "use client";
 
 /**
- * 홈 — 고르는 순서는 둘뿐이다: **어느 도시 · 누구의 지도**.
+ * 홈 허브 — 눌러서 좁혀가는 화면.
  *
- *   검색(모바일) → 도시 시트 → 조각 롤
+ * 검색 → 종류 그리드 → 도시 레일 → 미니 피드.
+ * 히든스팟 홈과 같은 문법: 그리드가 주인공, 레일은 가로, 피드는 행 카드.
  *
- * 두 섹션을 같은 2열 히어로로 깔면 아래 컷이 위 도시의 다음 장으로 읽힌다.
- * 도시는 동급 타일(이름 먼저), 조각은 채널 얼굴이 프레임 위에 있는 롤.
- * 16:9 만 — 썸네일 변형 금지.
+ * 세로 리듬은 두 단이다 — 덩어리 **안**은 16px 이하, 덩어리 **사이**는 28px 이상.
+ * 🔴 섹션 경계를 요소 간격과 같은 값으로 두지 말 것. 20px 굵은 섹션 제목이
+ *    격자에 끼어 위계가 사라진다.
  */
 
+import { useMemo, useState } from "react";
 import Link from "next/link";
-import type { FeedPiece } from "@/shared/api/home";
+import { MagnifyingGlass } from "@phosphor-icons/react";
+import type { FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
-import { Avatar, Frame, Icon } from "@/shared/ui/frame";
-import { Thumb } from "@/shared/ui/Thumb";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
+import { CategoryGrid } from "@/shared/ui/CategoryGrid";
+import { DestinationRail } from "@/shared/ui/DestinationRail";
+import { TabBar } from "@/shared/ui/TabBar";
+import { ResultRow } from "@/shared/ui/ResultRow";
+import { EmptyState } from "@/shared/ui/EmptyState";
 
-const CITY_TILES = 6;
+const MINI = 5;
+const RAIL = 8;
+
+type Tab = "recommend" | "recent";
 
 function openSearch() {
   window.dispatchEvent(new Event("tripin:open-search"));
@@ -27,151 +36,110 @@ function openSearch() {
 export function HomeSheet({
   pieces,
   cities,
+  videos,
 }: {
   pieces: FeedPiece[];
   cities: CityRow[];
+  videos: FeedVideo[];
 }) {
   const { messages: m, href, t, locale } = useLocale();
-  const tiles = cities.slice(0, CITY_TILES);
+  const [tab, setTab] = useState<Tab>("recommend");
+  const rail = cities.slice(0, RAIL);
+
+  const recommend = useMemo(() => pieces.slice(0, MINI), [pieces]);
+  const recent = useMemo(() => videos.slice(0, MINI), [videos]);
 
   return (
-    <div>
+    <div className="mx-auto w-full max-w-lg">
       <h1 className="sr-only">{m.home.srHeading}</h1>
 
-      <div className="px-(--gutter) pt-(--stack) md:hidden">
+      <div className="px-(--gutter) pt-4 pb-5">
         <button
           type="button"
           onClick={openSearch}
-          className="field flex h-12 w-full cursor-pointer items-center gap-2.5 px-3.5 text-left"
+          className="relative flex h-10 w-full cursor-pointer items-center rounded-xl bg-(--hover) pr-3 pl-9 text-left active:bg-[#ededed]"
         >
-          <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
-          <span style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.home.goWhere}</span>
+          <MagnifyingGlass
+            aria-hidden
+            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--dim)"
+          />
+          <span className="text-base text-(--dim)">{m.home.goWhere}</span>
         </button>
       </div>
 
-      {tiles.length > 0 ? (
-        <section className="px-(--gutter) pt-(--stack)" aria-labelledby="cities-h">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2
-              id="cities-h"
-              className="font-bold"
-              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
-            >
-              {m.home.popular}
-            </h2>
-            <Link
-              href={href("/city")}
-              className="index inline-flex shrink-0 items-center gap-0.5 hover:underline"
-              style={{ color: "var(--dim)" }}
-            >
-              {m.home.allRegions}
-              <Icon.chevron className="roll-go size-3" />
-            </Link>
-          </div>
-          <ul className="mt-(--stack) grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 md:gap-y-10">
-            {tiles.map((c, i) => {
-              const cut = c.recentVideos[0];
+      <CategoryGrid />
+
+      <hr className="rule mx-(--gutter)" />
+
+      <DestinationRail cities={rail} />
+
+      <section className="mt-7">
+        <TabBar
+          ariaLabel={m.home.feedTabsAria}
+          activeId={tab}
+          onSelect={(id) => setTab(id as Tab)}
+          items={[
+            { id: "recommend", label: m.home.tabRecommend },
+            { id: "recent", label: m.home.tabRecent },
+          ]}
+        />
+
+        {tab === "recommend" ? (
+          recommend.length === 0 ? (
+            <EmptyState message={m.home.empty} />
+          ) : (
+            <ul>
+              {recommend.map((p, i) => (
+                <li key={`${p.creatorSlug}:${p.city.slug}`} className="border-b border-(--hairline)">
+                  <ResultRow
+                    href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
+                    youtubeId={p.cut?.youtubeId ?? null}
+                    thumbAlt={p.cut?.title ?? p.creatorName}
+                    title={displayCityName(p.city, locale)}
+                    meta={`${p.creatorName} · ${t(m.home.placesUnit, { n: p.placeCount })}`}
+                    eager={i === 0}
+                  />
+                </li>
+              ))}
+            </ul>
+          )
+        ) : recent.length === 0 ? (
+          <EmptyState message={m.home.empty} />
+        ) : (
+          <ul>
+            {recent.map((v, i) => {
+              const place = v.placeNames[0];
+              const city = v.cities[0];
+              const type = v.placeTypes[0];
               return (
-                <li key={c.slug} className="min-w-0">
-                  <Link
-                    href={href(`/city/${c.slug}`)}
-                    className="sheet-card block"
-                    aria-label={t(m.cityIndex.openMap, {
-                      name: displayCityName(c, locale),
-                      places: c.placeCount,
-                      creators: c.creatorCount,
-                    })}
-                  >
-                    {/* 이름을 프레임 앞에 — 컷을 보고 도시를 추측하지 않게 */}
-                    <span className="mb-2 flex items-baseline justify-between gap-2">
-                      <span
-                        className="sheet-name min-w-0 truncate font-bold"
-                        style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
-                      >
-                        {displayCityName(c, locale)}
-                      </span>
-                      <span className="index tnum shrink-0" style={{ color: "var(--dim)" }}>
-                        {t(m.home.placesUnit, { n: c.placeCount })}
-                      </span>
-                    </span>
-                    <Frame className="block w-full">
-                      {cut ? (
-                        <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={i === 0} />
-                      ) : null}
-                    </Frame>
-                  </Link>
+                <li key={v.youtubeId} className="border-b border-(--hairline)">
+                  <ResultRow
+                    href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)}
+                    youtubeId={v.youtubeId}
+                    thumbAlt={v.title}
+                    eyebrow={type ? m.placeTypes[type] : undefined}
+                    eyebrowType={type}
+                    title={place ?? v.title}
+                    meta={[v.creatorName, city ? displayCityName(city, locale) : null]
+                      .filter(Boolean)
+                      .join(" · ")}
+                    eager={i === 0}
+                  />
                 </li>
               );
             })}
           </ul>
-        </section>
-      ) : null}
+        )}
 
-      {pieces.length > 0 ? (
-        <section
-          className="mt-(--block) border-t px-(--gutter) pt-(--stack)"
-          style={{ borderColor: "var(--hairline)" }}
-          aria-labelledby="pieces-h"
-        >
-          <h2
-            id="pieces-h"
-            className="font-bold"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
+        <div className="px-(--gutter) pt-4 pb-2">
+          <Link
+            href={href(tab === "recommend" ? "/city" : "/channels")}
+            className="flex h-10 items-center justify-center rounded-full bg-(--hover) text-[13px] font-semibold active:scale-95"
           >
-            {m.home.piecesHeading}
-          </h2>
-          <ul className="mt-(--stack) flex flex-col gap-8 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-10">
-            {pieces.map((p, i) => (
-              <li key={`${p.creatorSlug}:${p.city.slug}`} className="min-w-0">
-                <Link
-                  href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
-                  className="sheet-card block"
-                  aria-label={t(m.piece.title, {
-                    creator: p.creatorName,
-                    city: displayCityName(p.city, locale),
-                  })}
-                >
-                  <span className="mb-2 flex items-center gap-2.5">
-                    <Avatar
-                      initials={p.initials}
-                      accent={p.accentColor}
-                      src={p.avatarUrl}
-                      size={36}
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span
-                        className="sheet-name block truncate font-bold"
-                        style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
-                      >
-                        {p.creatorName}
-                      </span>
-                      <span
-                        className="mt-0.5 block truncate"
-                        style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                      >
-                        {displayCityName(p.city, locale)}
-                        <span className="index tnum">
-                          {" "}
-                          {t(m.home.placesUnit, { n: p.placeCount })}
-                        </span>
-                      </span>
-                    </span>
-                  </span>
-                  <Frame className="block w-full">
-                    {p.cut ? (
-                      <Thumb
-                        youtubeId={p.cut.youtubeId}
-                        alt={p.cut.title}
-                        eager={tiles.length === 0 && i === 0}
-                      />
-                    ) : null}
-                  </Frame>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
+            {m.home.moreFeed}
+          </Link>
+        </div>
+      </section>
     </div>
   );
 }

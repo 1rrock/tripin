@@ -5,7 +5,7 @@ export const ko = {
   nav: {
     region: "지역",
     channel: "채널",
-    type: "종류",
+    type: "카테고리",
     menu: "메뉴",
     /** 모바일 하단 탭바 */
     tabsAria: "주요 화면",
@@ -27,8 +27,11 @@ export const ko = {
     morePlaces: "+{n}곳",
     /** 채널 행의 도시 꼬리 — 13개를 다 늘어놓으면 375에서 3개만 보이고 잘린다 */
     moreCities: "외 {n}",
-    goWhere: "채널·도시로 찾기",
+    goWhere: "어디로 가세요?",
     popular: "지금 많이 찾는 곳",
+    categoryMore: "더보기",
+    tabRecommend: "추천",
+    tabRecent: "최근",
     /** 조각(채널×도시) 레일 — 홈에서 지도로 들어가는 주 입구 */
     piecesHeading: "채널이 간 도시",
     feedRecent: "최근 영상",
@@ -38,7 +41,7 @@ export const ko = {
     recentVideos: "최근 영상",
     foundVideos: "찾은 영상 {n}",
     recentPaged: "최근 영상 · {shown} / {total}",
-    empty: "찾는 곳이 아직 시트에 없어요.",
+    empty: "찾는 곳이 아직 없어요.",
     showAll: "전체 보기",
     loadMore: "더 보기",
     channels: "채널 {n}",
@@ -116,7 +119,7 @@ export const ko = {
   },
   typeDetail: {
     home: "홈",
-    type: "종류",
+    type: "카테고리",
     stats: "{places}곳 · 도시 {cities}",
     blurb: "도시를 누르면 그 도시 지도에서 {label}만 볼 수 있습니다.",
     placesUnit: "{n}곳",
@@ -151,7 +154,7 @@ export const ko = {
     kinds: {
       city: "지역",
       channel: "채널",
-      type: "종류",
+      type: "카테고리",
       place: "장소",
       video: "영상",
     },
@@ -288,6 +291,9 @@ export type Messages = {
     moreCities: string;
     goWhere: string;
     popular: string;
+    categoryMore: string;
+    tabRecommend: string;
+    tabRecent: string;
     piecesHeading: string;
     feedRecent: string;
     feedChannels: string;

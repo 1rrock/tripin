@@ -23,7 +23,8 @@ import type { PlaceType } from "@/shared/api/database.types";
 import type { CityCreator, PlaceSource } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
-import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
+import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { Act, Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";

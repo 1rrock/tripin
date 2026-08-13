@@ -24,7 +24,8 @@ import type { MapStatus, PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
-import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
+import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";

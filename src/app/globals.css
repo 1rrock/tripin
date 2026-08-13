@@ -1,79 +1,78 @@
 @import "tailwindcss";
 
-/* ── 콘택트 시트 · 웜 페이퍼 (방향 계약: src/app/layout.tsx) ────────────────
-   월드의 물건: **인화지·노트 위의 콘택트 시트**. 베이지 지면 위에 16:9 프레임을
-   나란히 늘어놓고, 잉크로 번호를 매기고, 쓸 만한 컷에 왁스 연필로 표시한다.
-   여기서 프레임 = 유튜브 썸네일, 롤 = 채널, 표시 = 내가 갈 곳.
+/* ── 핀 하나만 산호 (방향 계약: src/app/layout.tsx) ────────────────
+   월드: **흰 종이 위의 사실 목록**. 정보는 거의 무채색, 구분은 1px 헤어라인.
+   산호(#c9441a)는 마크·주 CTA·지금 켜진 탭에만 켜진다. 넓은 면에는 안 물린다.
 
-   왜 이 물건인가: 이 제품이 가진 유일한 시각 재료가 영상 썸네일이다. 썸네일을
-   나열하는 게 본업인 물건을 가져와야 화면이 안 빈다. 픽토그램으로 채우려 했던
-   이전 월드가 무너진 자리가 정확히 여기다.
+   hidden-spot 의 시스템 규율을 가져온다 — Crowd / Single Pin / Hairline /
+   No Card Chrome / 두 신호(색+weight). 가져오지 않는 것: 보라, 인스타 피드
+   복제, 콘택트 시트 메타포.
 
    ── 절대 하지 않는 것 ──────────────────────────────────────────────
-   • 발광(box-shadow 로 색 번짐, 네온 테두리). 그림자는 오프셋·블러가 있는
-     실제 그림자만 쓴다.
-   • 왁스(--wax)를 버튼 배경색으로 쓰기. 왁스는 **표시**다 — 링, 밑줄, 인덱스에만.
-     면적을 먹기 시작하면 "액센트 네온 버튼" AI 기본값으로 즉시 떨어진다.
-   • 쿨 그레이·순백. 이 월드는 따뜻한 베이지·크림 한 축으로 커밋했다. */
+   • 산호를 버튼 넓은 면·카드 배경으로 쓰기. 산호는 **핀**이다.
+   • 한 화면에 3개 이상 동시에 깔리는 칸에 제각각 색을 주기 (무지개).
+   • 카드에 테두리·그림자·큰 라운드를 얹기. 구분은 선 하나.
+   • 베이지 지면·그레인·인덱스 자간 코스튬으로 되돌리기. */
 
 :root {
-  /* 지면 — 웜 페이퍼 (palette C) */
-  --ground: #f0e8db;        /* 작업대·노트 바탕 */
-  --sheet: #faf6ef;         /* 시트 — 지면에서 한 단 뜬 크림 */
-  --hover: #f5efe5;         /* 호버 바닥 — 지면과 시트의 중간. 시트를 그대로 깔면
-                               흰 판이 튀어 행 하나가 카드처럼 도드라진다 */
-  --hairline: #ddd0bc;      /* 장식 구분선. 텍스트 대비 대상이 아니다 */
-  --edge: #a89278;          /* 인터랙티브 경계 — 지면 대비 3:1 을 넘겨야 하는 선 */
+  /* 지면 — 순백. 카드와 바닥이 색으로 갈리지 않는다 */
+  --ground: #ffffff;
+  --sheet: #ffffff;
+  --hover: #f5f5f5;
+  --hairline: #e6e6e6;
+  --edge: #a3a3a3;
 
-  /* 잉크 — 따뜻한 다크 브라운 */
-  --paper: #2a2118;         /* 본문·제목. ground 대비 ~12:1 */
-  --dim: #6e5c4a;           /* 2차 정보. ground 대비 ~4.6:1 */
+  /* 잉크 — 무채 뉴트럴 */
+  --paper: #171717;         /* 본문·제목. ground 대비 ~16:1 */
+  --dim: #6b6b6b;           /* 2차 정보. ground 대비 ~5.5:1 */
 
-  /* 왁스 연필 — 이 월드의 유일한 채도. 표시에만 쓴다 */
-  --wax: #c9441a;           /* ground 대비 ~4.7:1 */
+  /* 산호 — 이 월드의 유일한 채도. 핀에만 쓴다 */
+  --wax: #c9441a;           /* hsl(14 77% 45%). ground 대비 ~5.4:1 */
+  --wax-light: #d45a32;
+  --halo: #faf4f1;          /* hue 14, 명도 96% — 회색과 명도가 같고 hue 만 산호 */
+  --halo-ink: #8a3a22;
 
-  /* 라이트박스 — 지도. 지면과 같은 크림 축이라 톤이 이어진다 */
-  --lightbox: #faf6ef;
-  --lightbox-ink: #2a2118;
-  --lightbox-dim: #6e5c4a;
-  --lightbox-edge: #ddd0bc;
+  /* 라이트박스 — 지도. 같은 흰 축 */
+  --lightbox: #ffffff;
+  --lightbox-ink: #171717;
+  --lightbox-dim: #6b6b6b;
+  --lightbox-edge: #e6e6e6;
 
-  /* 프레임 — 콘택트 시트는 각져 있다. 라운드가 커지면 앱 카드 문법이 된다 */
-  --r-frame: 4px;
-  --r-control: 7px;
-  --r-round: 999px;         /* 아바타 */
+  /* 형태 — 이미지는 12, 컨트롤은 10, 알약은 full */
+  --r-frame: 12px;
+  --r-control: 10px;
+  --r-round: 999px;
 
   /* 타이포 (모바일 375 기준) */
-  --t-display: 32px;        /* 홈 제목 — 900 */
-  --t-screen: 25px;         /* 화면 제목 */
-  --t-title: 18px;          /* 영상·장소 제목 */
+  --t-display: 28px;
+  --t-screen: 20px;
+  --t-title: 15px;
   --t-body: 15px;
   --t-meta: 13px;
-  --t-index: 11px;          /* 인덱스·라벨. 자간 확장 필수 */
+  --t-index: 12px;
 
-  /* 리듬 */
-  --gutter: 18px;
-  --stack: 14px;            /* 묶음 안 */
-  --block: 34px;            /* 묶음 사이 */
+  /* 리듬 — 가로 거터 하나 */
+  --gutter: 16px;
+  --stack: 12px;
+  --block: 28px;
 
-  /* 깊이 — 웜 브라운 캐스트 그림자. 라이트라 깊게 안 깐다 */
-  --lift: 0 10px 24px -10px rgb(60 40 20 / 0.18), 0 2px 6px -2px rgb(60 40 20 / 0.1);
-  /* 라이트박스(지도) 위 핀 */
-  --lift-pin: 0 2px 6px -1px rgb(60 40 20 / 0.28);
+  /* 깊이 — 실제로 떠 있는 것에만 */
+  --lift: 0 4px 20px rgba(0, 0, 0, 0.06);
+  --lift-pin: 0 2px 6px -1px rgb(0 0 0 / 0.22);
 
   color-scheme: light;
 }
 
 @media (min-width: 768px) {
   :root {
-    --gutter: 28px; --stack: 16px; --block: 46px;
-    --t-display: 44px; --t-screen: 32px; --t-title: 19px; --t-body: 16px;
+    --gutter: 24px; --stack: 14px; --block: 36px;
+    --t-display: 36px; --t-screen: 24px; --t-title: 16px; --t-body: 16px;
   }
 }
 @media (min-width: 1280px) {
   :root {
-    --gutter: 40px; --block: 60px;
-    --t-display: 58px; --t-screen: 38px; --t-title: 20px;
+    --gutter: 32px; --block: 48px;
+    --t-display: 44px; --t-screen: 28px;
   }
 }
 
@@ -85,6 +84,7 @@
   --color-paper: var(--paper);
   --color-dim: var(--dim);
   --color-wax: var(--wax);
+  --color-halo: var(--halo);
   --color-lightbox: var(--lightbox);
   --radius-frame: var(--r-frame);
   --radius-control: var(--r-control);
@@ -95,54 +95,30 @@ body {
   background: var(--ground);
   color: var(--paper);
   font-family: var(--font-paper), var(--font-archivo), -apple-system, sans-serif;
-  word-break: keep-all;               /* 한국어는 어절 단위로만 끊는다 */
+  word-break: keep-all;
+  overflow-wrap: break-word;
   -webkit-font-smoothing: antialiased;
 }
 
-/* 종이 입자 — 베이지 지면이 밋밋한 플랫이 아니라 물질로 읽히게.
-   라이트라 다크 때보다 더 약해야 한다. 눈에 띄면 노이즈다.
-
-   ⚠️ mix-blend-mode 를 쓰지 않는다. 전체화면 fixed 레이어에 블렌드를 걸면
-      아래에 filter/transform 으로 합성 레이어를 만드는 요소와 겹칠 때
-      그 영역이 통째로 검게 래스터되는 페인트 버그가 난다. */
-body::before {
-  content: "";
-  position: fixed;
-  inset: 0;
-  z-index: 0;
-  pointer-events: none;
-  opacity: 0.018;
-  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23n)'/%3E%3C/svg%3E");
-}
-body > * { position: relative; z-index: 1; }
-
-/* 숫자는 어디서나 같은 폭 — 인덱스·타임코드·개수 정렬 */
 .tnum { font-variant-numeric: tabular-nums; }
 
-/* 인덱스 — 콘택트 시트의 프레임 번호와 라벨. 라틴 그로테스크 + 넓은 자간
-   ⚠️ text-transform: uppercase 를 넣지 않는다. 이 클래스는 라벨뿐 아니라 채널명·도시명
-      같은 고유명사에도 붙는데, 라틴 이름이 통째로 대문자가 된다("ChooSungHoon" →
-      "CHOOSUNGHOON"). 한글은 영향이 없어서 눈에 안 띄다가 라틴 이름에서 드러난다.
-      대문자가 필요한 자리가 생기면 .index--caps 를 따로 만든다. */
+/* 라벨 — 구조용 작은 글. 자간 코스튬(0.14em)은 폐기. 한글이 성기게 보이지 않게 */
 .index {
-  font-family: var(--font-archivo), var(--font-paper), -apple-system, sans-serif;
   font-size: var(--t-index);
   font-weight: 600;
-  letter-spacing: 0.14em;
+  letter-spacing: -0.01em;
   font-variant-numeric: tabular-nums;
-  line-height: 1;
+  line-height: 1.2;
 }
 
-/* 프레임 — 썸네일이 앉는 자리. 이 월드의 서명.
-   썸네일 자체는 유튜브 원본 그대로여야 하므로(§III.E.3) 프레임은 바깥에서만 작동한다 */
+/* 프레임 — 16:9 원본. 라운드는 창의 모서리이지 카드 크롬이 아니다 */
 .frame {
   position: relative;
   display: block;
   overflow: hidden;
   aspect-ratio: 16 / 9;
-  background: var(--sheet);
+  background: var(--hover);
   border-radius: var(--r-frame);
-  box-shadow: inset 0 0 0 1px var(--hairline);
 }
 .frame > img {
   display: block;
@@ -151,112 +127,71 @@ body > * { position: relative; z-index: 1; }
   object-fit: cover;
 }
 
-/* 왁스 표시 — 고른 컷에 연필로 두른 자국. 링이지 채움이 아니다 */
-.waxed { box-shadow: inset 0 0 0 2px var(--wax), var(--lift); }
+/* 고른 컷 — 산호 링 2px. 채움이 아니다 */
+.waxed { box-shadow: inset 0 0 0 2px var(--wax); }
 
-/* 괘선 */
-.rule { height: 1px; background: var(--hairline); border: 0; margin: 0; }
+.rule { height: 1px; background: var(--hairline); border: 0; margin-inline: 0; }
 
-/* 키보드 포커스 — 왁스 링. 레이어 밖이라 유틸리티로 덮이지 않는다 */
-/* outline 은 요소 자신의 border-radius 를 따라가므로 여기서 radius 를 지정하지 않는다 */
 :focus-visible { outline: 2px solid var(--wax); outline-offset: 3px; }
 
-/* ── 입력 판 ──────────────────────────────────────────────────────────
-   위 왁스 링은 **버튼·링크처럼 작은 타깃**을 위한 것이다. 폭을 다 쓰는 텍스트
-   입력에 그대로 걸리면 화면을 가로지르는 빨간 사각형이 되고, 이 월드에서 왁스가
-   면적을 먹지 말아야 한다는 규칙과도 정면으로 부딪힌다.
-
-   그래서 입력은 판을 두르고, **판이 테두리를 진하게 해서** 포커스를 말한다.
-   헤더 검색 버튼(hairline → edge)과 같은 문법이라 두 자리가 한 물건으로 읽힌다.
-   지우는 게 아니라 바꿔 끼우는 것이므로 "보이는 포커스"(WCAG 2.4.7)는 남는다. */
+/* 검색·입력 — 테두리 없음. 바닥이 한 단 내려앉으며 포커스를 말한다 */
 .field {
-  background: var(--sheet);
-  border-radius: var(--r-control);
-  box-shadow: inset 0 0 0 1px var(--hairline);
-  transition: box-shadow 0.15s ease;
+  background: var(--hover);
+  border-radius: var(--r-frame);
+  transition: background-color 0.15s ease;
 }
-/* 포커스 색이 --edge 가 아니라 --dim 인 이유: --edge 는 --sheet 위에서 2.8:1 이라
-   1.4.11 의 3:1 을 못 넘긴다. --dim 은 5.9:1 이고 플레이스홀더와 같은 잉크라
-   조용하다. 모바일에서는 패널이 열리자마자 입력이 포커스를 받으므로 이건
-   순간적인 표시가 아니라 **평상시 모습**이다 — 세게 칠하면 안 되는 이유다. */
 .field:focus-within {
-  box-shadow: inset 0 0 0 2px var(--dim);
+  background: #ededed;
 }
 .field input:focus-visible {
   outline: none;
 }
-/* 라이트박스(지도) 위에서는 잉크로 반전 — 웜 페이퍼 월드에선 ground 와 톤이 같아
-   기본 왁스 링도 보이지만, 지도 위 컨트롤은 잉크가 더 또렷하다 */
 .on-lightbox :focus-visible { outline-color: var(--lightbox-ink); }
 
-/* ── 모션: 이 월드의 단 하나의 연출 ────────────────────────────────────
-   현상액에서 상이 떠오르는 순간. 프레임이 살짝 아래에서 올라오며 나타난다.
-   목록 진입에서 한 번만, 계단식으로.
-
-   ⚠️ blur 를 넣지 않는다 — 피드 항목마다 합성 레이어가 생겨 스크롤 중
-      페인트가 깨진다(위 그레인 주석과 같은 원인). 불투명도와 이동만으로 충분하다. */
 @keyframes develop {
-  from { opacity: 0; transform: translateY(10px); }
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 .develop {
-  animation: develop 0.55s cubic-bezier(0.16, 1, 0.3, 1) both;
-  animation-delay: calc(var(--i, 0) * 55ms);
+  animation: develop 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  animation-delay: calc(var(--i, 0) * 45ms);
 }
 
-/* 시트·바가 아래에서 떠오르며 나타난다. develop 과 같은 이유로 blur 없음 */
 @keyframes rise-in {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(12px); }
   to   { opacity: 1; transform: none; }
 }
 .rise-in {
-  animation: rise-in 0.32s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation: rise-in 0.28s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@keyframes nav-pill-liquid {
+  0%   { transform: scale(1, 1); }
+  35%  { transform: scale(1.4, 0.84); }
+  70%  { transform: scale(0.94, 1.05); }
+  100% { transform: scale(1, 1); }
+}
+.animate-nav-pill-liquid {
+  animation: nav-pill-liquid 400ms cubic-bezier(0.3, 0.9, 0.4, 1);
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .develop { animation: none; }
-  .rise-in { animation: none; }
+  .develop,
+  .rise-in,
+  .animate-nav-pill-liquid { animation: none; }
 }
 
-/* 가로 스크롤 스트립 */
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ── 호버: 행 바닥 + (있을 때) 표식·화살 ────────────────────────────────
-   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아진다.
-
-   채널 행처럼 아바타·셰브론이 있는 곳은 자식 마커로 한 단 더 말한다.
-   · `.roll-mark` — 프로필 표식. 살짝 커져 "이 사람"이 앞으로 온다.
-   · `.roll-go`   — 진입 화살. 오른쪽으로 밀리며 왁스로 물든다(갈 곳 표시).
-   자식 마커가 없으면 예전과 같이 바닥만 변한다 — `/type`·도시 목록 호환.
-
-   컷(썸네일)은 건드리지 않는다. 마우스를 스칠 때마다 사진이 술렁이면
-   정작 봐야 할 프레임에서 눈이 떨어진다.
-
-   ⚠️ 바닥에 --sheet 를 깔지 마라. 지면과 대비가 커서 행 하나가 흰 카드로
-      떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다.
-
-   ⚠️ 얹을 때(120ms)와 뗄 때(220ms)를 **비대칭**으로 둔다. 얹을 때는 빨라야
-      반응한 느낌이 나고, 뗄 때는 여유가 있어야 툭 끊기지 않는다.
-
-   ── 어디에 붙이나 ──────────────────────────────────────────────────
-   **행 전체가 한 곳으로 가는 링크일 때만** 붙인다. 지금 붙어 있는 곳:
-   `/city`(두 단), `/channels`, `/type`, 홈의 채널 목록, 채널 허브의 장소 목록.
-
-   지도와 짝지어 "고른 행"을 표시하는 목록(CityExplorer·Explorer·Timeline)에는
-   **붙이지 않는다.** 거기서 배경색은 이미 "선택됨"(aria-pressed)의 뜻이라,
-   같은 색 계열의 호버를 얹으면 반쯤 선택된 것처럼 읽힌다. Timeline 의 행은
-   목표가 둘(클립 선택 · 유튜브 열기)이라 행 전체를 물들이면 거짓말이 된다.
-   본문 속 인라인 링크는 밑줄(hover:underline)이 맞다 — 면을 칠하지 않는다. */
+/* 행 호버 — 바닥만. 사진은 안 건드린다 */
 .roll {
-  transition: background-color 0.22s ease;
+  transition: background-color 0.2s ease;
 }
 .roll-go {
   color: var(--dim);
-  transition: color 0.22s ease;
+  transition: color 0.2s ease;
 }
-
-/* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 바닥이 깔려 있으면 안 된다 */
 @media (hover: hover) {
   .roll:hover {
     background: var(--hover);
@@ -267,8 +202,6 @@ body > * { position: relative; z-index: 1; }
     transition-duration: 0.12s;
   }
 }
-
-/* 터치 즉시 피드백 — 호버 없는 기기에서도 "눌림"이 읽히게 */
 .roll:active {
   background: var(--hover);
   transition-duration: 60ms;
@@ -278,26 +211,14 @@ body > * { position: relative; z-index: 1; }
   transition-duration: 60ms;
 }
 
-/* ── 시트 카드(최근 영상) 호버 ─────────────────────────────────────────
-   `.roll` 과 같은 문법: 들림·스케일 없이 **바닥만** 부드럽게 깐다.
-   카드 전체가 한 링크라 패딩·라운드를 주고, 호버 시 --hover 로 물들인다.
-   프레임·썸네일은 건드리지 않는다 — 컷이 술렁이면 딱딱해 보인다. */
 .sheet-card {
   border-radius: var(--r-control);
-  /* 음수 마진으로 호버 면적을 gutter 쪽으로 살짝 넓혀 행처럼 읽히게 */
-  margin-inline: -0.625rem;
-  padding: 0.625rem;
-  transition: background-color 0.22s ease;
+  margin-inline: -0.5rem;
+  padding: 0.5rem;
+  transition: background-color 0.2s ease, transform 0.15s ease;
 }
-.sheet-card .sheet-source {
-  color: var(--dim);
-}
-.sheet-name {
-  transition: color 0.22s ease;
-}
-.sheet-card .frame {
-  transition: box-shadow 0.22s ease;
-}
+.sheet-card .sheet-source { color: var(--dim); }
+.sheet-name { transition: color 0.2s ease; }
 @media (hover: hover) {
   .sheet-card:hover {
     background: var(--hover);
@@ -307,23 +228,15 @@ body > * { position: relative; z-index: 1; }
     color: var(--wax);
     transition-duration: 0.12s;
   }
-  /* 컷은 안 움직인다. 프레임 링만 진해져 "이 장"이 된다 */
-  .sheet-card:hover .frame {
-    box-shadow: inset 0 0 0 1px var(--edge);
-    transition-duration: 0.12s;
-  }
 }
 .sheet-card:active {
   background: var(--hover);
+  transform: scale(0.985);
   transition-duration: 60ms;
 }
 .sheet-card:active .sheet-name { color: var(--wax); }
-.sheet-card:active .frame { box-shadow: inset 0 0 0 1px var(--edge); }
 
-/* ── 뼈대 — 토스식 플로우, 웜 페이퍼 토큰 ────────────────────────────
-   쿨 그레이(#f2f4f6)는 이 월드가 아니다. 모션만 가져온다:
-   90도 하이라이트가 뼈 위를 가로질러 흐른다.
-   프레임 안(.bone 절대) · 제목 막대(.bone-line) · 아바타가 같은 쓸림. */
+/* 스켈레톤 — 시머. pulse 금지 */
 @keyframes bone-flow {
   from { background-position: 100% 0; }
   to   { background-position: -100% 0; }
@@ -331,17 +244,15 @@ body > * { position: relative; z-index: 1; }
 .bone,
 .bone-line,
 .bone-ava {
-  background-color: color-mix(in srgb, var(--hairline) 42%, var(--sheet));
+  background-color: var(--hover);
   background-image: linear-gradient(
-    90deg,
-    transparent 0%,
-    color-mix(in srgb, var(--sheet) 55%, white) 42%,
-    color-mix(in srgb, var(--sheet) 15%, white) 50%,
-    color-mix(in srgb, var(--sheet) 55%, white) 58%,
-    transparent 100%
+    100deg,
+    var(--hover) 40%,
+    #fff 50%,
+    var(--hover) 60%
   );
-  background-size: 220% 100%;
-  animation: bone-flow 1.35s ease-in-out infinite;
+  background-size: 200% 100%;
+  animation: bone-flow 1.6s ease-in-out infinite;
 }
 .bone {
   position: absolute;
@@ -354,7 +265,7 @@ body > * { position: relative; z-index: 1; }
   display: block;
   overflow: hidden;
 }
-.bone-line { height: 0.72em; border-radius: var(--r-frame); }
+.bone-line { height: 0.72em; border-radius: 4px; }
 .bone-ava {
   flex: 0 0 auto;
   width: 36px;
@@ -362,75 +273,51 @@ body > * { position: relative; z-index: 1; }
   border-radius: var(--r-round);
 }
 
-/* ── 칩(필터) 호버 ────────────────────────────────────────────────────
-   활성 = 왁스 링, 호버 = 바닥만. 링 색까지 바꾸면 딱딱해 보이므로
-   호버에서는 box-shadow 를 건드리지 않는다(.roll / .nav-item 과 동일).
-   인라인 box-shadow 를 쓰면 :hover 가 죽으므로 전부 여기서 관리한다. */
+/* 칩 — 활성은 잉크 채움. 산호를 안 쓰는 이유: 한 줄에 여러 개가 동시에 켜질 수 있다 */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   flex-shrink: 0;
   white-space: nowrap;
-  padding: 0.375rem 0.75rem;
+  padding: 6px 12px;
   font-size: var(--t-meta);
   font-weight: 500;
   line-height: 1.25;
-  border-radius: var(--r-control);
-  color: var(--dim);
-  background: transparent;
+  border-radius: var(--r-round);
+  color: #383838;
+  background: var(--ground);
   box-shadow: inset 0 0 0 1px var(--hairline);
   cursor: pointer;
   transition:
-    background-color 0.22s ease,
-    color 0.22s ease;
+    background-color 0.15s ease,
+    color 0.15s ease,
+    box-shadow 0.15s ease,
+    transform 0.12s ease;
 }
 .chip[aria-pressed="true"],
 .chip[data-active="true"] {
-  color: var(--paper);
-  box-shadow: inset 0 0 0 1px var(--wax);
+  color: #fff;
+  background: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--paper);
 }
+.chip:active { transform: scale(0.95); }
 @media (hover: hover) {
-  .chip:hover {
+  .chip:hover:not([aria-pressed="true"]):not([data-active="true"]) {
     background: var(--hover);
     color: var(--paper);
-    transition-duration: 0.12s;
   }
 }
-.chip:active {
-  background: var(--hover);
-  color: var(--paper);
-  transition-duration: 60ms;
-}
 
-/* ── 헤더 메뉴 ─────────────────────────────────────────────────────────
-   .roll 과 같은 바닥에 **잉크**를 하나 더 얹는다. 목록 행과 달리 메뉴 항목은
-   11px 자간 넓은 라벨이라, 바닥만으로는 변화가 눈에 안 들어온다.
-
-   ⚠️ 색을 인라인 style 로 주지 마라. 인라인은 스타일시트의 :hover 를 이기므로
-      호버가 조용히 죽는다 — 여기로 옮긴 이유가 그것이다.
-
-   ── 활성과 호버가 왜 안 헷갈리나 ────────────────────────────────
-   현재 페이지는 **왁스 링**(box-shadow), 손 얹은 곳은 **바닥**(background) 이다.
-   둘이 다른 속성이라 겹쳐도 각각 읽힌다. 호버는 box-shadow 를 건드리지 않으므로
-   활성 항목에 손을 얹으면 링은 그대로 있고 바닥만 깔린다.
-
-   같은 속성을 색만 바꿔 두 번 쓰는 안(호버=--edge 링, 활성=--wax 링)도 검토했는데,
-   링 두 개를 색으로만 구별해야 해서 기각했다. */
 .nav-item {
   color: var(--dim);
   border-radius: var(--r-control);
-  transition:
-    background-color 0.22s ease,
-    color 0.22s ease;
+  transition: background-color 0.2s ease, color 0.2s ease;
 }
 .nav-item[aria-current] {
-  color: var(--paper);
-  box-shadow: inset 0 0 0 1px var(--wax);
+  color: var(--wax);
 }
 @media (hover: hover) {
-  /* [aria-current] 뒤에 선언 — 같은 특이도라 활성 항목에서도 잉크가 이긴다.
-     box-shadow 는 안 건드리므로 왁스 링은 살아 있다 */
   .nav-item:hover {
     background: var(--hover);
     color: var(--paper);
@@ -438,17 +325,10 @@ body > * { position: relative; z-index: 1; }
   }
 }
 
-/* 판 없는 메뉴 링크 — 헤더 '고지', 푸터 정책 색인.
-   여기는 **바닥을 칠하지 않는다.** 배경을 깔려면 그 배경이 앉을 판이 있어야 하는데,
-   이 링크들은 패딩도 테두리도 없는 맨 글자다. 면을 칠하면 글자에 딱 붙은 색 조각이
-   생겨 오히려 지저분해진다. 잉크와 밑줄로만 말한다.
-
-   ⚠️ 원래 `transition-colors` 가 붙어 있었는데 호버에서 바뀌는 색이 없어서
-      **아무 일도 안 하고 있었다.** 헤더 메뉴와 같은 종류의 죽은 트랜지션이다. */
 .nav-link {
   color: var(--dim);
   text-underline-offset: 4px;
-  transition: color 0.22s ease;
+  transition: color 0.2s ease;
 }
 @media (hover: hover) {
   .nav-link:hover {
@@ -458,20 +338,13 @@ body > * { position: relative; z-index: 1; }
   }
 }
 
-/* ── 하단 탭바 (모바일) ────────────────────────────────────────────────
-   햄버거 + 전체화면 오버레이가 있던 자리. 항목이 셋뿐인 목록을 열려고 화면을
-   통째로 덮을 이유가 없고, 여닫는 버튼이 사라지면 "메뉴 ↔ X" 위치가 어긋날
-   일도 없어진다.
-
-   왜 불투명 지면인가: 헤더와 같은 이유다. 전체화면 fixed 그레인 레이어 위에
-   backdrop-filter 를 걸면 그 영역이 검게 래스터된다.
-
-   safe-area 는 바 **안쪽** 패딩으로 먹는다. 바깥에 마진으로 주면 홈 인디케이터
-   구역에 지면이 비쳐 바가 떠 보인다. */
+/* 하단 탭바 — 도킹. 활성은 산호 + fill. 라벨은 유지(처음 오는 사람용) */
 .tabbar {
-  background: var(--ground);
+  background: color-mix(in srgb, var(--ground) 95%, transparent);
   border-top: 1px solid var(--hairline);
   padding-bottom: env(safe-area-inset-bottom);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
 }
 .tab {
   position: relative;
@@ -480,78 +353,24 @@ body > * { position: relative; z-index: 1; }
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 5px;
-  padding: 9px 0 11px;
+  gap: 3px;
+  padding: 8px 0 10px;
   color: var(--dim);
-  transition:
-    background-color 0.22s ease,
-    color 0.22s ease;
+  transition: color 0.15s ease, transform 0.12s ease;
 }
-
-/* ── dual 아이콘 채움 (시안 7 · Classic + Ink Solid)
-   `.ig-body` 는 닫힌 실루엣. 기본 fill:none(부모 svg), 활성에서 currentColor.
-   구멍은 evenodd 라 탭 배경(--ground / --hover)이 그대로 비친다.
-   왁스 눈금은 그대로 “표시”, 아이콘 면 채움은 잉크(paper/dim currentColor). */
-.ig-body {
-  fill: none;
-  transition:
-    fill 0.15s ease,
-    stroke-width 0.15s ease;
-}
-
-/* 현재 위치 = 잉크 진함 + 아이콘 내부 채움 + **왁스 눈금** */
+.tab:active { transform: scale(0.95); }
 .tab[aria-current] {
-  color: var(--paper);
-}
-.tab[aria-current] .ig-body {
-  fill: currentColor;
-  stroke-width: 1.15;
-}
-.tab[aria-current]::before {
-  content: "";
-  position: absolute;
-  top: -1px;
-  width: 22px;
-  height: 2px;
-  background: var(--wax);
+  color: var(--wax);
 }
 
-/* 데스크톱 헤더 메뉴도 같은 채움 — 같은 목적지가 폭에 따라 다른 물건이면 안 된다 */
-.nav-item[aria-current] .ig-body {
-  fill: currentColor;
-  stroke-width: 1.15;
-}
-
-/* 터치에는 호버가 없다. 본체는 :active — 60ms 는 NN/g 의 "즉답" 한계 안쪽 */
-.tab:active {
-  background: var(--hover);
-  transition-duration: 60ms;
-}
-@media (hover: hover) {
-  .tab:hover {
-    background: var(--hover);
-    color: var(--paper);
-    transition-duration: 0.12s;
-  }
-  /* 호버 예고 워시 — 이미 활성인 탭은 솔리드를 유지 */
-  .tab:hover:not([aria-current]) .ig-body,
-  .nav-item:hover:not([aria-current]) .ig-body {
-    fill: color-mix(in srgb, currentColor 14%, transparent);
-  }
-}
-
-/* 모션 축소 — 상태는 남기고 움직임만 걷는다. MDN 이 말하는 "reduces, or
-   replaces" 다. 전정기관을 건드리는 건 확대·이동이므로 색은 그대로 둔다 */
 @media (prefers-reduced-motion: reduce) {
   .nav-item,
   .nav-link,
   .tab,
-  .ig-body,
   .roll,
   .roll-go,
   .sheet-card,
   .sheet-name,
-  .sheet-card .frame,
   .chip,
   .bone,
   .bone-line,

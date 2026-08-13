@@ -13,7 +13,8 @@
  */
 
 import Link from "next/link";
-import { Avatar, Frame, Icon } from "@/shared/ui/frame";
+import { Avatar, Frame } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { Thumb } from "@/shared/ui/Thumb";
 
 export interface SheetVideo {

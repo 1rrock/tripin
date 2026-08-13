@@ -15,7 +15,8 @@ import type { PlaceType } from "@/shared/api/database.types";
 import type { CreatorCityOption } from "@/shared/api/creator-hub";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
-import { Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
+import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import {

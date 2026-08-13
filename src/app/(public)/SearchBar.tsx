@@ -13,10 +13,12 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
-import { Avatar, Icon } from "@/shared/ui/frame";
+import { Avatar } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { thumbSmall } from "@/shared/lib/youtube";
 import { highlight, search, type SearchDoc, type SearchKind } from "@/shared/lib/search";
 
@@ -186,8 +188,14 @@ export function SearchBar() {
         </span>
       </button>
 
-      {open ? (
-        <div className="fixed inset-0 z-50" onKeyDown={onPanelKey}>
+      {/* 포털은 `open` 하나로 충분하다 — 패널은 클릭·단축키·커스텀 이벤트로만 열리고
+          그 셋은 전부 하이드레이션 뒤에 온다. 서버 렌더와 첫 클라이언트 렌더에서
+          `open` 은 언제나 false 라 `document.body` 를 건드릴 일이 없다.
+          🔴 여기에 mounted 상태를 다시 붙이지 말 것 — 이펙트에서 setState 를 불러
+             모든 페이지에 렌더를 한 번씩 더 얹는다(react-hooks/set-state-in-effect) */}
+      {open
+        ? createPortal(
+        <div className="fixed inset-0 z-[80]" onKeyDown={onPanelKey}>
           <button
             type="button"
             aria-label={m.search.close}
@@ -200,7 +208,7 @@ export function SearchBar() {
             role="dialog"
             aria-modal="true"
             aria-label={m.search.open}
-            className="rise-in absolute inset-0 flex flex-col bg-(--sheet) sm:inset-auto sm:top-16 sm:left-1/2 sm:h-auto sm:w-[min(41rem,calc(100vw-1.75rem))] sm:-translate-x-1/2 sm:rounded-[10px]"
+            className="rise-in absolute inset-0 flex flex-col bg-white sm:inset-auto sm:top-16 sm:left-1/2 sm:h-auto sm:w-[min(41rem,calc(100vw-1.75rem))] sm:-translate-x-1/2 sm:rounded-[10px]"
             style={{ boxShadow: "var(--lift), 0 0 0 1px var(--hairline)" }}
           >
             <div
@@ -239,9 +247,9 @@ export function SearchBar() {
                   aria-autocomplete="list"
                   autoComplete="off"
                   enterKeyHint="search"
-                  /* 16px 미만이면 iOS 가 포커스에서 화면을 확대한다 — --t-title(18px) 유지 */
+                  /* 16px 미만이면 iOS 가 포커스에서 화면을 확대한다 */
                   className="w-full min-w-0 bg-transparent outline-none placeholder:text-[color:var(--dim)]"
-                  style={{ fontSize: "var(--t-title)" }}
+                  style={{ fontSize: "16px" }}
                 />
               </div>
               {/* 키캡은 키가 있는 화면에서만 — 모바일에서는 위 뒤로 화살표가 이 일을 한다 */}
@@ -317,8 +325,10 @@ export function SearchBar() {
               )}
             </div>
           </div>
-        </div>
-      ) : null}
+        </div>,
+        document.body,
+      )
+        : null}
     </>
   );
 }

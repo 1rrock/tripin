@@ -7,7 +7,8 @@ import { VideoList } from "./VideoList";
 import { CreatorExplorer, type CreatorPlace } from "./CreatorExplorer";
 import type { PlaceType } from "@/shared/api/database.types";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
-import { Act, Avatar, Icon } from "@/shared/ui/frame";
+import { Avatar } from "@/shared/ui/frame"
+import { Act, Icon } from "@/shared/ui/icons";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName, displaySummary } from "@/shared/i18n/display";
@@ -103,7 +104,7 @@ export default async function CreatorHubPage({
   }));
 
   return (
-    <main className="flex flex-col gap-(--stack) pb-20">
+    <main className="flex flex-col gap-(--stack)">
       <JsonLd
         data={[
           breadcrumbList([
@@ -123,7 +124,7 @@ export default async function CreatorHubPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-2.5 px-(--gutter) pt-2 pb-0">
+      <header className="flex flex-col gap-2.5 px-(--gutter) pt-4 pb-0">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
             {m.common.home}

@@ -8,7 +8,8 @@ import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shar
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
-import { Act, Chip, Frame, Icon, Index, Rule } from "@/shared/ui/frame";
+import { Chip, Frame, Index, Rule } from "@/shared/ui/frame"
+import { Act, Icon } from "@/shared/ui/icons";
 import { Thumb } from "@/shared/ui/Thumb";
 
 /* `export const revalidate` 를 두지 않는다 — 이 트리는 레이아웃이 headers() 를 읽어
@@ -81,7 +82,7 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
   );
 
   return (
-    <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+    <main className="mx-auto flex w-full max-w-lg flex-col gap-(--block) px-(--gutter) pt-4">
       <JsonLd
         data={[
           breadcrumbList([

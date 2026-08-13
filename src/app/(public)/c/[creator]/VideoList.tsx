@@ -13,7 +13,8 @@
 import { useId, useMemo, useState } from "react";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { VideoSummary } from "@/shared/api/videos";
-import { Chip, Icon } from "@/shared/ui/frame";
+import { Chip } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { VideoSheet } from "@/shared/ui/VideoSheet";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
@@ -66,12 +67,7 @@ export function VideoList({
     <div className="flex flex-col gap-(--stack)">
       <label
         htmlFor={searchId}
-        className="flex items-center gap-2.5 px-3.5 py-3"
-        style={{
-          borderRadius: "var(--r-control)",
-          background: "var(--sheet)",
-          boxShadow: "inset 0 0 0 1px var(--hairline)",
-        }}
+        className="field flex items-center gap-2.5 px-3.5 py-3"
       >
         <span className="sr-only">{m.home.searchAria}</span>
         <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
@@ -84,7 +80,7 @@ export function VideoList({
           autoComplete="off"
           enterKeyHint="search"
           className="w-full bg-transparent outline-none placeholder:text-[color:var(--dim)]"
-          style={{ fontSize: "var(--t-body)" }}
+          style={{ fontSize: "16px" }}
         />
       </label>
 

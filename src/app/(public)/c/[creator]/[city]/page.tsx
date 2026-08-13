@@ -10,7 +10,8 @@ import { getLocale, localePath } from "@/shared/i18n/locale";
 import type { Locale } from "@/shared/i18n/config";
 import { displayCityName, displayIntro, displaySummary } from "@/shared/i18n/display";
 import type { EnSource } from "@/shared/i18n/display";
-import { Chip, Icon } from "@/shared/ui/frame";
+import { Chip } from "@/shared/ui/frame"
+import { Icon } from "@/shared/ui/icons";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
@@ -290,7 +291,7 @@ function PendingPiece({
 }) {
   const m = getDictionary(locale);
   return (
-    <main className="flex flex-col gap-4 px-(--gutter) pt-2 pb-20">
+    <main className="flex flex-col gap-4 px-(--gutter) pt-4">
       <nav className="index flex items-center" style={{ color: "var(--dim)" }}>
         <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
           {m.common.home}
