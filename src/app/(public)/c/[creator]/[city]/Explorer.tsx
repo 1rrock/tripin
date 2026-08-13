@@ -25,6 +25,7 @@ import { primaryMapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { Act, Chip, FrameNo, Icon, Rule } from "@/shared/ui/frame";
+import { OutboundA } from "@/shared/ui/OutboundA";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
@@ -490,15 +491,13 @@ export function Explorer({
                       ) : null}
                       <span>{m.placeTypes[place.placeType]}</span>
                       {place.youtubeVideoId ? (
-                        <a
+                        <OutboundA
                           href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
-                          target="_blank"
-                          rel="noopener noreferrer"
                           className="font-medium underline underline-offset-4"
                           style={{ color: "var(--paper)" }}
                         >
                           {m.common.watchVideo}
-                        </a>
+                        </OutboundA>
                       ) : null}
                     </li>
                   ))}

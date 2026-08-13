@@ -20,6 +20,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { Avatar, Icon } from "@/shared/ui/frame";
+import { OutboundA } from "@/shared/ui/OutboundA";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
@@ -231,10 +232,8 @@ export function PlaceSheet({
             >
               {s.creatorName}
             </span>
-            <a
+            <OutboundA
               href={youtubeUrl(s.youtubeId, s.timestampSec)}
-              target="_blank"
-              rel="noopener noreferrer"
               title={s.videoTitle}
               className="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1.5"
               style={{
@@ -248,16 +247,14 @@ export function PlaceSheet({
               {s.timestampSec !== null
                 ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
                 : m.common.watchVideo}
-            </a>
+            </OutboundA>
           </div>
         ))}
 
         {place.mapUrl ? (
           <div className="mt-1">
-            <a
+            <OutboundA
               href={place.mapUrl}
-              target="_blank"
-              rel="noopener noreferrer"
               className="inline-flex items-center gap-1.5 px-3 py-2 font-bold"
               style={{
                 fontSize: "var(--t-meta)",
@@ -268,7 +265,7 @@ export function PlaceSheet({
             >
               <Icon.out className="size-4" />
               {m.map.openInMapApp}
-            </a>
+            </OutboundA>
           </div>
         ) : null}
       </div>

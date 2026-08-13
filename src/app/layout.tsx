@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Analytics } from "@vercel/analytics/next";
 import { Archivo } from "next/font/google";
 import localFont from "next/font/local";
 import { publicEnv } from "@/shared/config/env";
@@ -124,6 +125,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           }}
         />
         {children}
+        <Analytics />
       </body>
     </html>
   );

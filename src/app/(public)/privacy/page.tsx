@@ -74,6 +74,15 @@ export default async function PrivacyPage() {
             </section>
 
             <section className="flex flex-col gap-3">
+              <h2 style={h2}>측정</h2>
+              <p style={body}>
+                페이지 방문은 Vercel Web Analytics로 집계합니다. 쿠키를 쓰지 않고, 개인을
+                식별하거나 다른 사이트와 교차해 추적하지 않습니다. 남는 것은 익명·합산된
+                통계(페이지 경로, 유입 경로, 국가·기기 종류)뿐입니다.
+              </p>
+            </section>
+
+            <section className="flex flex-col gap-3">
               <h2 style={h2}>광고</h2>
               <p style={body}>
                 현재 이 사이트는 광고를 게재하지 않습니다. 이후 광고(예: Google AdSense)를 도입하면
@@ -116,6 +125,15 @@ export default async function PrivacyPage() {
                 we don&rsquo;t store your language choice in a cookie. The only cookie this site
                 sets is for our internal admin login, used solely to authenticate the operator — it
                 has nothing to do with tracking visitors.
+              </p>
+            </section>
+
+            <section className="flex flex-col gap-3">
+              <h2 style={h2}>Analytics</h2>
+              <p style={body}>
+                Page views are counted with Vercel Web Analytics. It does not use cookies, does
+                not identify you, and does not track you across other sites. Only anonymous,
+                aggregated stats remain — page path, referrer, country, and device type.
               </p>
             </section>
 

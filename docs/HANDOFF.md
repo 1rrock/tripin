@@ -72,7 +72,7 @@
 | 문서 title | 인덱스 훅("어디 가세요?")이 아니라 `srHeading` (설명형). 홈에 sr-only H1 |
 | GSC verification meta | `src/app/layout.tsx` → `verification.google = lkxLO-HERLGf1WGk8DEGktQW_kCeCwXphuEsfj8NGog` · **prod 배포됨** |
 | GSC 사이트맵 제출 · 색인 | **사람이 GSC에서 확인/제출.** 파일 생성은 자동, 색인은 Google 시간 |
-| `/takedown` 메일 | `hello@eatripin.com` (`siteUrl` host 기준). **실제 수신함 연결은 미확인/미완 가능** — 창구가 없는 것보다 있는 척이 나쁨 |
+| `/takedown` 메일 | `hello@eatripin.com` — **수신 불가 확인** (2026-08-13). apex MX 레코드 없음, TXT/SPF 없음. 가비아 DNS 만 있고 메일 포워딩이 안 걸려 있다. `/takedown` 문구는 mailto 를 빼고 정직하게 맞춰 둠. **가비아에서 MX+포워딩을 건 뒤 문구를 되돌릴 것** |
 | 도메인 정규화 | **apex 하나만 서빙.** `www` · `tripin-peach.vercel.app` → `eatripin.com` **308** (Vercel Domains, 2026-08-13 설정). `vercel.json` 이 아니라 대시보드 설정이라 리포에 안 보인다 |
 | Maps 키 HTTP 리퍼러 | 사용자 확인으로 지도 OK → `eatripin.com` 리퍼러 들어간 상태로 추정. 지도 깨지면 콘솔 확인 |
 | 폰트 | Paperlogy **5단**(400·500·600·700·900) · `preload: false`. §1-5 참고 |
@@ -207,10 +207,12 @@ www · apex · `tripin-peach.vercel.app` **셋 다 200 으로 같은 내용을 �
 
 ### 🟡 2. 운영 마감 (짧게)
 
-- [ ] `hello@eatripin.com` **실수신** (포워딩 OK). 안 되면 takedown 문구/메일 정직하게 맞출 것.
+- [x] Analytics — `@vercel/analytics` + `<Analytics />` (루트 레이아웃). 쿠키 없음. `/privacy` 에 측정 절 추가.
+- [ ] **Vercel 대시보드에서 Web Analytics Enable** — 패키지만 넣으면 데이터가 안 쌓인다. 프로젝트 `tripin` → Analytics → Enable.
+- [ ] 아웃링크 커스텀 이벤트(`outbound_video` / `outbound_map`) — **코드는 넣음.** Hobby 플랜은 커스텀 이벤트가 대시보드에 안 보인다(Pro 필요). 페이지뷰만 Hobby 에 포함. Pro 올리거나 1자 비콘을 따로 둘지 결정 필요.
+- [ ] `hello@eatripin.com` **실수신** — MX 없음 확인. 가비아 포워딩을 걸면 `/takedown` mailto 를 되돌린다. 임시로 쓸 다른 주소가 있으면 그걸로 문구를 바꿔도 된다.
 - [ ] YouTube 메타 **수동 갱신 1회** (크론 없음 — §1-3).
-- [ ] Analytics 1종 (Vercel Analytics 또는 GA4) — 아직 안 넣었을 수 있음.
-- [ ] 로컬 uncommitted 정리 · `git push` (ahead / `layout.tsx` verification · `vercel.json` 등).
+- [ ] `git push` — `redesign-world-v2` 가 origin 보다 ahead. 403(`denied to urbanlt1rrock`) 이면 자격증명 문제. 코드·DB 는 이미 prod 에 있어 서비스 영향 없음.
 
 ### 🟡 3. EN 번역 검수
 
@@ -328,3 +330,4 @@ npm run check:closed
 - **2026-08-10:** 배포 전 P0 7건, 법정 페이지, i18n 완결, ISR→데이터 캐시, EN 초벌 번역, 폐업 4곳 비공개, 브랜드 마크 등. 당시 “미배포·도메인 미정”.
 - **2026-08-13:** Vercel 배포, `eatripin.com`, 크론 제거, GSC meta, 수익/우선순위 결정, 본 핸드오프 갱신.
 - **2026-08-13 (이어서):** 기술 SEO — JSON-LD(WebSite/Organization/BreadcrumbList/ItemList), `publicMeta` 로 canonical·OG·x-default 통일, 인덱스 title 을 훅에서 설명형으로, 홈 sr-only H1, 사이트맵 x-default. Review·조회수·SearchAction 스키마는 넣지 않음.
+- **2026-08-13 (측정·창구):** Vercel Analytics 삽입 + 영상/지도 아웃링크 `track()`. `hello@eatripin.com` MX 없음 확인 → `/takedown` 을 창구 미연결로 정직하게 수정. 기술 SEO 배관은 손대지 않음.

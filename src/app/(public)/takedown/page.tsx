@@ -20,9 +20,13 @@ const body = {
   lineHeight: 1.7,
 } as const;
 
-/** siteUrl 이 아직 로컬(localhost)이면 브랜드 도메인으로 대체 — 실제 배포 도메인이 정해지면 자연히 그 값을 쓴다. */
+/**
+ * 전용 주소는 hello@eatripin.com 이지만, apex MX 가 비어 있어 지금은
+ * 도착하지 않는다. mailto 를 내밀면 창구가 있는 척이 된다 — 그게 없는 것보다 나쁘다.
+ * 가비아에서 포워딩(MX) 을 걸면 이 함수와 아래 접수 문구를 같이 되돌린다.
+ */
 function contactEmail(): string {
-  let host = "eatripin.app";
+  let host = "eatripin.com";
   try {
     const parsed = new URL(publicEnv.siteUrl);
     if (parsed.hostname !== "localhost") host = parsed.hostname;
@@ -47,13 +51,6 @@ export default async function TakedownPage() {
   const m = getDictionary(locale);
   const title = locale === "ko" ? "삭제 요청" : "Report an issue";
   const email = contactEmail();
-  const subject =
-    locale === "ko" ? "[삭제 요청] 채널/장소:" : "[Removal request] Channel/place:";
-  const bodyTemplate =
-    locale === "ko"
-      ? "해당 채널 또는 장소 URL:\n사유:\n연락처(회신용):"
-      : "Channel or place URL:\nReason:\nContact (for reply):";
-  const mailtoHref = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(bodyTemplate)}`;
 
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
@@ -88,23 +85,13 @@ export default async function TakedownPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>접수 방법</h2>
               <p style={body}>
-                아래 메일로 다음 세 가지를 적어 보내주세요 — 해당 채널 또는 장소의 URL, 요청 사유,
-                회신받을 연락처. 버튼을 누르면 양식이 채워진 메일이 열립니다.
+                전용 메일함({email})은 아직 수신이 연결되지 않았습니다. 지금 그 주소로 보내시면
+                도착하지 않습니다. 창구를 연결하는 대로 이 페이지에 주소를 올리겠습니다.
               </p>
-              <a
-                href={mailtoHref}
-                className="inline-flex w-fit items-center gap-2 px-4 py-2.5 transition-colors"
-                style={{
-                  fontSize: "var(--t-body)",
-                  fontWeight: 500,
-                  color: "var(--paper)",
-                  borderRadius: "var(--r-control)",
-                  boxShadow: "inset 0 0 0 1px var(--wax)",
-                }}
-              >
-                <Icon.out className="size-4 shrink-0" style={{ color: "var(--wax)" }} />
-                {email}
-              </a>
+              <p style={body}>
+                그때 보내주실 내용은 세 가지입니다 — 해당 채널 또는 장소의 URL, 요청 사유,
+                회신받을 연락처.
+              </p>
             </section>
 
             <section className="flex flex-col gap-3">
@@ -155,23 +142,14 @@ export default async function TakedownPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>How to submit</h2>
               <p style={body}>
-                Email us with three things: the channel or place URL, the reason for your request,
-                and a contact for a reply. The button below opens a pre-filled email.
+                The dedicated mailbox ({email}) is not receiving mail yet. Messages sent there
+                now will not arrive. We&rsquo;ll put a working address on this page as soon as
+                it&rsquo;s connected.
               </p>
-              <a
-                href={mailtoHref}
-                className="inline-flex w-fit items-center gap-2 px-4 py-2.5 transition-colors"
-                style={{
-                  fontSize: "var(--t-body)",
-                  fontWeight: 500,
-                  color: "var(--paper)",
-                  borderRadius: "var(--r-control)",
-                  boxShadow: "inset 0 0 0 1px var(--wax)",
-                }}
-              >
-                <Icon.out className="size-4 shrink-0" style={{ color: "var(--wax)" }} />
-                {email}
-              </a>
+              <p style={body}>
+                When it is, please include three things: the channel or place URL, the reason
+                for your request, and a contact for a reply.
+              </p>
             </section>
 
             <section className="flex flex-col gap-3">

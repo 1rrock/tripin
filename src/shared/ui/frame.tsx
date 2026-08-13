@@ -14,6 +14,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { channelAvatar } from "@/shared/lib/youtube";
+import { OutboundA } from "@/shared/ui/OutboundA";
 
 /* ── 아이콘 ──────────────────────────────────────────────────────────── */
 
@@ -328,16 +329,9 @@ export function Act({
   if (href) {
     const external = href.startsWith("http");
     return external ? (
-      <a
-        href={href}
-        title={title}
-        target="_blank"
-        rel="noopener noreferrer"
-        className={cls}
-        style={style}
-      >
+      <OutboundA href={href} title={title} className={cls} style={style}>
         {body}
-      </a>
+      </OutboundA>
     ) : (
       <Link href={href} title={title} className={cls} style={style}>
         {body}
