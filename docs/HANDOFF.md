@@ -73,6 +73,7 @@
 | GSC verification meta | `src/app/layout.tsx` → `verification.google = lkxLO-HERLGf1WGk8DEGktQW_kCeCwXphuEsfj8NGog` · **prod 배포됨** |
 | GSC 사이트맵 제출 · 색인 | **사람이 GSC에서 확인/제출.** 파일 생성은 자동, 색인은 Google 시간 |
 | `/takedown` 메일 | `hello@eatripin.com` (`siteUrl` host 기준). **실제 수신함 연결은 미확인/미완 가능** — 창구가 없는 것보다 있는 척이 나쁨 |
+| 도메인 정규화 | **apex 하나만 서빙.** `www` · `tripin-peach.vercel.app` → `eatripin.com` **308** (Vercel Domains, 2026-08-13 설정). `vercel.json` 이 아니라 대시보드 설정이라 리포에 안 보인다 |
 | Maps 키 HTTP 리퍼러 | 사용자 확인으로 지도 OK → `eatripin.com` 리퍼러 들어간 상태로 추정. 지도 깨지면 콘솔 확인 |
 | 폰트 | Paperlogy **5단**(400·500·600·700·900) · `preload: false`. §1-5 참고 |
 
@@ -127,6 +128,18 @@
 바꾸므로 크롤 가능한 `<a href>` 가 아니고, `publicMeta({ bare })` 덕에 canonical 이
 `/city/tokyo?type=cafe` 에서도 `/city/tokyo` 를 가리킨다(실측). 근사 중복으로 크롤 예산이
 새지 않는다. **필터를 나중에 링크로 바꾸면 이 보호가 깨진다** — 그때 다시 볼 것.
+
+**배포 후 실측 (2026-08-13):** 커밋 `030fa4d` → prod. `ld+json` 0→4건 · `x-default` 0→정상 ·
+폰트 preload **Paperlogy 9종 → 0종**(응답 `link:` 헤더에서 사라짐, Archivo 1개만 남음).
+리치 결과 테스트 — 탐색경로 유효, **오류·경고 0건**. GSC 사이트맵 `/sitemap.xml` 제출·성공(63페이지).
+색인 리포트는 속성이 새로 인증돼 "데이터 처리 중" — 며칠 뒤 다시 볼 것.
+
+**중복 호스트를 잡았다 (감사 중 발견, Vercel 대시보드에서 수정):**
+www · apex · `tripin-peach.vercel.app` **셋 다 200 으로 같은 내용을 서빙**하고 있었다
+(리다이렉트 0개, 전부 "Valid Configuration"). canonical 이 apex 를 가리켜 최악은 아니었지만
+크롤 예산이 3배로 샜다. www 와 vercel.app 을 **308 → apex** 로 걸었다. 경로 보존 확인함
+(`/city/tokyo` → `/city/tokyo`). ⚠️ 이건 `vercel.json` 이 아니라 **대시보드 설정**이라
+리포를 아무리 봐도 안 나온다 — 도메인을 새로 붙이면 같은 함정에 다시 빠진다.
 
 **안 고친 것 (구조·의도):**
 
