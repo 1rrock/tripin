@@ -18,7 +18,18 @@
 | `docs/I18N.md` | **ko/en 공개 화면.** 새 UI·링크·문구는 여기 규칙 필수 |
 | `docs/channels.md` | **등록 채널 목록** — Orca 신작 동기화 대상 |
 | `docs/ORCA_CHANNEL_SYNC_PROMPT.md` | Orca 자동화 프롬프트 (신작 → candidate) |
-| `DESIGN.md` | ⚠️ **낡음** — 삭제된 옛 월드를 기술한다. 믿지 말 것 |
+| `docs/ADMIN.md` | 어드민 화면기획 — 코드가 1·5·6장을 참조 |
+| `docs/DATABASE.md` | 스키마·마이그레이션·RLS. **supabase CLI 안 씀**(psql 직결) |
+| `README.md` | 저장소 첫 화면 · 문서 지도 · 검증 명령 |
+
+**낡았거나 이력인 문서 — 규범으로 읽지 마라:**
+
+| 문서 | 왜 |
+|---|---|
+| `DESIGN.md` | ⚠️ **선언한 색이 코드에 0회 등장한다**(`#fffdf8`·`#ff5a3c` — 실제는 `#f0e8db`·`#c9441a`). 게다가 `.impeccable/design.json` 과 짝인 **도구 관리 파일**이라 손으로 고치면 desync 난다. 재생성은 `/impeccable document`. **디자인 정본은 `src/app/globals.css` + `layout.tsx` 방향 계약이다** |
+| `REDESIGN-PLAN.md` | 📦 2026-08-06 '공항 사인' 월드. 실행됐다가 교체됨 |
+| `docs/CHANNEL-CANDIDATES.md` | 📦 2026-08-09 조사 스냅샷. 현재 등록 상태는 `docs/channels.md` |
+| `docs/LOGO-BRIEF.md` | 📦 마크는 이미 채택됨(Slash coral). 새로 의뢰할 때만 |
 
 ## 이 프로젝트에서 자주 틀리는 것
 

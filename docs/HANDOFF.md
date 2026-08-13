@@ -3,6 +3,9 @@
 > 브랜치 `redesign-world-v2` 의 **현재 상태**. 새 세션은 이 문서부터 읽으면 된다.
 > 선행: `PRODUCT.md` · `LEGAL.md` · `CONCEPT.md` · `docs/I18N.md`
 > ⚠️ `DESIGN.md` 는 **폐기** — 삭제된 옛 월드를 기술한다. 믿지 말 것.
+> 게다가 `.impeccable/design.json` 과 짝인 **도구 관리 파일**이라 손으로 고치면 안 된다
+> (2026-08-13 재작성 시도가 되돌려졌다). 재생성은 `/impeccable document`.
+> 디자인 정본은 `src/app/globals.css` + `layout.tsx` 방향 계약이다.
 > 브랜드 UI 표기는 **Eatripin**. 문서 일부(PRODUCT 등)에 가칭 Tripin 이 남아 있을 수 있다.
 
 ---

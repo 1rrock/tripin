@@ -1,5 +1,10 @@
 # Eatripin 로고 브리프
 
+> 📦 **이력 (2026-08-13).** 마크는 **Slash coral**(왁스 면 + 잉크 슬래시)로 **이미 채택됐다**
+> — 커밋 `abb4aed`, 산출물은 `public/mark.svg` · `public/wordmark.svg` · `src/shared/ui/Mark.tsx`.
+> 이 문서는 그때 돌린 의뢰서다. **현재 마크의 규범이 아니다** — 새로 의뢰할 때만 꺼내 쓴다.
+> 워드마크의 글자 겹침 규칙(§ 아래)은 여전히 유효하다.
+
 > 여러 곳(디자이너·에이전시·AI 툴)에 돌리기 위한 의뢰서.
 > 상대에 따라 §A(짧은 프롬프트) 또는 §B(전체 브리프)를 복사해 쓴다.
 > 근거: `PRODUCT.md`(제품) · `src/app/globals.css`(토큰) · `src/app/layout.tsx`(방향 계약)

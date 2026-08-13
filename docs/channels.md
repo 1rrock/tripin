@@ -4,7 +4,11 @@
 > 채널을 어드민에 추가한 뒤 **여기에도 한 줄 추가**한다.  
 > Orca 자동화는 이 MD만 읽고 돌린다 (크론 없음).
 
-업데이트: 2026-08-09
+업데이트: 2026-08-13
+
+> ⚠️ `enabled` 는 **신작 자동수집 스위치**이지 공개 여부가 아니다. 표의 10채널은
+> 2026-08-13 기준 전부 DB 에 있고 확정 장소 272곳이 공개돼 있다 — `no` 인 채널도
+> 이미 공개 중일 수 있다. 공개 여부는 `/admin` 과 DB 가 정본이다.
 
 ## 규칙
 
@@ -21,7 +25,7 @@
 |---------|------|--------------|----------------|--------------------|-------|
 | yes | chuseonghoon | 추성훈 ChooSungHoon | @Choosunghoon_ajossi | UCMDHzyo0wIUjKXho-icJDjw | 일본·여행 맛집 · **연예인 축 레퍼런스** |
 | yes | kwaktube | 곽튜브 | @jbkwak | UClRNDVO8093rmRTtLe4GEPw | 세계여행·먹방 |
-| no | fukuoka-ajo | 후쿠오카 아저씨 | @fukuoka-ajo | UC9C7wZ8AbeO7_W6vFKh3GJg | 미공개 — 켜기 전 no |
+| no | fukuoka-ajo | 후쿠오카 아저씨 | @fukuoka-ajo | UC9C7wZ8AbeO7_W6vFKh3GJg | **공개 중** (확정 149곳, 최대 채널). `enabled: no` 는 신작 자동수집만 끈 것 |
 | no | sungsikyung | 성시경 SUNG SI KYUNG | @sungsikyung | UCl23-Cci_SMqyGXE1T_LYUg | **연예인 축 1순위** · 먹을텐데 제목=상호 · 도쿄·부산 |
 | no | bimirya | 비밀이야 bimirya | @bimirya | UCaKQ7_GT0k8u_sL0nE2tgkA | 흑백 관련 파인다이닝 · 지도링크 18/100 · 삿포로·도쿄·홍콩 |
 | no | choi-kangrok | 최강록 Ultra Taste Diary | @ultratastediary | UC5-f4v2bWroSgTA-IBuXKMw | 흑백 심사·출연 · 삿포로·후쿠오카 미슐랭 투어 · 업로드 드묾 |
