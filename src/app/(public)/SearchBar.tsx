@@ -13,8 +13,9 @@
  */
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Avatar, Icon } from "@/shared/ui/frame";
 import { thumbSmall } from "@/shared/lib/youtube";
 import { highlight, search, type SearchDoc, type SearchKind } from "@/shared/lib/search";
@@ -22,6 +23,7 @@ import { highlight, search, type SearchDoc, type SearchKind } from "@/shared/lib
 export function SearchBar() {
   const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
+  const onHome = stripLocalePrefix(usePathname() ?? "/") === "/";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchDoc[] | null>(null);
@@ -88,6 +90,13 @@ export function SearchBar() {
     },
     [close, href, router],
   );
+
+  // 홈 본문 검색 바가 같은 패널을 연다
+  useEffect(() => {
+    const onOpen = () => setOpen(true);
+    window.addEventListener("tripin:open-search", onOpen);
+    return () => window.removeEventListener("tripin:open-search", onOpen);
+  }, []);
 
   // 전역 단축키. ⚠️ 이펙트 안에서 인라인 화살표를 의존성으로 두지 않는다 —
   // 리렌더마다 리스너가 갈리며 포커스를 뺏겼던 전례가 있다(HANDOFF §1-3)
@@ -159,7 +168,7 @@ export function SearchBar() {
         /* -mr-2 는 max-md 로 못 박는다 — md 의 mx-auto 와 같은 속성을 다투게 두면
            어느 쪽이 이기는지가 Tailwind 유틸 출력 순서에 달리고, 그러면 데스크톱
            가운데 정렬이 조용히 깨질 수 있다 */
-        className="ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 max-md:-mr-2 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]"
+        className={`ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 max-md:-mr-2 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]${onHome ? " max-md:hidden" : ""}`}
       >
         {/* 탭바 아이콘과 같은 22px. -mr-2 는 **광학 정렬**이다 — 타깃(40px)은 손가락
             때문에 아이콘보다 큰데, 그 상자의 오른쪽을 거터에 맞추면 아이콘 자체는

@@ -101,7 +101,7 @@ export default async function PieceOpengraphImage({
   const count = summary?.count ?? 0;
 
   const owner = `${creatorName}의`;
-  const countLine = `간 곳 ${count}곳`;
+  const countLine = `${count}곳`;
   const glyphs = owner + cityName + countLine + FOOT + "0123456789";
   const [bold, regular] = await Promise.all([
     loadKoreanFont(glyphs, 800),

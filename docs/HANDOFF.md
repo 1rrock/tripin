@@ -211,7 +211,7 @@ www · apex · `tripin-peach.vercel.app` **셋 다 200 으로 같은 내용을 �
 ### 🟡 2. 운영 마감 (짧게)
 
 - [x] Analytics — `@vercel/analytics` + `<Analytics />` (루트 레이아웃). 쿠키 없음. `/privacy` 에 측정 절 추가.
-- [ ] **Vercel 대시보드에서 Web Analytics Enable** — 패키지만 넣으면 데이터가 안 쌓인다. 프로젝트 `tripin` → Analytics → Enable.
+- [x] **Vercel 대시보드에서 Web Analytics Enable** (2026-08-13 사용자 확인). 페이지뷰는 Hobby 로 쌓인다.
 - [ ] 아웃링크 커스텀 이벤트(`outbound_video` / `outbound_map`) — **코드는 넣음.** Hobby 플랜은 커스텀 이벤트가 대시보드에 안 보인다(Pro 필요). 페이지뷰만 Hobby 에 포함. Pro 올리거나 1자 비콘을 따로 둘지 결정 필요.
 - [ ] `hello@eatripin.com` **실수신** — MX 없음 확인. 가비아 포워딩을 걸면 `/takedown` mailto 를 되돌린다. 임시로 쓸 다른 주소가 있으면 그걸로 문구를 바꿔도 된다.
 - [ ] YouTube 메타 **수동 갱신 1회** (크론 없음 — §1-3).
@@ -334,3 +334,4 @@ npm run check:closed
 - **2026-08-13:** Vercel 배포, `eatripin.com`, 크론 제거, GSC meta, 수익/우선순위 결정, 본 핸드오프 갱신.
 - **2026-08-13 (이어서):** 기술 SEO — JSON-LD(WebSite/Organization/BreadcrumbList/ItemList), `publicMeta` 로 canonical·OG·x-default 통일, 인덱스 title 을 훅에서 설명형으로, 홈 sr-only H1, 사이트맵 x-default. Review·조회수·SearchAction 스키마는 넣지 않음.
 - **2026-08-13 (측정·창구):** Vercel Analytics 삽입 + 영상/지도 아웃링크 `track()`. `hello@eatripin.com` MX 없음 확인 → `/takedown` 을 창구 미연결로 정직하게 수정. 기술 SEO 배관은 손대지 않음.
+- **2026-08-13 (홈 시트):** 트립식 2열 사진 타일. 도시 시트(최근 컷) + 조각 시트. 16:9 유지. 유형 그리드·별점 없음.

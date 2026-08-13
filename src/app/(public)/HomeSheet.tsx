@@ -1,266 +1,186 @@
 "use client";
 
 /**
- * 홈 = 영상 콘택트 시트 + 채널 진입 (로케일 UI).
+ * 홈 — 고르는 순서는 둘뿐이다: **어느 도시 · 누구의 지도**.
+ *
+ *   검색 → 규모 → 도시 시트 → 조각 롤
+ *
+ * 두 섹션을 같은 2열 히어로로 깔면 아래 컷이 위 도시의 다음 장으로 읽힌다.
+ * 도시는 동급 타일(이름 먼저), 조각은 채널 얼굴이 프레임 위에 있는 롤.
+ * 16:9 만 — 썸네일 변형 금지.
  */
 
-import { useMemo, useState } from "react";
+import type { CSSProperties } from "react";
 import Link from "next/link";
-import type { FeedCreator, HomeSheetVideo } from "@/shared/api/home";
-import type { PlaceType } from "@/shared/api/database.types";
-import { Avatar, Chip, Icon, Index } from "@/shared/ui/frame";
-import { VideoSheet } from "@/shared/ui/VideoSheet";
+import type { FeedPiece } from "@/shared/api/home";
+import type { CityRow } from "@/shared/api/cities";
+import { Avatar, Frame, Icon } from "@/shared/ui/frame";
+import { Thumb } from "@/shared/ui/Thumb";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
 
-const DEVELOP_LIMIT = 6;
-const PAGE_SIZE = 24;
+const CITY_TILES = 6;
+
+function openSearch() {
+  window.dispatchEvent(new Event("tripin:open-search"));
+}
 
 export function HomeSheet({
-  videos,
-  creators,
+  pieces,
   totals,
+  cities,
 }: {
-  videos: HomeSheetVideo[];
-  creators: FeedCreator[];
+  pieces: FeedPiece[];
   totals: { creators: number; cities: number; places: number; videos: number };
+  cities: CityRow[];
 }) {
   const { messages: m, href, t, locale } = useLocale();
-  /** `null` 이면 전체. 아니면 `"city:tokyo"` 처럼 축과 값을 한 문자열로 */
-  const [filter, setFilter] = useState<string | null>(null);
-  const [visibleCount, setVisibleCount] = useState(PAGE_SIZE);
-
-  /**
-   * 도시 칩 — 가나다순이 아니라 **영상 많은 순**.
-   * 가나다로 두면 고베(1편)가 맨 앞에 서고 도쿄·후쿠오카가 스크롤 중간에 묻힌다.
-   * 칩 줄은 가로 스크롤이라 앞자리가 사실상 유일하게 보이는 자리다.
-   */
-  const allCities = useMemo(() => {
-    const bySlug = new Map<string, { city: (typeof videos)[number]["cities"][number]; n: number }>();
-    for (const v of videos) {
-      for (const c of v.cities) {
-        const hit = bySlug.get(c.slug);
-        if (hit) hit.n += 1;
-        else bySlug.set(c.slug, { city: c, n: 1 });
-      }
-    }
-    return [...bySlug.values()]
-      .sort(
-        (a, b) =>
-          b.n - a.n ||
-          displayCityName(a.city, locale).localeCompare(displayCityName(b.city, locale)),
-      )
-      .map((x) => x.city);
-  }, [videos, locale]);
-
-  /** 피드에 실제로 있는 종류만, 많이 나온 순 */
-  const allTypes = useMemo(() => {
-    const count = new Map<PlaceType, number>();
-    for (const v of videos) for (const pt of v.placeTypes) count.set(pt, (count.get(pt) ?? 0) + 1);
-    return [...count.entries()].sort((a, b) => b[1] - a[1]).map(([pt]) => pt);
-  }, [videos]);
-
-  const shown = useMemo(() => {
-    if (!filter) return videos;
-    const at = filter.indexOf(":");
-    const kind = filter.slice(0, at);
-    const value = filter.slice(at + 1);
-    return videos.filter((v) =>
-      kind === "city"
-        ? v.cities.some((c) => c.slug === value)
-        : kind === "channel"
-          ? v.creatorSlug === value
-          : v.placeTypes.includes(value as PlaceType),
-    );
-  }, [videos, filter]);
-
-  /** 칩은 한 번에 하나만 — 누르면 그 축으로 갈아탄다. 다시 누르면 전체로 */
-  const pick = (next: string | null) => {
-    setFilter((cur) => (cur === next ? null : next));
-    setVisibleCount(PAGE_SIZE);
-  };
-
-  const page = shown.slice(0, visibleCount);
-  const hasMore = shown.length > visibleCount;
-  const [lead, ...rest] = page;
-  const filterKey = filter ?? "all";
+  const tiles = cities.slice(0, CITY_TILES);
 
   return (
-    <div className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
-      {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 컷이 맡는다. */}
+    <div className="pb-20">
       <h1 className="sr-only">{m.home.srHeading}</h1>
-      {/* 필터 한 줄 — 검색창은 헤더로 갔다(SearchBar). 여기 또 두면 둘이 겹친다.
-          축이 셋(종류·지역·채널)이지만 줄은 하나다. 줄을 축마다 쌓으면 첫 화면이
-          컨트롤로 채워져 정작 썸네일이 접힌 아래로 밀린다 — 이 화면의 주인공은 컷이다.
-          한 번에 하나만 켜진다. 영상 60편이라 필터를 겹칠 일이 없다. */}
-      <div
-        role="group"
-        aria-label={m.home.filterAria}
-        className="no-scrollbar -mx-(--gutter) flex items-center gap-2 overflow-x-auto px-(--gutter)"
-      >
-        <Chip active={filter === null} onClick={() => pick(null)}>
-          {m.home.allFilters}
-        </Chip>
 
-        {allTypes.map((pt) => (
-          <Chip key={pt} active={filter === `type:${pt}`} onClick={() => pick(`type:${pt}`)}>
-            {m.placeTypes[pt]}
-          </Chip>
-        ))}
-
-        {allCities.length > 1 ? <ChipRule /> : null}
-        {allCities.map((c) => (
-          <Chip
-            key={c.slug}
-            active={filter === `city:${c.slug}`}
-            onClick={() => pick(`city:${c.slug}`)}
-          >
-            {displayCityName(c, locale)}
-          </Chip>
-        ))}
-
-        {creators.length > 1 ? <ChipRule /> : null}
-        {creators.map((c) => (
-          <Chip
-            key={c.slug}
-            active={filter === `channel:${c.slug}`}
-            onClick={() => pick(`channel:${c.slug}`)}
-          >
-            {c.displayName}
-          </Chip>
-        ))}
+      <div className="px-(--gutter) pt-3 pb-1 md:hidden">
+        <button
+          type="button"
+          onClick={openSearch}
+          className="field flex h-12 w-full cursor-pointer items-center gap-2.5 px-3.5 text-left"
+        >
+          <Icon.search className="size-[18px] shrink-0" style={{ color: "var(--dim)" }} />
+          <span style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.home.goWhere}</span>
+        </button>
       </div>
 
-      {shown.length === 0 ? (
-        <div className="flex flex-col items-start gap-3 py-6">
-          <p style={{ fontSize: "var(--t-body)" }}>{m.home.empty}</p>
-          <Chip onClick={() => pick(null)}>{m.home.showAll}</Chip>
-        </div>
-      ) : (
-        <section aria-labelledby="sheet-h" className="flex flex-col gap-(--stack)">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 id="sheet-h" className="index" style={{ color: "var(--dim)" }}>
-              {filter
-                ? t(m.home.foundVideos, { n: shown.length })
-                : hasMore
-                  ? t(m.home.recentPaged, { shown: visibleCount, total: shown.length })
-                  : m.home.recentVideos}
-            </h2>
-            {filter ? (
-              <button
-                type="button"
-                onClick={() => pick(null)}
-                className="cursor-pointer underline underline-offset-4"
-                style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-              >
-                {m.home.showAll}
-              </button>
-            ) : null}
-          </div>
+      <p className="index tnum px-(--gutter) pt-3 md:pt-5" style={{ color: "var(--dim)" }}>
+        {t(m.home.stats, {
+          places: totals.places,
+          cities: totals.cities,
+          creators: totals.creators,
+        })}
+      </p>
 
-          <ul key={`lead-${filterKey}`} className="flex flex-col">
-            {lead ? (
-              <VideoSheet
-                video={{ ...lead, cities: lead.cities.map((c) => displayCityName(c, locale)) }}
-                href={href(`/c/${lead.creatorSlug}/v/${lead.youtubeId}`)}
-                i={0}
-                large
-                channel={{
-                  name: lead.creatorName,
-                  initials: lead.initials,
-                  accent: lead.accentColor,
-                  avatarUrl: lead.avatarUrl,
-                }}
-              />
-            ) : null}
-          </ul>
-          {rest.length > 0 ? (
-            <ul
-              key={`rest-${filterKey}`}
-              className="mt-(--block) grid grid-cols-1 gap-(--block) md:grid-cols-2 xl:grid-cols-3"
+      {tiles.length > 0 ? (
+        <section className="px-(--gutter) pt-(--block)" aria-labelledby="cities-h">
+          <div className="flex items-baseline justify-between gap-3">
+            <h2
+              id="cities-h"
+              className="font-bold"
+              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
             >
-              {rest.map((v, i) => (
-                <VideoSheet
-                  key={v.youtubeId}
-                  video={{ ...v, cities: v.cities.map((c) => displayCityName(c, locale)) }}
-                  href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)}
-                  i={i + 1}
-                  animate={i + 1 < DEVELOP_LIMIT}
-                  channel={{
-                    name: v.creatorName,
-                    initials: v.initials,
-                    accent: v.accentColor,
-                    avatarUrl: v.avatarUrl,
-                  }}
-                />
-              ))}
-            </ul>
-          ) : null}
-
-          {hasMore ? (
-            <div className="flex flex-col items-center gap-2 pt-2">
-              <Chip onClick={() => setVisibleCount((n) => n + PAGE_SIZE)}>
-                {m.home.loadMore}
-                <span className="tnum ml-1.5 opacity-60">
-                  +{Math.min(PAGE_SIZE, shown.length - visibleCount)}
-                </span>
-              </Chip>
-              <p className="index tnum" style={{ color: "var(--dim)" }}>
-                {visibleCount} / {shown.length}
-              </p>
-            </div>
-          ) : null}
-        </section>
-      )}
-
-      {creators.length > 0 ? (
-        <section aria-labelledby="ch-h" className="flex flex-col gap-(--stack)">
-          <div className="flex items-baseline justify-between gap-3">
-            <h2 id="ch-h" className="index" style={{ color: "var(--dim)" }}>
-              {t(m.home.channels, { n: totals.creators })}
+              {m.home.popular}
             </h2>
-            {creators.length > 6 ? (
-              <Link
-                href={href("/channels")}
-                className="underline-offset-4 hover:underline"
-                style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-              >
-                {m.home.showAll}
-              </Link>
-            ) : null}
+            <Link
+              href={href("/city")}
+              className="index inline-flex shrink-0 items-center gap-0.5 hover:underline"
+              style={{ color: "var(--dim)" }}
+            >
+              {m.home.allRegions}
+              <Icon.chevron className="size-3" />
+            </Link>
           </div>
-          <ul className="flex flex-col gap-0.5">
-            {creators.map((c) => (
-              <li key={c.slug}>
-                <Link
-                  href={href(`/c/${c.slug}`)}
-                  className="roll -mx-2.5 flex items-center gap-3 rounded-(--r-control) px-2.5 py-2"
-                  aria-label={t(m.home.openChannel, { name: c.displayName })}
+          <ul className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-6 md:grid-cols-3 md:gap-x-3 md:gap-y-7">
+            {tiles.map((c, i) => {
+              const cut = c.recentVideos[0];
+              return (
+                <li
+                  key={c.slug}
+                  className={`min-w-0${i < 2 ? " develop" : ""}`}
+                  style={i < 2 ? ({ "--i": i } as CSSProperties) : undefined}
                 >
-                  <Avatar
-                    initials={c.initials}
-                    accent={c.accentColor}
-                    src={c.avatarUrl}
-                    size={38}
-                  />
-                  <span className="min-w-0 flex-1">
-                    <span
-                      className="block truncate font-bold"
-                      style={{ fontSize: "var(--t-title)" }}
-                    >
-                      {c.displayName}
+                  <Link
+                    href={href(`/city/${c.slug}`)}
+                    className="block"
+                    aria-label={t(m.cityIndex.openMap, {
+                      name: displayCityName(c, locale),
+                      places: c.placeCount,
+                      creators: c.creatorCount,
+                    })}
+                  >
+                    {/* 이름을 프레임 앞에 — 컷을 보고 도시를 추측하지 않게 */}
+                    <span className="mb-1.5 flex items-baseline justify-between gap-2">
+                      <span
+                        className="min-w-0 truncate font-bold"
+                        style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
+                      >
+                        {displayCityName(c, locale)}
+                      </span>
+                      <span className="index tnum shrink-0" style={{ color: "var(--dim)" }}>
+                        {t(m.home.placesUnit, { n: c.placeCount })}
+                      </span>
                     </span>
-                    <span
-                      className="block truncate"
-                      style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                    >
-                      {c.cities.map((x) => displayCityName(x, locale)).join(" · ")}
+                    <Frame className="block w-full">
+                      {cut ? (
+                        <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={i === 0} />
+                      ) : null}
+                    </Frame>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
+      ) : null}
+
+      {pieces.length > 0 ? (
+        <section
+          className="mt-(--block) border-t px-(--gutter) pt-(--block)"
+          style={{ borderColor: "var(--hairline)" }}
+          aria-labelledby="pieces-h"
+        >
+          <h2
+            id="pieces-h"
+            className="font-bold"
+            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
+          >
+            {m.home.piecesHeading}
+          </h2>
+          <ul className="mt-4 flex flex-col gap-6 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-7">
+            {pieces.map((p, i) => (
+              <li key={`${p.creatorSlug}:${p.city.slug}`} className="min-w-0">
+                <Link
+                  href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
+                  className="block"
+                  aria-label={t(m.piece.title, {
+                    creator: p.creatorName,
+                    city: displayCityName(p.city, locale),
+                  })}
+                >
+                  <span className="mb-2 flex items-center gap-2.5">
+                    <Avatar
+                      initials={p.initials}
+                      accent={p.accentColor}
+                      src={p.avatarUrl}
+                      size={36}
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block truncate font-bold"
+                        style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
+                      >
+                        {p.creatorName}
+                      </span>
+                      <span
+                        className="mt-0.5 block truncate"
+                        style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                      >
+                        {displayCityName(p.city, locale)}
+                        <span className="index tnum">
+                          {" "}
+                          {t(m.home.placesUnit, { n: p.placeCount })}
+                        </span>
+                      </span>
                     </span>
                   </span>
-                  <Index className="tnum shrink-0">
-                    {t(m.home.placesUnit, { n: c.placeCount })}
-                  </Index>
-                  <Icon.chevron className="roll-go size-4 shrink-0" />
+                  <Frame className="block w-full">
+                    {p.cut ? (
+                      <Thumb
+                        youtubeId={p.cut.youtubeId}
+                        alt={p.cut.title}
+                        eager={tiles.length === 0 && i === 0}
+                      />
+                    ) : null}
+                  </Frame>
                 </Link>
               </li>
             ))}
@@ -268,16 +188,5 @@ export function HomeSheet({
         </section>
       ) : null}
     </div>
-  );
-}
-
-/** 칩 줄 안의 축 구분 — 종류|지역|채널이 한 줄에 섞여도 경계가 읽히게 */
-function ChipRule() {
-  return (
-    <span
-      aria-hidden
-      className="mx-1 h-5 w-px shrink-0 self-center"
-      style={{ background: "var(--hairline)" }}
-    />
   );
 }

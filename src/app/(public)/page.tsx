@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
+import { loadCityIndex } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
@@ -7,7 +8,8 @@ import { JsonLd, linkList } from "@/shared/seo/json-ld";
 import { HomeSheet } from "./HomeSheet";
 
 /**
- * 홈 = 영상 콘택트 시트 + 채널 진입 (멀티채널 전제).
+ * 홈 = 문장 → 검색 → 도시 시트 → 조각 시트.
+ * 채널 목록·최근 영상·유형은 홈에 없다. `/channels` · 조각 안 · `/type`.
  */
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -24,7 +26,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const { videos, creators, totals } = await loadHomeFeed();
+  const [{ videos, creators, pieces, totals }, cities] = await Promise.all([
+    loadHomeFeed(),
+    loadCityIndex(),
+  ]);
 
   if (videos.length === 0) {
     return (
@@ -42,13 +47,6 @@ export default async function HomePage() {
     );
   }
 
-  // 검색 건초더미는 로케일에 맞는 한쪽만 남긴다 — 둘 다 넘기면 RSC 직렬화로
-  // EN HTML 에 한국어 원문이 통째로 샌다(§3-2). 여기가 그 층이다.
-  const sheetVideos = videos.map(({ searchKo, searchEn, ...v }) => ({
-    ...v,
-    search: locale === "en" ? searchEn : searchKo,
-  }));
-
   return (
     <main>
       <JsonLd
@@ -60,7 +58,7 @@ export default async function HomePage() {
           })),
         )}
       />
-      <HomeSheet videos={sheetVideos} creators={creators} totals={totals} />
+      <HomeSheet pieces={pieces} totals={totals} cities={cities} />
     </main>
   );
 }

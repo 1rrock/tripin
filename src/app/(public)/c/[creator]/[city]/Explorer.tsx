@@ -124,7 +124,10 @@ export function Explorer({
   otherCreators = [],
 }: ExplorerProps) {
   const { messages: m, href, t, locale } = useLocale();
-  const [activeId, setActiveId] = useState<string | null>(null);
+  const firstConfirmedId =
+    places.find((p) => p.mapStatus === "confirmed" && p.lat !== null && p.lng !== null)?.id ??
+    null;
+  const [activeId, setActiveId] = useState<string | null>(firstConfirmedId);
   // 핀을 눌렀을 때만 상세 시트를 띄운다. 목록 행은 그 자체가 이미 상세라
   // 행을 눌렀다고 시트까지 겹쳐 띄우면 같은 내용이 두 번 나온다.
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -167,6 +170,8 @@ export function Explorer({
 
   // 이 조각에 실제로 존재하는 타입만 필터 칩으로 노출
   const presentTypes = FILTERABLE_TYPES.filter((pt) => places.some((p) => p.placeType === pt));
+  /** 얇은 조각은 교차 채널을 접힌 아래에 두면 "없다"로 읽힌다 — 헤더로 올린다 */
+  const thinPiece = confirmed.length <= 4;
 
   // basePath = /c/[creator]/[city] — 다음 행동 칩의 교차 링크에 재사용
   const [, , creatorSlug, citySlug] = basePath.split("/");
@@ -267,7 +272,7 @@ export function Explorer({
             시트가 데스크톱에서 이 안에 절대배치되므로 relative 가 필요하다 */}
         <div className="relative lg:sticky lg:top-4 lg:order-2">
           <MapView
-            className="h-[38dvh] w-full lg:h-[calc(100dvh-2rem)]"
+            className="h-[28dvh] min-h-[11.5rem] w-full lg:h-[calc(100dvh-2rem)] lg:min-h-0"
             pins={pins}
             activeId={visibleActiveId}
             onPinClick={openFromPin}
@@ -311,6 +316,24 @@ export function Explorer({
               {candidates.length > 0 ? t(m.piece.statsCandidates, { n: candidates.length }) : ""}
               {t(m.piece.statsTypes, { n: presentTypes.length })}
             </p>
+
+            {thinPiece && otherCreators.length > 0 ? (
+              <div className="flex flex-col gap-2.5">
+                <h2 className="index" style={{ color: "var(--dim)" }}>
+                  {t(m.piece.otherCreatorsHeading, { city: cityName })}
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  <Chip href={href(`/city/${citySlug}`)}>
+                    {t(m.piece.cityWide, { city: cityName })}
+                  </Chip>
+                  {otherCreators.map((c) => (
+                    <Chip key={c.slug} href={href(`/c/${c.slug}/${citySlug}`)}>
+                      {c.name} <span className="tnum ml-1.5 opacity-60">{c.count}</span>
+                    </Chip>
+                  ))}
+                </div>
+              </div>
+            ) : null}
 
             {introText ? (
               <p
@@ -412,8 +435,6 @@ export function Explorer({
                           </span>
                         </button>
 
-                        <SummaryBlock className="pl-10" display={place.summary} />
-
                         <div className="flex flex-wrap items-center gap-2 pl-10">
                           {place.youtubeVideoId ? (
                             <Act
@@ -439,6 +460,8 @@ export function Explorer({
                             {isPicked ? m.piece.picked : m.piece.pick}
                           </Act>
                         </div>
+
+                        <SummaryBlock className="pl-10" display={place.summary} />
 
                         {/* 출처 영상 제목 — 원문 그대로 노출 (YouTube API §III.E.3).
                             title= 툴팁만으로는 터치 기기에서 보이지 않는다 */}
@@ -506,7 +529,7 @@ export function Explorer({
             ) : null}
 
             {/* 다음 행동 — SEO 1페이지 이탈 구조를 막는 조각 간 연결 (없으면 미렌더) */}
-            {otherCities.length > 0 || otherCreators.length > 0 ? (
+            {otherCities.length > 0 || (!thinPiece && otherCreators.length > 0) ? (
               <section className="flex flex-col gap-(--stack)">
                 {otherCities.length > 0 ? (
                   <div className="flex flex-col gap-3">
@@ -522,12 +545,15 @@ export function Explorer({
                     </div>
                   </div>
                 ) : null}
-                {otherCreators.length > 0 ? (
+                {!thinPiece && otherCreators.length > 0 ? (
                   <div className="flex flex-col gap-3">
                     <h2 className="index" style={{ color: "var(--dim)" }}>
                       {t(m.piece.otherCreatorsHeading, { city: cityName })}
                     </h2>
                     <div className="flex flex-wrap gap-2">
+                      <Chip href={href(`/city/${citySlug}`)}>
+                        {t(m.piece.cityWide, { city: cityName })}
+                      </Chip>
                       {otherCreators.map((c) => (
                         <Chip key={c.slug} href={href(`/c/${c.slug}/${citySlug}`)}>
                           {c.name} <span className="tnum ml-1.5 opacity-60">{c.count}</span>

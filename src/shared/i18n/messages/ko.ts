@@ -14,7 +14,7 @@ export const ko = {
   home: {
     title: "유튜브에서 본",
     titleLine2: "그 가게, 지도로.",
-    stats: "간 곳 {places} · 도시 {cities} · 검수한 영상 {videos}",
+    stats: "{places}곳 · 도시 {cities} · 채널 {creators}",
     searchAria: "가게 이름·영상·도시·채널 검색",
     searchPlaceholder: "가게·음식·도시로 찾기",
     allCities: "전체 도시",
@@ -22,6 +22,19 @@ export const ko = {
     /** 홈 필터 줄 — 종류·지역·채널이 한 줄에 섞여 있어 "전체"가 셋 다 푼다 */
     allFilters: "전체",
     filterAria: "피드 필터 — 종류·지역·채널",
+    citiesAria: "도시로 지도 열기",
+    allRegions: "모든 지역",
+    morePlaces: "+{n}곳",
+    /** 채널 행의 도시 꼬리 — 13개를 다 늘어놓으면 375에서 3개만 보이고 잘린다 */
+    moreCities: "외 {n}",
+    goWhere: "채널·도시로 찾기",
+    popular: "지금 많이 찾는 곳",
+    /** 조각(채널×도시) 레일 — 홈에서 지도로 들어가는 주 입구 */
+    piecesHeading: "채널이 간 도시",
+    feedRecent: "최근 영상",
+    feedChannels: "채널",
+    feedTabsAria: "홈 목록",
+    moreFeed: "더 보기",
     recentVideos: "최근 영상",
     foundVideos: "찾은 영상 {n}",
     recentPaged: "최근 영상 · {shown} / {total}",
@@ -40,10 +53,10 @@ export const ko = {
     title: "어디 가세요?",
     /** 화면에 안 보이는 h1 — 스크린리더·검색엔진만 읽는다. 훅이 아니라 설명이어야 한다. */
     srHeading: "지역별 여행 유튜버 장소 지도",
-    stats: "도시 {cities} · 간 곳 {places}",
+    stats: "도시 {cities} · {places}곳",
     blurb: "권역에서 도시를 고르면, 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
     empty: "아직 공개된 도시가 없어요.",
-    openMap: "{name} 지도 열기 — 간 곳 {places}곳, 채널 {creators}",
+    openMap: "{name} 지도 열기 — {places}곳, 채널 {creators}",
     placesChannels: "{places}곳 · 채널 {creators}",
     rowMeta: "{places}곳 · 채널 {creators} · 영상 {videos}",
     minorHeading: "아직 한두 곳뿐인 도시",
@@ -64,10 +77,10 @@ export const ko = {
     home: "홈",
     region: "지역",
     creatorsTitle: "{city}에 간 유튜버들",
-    stats: "채널 {creators} · 간 곳 {places}",
+    stats: "채널 {creators} · {places}곳",
     allTypes: "전체",
     allChannels: "전체 채널",
-    placesAll: "간 곳 {n}",
+    placesAll: "{n}곳",
     placesFiltered: "{shown} / {total}곳",
     pinHint: " · 핀을 누르면 상세가 열립니다",
     onlyThisChannel: "이 채널 지도만 보기",
@@ -84,7 +97,7 @@ export const ko = {
     /** 화면에 안 보이는 h1 — 설명형. */
     srHeading: "등록된 여행 유튜버 채널",
     empty: "아직 공개된 채널이 없어요.",
-    openChannel: "{name} 채널 열기 — 간 곳 {places}곳",
+    openChannel: "{name} 채널 열기 — {places}곳",
     placesUnit: "{n}곳",
     rollMeta: "영상 {videos} · {places}곳",
   },
@@ -92,7 +105,7 @@ export const ko = {
     title: "뭐 볼래요?",
     /** 화면에 안 보이는 h1 — 설명형. `title` 은 훅이라 그대로 쓰면 안 된다. */
     srHeading: "종류별 여행 유튜버 장소 — 맛집·카페·숙소·명소",
-    stats: "종류 {types} · 간 곳 {places}",
+    stats: "종류 {types} · {places}곳",
     blurb: "맛집·카페·숙소·명소 같은 종류를 고르면, 그 유형의 장소가 도시별로 모입니다.",
     empty: "아직 공개된 장소가 없어요.",
     openType: "{label} — {places}곳, 도시 {cities}",
@@ -156,7 +169,7 @@ export const ko = {
   },
   hub: {
     channelNav: "채널",
-    stats: "간 곳 {places} · 도시 {cities} · 검수한 영상 {videos}",
+    stats: "{places}곳 · 도시 {cities} · 검수한 영상 {videos}",
     citiesHeading: "도시 {n} — 지도로 열기",
     cityMapAria: "{name} 지도 열기 — 확정 {places}곳",
     videosHeading: "영상 {n} — 나온 시각으로 열기",
@@ -164,7 +177,7 @@ export const ko = {
     noVideoMatch: "조건에 맞는 영상이 없어요.",
     allCities: "전체 지역",
     allTypes: "전체",
-    placesAll: "간 곳 {n}",
+    placesAll: "{n}곳",
     placesFiltered: "{shown} / {total}곳",
     pinHint: " · 목록은 영상 · 핀은 상세",
     onlyThisCity: "이 도시 지도만 보기",
@@ -186,6 +199,7 @@ export const ko = {
     pendingHeading: "위치 확인 중 {n}",
     otherCitiesHeading: "{creator}의 다른 도시",
     otherCreatorsHeading: "{city}에 간 다른 채널",
+    cityWide: "{city} 전체 지도",
     myListCount: "내 목록 {n}곳",
     copyLink: "링크 복사",
     copied: "복사됨",
@@ -265,6 +279,17 @@ export type Messages = {
     allChannels: string;
     allFilters: string;
     filterAria: string;
+    citiesAria: string;
+    allRegions: string;
+    morePlaces: string;
+    moreCities: string;
+    goWhere: string;
+    popular: string;
+    piecesHeading: string;
+    feedRecent: string;
+    feedChannels: string;
+    feedTabsAria: string;
+    moreFeed: string;
     recentVideos: string;
     foundVideos: string;
     recentPaged: string;
@@ -422,6 +447,7 @@ export type Messages = {
     pendingHeading: string;
     otherCitiesHeading: string;
     otherCreatorsHeading: string;
+    cityWide: string;
     myListCount: string;
     copyLink: string;
     copied: string;

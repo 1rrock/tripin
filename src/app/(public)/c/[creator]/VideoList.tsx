@@ -151,6 +151,11 @@ export function VideoList({
               href={href(`/c/${creatorSlug}/v/${v.youtubeId}`)}
               i={i}
               animate={i < DEVELOP_LIMIT}
+              extraLabel={
+                v.placeNames.length > 1
+                  ? t(m.home.morePlaces, { n: v.placeNames.length - 1 })
+                  : undefined
+              }
             />
           ))}
         </ul>

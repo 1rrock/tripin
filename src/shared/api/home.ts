@@ -6,9 +6,7 @@ import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 /**
  * 홈 피드 — 전 채널의 영상을 콘택트 시트로 늘어놓기 위한 로더.
  *
- * 이전 홈은 채널 목록이었다. 채널이 1개뿐인 지금 그 화면은 카드 한 장이라
- * 어떤 디자인을 씌워도 비어 보였다. 실제 분량이 있는 축은 영상(16편)이므로
- * 홈의 단위를 영상으로 바꾼다.
+ * 시트 단위는 영상이다. 입구(채널·도시)는 HomeSheet 가 시트 위에 따로 깐다.
  *
  * 각 영상에 **실제 상호명**을 몇 개 실어 보내는 게 이 로더의 핵심이다.
  * "이 영상에 나온 곳 14" 는 주장이고, "스시사이토 · 우동신 · 이치란" 은 증명이다.
@@ -61,9 +59,30 @@ export interface FeedVideo {
 /** HomeSheet 가 받는 영상 — 검색 텍스트는 로케일에 맞는 한쪽만 남는다 */
 export type HomeSheetVideo = Omit<FeedVideo, "searchKo" | "searchEn"> & { search: string };
 
+/**
+ * 조각(채널×도시) — 홈 레일이 쓰는 단위. 이 사이트가 구글 지도를 이기는 지점이
+ * "누가 어느 도시에서 어디를 갔나" 라서, 홈에서 파는 물건도 영상이 아니라 이것이다.
+ *
+ * ⚠️ 채널당 하나만 담는다. 확정 272곳 중 149곳이 한 채널(후쿠오카 아저씨)이라
+ * 핀 수로만 줄 세우면 레일이 통째로 그 채널 것이 된다.
+ */
+export interface FeedPiece {
+  creatorSlug: string;
+  creatorName: string;
+  initials: string;
+  accentColor: string;
+  avatarUrl: string | null;
+  city: { slug: string; name: string; nameEn: string | null };
+  placeCount: number;
+  /** 대표 컷 — 이 조각에 속한 영상 중 최신. 없으면 프레임을 비운다 */
+  cut: { youtubeId: string; title: string } | null;
+}
+
 export interface HomeFeed {
   videos: FeedVideo[];
   creators: FeedCreator[];
+  /** 채널당 가장 두꺼운 조각. 핀 수 내림차순 */
+  pieces: FeedPiece[];
   /** ⚠️ 영상 수는 API 유래 데이터다 — 표기할 때 "우리가 검수한" 성격을 붙인다(LEGAL.md 4.5-(2)). */
   totals: { creators: number; cities: number; places: number; videos: number };
 }
@@ -73,6 +92,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const empty: HomeFeed = {
     videos: [],
     creators: [],
+    pieces: [],
     totals: { creators: 0, cities: 0, places: 0, videos: 0 },
   };
 
@@ -188,17 +208,44 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   // 3단계 — 채널 스트립. 피드에 실제로 올라간 영상을 가진 채널만 남는다
   const activeCreators = new Set(feed.map((f) => f.creatorSlug));
   const creatorRows: FeedCreator[] = [];
+  const pieces: FeedPiece[] = [];
+
+  // 조각별 대표 컷 — feed 가 최신순이라 처음 만나는 영상이 그 조각의 최신이다
+  const cutByPiece = new Map<string, { youtubeId: string; title: string }>();
+  for (const v of feed) {
+    for (const city of v.cities) {
+      const key = `${v.creatorSlug}:${city.slug}`;
+      if (!cutByPiece.has(key)) cutByPiece.set(key, { youtubeId: v.youtubeId, title: v.title });
+    }
+  }
+
   for (const c of creators) {
     if (!activeCreators.has(c.slug)) continue;
-    const myCities: { slug: string; name: string; nameEn: string | null }[] = [];
+    // count 를 실어 두는 이유: 화면은 도시를 앞 몇 개만 보여준다. 순회 순서대로
+    // 자르면 핀 1곳짜리가 앞에 서고 두꺼운 도시가 "외 N" 뒤로 숨는다.
+    const myCities: { slug: string; name: string; nameEn: string | null; count: number }[] = [];
     let placeCount = 0;
+    let thickest: FeedPiece | null = null;
     for (const [key, ids] of slicePlaces) {
       if (!publishedSlices.has(key) || !key.startsWith(`${c.id}:`)) continue;
       const city = cityById.get(key.slice(c.id.length + 1));
       if (!city) continue;
-      myCities.push({ slug: city.slug, name: city.name, nameEn: city.name_en });
+      myCities.push({ slug: city.slug, name: city.name, nameEn: city.name_en, count: ids.size });
       placeCount += ids.size;
+      if (!thickest || ids.size > thickest.placeCount) {
+        thickest = {
+          creatorSlug: c.slug,
+          creatorName: c.display_name,
+          initials: c.initials,
+          accentColor: c.accent_color,
+          avatarUrl: c.avatar_url,
+          city: { slug: city.slug, name: city.name, nameEn: city.name_en },
+          placeCount: ids.size,
+          cut: cutByPiece.get(`${c.slug}:${city.slug}`) ?? null,
+        };
+      }
     }
+    if (thickest) pieces.push(thickest);
     // feed 는 이미 최신순 — 검수를 거쳐 피드에 오른 영상만 센다
     const myVideos = feed.filter((f) => f.creatorSlug === c.slug);
     creatorRows.push({
@@ -211,16 +258,20 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       placeCount,
       videoCount: myVideos.length,
       recentVideos: myVideos.slice(0, 4).map((v) => ({ youtubeId: v.youtubeId, title: v.title })),
-      cities: myCities,
+      cities: myCities
+        .sort((a, b) => b.count - a.count)
+        .map((x) => ({ slug: x.slug, name: x.name, nameEn: x.nameEn })),
     });
   }
   // DB 의 place_count 컬럼과 조각 합산이 어긋날 수 있다(실측: bimirya 12 가
   // chuseonghoon 20 위에 있었다) — 화면에 찍는 합산 기준으로 다시 정렬한다.
   creatorRows.sort((a, b) => b.placeCount - a.placeCount);
+  pieces.sort((a, b) => b.placeCount - a.placeCount);
 
   return {
     videos: feed,
     creators: creatorRows,
+    pieces,
     totals: {
       creators: creatorRows.length,
       cities: seenCities.size,

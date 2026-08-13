@@ -38,6 +38,7 @@ export function VideoSheet({
   large = false,
   channel,
   animate = true,
+  extraLabel,
 }: {
   video: SheetVideo;
   href: string;
@@ -48,9 +49,12 @@ export function VideoSheet({
   /** 채널 표식. 이미 채널 화면 안이면 넘기지 않는다(같은 이름이 매 칸 반복된다) */
   channel?: SheetChannel;
   animate?: boolean;
+  /** 상호 외 정거장 수 — 부모가 로케일 문자열을 넘긴다 (`+2곳` / `+2 more`) */
+  extraLabel?: string;
 }) {
   const [first, ...more] = video.placeNames;
   const source = [channel?.name, video.cities[0]].filter(Boolean).join(" · ");
+  const extra = more.length > 0 ? extraLabel : undefined;
 
   return (
     <li
@@ -64,9 +68,7 @@ export function VideoSheet({
             ? "sheet-card grid gap-3.5 md:grid-cols-[3fr_2fr] md:items-center md:gap-7"
             : "sheet-card grid gap-3.5"
         }
-        aria-label={`${first ?? video.title}${
-          more.length ? ` 외 ${more.length}곳` : ""
-        } — ${video.title}`}
+        aria-label={`${first ?? video.title}${extra ? ` ${extra}` : ""} — ${video.title}`}
       >
         <Frame>
           <Thumb youtubeId={video.youtubeId} alt={video.title} eager={large} />
@@ -104,13 +106,13 @@ export function VideoSheet({
             />
             <span>
               {first ?? video.title}
-              {more.length > 0 ? (
+              {extra ? (
                 <span
                   className="tnum font-medium"
                   style={{ color: "var(--dim)" }}
                 >
                   {" "}
-                  +{more.length}곳
+                  {extra}
                 </span>
               ) : null}
             </span>
