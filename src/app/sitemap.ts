@@ -2,6 +2,7 @@ import type { MetadataRoute } from "next";
 import { supabase } from "@/shared/api/supabase";
 import { publicEnv } from "@/shared/config/env";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import { sitemapLanguages } from "@/shared/seo/page-meta";
 import { localePath } from "@/shared/i18n/paths";
 
 /**
@@ -19,23 +20,20 @@ import { localePath } from "@/shared/i18n/paths";
  * 내부 페이지 트리가 로케일 간에 동일하고(`src/proxy.ts` rewrite) `localePath` 가
  * ko/en 경로를 이미 1:1로 도출하므로, en URL 을 또 한 줄 넣는 건 같은 정보의 중복이고
  * (사이트맵은 URL을 "발견"시키는 목적이지 hreflang 을 대신하지 않는다) 항목 수만 2배로
- * 불린다. 각 페이지가 `generateMetadata` 에서 내보내는 hreflang 이 이미 크롤러에게
- * ko/en 짝을 알려준다.
+ * 불린다. `x-default` 는 ko(기본 로케일)를 가리킨다. 각 페이지 `generateMetadata` 의
+ * hreflang 과 같은 짝이다.
  */
 export const revalidate = 3600;
 
 type Entry = MetadataRoute.Sitemap[number];
 type EntryMeta = Omit<Entry, "url" | "alternates">;
 
-/** `bare`(로케일 없는 내부 경로)로 ko URL + ko/en hreflang 짝을 만든다. */
+/** `bare`(로케일 없는 내부 경로)로 ko URL + ko/en/x-default hreflang 짝을 만든다. */
 function entry(base: string, bare: string, meta: EntryMeta): Entry {
   return {
     url: `${base}${localePath(bare, "ko")}`,
     alternates: {
-      languages: {
-        ko: `${base}${localePath(bare, "ko")}`,
-        en: `${base}${localePath(bare, "en")}`,
-      },
+      languages: sitemapLanguages(base, bare),
     },
     ...meta,
   };

@@ -33,6 +33,7 @@ export const en: Messages = {
     comingTitle: "Opening soon",
     comingBody: "We’re building the first maps. Channels appear as places are confirmed.",
     openChannel: "Open {name}",
+    srHeading: "Map of places travel YouTubers visited",
   },
   cityIndex: {
     title: "Where to?",
@@ -79,7 +80,6 @@ export const en: Messages = {
     title: "Channels",
     heading: "Who to follow?",
     srHeading: "Travel YouTuber channels",
-    stats: "{creators} {creators|channel|channels} · {places} places · {cities} {cities|city|cities}",
     empty: "No channels published yet.",
     openChannel: "Open {name} — {places} places",
     placesUnit: "{n} places",
@@ -231,8 +231,8 @@ export const en: Messages = {
     p3LinkLabel: "Send a request",
   },
   meta: {
-    homeTitle: "Map places from travel YouTubers",
+    homeTitle: "Map of places travel YouTubers visited",
     homeDescription:
-      "Pick a channel and see restaurants and sights they visited on a map. Every pin links back to the source video.",
+      "Restaurants and sights from travel YouTubers, grouped by channel and city. Every pin links back to its source video.",
   },
 };

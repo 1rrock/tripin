@@ -4,6 +4,8 @@ import localFont from "next/font/local";
 import { publicEnv } from "@/shared/config/env";
 import { getLocale } from "@/shared/i18n/locale";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
+import { siteOrigin } from "@/shared/seo/page-meta";
+import { JsonLd, organizationNode, websiteNode } from "@/shared/seo/json-ld";
 import "./globals.css";
 
 /**
@@ -22,20 +24,29 @@ import "./globals.css";
  *
  * next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
  */
+/**
+ * 실제 쓰는 5단만 싣는다.
+ *
+ * 9단을 다 선언했을 때 Thin·ExtraLight·Light·ExtraBold 는 코드에서 **한 번도**
+ * 참조되지 않는데(`font-thin`·`font-light`·`font-extrabold` grep = 0), next/font 는
+ * 선언된 src 를 전부 `<link rel=preload>` 로 내보낸다. 한글 woff2 는 단당 ~160KB —
+ * 안 쓰는 4단이 매 페이지 634KB 를 LCP 앞에 밀어 넣고 있었다.
+ *
+ * `preload: false` 인 이유: `display: "swap"` 이라 폰트가 오기 전에도 폴백으로
+ * 글자가 이미 보인다. preload 는 스왑 시점을 당길 뿐인데, 그 대가로 800KB 가
+ * LCP 이미지와 대역폭을 다툰다. 브라우저는 이제 그 페이지가 실제 쓴 단만 받는다.
+ */
 const paper = localFont({
   src: [
-    { path: "./fonts/Paperlogy-1Thin.woff2", weight: "100", style: "normal" },
-    { path: "./fonts/Paperlogy-2ExtraLight.woff2", weight: "200", style: "normal" },
-    { path: "./fonts/Paperlogy-3Light.woff2", weight: "300", style: "normal" },
     { path: "./fonts/Paperlogy-4Regular.woff2", weight: "400", style: "normal" },
     { path: "./fonts/Paperlogy-5Medium.woff2", weight: "500", style: "normal" },
     { path: "./fonts/Paperlogy-6SemiBold.woff2", weight: "600", style: "normal" },
     { path: "./fonts/Paperlogy-7Bold.woff2", weight: "700", style: "normal" },
-    { path: "./fonts/Paperlogy-8ExtraBold.woff2", weight: "800", style: "normal" },
     { path: "./fonts/Paperlogy-9Black.woff2", weight: "900", style: "normal" },
   ],
   variable: "--font-paper",
   display: "swap",
+  preload: false,
 });
 const archivo = Archivo({
   subsets: ["latin"],
@@ -70,6 +81,11 @@ export async function generateMetadata(): Promise<Metadata> {
     twitter: {
       card: "summary_large_image",
     },
+    robots: {
+      googleBot: {
+        "max-image-preview": "large",
+      },
+    },
     verification: {
       google: "lkxLO-HERLGf1WGk8DEGktQW_kCeCwXphuEsfj8NGog",
     },
@@ -82,9 +98,17 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const locale = await getLocale();
+  const m = getDictionary(locale);
+  const site = siteOrigin();
   return (
     <html lang={locale} className={`${paper.variable} ${archivo.variable} h-full antialiased`}>
       <body className="flex min-h-full flex-col">
+        <JsonLd
+          data={[
+            websiteNode(site, m.brand, m.meta.homeDescription),
+            organizationNode(site, m.brand, m.meta.homeDescription),
+          ]}
+        />
         {/* 방향 계약 — 빌드 산출물에 HTML 주석으로 남아야 감사 가능 (JSX 주석은 스트립됨) */}
         <div
           hidden

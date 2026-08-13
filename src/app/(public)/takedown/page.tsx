@@ -3,6 +3,7 @@ import Link from "next/link";
 import { publicEnv } from "@/shared/config/env";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/frame";
 
 
@@ -38,14 +39,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale === "ko"
       ? "장소 정보 오류 신고, 삭제·수정 요청 접수 절차."
       : "How to report incorrect information or request removal.";
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: localePath("/takedown", locale),
-      languages: { ko: "/takedown", en: "/en/takedown" },
-    },
-  };
+  return publicMeta({ locale, title, description, bare: "/takedown" });
 }
 
 export default async function TakedownPage() {

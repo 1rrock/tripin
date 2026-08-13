@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/frame";
 
 
@@ -25,14 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale === "ko"
       ? "Eatripin이 무엇을, 왜, 어떻게 만드는지. 데이터 출처와 검수 방식."
       : "What Eatripin is, why it exists, and how the map data is sourced and checked.";
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: localePath("/about", locale),
-      languages: { ko: "/about", en: "/en/about" },
-    },
-  };
+  return publicMeta({ locale, title, description, bare: "/about" });
 }
 
 export default async function AboutPage() {

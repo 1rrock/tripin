@@ -6,6 +6,8 @@ import { loadTypeIndex, type TypeRow } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Frame, Icon, Index, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -27,14 +29,12 @@ import { Thumb } from "@/shared/ui/Thumb";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  return {
-    title: m.typeIndex.title,
+  return publicMeta({
+    locale,
+    title: m.typeIndex.srHeading,
     description: m.typeIndex.blurb,
-    alternates: {
-      canonical: localePath("/type", locale),
-      languages: { ko: "/type", en: "/en/type" },
-    },
-  };
+    bare: "/type",
+  });
 }
 
 export default async function TypeIndexPage() {
@@ -49,6 +49,21 @@ export default async function TypeIndexPage() {
 
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.common.home, url: absoluteUrl("/", locale) },
+            { name: m.typeIndex.srHeading, url: absoluteUrl("/type", locale) },
+          ]),
+          linkList(
+            m.typeIndex.srHeading,
+            types.map((row) => ({
+              name: m.placeTypes[row.type],
+              url: absoluteUrl(`/type/${row.type}`, locale),
+            })),
+          ),
+        ]}
+      />
       {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 걷어냈어도
           스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
           `title` 은 훅("뭐 볼래요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
@@ -110,8 +125,9 @@ function TypeLedgerRow({
         })}
       >
         {cut ? (
+          /* 첫 행의 컷만 eager — 이 페이지의 LCP 후보다 (city/page.tsx 와 같은 규칙) */
           <Frame className="w-[104px] shrink-0 sm:w-[124px]">
-            <Thumb youtubeId={cut.youtubeId} alt={cut.title} />
+            <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={n === 0} />
           </Frame>
         ) : null}
 

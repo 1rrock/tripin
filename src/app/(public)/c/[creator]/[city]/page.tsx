@@ -11,6 +11,8 @@ import type { Locale } from "@/shared/i18n/config";
 import { displayCityName, displayIntro, displaySummary } from "@/shared/i18n/display";
 import type { EnSource } from "@/shared/i18n/display";
 import { Chip, Icon } from "@/shared/ui/frame";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
 
 /**
@@ -250,18 +252,20 @@ export async function generateMetadata({
   const description =
     locale === "en"
       ? `${confirmed.length} places ${data.creator.display_name} visited in ${cityName} — ${topNames}. Every place links back to its source video.`
-      : `${data.creator.display_name}이(가) ${cityName}에서 간 곳 ${confirmed.length}곳 — ${topNames}. 모든 장소에 출처 영상 링크 포함.`;
-  const url = localePath(bare, locale);
-  return {
+      : /* 「이(가)」를 쓰지 않는다 — 채널명은 받침이 있을 수도(곽튜브) 없을 수도
+           (비밀이야 bimirya) 있고, 폴백 표기는 검색 결과 스니펫에 그대로 노출된다.
+           「의」는 받침과 무관하게 항상 맞고, 이 페이지 h1 의 어법과도 같다. */
+        `${data.creator.display_name}의 ${cityName} 맛집·간 곳 ${confirmed.length}곳: ${topNames}. 모든 장소에 출처 영상 링크 포함.`;
+  return publicMeta({
+    locale,
     title,
     description,
-    openGraph: { title, description, type: "website", url },
-    alternates: { canonical: url, languages: { ko: bare, en: `/en${bare}` } },
+    bare,
     // 공개 게이트 — 미달 조각은 직접 링크로만 열리고 검색에는 노출하지 않는다
     ...(confirmed.length < MIN_CONFIRMED_PINS
       ? { robots: { index: false, follow: false } }
       : {}),
-  };
+  });
 }
 
 /** 브레드크럼 구분자 — Explorer 와 같은 획. */
@@ -369,26 +373,58 @@ export default async function CreatorCityPage({
     timestampSec: p.timestampSec,
   }));
 
+  const m = getDictionary(locale);
+  const bare = `/c/${routeParams.creator}/${routeParams.city}`;
+  const confirmedPlaces = places.filter((p) => p.mapStatus === "confirmed");
+  const listName =
+    locale === "en"
+      ? `${cityName} by ${data.creator.display_name}`
+      : `${data.creator.display_name}의 ${cityName}`;
+
   return (
-    <Explorer
-      creatorName={data.creator.display_name}
-      creatorInitials={data.creator.initials}
-      creatorAvatar={data.creator.avatar_url}
-      accentColor={data.creator.accent_color}
-      cityName={cityName}
-      introText={displayIntro(data, locale)}
-      places={places}
-      activeType={(query.type as PlaceType | undefined) ?? null}
-      basePath={`/c/${routeParams.creator}/${routeParams.city}`}
-      initialPicked={query.picked?.split(",").filter(Boolean) ?? []}
-      otherCities={data.otherCities.map(
-        (c): RelatedPiece => ({
-          slug: c.slug,
-          name: displayCityName(c, locale),
-          count: c.count,
-        }),
-      )}
-      otherCreators={data.otherCreators}
-    />
+    <>
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.common.home, url: absoluteUrl("/", locale) },
+            {
+              name: data.creator.display_name,
+              url: absoluteUrl(`/c/${routeParams.creator}`, locale),
+            },
+            { name: cityName, url: absoluteUrl(bare, locale) },
+          ]),
+          placeList(
+            listName,
+            confirmedPlaces.map((p) => ({
+              name: p.name,
+              address: p.address,
+              lat: p.lat,
+              lng: p.lng,
+              url: `${absoluteUrl(bare, locale)}#${p.slug}`,
+            })),
+          ),
+        ]}
+      />
+      <Explorer
+        creatorName={data.creator.display_name}
+        creatorInitials={data.creator.initials}
+        creatorAvatar={data.creator.avatar_url}
+        accentColor={data.creator.accent_color}
+        cityName={cityName}
+        introText={displayIntro(data, locale)}
+        places={places}
+        activeType={(query.type as PlaceType | undefined) ?? null}
+        basePath={bare}
+        initialPicked={query.picked?.split(",").filter(Boolean) ?? []}
+        otherCities={data.otherCities.map(
+          (c): RelatedPiece => ({
+            slug: c.slug,
+            name: displayCityName(c, locale),
+            count: c.count,
+          }),
+        )}
+        otherCreators={data.otherCreators}
+      />
+    </>
   );
 }

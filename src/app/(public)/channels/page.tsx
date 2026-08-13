@@ -5,6 +5,8 @@ import { loadHomeFeed } from "@/shared/api/home";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Avatar, Frame, Index, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -19,19 +21,24 @@ import { Thumb } from "@/shared/ui/Thumb";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const { totals } = await loadHomeFeed();
-  return {
-    title: m.channels.title,
-    description: t(m.channels.stats, {
-      creators: totals.creators,
-      places: totals.places,
-      cities: totals.cities,
-    }),
-    alternates: {
-      canonical: localePath("/channels", locale),
-      languages: { ko: "/channels", en: "/en/channels" },
-    },
-  };
+  const { totals, creators } = await loadHomeFeed();
+  /* description 에 화면용 통계 줄(`m.channels.stats` = "채널 6 · 간 곳 272 · 도시 26")을
+     그대로 쓰고 있었다. 스니펫에 숫자만 나가면 이 페이지가 무엇인지도, 왜 누를지도
+     읽히지 않는다. 사람들이 실제로 치는 말은 채널명이므로 이름을 앞에 세운다. */
+  const names = creators
+    .slice(0, 3)
+    .map((c) => c.displayName)
+    .join(", ");
+  const description =
+    locale === "en"
+      ? `${totals.creators} travel YouTube channels — ${names} and more. ${totals.places} places across ${totals.cities} cities, each linking back to its source video.`
+      : `여행 유튜버 ${totals.creators}개 채널 — ${names} 등이 다녀간 맛집·명소 ${totals.places}곳을 도시 ${totals.cities}곳 지도에 모았습니다.`;
+  return publicMeta({
+    locale,
+    title: m.channels.srHeading,
+    description,
+    bare: "/channels",
+  });
 }
 
 export default async function ChannelsPage() {
@@ -41,6 +48,21 @@ export default async function ChannelsPage() {
 
   return (
     <main className="flex flex-col px-(--gutter) pt-2 pb-20">
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.common.home, url: absoluteUrl("/", locale) },
+            { name: m.channels.srHeading, url: absoluteUrl("/channels", locale) },
+          ]),
+          linkList(
+            m.channels.srHeading,
+            creators.map((c) => ({
+              name: c.displayName,
+              url: absoluteUrl(`/c/${c.slug}`, locale),
+            })),
+          ),
+        ]}
+      />
       {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 걷어냈어도
           스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
           `title` 은 훅("어디 가세요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
@@ -101,9 +123,10 @@ export default async function ChannelsPage() {
                 </span>
 
                 <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-                  {c.recentVideos.map((v) => (
+                  {/* 첫 채널의 첫 컷만 eager — 이 페이지의 LCP 후보 (city/page.tsx 와 같은 규칙) */}
+                  {c.recentVideos.map((v, vi) => (
                     <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
-                      <Thumb youtubeId={v.youtubeId} alt={v.title} />
+                      <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i === 0 && vi === 0} />
                     </Frame>
                   ))}
                 </span>

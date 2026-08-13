@@ -6,6 +6,8 @@ import { loadCityIndex, type CityRow } from "@/shared/api/cities";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Frame, Icon, Index, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -24,14 +26,12 @@ const STRIP_MIN_VIDEOS = 3;
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  return {
-    title: m.cityIndex.title,
+  return publicMeta({
+    locale,
+    title: m.cityIndex.srHeading,
     description: m.cityIndex.blurb,
-    alternates: {
-      canonical: localePath("/city", locale),
-      languages: { ko: "/city", en: "/en/city" },
-    },
-  };
+    bare: "/city",
+  });
 }
 
 export default async function CityIndexPage() {
@@ -43,6 +43,21 @@ export default async function CityIndexPage() {
 
   return (
     <main className="flex flex-col px-(--gutter) pt-2 pb-20">
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.common.home, url: absoluteUrl("/", locale) },
+            { name: m.cityIndex.srHeading, url: absoluteUrl("/city", locale) },
+          ]),
+          linkList(
+            m.cityIndex.srHeading,
+            cities.map((c) => ({
+              name: displayCityName({ name: c.name, nameEn: c.nameEn }, locale),
+              url: absoluteUrl(`/city/${c.slug}`, locale),
+            })),
+          ),
+        ]}
+      />
       {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 걷어냈어도
           스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
           `title` 은 훅("어디 가세요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
@@ -128,9 +143,12 @@ function CityRoll({
         </span>
 
         <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-          {city.recentVideos.map((v) => (
+          {/* 첫 도시의 첫 컷만 eager — 이 페이지의 LCP 후보다. 나머지는 lazy 로 둔다.
+              전부 lazy 로 두면 브라우저가 LCP 이미지를 늦게 발견해 그만큼 밀린다
+              (VideoSheet 의 `eager={large}` 와 같은 규칙). */}
+          {city.recentVideos.map((v, vi) => (
             <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
-              <Thumb youtubeId={v.youtubeId} alt={v.title} />
+              <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i === 0 && vi === 0} />
             </Frame>
           ))}
         </span>

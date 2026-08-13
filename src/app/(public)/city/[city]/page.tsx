@@ -7,6 +7,8 @@ import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName, displaySummary } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { Icon } from "@/shared/ui/frame";
 import { CityExplorer, type CityPlace } from "./CityExplorer";
 
@@ -33,35 +35,34 @@ export async function generateMetadata({
   const data = await loadCityDetail((await params).city);
   if (!data) return { title: "Not found" };
   const cityLabel = displayCityName({ name: data.name, nameEn: data.nameEn }, locale);
+  /* 스니펫은 앞에서 잘린다 — 검색어가 되는 **상호명**을 먼저 세운다.
+     채널명은 전부 나열하지 않는다: 도쿄에 4채널이면 로마자까지 붙어
+     스니펫 절반을 이름 목록이 먹고 상호명이 잘려 나갔다. "곽튜브 도쿄" 질의는
+     조각 페이지(`/c/[creator]/[city]`)가 받는 게 이 사이트의 구조다. */
   const names = data.places
-    .slice(0, 4)
+    .slice(0, 3)
     .map((p) => p.name)
     .join(", ");
-  const who = data.creators.map((c) => c.displayName).join(", ");
-  if (locale === "en") {
-    return {
-      title: `${cityLabel} — YouTuber places map (${data.places.length})`,
-      description: `${who} visited ${data.places.length} places in ${cityLabel}: ${names}. Each pin links to a source video.`,
-      alternates: {
-        canonical: localePath(`/city/${data.slug}`, locale),
-        languages: {
-          ko: `/city/${data.slug}`,
-          en: `/en/city/${data.slug}`,
-        },
-      },
-    };
-  }
-  return {
-    title: `${data.name} 여행 유튜버 맛집 지도 — ${data.places.length}곳`,
-    description: `${who}이(가) ${data.name}에서 다녀간 ${data.places.length}곳: ${names}. 각 장소마다 출처 영상과 지도 링크가 있습니다.`,
-    alternates: {
-      canonical: localePath(`/city/${data.slug}`, locale),
-      languages: {
-        ko: `/city/${data.slug}`,
-        en: `/en/city/${data.slug}`,
-      },
-    },
-  };
+  const shown = data.creators.slice(0, 2).map((c) => c.displayName).join(", ");
+  const rest = data.creators.length - 2;
+  const who = rest > 0 ? `${shown} 외 ${rest}명` : shown;
+  const whoEn = rest > 0 ? `${shown} and ${rest} more` : shown;
+  const title =
+    locale === "en"
+      ? `${cityLabel} — YouTuber places map (${data.places.length})`
+      : `${data.name} 여행 유튜버 맛집 지도 — ${data.places.length}곳`;
+  const description =
+    locale === "en"
+      ? `${data.places.length} places in ${cityLabel} from travel videos — ${names} and more. Featured by ${whoEn}. Every pin links to its source video.`
+      : /* 조사 폴백 「이(가)」 금지 — 스니펫에 그대로 나간다. 이 페이지의 질의는
+           "도쿄 맛집" 쪽이라 도시명을 앞에 세우고, 채널은 「의」로 붙인다. */
+        `${data.name} 맛집·명소 ${data.places.length}곳 — ${names} 등. ${who}의 영상에 나온 장소마다 출처 영상과 지도 링크가 있습니다.`;
+  return publicMeta({
+    locale,
+    title,
+    description,
+    bare: `/city/${data.slug}`,
+  });
 }
 
 export default async function CityPage({
@@ -107,8 +108,32 @@ export default async function CityPage({
     sources: p.sources,
   }));
 
+  const listName =
+    locale === "en"
+      ? `Places in ${cityLabel}`
+      : `${cityLabel}에 간 곳`;
+
   return (
     <main>
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.cityDetail.home, url: absoluteUrl("/", locale) },
+            { name: m.cityDetail.region, url: absoluteUrl("/city", locale) },
+            { name: cityLabel, url: absoluteUrl(`/city/${data.slug}`, locale) },
+          ]),
+          placeList(
+            listName,
+            places.map((p) => ({
+              name: p.name,
+              address: p.address,
+              lat: p.lat,
+              lng: p.lng,
+              url: `${absoluteUrl(`/city/${data.slug}`, locale)}#${p.slug}`,
+            })),
+          ),
+        ]}
+      />
       <header className="flex flex-col gap-3 px-(--gutter) pt-2 pb-1 lg:px-(--gutter)">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link

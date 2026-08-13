@@ -87,6 +87,8 @@ export function HomeSheet({
 
   return (
     <div className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+      {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 컷이 맡는다. */}
+      <h1 className="sr-only">{m.home.srHeading}</h1>
       {/* 필터 한 줄 — 검색창은 헤더로 갔다(SearchBar). 여기 또 두면 둘이 겹친다.
           축이 셋(종류·지역·채널)이지만 줄은 하나다. 줄을 축마다 쌓으면 첫 화면이
           컨트롤로 채워져 정작 썸네일이 접힌 아래로 밀린다 — 이 화면의 주인공은 컷이다.

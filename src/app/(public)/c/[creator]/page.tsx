@@ -11,6 +11,8 @@ import { Act, Avatar, Icon } from "@/shared/ui/frame";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName, displaySummary } from "@/shared/i18n/display";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 
 /**
  * 채널 허브 — 콘택트 시트의 "롤" 한 통.
@@ -38,24 +40,26 @@ export async function generateMetadata({
   const { creator: creatorSlug } = await params;
   const data = await loadCreatorMap(creatorSlug);
   if (!data) return { title: "Not found" };
-  const cityNames = data.cities.map((g) => displayCityName(g, locale)).join(", ");
+  /* 제목·설명 모두 검색결과에서 잘린다(제목 ~60자, 설명은 한글 ~80자).
+     비밀이야는 도시가 13곳이라 전부 나열하면 제목은 브랜드 접미사(`| Eatripin`)가,
+     설명은 끝의 가치 문구("출처 영상 링크")가 통째로 밀려 나갔다. 둘 다 상한을 둔다. */
+  const cityLabel = (n: number) =>
+    data.cities.slice(0, n).map((g) => displayCityName(g, locale)).join(", ");
+  const titleCities = cityLabel(3);
+  const more = data.cities.length - 3;
+  const descCities = cityLabel(6);
+  const descMore = data.cities.length - 6;
   const bare = `/c/${creatorSlug}`;
-  const alternates = {
-    canonical: localePath(bare, locale),
-    languages: { ko: bare, en: `/en${bare}` },
-  };
-  if (locale === "en") {
-    return {
-      title: `${data.creator.display_name} travel map — ${cityNames}`,
-      description: `${data.creator.display_name} visited ${data.cities.length} cities (${cityNames}): places to eat and see. Each place links to its source video.`,
-      alternates,
-    };
-  }
-  return {
-    title: `${data.creator.display_name} 여행 지도 — ${cityNames}`,
-    description: `${data.creator.display_name}이(가) 다녀간 도시 ${data.cities.length}곳(${cityNames})의 맛집·명소 지도. 모든 장소에 출처 영상 링크 포함.`,
-    alternates,
-  };
+  const title =
+    locale === "en"
+      ? `${data.creator.display_name} travel map — ${titleCities}${more > 0 ? ` +${more}` : ""}`
+      : `${data.creator.display_name} 여행 지도 — ${titleCities}${more > 0 ? ` 외 ${more}곳` : ""}`;
+  const description =
+    locale === "en"
+      ? `${data.creator.display_name} visited ${data.cities.length} cities — ${descCities}${descMore > 0 ? ` and ${descMore} more` : ""}. Places to eat and see, each linking back to its source video.`
+      : /* 조사 폴백 「이(가)」 금지 — 스니펫에 그대로 나간다. `의`로 받침을 피한다 */
+        `${data.creator.display_name}의 여행 도시 ${data.cities.length}곳 — ${descCities}${descMore > 0 ? ` 외 ${descMore}곳` : ""}. 맛집·명소마다 출처 영상 링크가 있습니다.`;
+  return publicMeta({ locale, title, description, bare });
 }
 
 export default async function CreatorHubPage({
@@ -100,6 +104,25 @@ export default async function CreatorHubPage({
 
   return (
     <main className="flex flex-col gap-(--stack) pb-20">
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.common.home, url: absoluteUrl("/", locale) },
+            { name: m.hub.channelNav, url: absoluteUrl("/channels", locale) },
+            {
+              name: creator.display_name,
+              url: absoluteUrl(`/c/${creatorSlug}`, locale),
+            },
+          ]),
+          linkList(
+            creator.display_name,
+            cities.map((c) => ({
+              name: displayCityName(c, locale),
+              url: absoluteUrl(`/c/${creatorSlug}/${c.slug}`, locale),
+            })),
+          ),
+        ]}
+      />
       <header className="flex flex-col gap-2.5 px-(--gutter) pt-2 pb-0">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">

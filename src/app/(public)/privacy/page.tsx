@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/frame";
 
 
@@ -25,14 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale === "ko"
       ? "Eatripin이 수집하는 개인정보와 쿠키에 대한 안내."
       : "What personal data and cookies Eatripin collects.";
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: localePath("/privacy", locale),
-      languages: { ko: "/privacy", en: "/en/privacy" },
-    },
-  };
+  return publicMeta({ locale, title, description, bare: "/privacy" });
 }
 
 export default async function PrivacyPage() {

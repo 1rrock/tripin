@@ -353,6 +353,7 @@ export function Explorer({
                   return (
                     <li
                       key={place.id}
+                      id={place.slug}
                       ref={(el: HTMLLIElement | null) => {
                         if (el) listRef.current.set(place.id, el);
                         else listRef.current.delete(place.id);

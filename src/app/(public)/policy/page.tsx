@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/frame";
 
 
@@ -25,14 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
     locale === "ko"
       ? "Eatripin이 영상 정보를 다루는 원칙 — 자막 원문 미보관, 출처 표기, 무변형 원칙."
       : "How Eatripin handles video-derived information — no raw captions, sourcing, unmodified media.";
-  return {
-    title,
-    description,
-    alternates: {
-      canonical: localePath("/policy", locale),
-      languages: { ko: "/policy", en: "/en/policy" },
-    },
-  };
+  return publicMeta({ locale, title, description, bare: "/policy" });
 }
 
 export default async function PolicyPage() {

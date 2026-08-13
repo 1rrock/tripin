@@ -281,6 +281,7 @@ export function CityExplorer({
                 return (
                   <li
                     key={place.id}
+                    id={place.slug}
                     ref={(el: HTMLLIElement | null) => {
                       if (el) rowRefs.current.set(place.id, el);
                       else rowRefs.current.delete(place.id);

@@ -7,6 +7,7 @@ import { Thumb } from "@/shared/ui/Thumb";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
+import { publicMeta } from "@/shared/seo/page-meta";
 import { Timeline } from "./Timeline";
 
 /**
@@ -45,24 +46,18 @@ export async function generateMetadata({
     .map((s) => s.name)
     .join(", ");
   const bare = `/c/${creator}/v/${videoId}`;
-  const alternates = {
-    canonical: localePath(bare, locale),
-    languages: { ko: bare, en: `/en${bare}` },
-  };
-  if (locale === "en") {
-    return {
-      title: `${data.creator.displayName} — ${data.video.title}`,
-      description: `${data.video.stopCount} places in this video: ${names}. Each place has a video timestamp and map link.`,
-      alternates,
-      robots: { index: false, follow: true },
-    };
-  }
-  return {
-    title: `${data.creator.displayName} — ${data.video.title}`,
-    description: `이 영상에 나온 곳 ${data.video.stopCount}곳: ${names}. 각 장소마다 영상 타임스탬프와 지도 링크가 있습니다.`,
-    alternates,
+  const title = `${data.creator.displayName} — ${data.video.title}`;
+  const description =
+    locale === "en"
+      ? `${data.video.stopCount} places in this video: ${names}. Each place has a video timestamp and map link.`
+      : `이 영상에 나온 곳 ${data.video.stopCount}곳: ${names}. 각 장소마다 영상 타임스탬프와 지도 링크가 있습니다.`;
+  return publicMeta({
+    locale,
+    title,
+    description,
+    bare,
     robots: { index: false, follow: true },
-  };
+  });
 }
 
 export default async function VideoPage({ params }: { params: Promise<Params> }) {

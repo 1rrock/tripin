@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { getLocale, localePath } from "@/shared/i18n/locale";
+import { getLocale } from "@/shared/i18n/locale";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, linkList } from "@/shared/seo/json-ld";
 import { HomeSheet } from "./HomeSheet";
 
 /**
@@ -11,22 +13,12 @@ import { HomeSheet } from "./HomeSheet";
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  return {
+  return publicMeta({
+    locale,
     title: m.meta.homeTitle,
     description: m.meta.homeDescription,
-    openGraph: {
-      locale: locale === "en" ? "en_US" : "ko_KR",
-      title: m.meta.homeTitle,
-      description: m.meta.homeDescription,
-    },
-    alternates: {
-      canonical: localePath("/", locale),
-      languages: {
-        ko: "/",
-        en: "/en",
-      },
-    },
-  };
+    bare: "/",
+  });
 }
 
 export default async function HomePage() {
@@ -59,6 +51,15 @@ export default async function HomePage() {
 
   return (
     <main>
+      <JsonLd
+        data={linkList(
+          m.home.srHeading,
+          creators.map((c) => ({
+            name: c.displayName,
+            url: absoluteUrl(`/c/${c.slug}`, locale),
+          })),
+        )}
+      />
       <HomeSheet videos={sheetVideos} creators={creators} totals={totals} />
     </main>
   );

@@ -33,6 +33,8 @@ export const ko = {
     comingTitle: "곧 열립니다",
     comingBody: "첫 지도를 준비하고 있습니다. 확정된 장소가 쌓이는 대로 채널이 열립니다.",
     openChannel: "{name} 채널 열기",
+    /** 화면에 안 보이는 h1 — 홈 타이틀은 훅이 아니라 설명형이어야 한다. */
+    srHeading: "여행 유튜버가 간 곳 지도",
   },
   cityIndex: {
     title: "어디 가세요?",
@@ -81,7 +83,6 @@ export const ko = {
     heading: "누구 따라갈까요?",
     /** 화면에 안 보이는 h1 — 설명형. */
     srHeading: "등록된 여행 유튜버 채널",
-    stats: "채널 {creators} · 간 곳 {places} · 도시 {cities}",
     empty: "아직 공개된 채널이 없어요.",
     openChannel: "{name} 채널 열기 — 간 곳 {places}곳",
     placesUnit: "{n}곳",
@@ -238,7 +239,7 @@ export const ko = {
   meta: {
     homeTitle: "여행 유튜버가 간 곳 지도",
     homeDescription:
-      "채널을 고르면 그 여행 유튜버가 다녀간 맛집·명소가 지도에 뜹니다. 모든 장소에 출처 영상 링크가 있습니다.",
+      "여행 유튜버가 다녀간 맛집·명소를 채널·도시별로 지도에 모았습니다. 모든 장소에 출처 영상 링크가 있습니다.",
   },
 };
 
@@ -275,6 +276,7 @@ export type Messages = {
     comingTitle: string;
     comingBody: string;
     openChannel: string;
+    srHeading: string;
   };
   cityIndex: {
     title: string;
@@ -320,7 +322,6 @@ export type Messages = {
     title: string;
     heading: string;
     srHeading: string;
-    stats: string;
     empty: string;
     openChannel: string;
     placesUnit: string;

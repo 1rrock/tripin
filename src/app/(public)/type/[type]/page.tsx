@@ -6,6 +6,8 @@ import { loadTypeDetail, parsePlaceType } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
+import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
+import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { Act, Chip, Frame, Icon, Index, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -47,7 +49,8 @@ export async function generateMetadata({
     .slice(0, 4)
     .map((g) => displayCityName({ name: g.cityName, nameEn: g.cityNameEn }, locale))
     .join(", ");
-  return {
+  return publicMeta({
+    locale,
     title:
       locale === "en"
         ? `${label} from travel YouTubers — ${data.placeCount} places`
@@ -56,14 +59,8 @@ export async function generateMetadata({
       locale === "en"
         ? `${data.placeCount} ${label.toLowerCase()} places across ${data.cityCount} cities, each with a source video.`
         : `여행 유튜버가 다녀간 ${label} ${data.placeCount}곳 (${data.cityCount}개 도시). 각 장소마다 출처 영상과 지도 링크가 있습니다.`,
-    alternates: {
-      canonical: localePath(`/type/${type}`, locale),
-      languages: {
-        ko: `/type/${type}`,
-        en: `/en/type/${type}`,
-      },
-    },
-  };
+    bare: `/type/${type}`,
+  });
 }
 
 export default async function TypeDetailPage({ params }: { params: Promise<Params> }) {
@@ -76,8 +73,25 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
 
   const label = m.placeTypes[type];
 
+  const schemaPlaces = data.groups.flatMap((g) =>
+    g.places.slice(0, VISIBLE_PER_CITY).map((p) => ({
+      name: displayPlaceName(p, locale),
+      address: p.address,
+    })),
+  );
+
   return (
     <main className="flex flex-col gap-(--block) px-(--gutter) pt-2 pb-20">
+      <JsonLd
+        data={[
+          breadcrumbList([
+            { name: m.typeDetail.home, url: absoluteUrl("/", locale) },
+            { name: m.typeDetail.type, url: absoluteUrl("/type", locale) },
+            { name: label, url: absoluteUrl(`/type/${type}`, locale) },
+          ]),
+          placeList(label, schemaPlaces),
+        ]}
+      />
       <header className="flex flex-col gap-3">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link
@@ -112,7 +126,7 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
       </header>
 
       <div className="flex flex-col gap-(--block)">
-        {data.groups.map((g) => {
+        {data.groups.map((g, gi) => {
           const cityLabel = displayCityName(
             { name: g.cityName, nameEn: g.cityNameEn },
             locale,
@@ -145,9 +159,14 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                       <Rule />
                       <div className="flex items-start gap-3.5 py-(--stack)">
                         {cut ? (
+                          /* 첫 도시의 첫 장소 컷만 eager — 이 페이지의 LCP 후보 */
                           <span className="w-[104px] shrink-0 sm:w-[132px]">
                             <Frame>
-                              <Thumb youtubeId={cut.youtubeId} alt={cut.videoTitle} />
+                              <Thumb
+                                youtubeId={cut.youtubeId}
+                                alt={cut.videoTitle}
+                                eager={gi === 0 && i === 0}
+                              />
                             </Frame>
                           </span>
                         ) : null}
