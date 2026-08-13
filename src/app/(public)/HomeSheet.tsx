@@ -3,14 +3,13 @@
 /**
  * 홈 — 고르는 순서는 둘뿐이다: **어느 도시 · 누구의 지도**.
  *
- *   검색 → 규모 → 도시 시트 → 조각 롤
+ *   검색(모바일) → 도시 시트 → 조각 롤
  *
  * 두 섹션을 같은 2열 히어로로 깔면 아래 컷이 위 도시의 다음 장으로 읽힌다.
  * 도시는 동급 타일(이름 먼저), 조각은 채널 얼굴이 프레임 위에 있는 롤.
  * 16:9 만 — 썸네일 변형 금지.
  */
 
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import type { FeedPiece } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
@@ -27,21 +26,19 @@ function openSearch() {
 
 export function HomeSheet({
   pieces,
-  totals,
   cities,
 }: {
   pieces: FeedPiece[];
-  totals: { creators: number; cities: number; places: number; videos: number };
   cities: CityRow[];
 }) {
   const { messages: m, href, t, locale } = useLocale();
   const tiles = cities.slice(0, CITY_TILES);
 
   return (
-    <div className="pb-20">
+    <div>
       <h1 className="sr-only">{m.home.srHeading}</h1>
 
-      <div className="px-(--gutter) pt-3 pb-1 md:hidden">
+      <div className="px-(--gutter) pt-(--stack) md:hidden">
         <button
           type="button"
           onClick={openSearch}
@@ -52,16 +49,8 @@ export function HomeSheet({
         </button>
       </div>
 
-      <p className="index tnum px-(--gutter) pt-3 md:pt-5" style={{ color: "var(--dim)" }}>
-        {t(m.home.stats, {
-          places: totals.places,
-          cities: totals.cities,
-          creators: totals.creators,
-        })}
-      </p>
-
       {tiles.length > 0 ? (
-        <section className="px-(--gutter) pt-(--block)" aria-labelledby="cities-h">
+        <section className="px-(--gutter) pt-(--stack)" aria-labelledby="cities-h">
           <div className="flex items-baseline justify-between gap-3">
             <h2
               id="cities-h"
@@ -76,21 +65,17 @@ export function HomeSheet({
               style={{ color: "var(--dim)" }}
             >
               {m.home.allRegions}
-              <Icon.chevron className="size-3" />
+              <Icon.chevron className="roll-go size-3" />
             </Link>
           </div>
-          <ul className="mt-4 grid grid-cols-2 gap-x-2.5 gap-y-6 md:grid-cols-3 md:gap-x-3 md:gap-y-7">
+          <ul className="mt-(--stack) grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 md:gap-y-10">
             {tiles.map((c, i) => {
               const cut = c.recentVideos[0];
               return (
-                <li
-                  key={c.slug}
-                  className={`min-w-0${i < 2 ? " develop" : ""}`}
-                  style={i < 2 ? ({ "--i": i } as CSSProperties) : undefined}
-                >
+                <li key={c.slug} className="min-w-0">
                   <Link
                     href={href(`/city/${c.slug}`)}
-                    className="block"
+                    className="sheet-card block"
                     aria-label={t(m.cityIndex.openMap, {
                       name: displayCityName(c, locale),
                       places: c.placeCount,
@@ -98,9 +83,9 @@ export function HomeSheet({
                     })}
                   >
                     {/* 이름을 프레임 앞에 — 컷을 보고 도시를 추측하지 않게 */}
-                    <span className="mb-1.5 flex items-baseline justify-between gap-2">
+                    <span className="mb-2 flex items-baseline justify-between gap-2">
                       <span
-                        className="min-w-0 truncate font-bold"
+                        className="sheet-name min-w-0 truncate font-bold"
                         style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
                       >
                         {displayCityName(c, locale)}
@@ -124,7 +109,7 @@ export function HomeSheet({
 
       {pieces.length > 0 ? (
         <section
-          className="mt-(--block) border-t px-(--gutter) pt-(--block)"
+          className="mt-(--block) border-t px-(--gutter) pt-(--stack)"
           style={{ borderColor: "var(--hairline)" }}
           aria-labelledby="pieces-h"
         >
@@ -135,12 +120,12 @@ export function HomeSheet({
           >
             {m.home.piecesHeading}
           </h2>
-          <ul className="mt-4 flex flex-col gap-6 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-7">
+          <ul className="mt-(--stack) flex flex-col gap-8 md:grid md:grid-cols-2 md:gap-x-4 md:gap-y-10">
             {pieces.map((p, i) => (
               <li key={`${p.creatorSlug}:${p.city.slug}`} className="min-w-0">
                 <Link
                   href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
-                  className="block"
+                  className="sheet-card block"
                   aria-label={t(m.piece.title, {
                     creator: p.creatorName,
                     city: displayCityName(p.city, locale),
@@ -155,7 +140,7 @@ export function HomeSheet({
                     />
                     <span className="min-w-0 flex-1">
                       <span
-                        className="block truncate font-bold"
+                        className="sheet-name block truncate font-bold"
                         style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
                       >
                         {p.creatorName}

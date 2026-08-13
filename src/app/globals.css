@@ -292,15 +292,74 @@ body > * { position: relative; z-index: 1; }
 .sheet-card .sheet-source {
   color: var(--dim);
 }
+.sheet-name {
+  transition: color 0.22s ease;
+}
+.sheet-card .frame {
+  transition: box-shadow 0.22s ease;
+}
 @media (hover: hover) {
   .sheet-card:hover {
     background: var(--hover);
+    transition-duration: 0.12s;
+  }
+  .sheet-card:hover .sheet-name {
+    color: var(--wax);
+    transition-duration: 0.12s;
+  }
+  /* 컷은 안 움직인다. 프레임 링만 진해져 "이 장"이 된다 */
+  .sheet-card:hover .frame {
+    box-shadow: inset 0 0 0 1px var(--edge);
     transition-duration: 0.12s;
   }
 }
 .sheet-card:active {
   background: var(--hover);
   transition-duration: 60ms;
+}
+.sheet-card:active .sheet-name { color: var(--wax); }
+.sheet-card:active .frame { box-shadow: inset 0 0 0 1px var(--edge); }
+
+/* ── 뼈대 — 토스식 플로우, 웜 페이퍼 토큰 ────────────────────────────
+   쿨 그레이(#f2f4f6)는 이 월드가 아니다. 모션만 가져온다:
+   90도 하이라이트가 뼈 위를 가로질러 흐른다.
+   프레임 안(.bone 절대) · 제목 막대(.bone-line) · 아바타가 같은 쓸림. */
+@keyframes bone-flow {
+  from { background-position: 100% 0; }
+  to   { background-position: -100% 0; }
+}
+.bone,
+.bone-line,
+.bone-ava {
+  background-color: color-mix(in srgb, var(--hairline) 42%, var(--sheet));
+  background-image: linear-gradient(
+    90deg,
+    transparent 0%,
+    color-mix(in srgb, var(--sheet) 55%, white) 42%,
+    color-mix(in srgb, var(--sheet) 15%, white) 50%,
+    color-mix(in srgb, var(--sheet) 55%, white) 58%,
+    transparent 100%
+  );
+  background-size: 220% 100%;
+  animation: bone-flow 1.35s ease-in-out infinite;
+}
+.bone {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+}
+.bone-line,
+.bone-ava {
+  position: relative;
+  display: block;
+  overflow: hidden;
+}
+.bone-line { height: 0.72em; border-radius: var(--r-frame); }
+.bone-ava {
+  flex: 0 0 auto;
+  width: 36px;
+  height: 36px;
+  border-radius: var(--r-round);
 }
 
 /* ── 칩(필터) 호버 ────────────────────────────────────────────────────
@@ -491,7 +550,15 @@ body > * { position: relative; z-index: 1; }
   .roll,
   .roll-go,
   .sheet-card,
-  .chip {
+  .sheet-name,
+  .sheet-card .frame,
+  .chip,
+  .bone,
+  .bone-line,
+  .bone-ava {
     transition-duration: 1ms;
   }
+  .bone,
+  .bone-line,
+  .bone-ava { animation: none; }
 }

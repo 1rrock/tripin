@@ -50,14 +50,16 @@ export const en: Messages = {
     title: "Where to?",
     srHeading: "Travel YouTuber places by city",
     stats: "{cities} cities · {places} places",
-    blurb: "Pick a region, then a city — places from every creator who went there, on one map.",
+    blurb:
+      "Start with the cities we have most of — places from every creator who went there, on one map.",
     empty: "No cities published yet.",
     openMap: "Open {name} — {places} places, {creators} channels",
     placesChannels: "{places} places · {creators} channels",
     rowMeta:
       "{places} {places|place|places} · {creators} {creators|channel|channels} · {videos} {videos|video|videos}",
-    minorHeading: "Cities with just a spot or two",
+    minorHeading: "More cities",
     minorMeta: "{places} {places|place|places} · {videos} {videos|video|videos}",
+    popularHeading: "Most mapped",
     regionStats: "{cities} cities · {places} places",
     regions: {
       japan: "Japan",
@@ -158,6 +160,7 @@ export const en: Messages = {
     policy: "Content policy",
     takedown: "Report an issue",
     privacy: "Privacy",
+    loading: "Loading",
   },
   hub: {
     channelNav: "Channels",

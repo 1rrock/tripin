@@ -26,7 +26,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ videos, creators, pieces, totals }, cities] = await Promise.all([
+  const [{ videos, creators, pieces }, cities] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
   ]);
@@ -58,7 +58,7 @@ export default async function HomePage() {
           })),
         )}
       />
-      <HomeSheet pieces={pieces} totals={totals} cities={cities} />
+      <HomeSheet pieces={pieces} cities={cities} />
     </main>
   );
 }

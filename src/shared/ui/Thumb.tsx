@@ -16,6 +16,10 @@
 import { useState } from "react";
 import { thumbHq, thumbMax } from "@/shared/lib/youtube";
 
+function markReady(el: HTMLImageElement | null, done: () => void) {
+  if (el?.complete && el.naturalWidth > 0) done();
+}
+
 export function Thumb({
   youtubeId,
   alt,
@@ -28,23 +32,30 @@ export function Thumb({
   eager?: boolean;
 }) {
   const [src, setSrc] = useState(() => thumbMax(youtubeId));
+  const [ready, setReady] = useState(false);
 
   return (
-    // eslint-disable-next-line @next/next/no-img-element -- 위 주석 참조: 유튜브 CDN 원본을 그대로 쓴다
-    <img
-      src={src}
-      alt={alt}
-      width={1280}
-      height={720}
-      loading={eager ? "eager" : "lazy"}
-      fetchPriority={eager ? "high" : "auto"}
-      decoding="async"
-      onError={() => {
-        // maxres 가 없는 영상은 120×90 회색 플레이스홀더가 200 으로 내려온다.
-        // 그 경우에도 onError 는 안 뜨므로, 진짜 404 일 때만 여기로 온다.
-        const hq = thumbHq(youtubeId);
-        setSrc((prev) => (prev === hq ? prev : hq));
-      }}
-    />
+    <>
+      {ready ? null : <span className="bone" aria-hidden />}
+      {/* eslint-disable-next-line @next/next/no-img-element -- 위 주석 참조: 유튜브 CDN 원본을 그대로 쓴다 */}
+      <img
+        src={src}
+        alt={alt}
+        width={1280}
+        height={720}
+        loading={eager ? "eager" : "lazy"}
+        fetchPriority={eager ? "high" : "auto"}
+        decoding="async"
+        style={ready ? undefined : { opacity: 0 }}
+        ref={(el) => markReady(el, () => setReady(true))}
+        onLoad={() => setReady(true)}
+        onError={() => {
+          // maxres 가 없는 영상은 120×90 회색 플레이스홀더가 200 으로 내려온다.
+          // 그 경우에도 onError 는 안 뜨므로, 진짜 404 일 때만 여기로 온다.
+          const hq = thumbHq(youtubeId);
+          setSrc((prev) => (prev === hq ? prev : hq));
+        }}
+      />
+    </>
   );
 }

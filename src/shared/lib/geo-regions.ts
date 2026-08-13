@@ -106,3 +106,30 @@ export function groupByGeoRegion<T extends { countryCode: string; placeCount: nu
     return [{ id, items: list }];
   });
 }
+
+/**
+ * 지역 인덱스용 — 도시가 거의 없는 권역은 `other` 로 접는다.
+ *
+ * 3도시 미만을 같은 무게의 칸으로 열면 일본 12곳과 싱가포르 1곳이
+ * 나란히 선다. 데이터가 늘면 이 숫자만 넘기면 칸이 알아서 갈라진다.
+ */
+export const OWN_REGION_MIN_CITIES = 3;
+
+export function groupForCityIndex<T extends { countryCode: string; placeCount: number }>(
+  items: T[],
+): { id: GeoRegionId; items: T[] }[] {
+  const own: { id: GeoRegionId; items: T[] }[] = [];
+  const folded: T[] = [];
+
+  for (const group of groupByGeoRegion(items)) {
+    if (group.id !== "other" && group.items.length >= OWN_REGION_MIN_CITIES) {
+      own.push(group);
+    } else {
+      folded.push(...group.items);
+    }
+  }
+
+  folded.sort((a, b) => b.placeCount - a.placeCount);
+  if (folded.length > 0) own.push({ id: "other", items: folded });
+  return own;
+}

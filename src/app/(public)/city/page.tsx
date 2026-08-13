@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import type { Locale } from "@/shared/i18n/config";
 import Link from "next/link";
 import { loadCityIndex, type CityRow } from "@/shared/api/cities";
@@ -8,20 +7,21 @@ import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
-import { Frame, Icon, Index, Rule } from "@/shared/ui/frame";
+import { Frame, Icon, Index } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
 /**
- * 지역 인덱스 — 필름 스트립 행 (콘택트 시트의 선반).
+ * 지역 인덱스 — 많이 간 도시 그리드, 나머지는 컴팩트 행.
  *
- * 도시 하나가 필름 한 롤이다: 도시명 + 최근 컷 4장.
- * 균일 타일 그리드를 쓰지 않는 이유는 데이터 분포다 — 후쿠오카 75곳과 1곳짜리
- * 도시 6개가 같은 타일이면 무게가 거짓말이 된다. 분량이 있는 도시는 스트립 행,
- * 아직 한두 곳뿐인 도시는 컴팩트 행으로 **투티어**를 나눈다.
+ * 여행 직전 사용자는 대륙이 아니라 도시 이름으로 들어온다. 상위 도시는
+ * 장소 수의 대부분을 차지해서(실측 6도시 / 235곳 / 86%) 그리드가 거짓말이 아니다.
+ * 권역 점프는 두지 않는다 — 목차가 그리드와 같은 일을 한 번 더 한다.
+ *
+ * 홈 도시 시트와 같은 타일·같은 리듬: 이름을 프레임 앞에.
  */
 
-/** 이 개수 이상 영상이 있어야 스트립 행 — 미만이면 컴팩트 행으로 내려간다 */
-const STRIP_MIN_VIDEOS = 3;
+/** 이 개수 이상이어야 "많이 간 도시" 그리드. 지금은 6도시 · 235곳. */
+const POPULAR_MIN_PLACES = 8;
 
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
@@ -38,11 +38,12 @@ export default async function CityIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
   const cities = await loadCityIndex();
-  const majors = cities.filter((c) => c.videoCount >= STRIP_MIN_VIDEOS);
-  const minors = cities.filter((c) => c.videoCount < STRIP_MIN_VIDEOS);
+  const popular = cities.filter((c) => c.placeCount >= POPULAR_MIN_PLACES);
+  const rest = cities.filter((c) => c.placeCount < POPULAR_MIN_PLACES);
+  const popularPlaces = popular.reduce((sum, c) => sum + c.placeCount, 0);
 
   return (
-    <main className="flex flex-col px-(--gutter) pt-2 pb-20">
+    <main className="flex flex-col px-(--gutter) pt-(--stack)">
       <JsonLd
         data={[
           breadcrumbList([
@@ -67,20 +68,38 @@ export default async function CityIndexPage() {
         <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.cityIndex.empty}</p>
       ) : (
         <>
-          <ul className="flex flex-col">
-            {majors.map((c, i) => (
-              <CityRoll key={c.slug} city={c} i={i} locale={locale} m={m} />
-            ))}
-          </ul>
-
-          {minors.length > 0 ? (
-            <section className="mt-(--block)">
-              <div className="flex items-center gap-3">
-                <Index>{m.cityIndex.minorHeading}</Index>
-                <Rule className="flex-1" />
+          {popular.length > 0 ? (
+            <section aria-labelledby="popular-h">
+              <div className="flex items-baseline justify-between gap-3">
+                <h2
+                  id="popular-h"
+                  className="font-bold"
+                  style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.03em", lineHeight: 1.2 }}
+                >
+                  {m.cityIndex.popularHeading}
+                </h2>
+                <Index className="tnum shrink-0">
+                  {t(m.cityIndex.regionStats, {
+                    cities: popular.length,
+                    places: popularPlaces,
+                  })}
+                </Index>
               </div>
-              <ul className="mt-2 flex flex-col">
-                {minors.map((c) => (
+              <ul className="mt-(--stack) grid grid-cols-2 gap-x-3 gap-y-8 md:grid-cols-3 md:gap-x-4 md:gap-y-10">
+                {popular.map((c, i) => (
+                  <CityTile key={c.slug} city={c} i={i} locale={locale} m={m} />
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {rest.length > 0 ? (
+            <section className="mt-(--block)" aria-labelledby="rest-h">
+              <h2 id="rest-h" className="index">
+                {m.cityIndex.minorHeading}
+              </h2>
+              <ul className="mt-(--stack) flex flex-col">
+                {rest.map((c) => (
                   <CityMinorRow key={c.slug} city={c} locale={locale} m={m} />
                 ))}
               </ul>
@@ -92,72 +111,58 @@ export default async function CityIndexPage() {
   );
 }
 
-/**
- * 분량이 있는 도시 — 큰 도시명 + 최근 컷 스트립.
- *
- * ⚠️ 왁스 번호(01·02…)를 붙이지 않는다. 이 월드에서 숫자를 매기는 자리는
- *    지도 핀과 1:1로 대응하는 `FrameNo` 뿐이다 — 거기서는 번호가 데이터다.
- *    여기서는 그냥 정렬 순서라, 붙이면 순위표처럼 읽히면서 없는 뜻이 생긴다.
- */
-function CityRoll({
+function cityLabel(city: CityRow, locale: Locale): string {
+  return displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
+}
+
+function CityTile({
   city,
   i,
   locale,
   m,
 }: {
   city: CityRow;
-  /** 진입 애니메이션(`develop`) 계단 순서에만 쓴다 */
   i: number;
   locale: Locale;
   m: ReturnType<typeof getDictionary>;
 }) {
-  const label = displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
-  const sub = locale === "en" ? city.name : city.nameEn;
+  const label = cityLabel(city, locale);
+  const cut = city.recentVideos[0];
   return (
-    <li className="develop" style={{ "--i": i } as CSSProperties}>
-      <Rule />
+    <li
+      className="min-w-0"
+    >
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="roll -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack)"
+        className="block"
         aria-label={t(m.cityIndex.openMap, {
           name: label,
           places: city.placeCount,
           creators: city.creatorCount,
         })}
       >
-        <span className="flex flex-wrap items-baseline gap-x-3.5 gap-y-1.5">
+        <span className="mb-2 flex items-baseline justify-between gap-2">
           <span
-            className="font-black"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.02em", lineHeight: 1.1 }}
+            className="min-w-0 truncate font-bold"
+            style={{ fontSize: "var(--t-title)", letterSpacing: "-0.02em" }}
           >
             {label}
           </span>
-          {sub ? <Index>{sub}</Index> : null}
-          <Index className="tnum ml-auto">
-            {t(m.cityIndex.rowMeta, {
-              places: city.placeCount,
-              creators: city.creatorCount,
-              videos: city.videoCount,
-            })}
-          </Index>
+          <span className="index tnum shrink-0" style={{ color: "var(--dim)" }}>
+            {t(m.home.placesUnit, { n: city.placeCount })}
+          </span>
         </span>
-
-        <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-          {/* 첫 도시의 첫 컷만 eager — 이 페이지의 LCP 후보다. 나머지는 lazy 로 둔다.
-              전부 lazy 로 두면 브라우저가 LCP 이미지를 늦게 발견해 그만큼 밀린다
-              (VideoSheet 의 `eager={large}` 와 같은 규칙). */}
-          {city.recentVideos.map((v, vi) => (
-            <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
-              <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i === 0 && vi === 0} />
-            </Frame>
-          ))}
-        </span>
+        <Frame className="block w-full">
+          {cut ? (
+            <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={i === 0} />
+          ) : null}
+        </Frame>
       </Link>
     </li>
   );
 }
 
-/** 아직 한두 곳뿐인 도시 — 컷 하나 + 이름 + 메타의 컴팩트 행 */
+/** 그리드에 못 든 도시 — 컷 하나 + 이름 + 메타 */
 function CityMinorRow({
   city,
   locale,
@@ -167,14 +172,14 @@ function CityMinorRow({
   locale: Locale;
   m: ReturnType<typeof getDictionary>;
 }) {
-  const label = displayCityName({ name: city.name, nameEn: city.nameEn }, locale);
+  const label = cityLabel(city, locale);
   const sub = locale === "en" ? city.name : city.nameEn;
   const cut = city.recentVideos[0];
   return (
     <li>
       <Link
         href={localePath(`/city/${city.slug}`, locale)}
-        className="roll -mx-2.5 flex items-center gap-3.5 rounded-(--r-control) border-b px-2.5 py-2.5 last:border-b-0"
+        className="roll -mx-2.5 flex items-center gap-3.5 rounded-(--r-control) border-b px-2.5 py-3 last:border-b-0"
         style={{ borderColor: "var(--hairline)" }}
         aria-label={t(m.cityIndex.openMap, {
           name: label,
@@ -199,7 +204,7 @@ function CityMinorRow({
         <Index className="tnum shrink-0">
           {t(m.cityIndex.minorMeta, { places: city.placeCount, videos: city.videoCount })}
         </Index>
-        <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
+        <Icon.chevron className="roll-go size-4 shrink-0" style={{ color: "var(--dim)" }} />
       </Link>
     </li>
   );

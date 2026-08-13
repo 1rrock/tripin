@@ -54,13 +54,15 @@ export const ko = {
     /** 화면에 안 보이는 h1 — 스크린리더·검색엔진만 읽는다. 훅이 아니라 설명이어야 한다. */
     srHeading: "지역별 여행 유튜버 장소 지도",
     stats: "도시 {cities} · {places}곳",
-    blurb: "권역에서 도시를 고르면, 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
+    blurb:
+      "많이 간 도시를 먼저 보고, 나머지는 아래에서 찾습니다. 도시를 고르면 그 도시에 간 채널들의 장소가 한 지도에 모입니다.",
     empty: "아직 공개된 도시가 없어요.",
     openMap: "{name} 지도 열기 — {places}곳, 채널 {creators}",
     placesChannels: "{places}곳 · 채널 {creators}",
     rowMeta: "{places}곳 · 채널 {creators} · 영상 {videos}",
-    minorHeading: "아직 한두 곳뿐인 도시",
+    minorHeading: "다른 도시",
     minorMeta: "{places}곳 · 영상 {videos}",
+    popularHeading: "많이 간 도시",
     regionStats: "도시 {cities} · {places}곳",
     regions: {
       japan: "일본",
@@ -166,6 +168,7 @@ export const ko = {
     policy: "콘텐츠 정책",
     takedown: "삭제 요청",
     privacy: "개인정보처리방침",
+    loading: "불러오는 중",
   },
   hub: {
     channelNav: "채널",
@@ -314,6 +317,7 @@ export type Messages = {
     rowMeta: string;
     minorHeading: string;
     minorMeta: string;
+    popularHeading: string;
     regionStats: string;
     regions: {
       japan: string;
@@ -414,6 +418,7 @@ export type Messages = {
     policy: string;
     takedown: string;
     privacy: string;
+    loading: string;
   };
   hub: {
     channelNav: string;
