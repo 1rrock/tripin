@@ -209,6 +209,9 @@ export const ko = {
     scrubberAria: "{creator} 영상 타임라인 — 좌우 화살표로 이동",
     seekToAria: "{time} {name} 로 이동",
     untimedHeading: "시각 미확인 {n}",
+    mapAria: "이 영상에 나온 장소 지도",
+    mapHint: "목록 번호와 핀 번호가 같아요 · 핀을 누르면 그 정거장으로",
+    mapEmpty: "좌표가 있는 장소가 없어 지도를 그리지 못했어요. 목록의 지도 링크로 확인할 수 있어요.",
   },
   map: {
     loading: "지도 불러오는 중",
@@ -442,6 +445,9 @@ export type Messages = {
     scrubberAria: string;
     seekToAria: string;
     untimedHeading: string;
+    mapAria: string;
+    mapHint: string;
+    mapEmpty: string;
   };
   map: {
     loading: string;

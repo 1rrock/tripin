@@ -61,14 +61,14 @@ export function VideoSheet({
         href={href}
         className={
           large
-            ? "group grid gap-3.5 md:grid-cols-[3fr_2fr] md:items-center md:gap-7"
-            : "group grid gap-3.5"
+            ? "sheet-card grid gap-3.5 md:grid-cols-[3fr_2fr] md:items-center md:gap-7"
+            : "sheet-card grid gap-3.5"
         }
         aria-label={`${first ?? video.title}${
           more.length ? ` 외 ${more.length}곳` : ""
         } — ${video.title}`}
       >
-        <Frame className="transition-[box-shadow] duration-200 group-hover:shadow-[inset_0_0_0_1px_var(--edge)]">
+        <Frame>
           <Thumb youtubeId={video.youtubeId} alt={video.title} eager={large} />
         </Frame>
 
@@ -83,7 +83,7 @@ export function VideoSheet({
                   size={22}
                 />
               ) : null}
-              <span className="index truncate" style={{ color: "var(--dim)" }}>
+              <span className="sheet-source index truncate">
                 {source}
               </span>
             </div>

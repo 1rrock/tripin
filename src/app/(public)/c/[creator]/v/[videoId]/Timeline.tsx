@@ -22,6 +22,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { VideoDetail, VideoStop } from "@/shared/api/videos";
 import { Act, Chip, FrameNo, Rule } from "@/shared/ui/frame";
+import { MapView, type MapPin } from "@/shared/ui/MapView";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 
@@ -171,11 +172,21 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
   }, [video.durationSec, timed]);
 
   const [head, setHead] = useState(() => (timed.length ? timed[0]!.timestampSec : 0));
+  /**
+   * 지도·목록이 같이 가리키는 정거장.
+   * effect 로 동기화하지 않는다 — 스크럽·핀·칩 핸들러에서만 갱신한다
+   * (react-hooks/set-state-in-effect).
+   */
+  const [activePlaceId, setActivePlaceId] = useState<string | null>(
+    () => timed[0]?.placeId ?? stops[0]?.placeId ?? null,
+  );
   const trackRef = useRef<HTMLDivElement>(null);
   const chipStripRef = useRef<HTMLDivElement>(null);
   const chipRefs = useRef<Array<HTMLDivElement | null>>([]);
+  /** placeId → 정거장 행 — 지도 핀·스크러버가 목록을 끌어올 때 쓴다 */
+  const rowByPlace = useRef(new Map<string, HTMLDivElement>());
 
-  // 헤드에 가장 가까운(지나온) 정거장이 활성 — 뒤로 끌면 이전 정거장으로 되돌아간다
+  // 헤드에 가장 가까운(지나온) 정거장 인덱스 — 뒤로 끌면 이전 정거장으로 되돌아간다
   const activeIdx = useMemo(() => {
     if (timed.length === 0) return -1;
     let idx = 0;
@@ -185,15 +196,66 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
     return idx;
   }, [head, timed]);
 
+  /** 목록 번호 = 핀 번호. 좌표 있는 정거장만 지도에 올린다. */
+  const pins: MapPin[] = useMemo(
+    () =>
+      stops
+        .map((s, i) => ({ s, index: i + 1 }))
+        .filter(({ s }) => s.lat !== null && s.lng !== null)
+        .map(({ s, index }) => ({
+          id: s.placeId,
+          name: displayPlaceName(s, locale),
+          lat: s.lat!,
+          lng: s.lng!,
+          index,
+        })),
+    [stops, locale],
+  );
+
+  const placeAtHead = useCallback(
+    (sec: number) => {
+      if (timed.length === 0) return null;
+      let idx = 0;
+      for (let i = 0; i < timed.length; i++) {
+        if (timed[i]!.timestampSec <= sec + 0.5) idx = i;
+      }
+      return timed[idx]!;
+    },
+    [timed],
+  );
+
+  const revealPlace = useCallback((placeId: string) => {
+    const el = rowByPlace.current.get(placeId);
+    if (!el) return;
+    const r = el.getBoundingClientRect();
+    if (r.top < 0 || r.bottom > window.innerHeight) {
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+    }
+  }, []);
+
+  /** 헤드를 옮기면 그 시각의 정거장도 같이 고른다 */
+  const moveHead = useCallback(
+    (sec: number, opts?: { reveal?: boolean }) => {
+      const clamped = Math.min(axisEnd, Math.max(0, sec));
+      setHead(clamped);
+      const stop = placeAtHead(clamped);
+      if (stop) {
+        setActivePlaceId(stop.placeId);
+        if (opts?.reveal) revealPlace(stop.placeId);
+      }
+    },
+    [axisEnd, placeAtHead, revealPlace],
+  );
+
   const seekFromClientX = useCallback(
     (clientX: number) => {
       const el = trackRef.current;
       if (!el) return;
       const r = el.getBoundingClientRect();
       const ratio = Math.min(1, Math.max(0, (clientX - r.left) / r.width));
-      setHead(ratio * axisEnd);
+      moveHead(ratio * axisEnd);
     },
-    [axisEnd],
+    [axisEnd, moveHead],
   );
 
   const onPointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
@@ -209,37 +271,45 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
     const step = axisEnd / 40;
     if (e.key === "ArrowLeft" || e.key === "ArrowDown") {
       e.preventDefault();
-      setHead((h) => Math.max(0, h - step));
+      moveHead(head - step, { reveal: true });
     } else if (e.key === "ArrowRight" || e.key === "ArrowUp") {
       e.preventDefault();
-      setHead((h) => Math.min(axisEnd, h + step));
+      moveHead(head + step, { reveal: true });
     } else if (e.key === "Home") {
       e.preventDefault();
-      setHead(0);
+      moveHead(0, { reveal: true });
     } else if (e.key === "End") {
       e.preventDefault();
-      setHead(axisEnd);
+      moveHead(axisEnd, { reveal: true });
     }
   };
 
-  const selectStop = useCallback((sec: number) => {
-    setHead(sec);
-  }, []);
+  const selectStop = useCallback(
+    (sec: number, placeId: string) => {
+      setHead(sec);
+      setActivePlaceId(placeId);
+      revealPlace(placeId);
+    },
+    [revealPlace],
+  );
 
-  // 활성 정거장 행으로 스크롤 — 사용자가 스크럽할 때만
-  const cardRefs = useRef<Array<HTMLDivElement | null>>([]);
-  const lastActive = useRef(-1);
+  /** 지도 핀 — 타임라인 헤드를 그 시각으로 옮기고 목록 행을 연다 */
+  const onPinClick = useCallback(
+    (placeId: string) => {
+      const stop = stops.find((s) => s.placeId === placeId);
+      if (!stop) return;
+      setActivePlaceId(placeId);
+      if (stop.timestampSec !== null) setHead(stop.timestampSec);
+      revealPlace(placeId);
+    },
+    [stops, revealPlace],
+  );
+
+  // 칩 스트립만 스크롤 — 행 스크롤은 핸들러의 revealPlace 가 담당
+  const lastChip = useRef(-1);
   useEffect(() => {
-    if (activeIdx < 0 || activeIdx === lastActive.current) return;
-    lastActive.current = activeIdx;
-    const el = cardRefs.current[activeIdx];
-    if (el) {
-      const r = el.getBoundingClientRect();
-      if (r.top < 0 || r.bottom > window.innerHeight) {
-        el.scrollIntoView({ behavior: "smooth", block: "center" });
-      }
-    }
-    // 칩 스트립도 활성 칩이 보이도록 가로 스크롤
+    if (activeIdx < 0 || activeIdx === lastChip.current) return;
+    lastChip.current = activeIdx;
     const chip = chipRefs.current[activeIdx];
     const strip = chipStripRef.current;
     if (chip && strip) {
@@ -255,7 +325,7 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
   const soloLayout = timed.length <= 1;
   const headPct = (head / axisEnd) * 100;
 
-  return (
+  const timelinePanel = (
     <div className="flex flex-col gap-(--block)">
       {!soloLayout ? (
         <section className="flex flex-col gap-3">
@@ -279,10 +349,13 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
                   chipRefs.current[i] = el;
                 }}
                 role="option"
-                aria-selected={i === activeIdx}
+                aria-selected={s.placeId === activePlaceId}
                 className="shrink-0"
               >
-                <Chip active={i === activeIdx} onClick={() => selectStop(s.timestampSec)}>
+                <Chip
+                  active={s.placeId === activePlaceId}
+                  onClick={() => selectStop(s.timestampSec, s.placeId)}
+                >
                   <span className="tnum font-bold">{fmt(s.timestampSec)}</span>
                   <span className="ml-2 max-w-[9.5rem] truncate sm:max-w-[12rem]">
                     {displayPlaceName(s, locale)}
@@ -328,16 +401,16 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
                 style={{ width: `${headPct}%`, background: "var(--dim)" }}
               />
               {/* 정거장 마커 — 각진 컷 표시. 히트 영역 44px */}
-              {timed.map((s, i) => {
+              {timed.map((s) => {
                 const pct = (s.timestampSec / axisEnd) * 100;
-                const on = i === activeIdx;
+                const on = s.placeId === activePlaceId;
                 return (
                   <button
                     key={s.placeId}
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      selectStop(s.timestampSec);
+                      selectStop(s.timestampSec, s.placeId);
                     }}
                     aria-label={t(m.video.seekToAria, {
                       time: fmt(s.timestampSec),
@@ -386,12 +459,23 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
         </section>
       ) : null}
 
+      {pins.length > 0 ? (
+        <p className="index" style={{ color: "var(--dim)" }}>
+          {m.video.mapHint}
+        </p>
+      ) : (
+        <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}>
+          {m.video.mapEmpty}
+        </p>
+      )}
+
       <div className="flex flex-col">
         {timed.map((s, i) => (
           <div
             key={s.placeId}
             ref={(el) => {
-              cardRefs.current[i] = el;
+              if (el) rowByPlace.current.set(s.placeId, el);
+              else rowByPlace.current.delete(s.placeId);
             }}
           >
             <Rule />
@@ -399,9 +483,9 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
               stop={s}
               videoId={video.youtubeId}
               index={i + 1}
-              active={!soloLayout && i === activeIdx}
-              onSelect={() => selectStop(s.timestampSec)}
-              selectable={!soloLayout}
+              active={s.placeId === activePlaceId}
+              onSelect={() => selectStop(s.timestampSec, s.placeId)}
+              selectable={!soloLayout || pins.length > 0}
             />
           </div>
         ))}
@@ -416,19 +500,51 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
               {t(m.video.untimedHeading, { n: untimed.length })}
             </p>
             {untimed.map((s, i) => (
-              <StopRow
+              <div
                 key={s.placeId}
-                stop={s}
-                videoId={video.youtubeId}
-                index={timed.length + i + 1}
-                active={false}
-                onSelect={() => undefined}
-                selectable={false}
-              />
+                ref={(el) => {
+                  if (el) rowByPlace.current.set(s.placeId, el);
+                  else rowByPlace.current.delete(s.placeId);
+                }}
+              >
+                <StopRow
+                  stop={s}
+                  videoId={video.youtubeId}
+                  index={timed.length + i + 1}
+                  active={s.placeId === activePlaceId}
+                  onSelect={() => {
+                    setActivePlaceId(s.placeId);
+                    revealPlace(s.placeId);
+                  }}
+                  selectable={pins.some((p) => p.id === s.placeId)}
+                />
+              </div>
             ))}
           </div>
         ) : null}
       </div>
+    </div>
+  );
+
+  if (pins.length === 0) return timelinePanel;
+
+  /* 조각 페이지와 같은 2단: 모바일은 지도가 위, 데스크톱은 우측 sticky.
+     페이지 main 에 gutter 가 있어 지도만 가장자리까지 뺀다. */
+  return (
+    <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7">
+      <div
+        className="relative -mx-(--gutter) mb-(--block) lg:sticky lg:top-4 lg:order-2 lg:mx-0 lg:mb-0"
+        aria-label={m.video.mapAria}
+      >
+        <MapView
+          className="h-[38dvh] w-full lg:h-[calc(100dvh-2rem)]"
+          pins={pins}
+          activeId={activePlaceId}
+          onPinClick={onPinClick}
+          cluster={pins.length > 6}
+        />
+      </div>
+      <div className="lg:order-1">{timelinePanel}</div>
     </div>
   );
 }

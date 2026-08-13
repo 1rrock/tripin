@@ -222,13 +222,16 @@ body > * { position: relative; z-index: 1; }
 .no-scrollbar { scrollbar-width: none; }
 .no-scrollbar::-webkit-scrollbar { display: none; }
 
-/* ── 호버: 바닥만 조용히 ───────────────────────────────────────────────
-   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아진다. 그게 전부다.
+/* ── 호버: 행 바닥 + (있을 때) 표식·화살 ────────────────────────────────
+   인덱스 행(`.roll`)에 손을 얹으면 바닥이 반 톤 밝아진다.
 
-   컷을 들거나 테두리를 바꾸지 않는다. 이 화면의 주인공은 썸네일이고, 호버는
-   "여기를 누를 수 있다"만 말하면 된다. 컷까지 반응시키면 마우스를 스칠 때마다
-   화면이 술렁여서 정작 봐야 할 사진에서 눈이 떨어진다 —
-   들림·스태거를 붙였다가 되돌린 이유가 이것이다.
+   채널 행처럼 아바타·셰브론이 있는 곳은 자식 마커로 한 단 더 말한다.
+   · `.roll-mark` — 프로필 표식. 살짝 커져 "이 사람"이 앞으로 온다.
+   · `.roll-go`   — 진입 화살. 오른쪽으로 밀리며 왁스로 물든다(갈 곳 표시).
+   자식 마커가 없으면 예전과 같이 바닥만 변한다 — `/type`·도시 목록 호환.
+
+   컷(썸네일)은 건드리지 않는다. 마우스를 스칠 때마다 사진이 술렁이면
+   정작 봐야 할 프레임에서 눈이 떨어진다.
 
    ⚠️ 바닥에 --sheet 를 깔지 마라. 지면과 대비가 커서 행 하나가 흰 카드로
       떠 버린다(실제로 한 번 그렇게 했다가 되돌렸다). --hover 가 그 중간값이다.
@@ -248,6 +251,10 @@ body > * { position: relative; z-index: 1; }
 .roll {
   transition: background-color 0.22s ease;
 }
+.roll-go {
+  color: var(--dim);
+  transition: color 0.22s ease;
+}
 
 /* 터치 기기에는 호버가 없다 — 손이 닿기도 전에 바닥이 깔려 있으면 안 된다 */
 @media (hover: hover) {
@@ -255,6 +262,86 @@ body > * { position: relative; z-index: 1; }
     background: var(--hover);
     transition-duration: 0.12s;
   }
+  .roll:hover .roll-go {
+    color: var(--wax);
+    transition-duration: 0.12s;
+  }
+}
+
+/* 터치 즉시 피드백 — 호버 없는 기기에서도 "눌림"이 읽히게 */
+.roll:active {
+  background: var(--hover);
+  transition-duration: 60ms;
+}
+.roll:active .roll-go {
+  color: var(--wax);
+  transition-duration: 60ms;
+}
+
+/* ── 시트 카드(최근 영상) 호버 ─────────────────────────────────────────
+   `.roll` 과 같은 문법: 들림·스케일 없이 **바닥만** 부드럽게 깐다.
+   카드 전체가 한 링크라 패딩·라운드를 주고, 호버 시 --hover 로 물들인다.
+   프레임·썸네일은 건드리지 않는다 — 컷이 술렁이면 딱딱해 보인다. */
+.sheet-card {
+  border-radius: var(--r-control);
+  /* 음수 마진으로 호버 면적을 gutter 쪽으로 살짝 넓혀 행처럼 읽히게 */
+  margin-inline: -0.625rem;
+  padding: 0.625rem;
+  transition: background-color 0.22s ease;
+}
+.sheet-card .sheet-source {
+  color: var(--dim);
+}
+@media (hover: hover) {
+  .sheet-card:hover {
+    background: var(--hover);
+    transition-duration: 0.12s;
+  }
+}
+.sheet-card:active {
+  background: var(--hover);
+  transition-duration: 60ms;
+}
+
+/* ── 칩(필터) 호버 ────────────────────────────────────────────────────
+   활성 = 왁스 링, 호버 = 바닥만. 링 색까지 바꾸면 딱딱해 보이므로
+   호버에서는 box-shadow 를 건드리지 않는다(.roll / .nav-item 과 동일).
+   인라인 box-shadow 를 쓰면 :hover 가 죽으므로 전부 여기서 관리한다. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.375rem;
+  flex-shrink: 0;
+  white-space: nowrap;
+  padding: 0.375rem 0.75rem;
+  font-size: var(--t-meta);
+  font-weight: 500;
+  line-height: 1.25;
+  border-radius: var(--r-control);
+  color: var(--dim);
+  background: transparent;
+  box-shadow: inset 0 0 0 1px var(--hairline);
+  cursor: pointer;
+  transition:
+    background-color 0.22s ease,
+    color 0.22s ease;
+}
+.chip[aria-pressed="true"],
+.chip[data-active="true"] {
+  color: var(--paper);
+  box-shadow: inset 0 0 0 1px var(--wax);
+}
+@media (hover: hover) {
+  .chip:hover {
+    background: var(--hover);
+    color: var(--paper);
+    transition-duration: 0.12s;
+  }
+}
+.chip:active {
+  background: var(--hover);
+  color: var(--paper);
+  transition-duration: 60ms;
 }
 
 /* ── 헤더 메뉴 ─────────────────────────────────────────────────────────
@@ -400,7 +487,11 @@ body > * { position: relative; z-index: 1; }
   .nav-item,
   .nav-link,
   .tab,
-  .ig-body {
+  .ig-body,
+  .roll,
+  .roll-go,
+  .sheet-card,
+  .chip {
     transition-duration: 1ms;
   }
 }

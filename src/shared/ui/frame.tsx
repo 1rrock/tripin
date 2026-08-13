@@ -361,6 +361,7 @@ export function Act({
 /**
  * 칩 — 필터·바로가기. href 면 링크, onClick 이면 버튼.
  * 활성은 채움이 아니라 왁스 링이다(왁스가 면적을 먹으면 월드가 무너진다).
+ * 호버·활성 스타일은 `.chip`(globals.css) — 인라인 box-shadow 는 :hover 를 죽인다.
  */
 export function Chip({
   active = false,
@@ -375,24 +376,25 @@ export function Chip({
   scroll?: boolean;
   children: ReactNode;
 }) {
-  const cls = "shrink-0 whitespace-nowrap px-3 py-1.5 transition-colors";
-  const style: React.CSSProperties = {
-    fontSize: "var(--t-meta)",
-    fontWeight: 500,
-    borderRadius: "var(--r-control)",
-    color: active ? "var(--paper)" : "var(--dim)",
-    boxShadow: `inset 0 0 0 1px ${active ? "var(--wax)" : "var(--hairline)"}`,
-  };
-
   if (href) {
     return (
-      <Link href={href} scroll={scroll} className={cls} style={style}>
+      <Link
+        href={href}
+        scroll={scroll}
+        className="chip"
+        data-active={active ? "true" : undefined}
+      >
         {children}
       </Link>
     );
   }
   return (
-    <button type="button" onClick={onClick} aria-pressed={active} className={`${cls} cursor-pointer`} style={style}>
+    <button
+      type="button"
+      onClick={onClick}
+      aria-pressed={active}
+      className="chip"
+    >
       {children}
     </button>
   );

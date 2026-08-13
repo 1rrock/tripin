@@ -227,12 +227,12 @@ export function HomeSheet({
               </Link>
             ) : null}
           </div>
-          <ul className="flex flex-col gap-(--stack)">
+          <ul className="flex flex-col gap-0.5">
             {creators.map((c) => (
               <li key={c.slug}>
                 <Link
                   href={href(`/c/${c.slug}`)}
-                  className="roll -mx-2.5 flex items-center gap-3 rounded-(--r-control) px-2.5 py-1.5"
+                  className="roll -mx-2.5 flex items-center gap-3 rounded-(--r-control) px-2.5 py-2"
                   aria-label={t(m.home.openChannel, { name: c.displayName })}
                 >
                   <Avatar
@@ -258,7 +258,7 @@ export function HomeSheet({
                   <Index className="tnum shrink-0">
                     {t(m.home.placesUnit, { n: c.placeCount })}
                   </Index>
-                  <Icon.chevron className="size-4 shrink-0" style={{ color: "var(--dim)" }} />
+                  <Icon.chevron className="roll-go size-4 shrink-0" />
                 </Link>
               </li>
             ))}

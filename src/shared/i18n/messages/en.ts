@@ -204,6 +204,9 @@ export const en: Messages = {
     scrubberAria: "{creator} video timeline — use left/right arrows",
     seekToAria: "Jump to {time} {name}",
     untimedHeading: "{n} unconfirmed {n|time|times}",
+    mapAria: "Map of places in this video",
+    mapHint: "List numbers match the pins · tap a pin to jump there",
+    mapEmpty: "No places have coordinates yet, so the map is empty. Use the map links in the list.",
   },
   map: {
     loading: "Loading map",
