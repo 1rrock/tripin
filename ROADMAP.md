@@ -172,6 +172,30 @@ blinded_at  timestamptz,   -- 임시조치 시작 시각. +30일이 결론 기�
 
 **⚠️ 앱이 아직 "테스트" 모드다.** 외부 대상은 게시 전까지 테스트 사용자만 로그인할 수 있다. 실제 유저에게 열려면 `대상 → 앱 게시`. 요청 스코프가 email·profile·openid 뿐이라 **구글 검증 심사는 필요 없다** (민감 스코프 아님).
 
+#### 🔴 남은 대시보드 작업 — 이게 안 돼 있어서 로그인이 안 됐다 (2026-08-14 확인)
+
+GCP 쪽은 다 돼 있는데 **Supabase 쪽에 구글을 안 붙였다.** 실제 응답:
+
+```
+GET /auth/v1/user/identities/authorize?provider=google
+→ 400 {"error_code":"validation_failed",
+       "msg":"Unsupported provider: provider is not enabled"}
+```
+
+같은 요청에서 익명 가입(`POST /auth/v1/signup`)은 200 이므로 **익명 인증만 켜져 있는 상태**다.
+증상이 "눌러도 아무 일도 안 남" 하나로만 보여서 원인을 가리기 어려웠다.
+
+순서대로 확인할 것:
+
+| # | 위치 | 항목 | 안 되면 나는 증상 |
+|---|---|---|---|
+| 1 | Supabase · Auth → Providers | **Google 활성화** + GCP `Eatripin Web (Supabase)` 의 Client ID·Secret | `provider is not enabled` ← **지금 여기** |
+| 2 | Supabase · Auth → Advanced | **Enable manual linking** | 익명 계정 승격(`linkIdentity`)이 422. 저장한 게 있는 유저 전원이 여기 걸린다 |
+| 3 | Supabase · Auth → URL Configuration | Redirect URLs 에 `http://localhost:3000/**` 와 배포 도메인 `/**` | Site URL 로 조용히 튕김 |
+| 4 | GCP · OAuth 동의 화면 | 앱 게시(위 참조) | 구글 화면에서 "액세스 차단됨" |
+
+2번이 특히 놓치기 쉽다 — 기본값이 꺼짐인데, 1번만 켜면 **저장한 적 없는 사람은 로그인되고 저장한 사람은 안 되는** 갈린 증상이 나온다.
+
 ### 🔜 Maps API 를 `eatripin` 프로젝트로 이전
 
 지금은 optisearch 프로젝트에 있다. 옮기는 것이 맞지만 **별도 작업**으로 잡는다 — OAuth 와 달리 Maps 는 **결제 계정 등록이 선행**돼야 하고, 프로덕션 지도가 걸려 있다.
