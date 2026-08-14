@@ -12,7 +12,37 @@
  * `ensureSession()` 은 하트를 실제로 누르는 순간에만 불린다.
  */
 
-import { supabaseBrowser, ensureSession } from "./supabase-browser";
+import { supabaseBrowser, ensureSession, resetSession } from "./supabase-browser";
+
+/**
+ * 세션이 죽은 채로 쓰기를 시도하면 DB 가 이 코드로 걷어찬다
+ * ("Key is not present in table users"). 확인 캐시를 버리고 한 번 재시도한다.
+ */
+const PG_FK_VIOLATION = "23503";
+
+/**
+ * 쓰기를 감싼다 — 유저가 사라졌으면 새 익명 세션으로 **한 번만** 다시 해본다.
+ *
+ * 재시도를 한 번으로 묶는 이유: 두 번째도 23503 이면 원인이 세션이 아니다
+ * (장소가 지워졌다든가). 무한히 세션을 새로 만들면 auth.users 만 쌓인다.
+ */
+async function withSession<T>(
+  run: (uid: string) => Promise<{ error: { code?: string } | null; value?: T }>,
+): Promise<boolean> {
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const uid = await ensureSession();
+    if (!uid) return false;
+
+    const { error } = await run(uid);
+    if (!error) return true;
+    if (error.code !== PG_FK_VIOLATION || attempt === 1) return false;
+
+    /* 이 세션이 가리키는 유저가 서버에 없다 — 캐시를 버리면 다음 회차가 새로 만든다 */
+    resetSession();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
+  }
+  return false;
+}
 
 export type ListMeta = { id: string; name: string; position: number };
 
@@ -107,23 +137,29 @@ export async function loadSaved(): Promise<SavedSnapshot> {
  * 앱 검사는 통과하고 DB 에서만 걸린다. 어차피 여기서 처리해야 한다.
  */
 export async function createList(name: string): Promise<ListResult> {
-  const uid = await ensureSession();
-  if (!uid) return { ok: false, reason: "failed" };
-
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 40) return { ok: false, reason: "failed" };
 
-  const sb = supabaseBrowser();
-  const { data, error } = await sb
-    .from("saved_lists")
-    .insert({ user_id: uid, name: trimmed })
-    .select("id")
-    .single();
+  /* 쓰기 경로라 setSaved 와 같은 자가 회복이 필요하다. 반환 타입이 boolean 이
+     아니라 withSession 을 못 쓰고 같은 모양을 손으로 편다. */
+  for (let attempt = 0; attempt < 2; attempt += 1) {
+    const uid = await ensureSession();
+    if (!uid) return { ok: false, reason: "failed" };
 
-  if (error) {
-    return { ok: false, reason: error.code === PG_UNIQUE_VIOLATION ? "duplicate" : "failed" };
+    const { data, error } = await supabaseBrowser()
+      .from("saved_lists")
+      .insert({ user_id: uid, name: trimmed })
+      .select("id")
+      .single();
+
+    if (!error) return { ok: true, id: data.id };
+    if (error.code === PG_UNIQUE_VIOLATION) return { ok: false, reason: "duplicate" };
+    if (error.code !== PG_FK_VIOLATION || attempt === 1) return { ok: false, reason: "failed" };
+
+    resetSession();
+    await supabaseBrowser().auth.signOut({ scope: "local" });
   }
-  return { ok: true, id: data.id };
+  return { ok: false, reason: "failed" };
 }
 
 export async function renameList(listId: string, name: string): Promise<ListResult> {
@@ -178,32 +214,31 @@ export async function setInList(
   const saved = await setSaved(placeId, true);
   if (!saved) return false;
 
-  const { error } = await sb
-    .from("saved_list_places")
-    .upsert(
-      { list_id: listId, place_id: placeId, user_id: uid },
-      { onConflict: "list_id,place_id" },
-    );
-  return !error;
+  return withSession(async (verified) =>
+    supabaseBrowser()
+      .from("saved_list_places")
+      .upsert(
+        { list_id: listId, place_id: placeId, user_id: verified },
+        { onConflict: "list_id,place_id" },
+      ),
+  );
 }
 
 /** 저장 토글. 성공하면 true. 익명 세션 생성이 막혀 있으면 false. */
 export async function setSaved(placeId: string, next: boolean): Promise<boolean> {
-  const uid = await ensureSession();
-  if (!uid) return false;
-  const sb = supabaseBrowser();
-
   if (!next) {
+    const sb = supabaseBrowser();
     const { error } = await sb.from("saved_places").delete().eq("place_id", placeId);
     return !error;
   }
 
   /* upsert 를 쓰는 이유: 저장을 껐다 켜는 사이에 다른 탭에서 이미 저장했으면
      insert 가 PK 충돌로 실패한다. 유저 입장에선 "하트를 눌렀는데 안 켜짐"이다. */
-  const { error } = await sb
-    .from("saved_places")
-    .upsert({ user_id: uid, place_id: placeId }, { onConflict: "user_id,place_id" });
-  return !error;
+  return withSession(async (uid) =>
+    supabaseBrowser()
+      .from("saved_places")
+      .upsert({ user_id: uid, place_id: placeId }, { onConflict: "user_id,place_id" }),
+  );
 }
 
 /**
@@ -214,36 +249,33 @@ export async function setSaved(placeId: string, next: boolean): Promise<boolean>
  * `saved_places_visited_needs_time` 제약이 visited=true 인데 시각이 비면 거부한다.
  */
 export async function setVisited(placeId: string, next: boolean): Promise<boolean> {
-  const uid = await ensureSession();
-  if (!uid) return false;
-  const sb = supabaseBrowser();
-
-  const { error } = await sb.from("saved_places").upsert(
-    {
-      user_id: uid,
-      place_id: placeId,
-      visited: next,
-      visited_at: next ? new Date().toISOString() : null,
-    },
-    { onConflict: "user_id,place_id" },
+  return withSession(async (uid) =>
+    supabaseBrowser()
+      .from("saved_places")
+      .upsert(
+        {
+          user_id: uid,
+          place_id: placeId,
+          visited: next,
+          visited_at: next ? new Date().toISOString() : null,
+        },
+        { onConflict: "user_id,place_id" },
+      ),
   );
-  return !error;
 }
 
 /** 채널 구독 토글. */
 export async function setSubscribed(creatorId: string, next: boolean): Promise<boolean> {
-  const uid = await ensureSession();
-  if (!uid) return false;
-  const sb = supabaseBrowser();
-
   if (!next) {
+    const sb = supabaseBrowser();
     const { error } = await sb.from("subscriptions").delete().eq("creator_id", creatorId);
     return !error;
   }
-  const { error } = await sb
-    .from("subscriptions")
-    .upsert({ user_id: uid, creator_id: creatorId }, { onConflict: "user_id,creator_id" });
-  return !error;
+  return withSession(async (uid) =>
+    supabaseBrowser()
+      .from("subscriptions")
+      .upsert({ user_id: uid, creator_id: creatorId }, { onConflict: "user_id,creator_id" }),
+  );
 }
 
 /**
