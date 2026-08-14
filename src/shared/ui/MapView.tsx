@@ -60,6 +60,8 @@ interface MapViewProps {
    * 집계를 두 번 하게 되어 "도쿄 8"이 다시 "2"로 접힌다.
    */
   cluster?: boolean;
+  /** 가까이 가면 번호 대신 상호. 멀면 점. */
+  nameWhenClose?: boolean;
 }
 
 let optionsSet = false;
@@ -84,8 +86,35 @@ function loadSdk() {
  * 크리에이터 액센트는 여기서 쓰지 않는다. 임의의 hex 가 들어오면 왁스와 같은
  * 층에서 싸우고, 핀이 구글 기본 POI 와 구분되지 않는다.
  */
-function markerContent(pin: MapPin, active: boolean): HTMLElement {
+const NAME_ZOOM = 15;
+
+function markerContent(pin: MapPin, active: boolean, named = false): HTMLElement {
   const el = document.createElement("div");
+  if (named) {
+    el.style.cssText = [
+      `background:${active ? "var(--wax)" : "var(--ground)"}`,
+      `color:${active ? "#fff" : "var(--paper)"}`,
+      "border-radius:var(--r-round)",
+      "max-width:148px",
+      "height:26px",
+      "padding:0 9px",
+      "display:flex",
+      "align-items:center",
+      "font-family:inherit",
+      "font-weight:700",
+      "font-size:12px",
+      "letter-spacing:-0.02em",
+      "line-height:1",
+      "white-space:nowrap",
+      "overflow:hidden",
+      "text-overflow:ellipsis",
+      "cursor:pointer",
+      "box-shadow:var(--lift-pin)",
+    ].join(";");
+    el.textContent = pin.name;
+    el.title = pin.name;
+    return el;
+  }
   el.style.cssText = [
     `background:${active ? "var(--wax)" : "var(--paper)"}`,
     `color:var(--ground)`,
@@ -110,6 +139,26 @@ function markerContent(pin: MapPin, active: boolean): HTMLElement {
   el.textContent = pin.label ?? (pin.index !== undefined ? String(pin.index) : "•");
   el.title = pin.name;
   return el;
+}
+
+function dotContent(pin: MapPin, active: boolean): HTMLElement {
+  const el = document.createElement("div");
+  el.style.cssText = [
+    `background:${active ? "var(--wax)" : "var(--paper)"}`,
+    "width:12px",
+    "height:12px",
+    "border-radius:999px",
+    "cursor:pointer",
+    "box-shadow:var(--lift-pin)",
+  ].join(";");
+  el.title = pin.name;
+  return el;
+}
+
+function pinNode(pin: MapPin, active: boolean, mode: "index" | "dot" | "name"): HTMLElement {
+  if (mode === "name") return markerContent(pin, active, true);
+  if (mode === "dot") return dotContent(pin, active);
+  return markerContent(pin, active, false);
 }
 
 /**
@@ -169,6 +218,7 @@ export function MapView({
   className,
   singlePinZoom = 15,
   cluster = false,
+  nameWhenClose = false,
 }: MapViewProps) {
   const { messages: m } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -178,6 +228,9 @@ export function MapView({
   // 핀 배열은 호출부에서 매 렌더 새로 만들어진다 — 내용이 같으면 마커 재생성·뷰포트
   // 리셋을 건너뛰기 위한 시그니처 (리스트 선택이 지도를 되돌리는 버그 방지)
   const pinsSigRef = useRef<string>("");
+  const namedRef = useRef(false);
+  const pinsLiveRef = useRef(pins);
+  pinsLiveRef.current = pins;
   // 키 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생
   const [failed, setFailed] = useState(() => !publicEnv.googleMapsKey);
   const [loaded, setLoaded] = useState(false);
@@ -265,7 +318,8 @@ export function MapView({
         // 내용이 같은 배열(호출부의 매 렌더 재생성)이면 아무것도 하지 않는다 —
         // 재생성·fitBounds 를 다시 돌리면 사용자가 옮긴 뷰포트가 튕긴다
         const sig =
-          `${cluster}#` + pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}`).join("|");
+          `${cluster}:${nameWhenClose}#` +
+          pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}:${p.name}`).join("|");
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
 
@@ -275,6 +329,13 @@ export function MapView({
         for (const m of markersRef.current.values()) m.map = null;
         markersRef.current.clear();
 
+        const mode = nameWhenClose
+          ? (map.getZoom() ?? 0) >= NAME_ZOOM
+            ? "name"
+            : "dot"
+          : "index";
+        namedRef.current = mode === "name";
+
         const made: google.maps.marker.AdvancedMarkerElement[] = [];
         for (const pin of pins) {
           const m = new AdvancedMarkerElement({
@@ -282,7 +343,7 @@ export function MapView({
             // 묶인 핀이 낱개로도 같이 남아 이중으로 보인다
             ...(cluster ? {} : { map }),
             position: { lat: pin.lat, lng: pin.lng },
-            content: markerContent(pin, pin.id === activeId),
+            content: pinNode(pin, pin.id === activeId, mode),
             zIndex: pin.id === activeId ? 1000 : (pin.index ?? 0),
             gmpClickable: Boolean(onPinClick),
           });
@@ -335,18 +396,39 @@ export function MapView({
     };
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pins, failed, cluster]);
+  }, [pins, failed, cluster, nameWhenClose]);
+
+  // 가까이 가면 상호, 멀면 점 — 마커만 갈아끼우고 뷰포트는 그대로
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !nameWhenClose || !loaded) return;
+    const paint = () => {
+      const named = (map.getZoom() ?? 0) >= NAME_ZOOM;
+      if (named === namedRef.current) return;
+      namedRef.current = named;
+      const mode = named ? "name" : "dot";
+      for (const pin of pinsLiveRef.current) {
+        const mk = markersRef.current.get(pin.id);
+        if (!mk) continue;
+        mk.replaceChildren(pinNode(pin, pin.id === activeId, mode));
+      }
+    };
+    paint();
+    const listener = map.addListener("zoom_changed", paint);
+    return () => listener.remove();
+  }, [nameWhenClose, loaded, activeId]);
 
   // activeId 하이라이트 — 마커 콘텐츠만 교체 (재생성/뷰포트 리셋 없음)
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
+    const mode = nameWhenClose ? (namedRef.current ? "name" : "dot") : "index";
     for (const pin of pins) {
       const m = markersRef.current.get(pin.id);
       if (!m) continue;
       const active = pin.id === activeId;
       // .content 는 deprecated — 커스텀 엘리먼트의 children 교체로 동일 효과
-      m.replaceChildren(markerContent(pin, active));
+      m.replaceChildren(pinNode(pin, active, mode));
       m.zIndex = active ? 1000 : (pin.index ?? 0);
       if (!active) continue;
       map.panTo({ lat: pin.lat, lng: pin.lng });

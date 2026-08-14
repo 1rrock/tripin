@@ -51,6 +51,19 @@ export const ko = {
     openChannel: "{name} 채널 열기",
     /** 화면에 안 보이는 h1 — 홈 타이틀은 훅이 아니라 설명형이어야 한다. */
     srHeading: "여행 유튜버가 간 곳 지도",
+    regionFilter: "지역",
+    regionAll: "전체 지역",
+    regionPick: "지역 고르기",
+    homeRegions: {
+      europe: "유럽",
+      asia: "아시아",
+      korea: "국내",
+      japan: "일본",
+      china: "중국",
+      americas: "미주",
+      oceania: "오세아니아",
+      other: "그 외",
+    },
   },
   cityIndex: {
     title: "어디 가세요?",
@@ -311,6 +324,19 @@ export type Messages = {
     comingBody: string;
     openChannel: string;
     srHeading: string;
+    regionFilter: string;
+    regionAll: string;
+    regionPick: string;
+    homeRegions: {
+      europe: string;
+      asia: string;
+      korea: string;
+      japan: string;
+      china: string;
+      americas: string;
+      oceania: string;
+      other: string;
+    };
   };
   cityIndex: {
     title: string;

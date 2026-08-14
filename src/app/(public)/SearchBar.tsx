@@ -25,7 +25,8 @@ import { highlight, search, type SearchDoc, type SearchKind } from "@/shared/lib
 export function SearchBar() {
   const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
-  const onHome = stripLocalePrefix(usePathname() ?? "/") === "/";
+  const pathname = usePathname() ?? "/";
+  const onHome = stripLocalePrefix(pathname) === "/";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchDoc[] | null>(null);
@@ -88,9 +89,32 @@ export function SearchBar() {
   const go = useCallback(
     (doc: SearchDoc) => {
       close();
+      const bare = stripLocalePrefix(pathname ?? "/");
+      const desktop =
+        typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+      const onCanvas =
+        bare === "/" || bare === "/city" || bare === "/channels" || bare === "/type";
+      if (onCanvas && desktop) {
+        const params = new URLSearchParams();
+        if (doc.kind === "city") {
+          const slug = doc.path.split("/").pop();
+          if (slug) params.set("city", slug);
+        } else if (doc.kind === "channel") {
+          const slug = doc.path.split("/")[2];
+          if (slug) params.set("channel", slug);
+        } else if (doc.kind === "type") {
+          const key = doc.path.split("/").pop();
+          if (key) params.set("type", key);
+        } else {
+          params.set("q", doc.name);
+        }
+        const qs = params.toString();
+        router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
+        return;
+      }
       router.push(href(doc.path));
     },
-    [close, href, router],
+    [close, href, router, pathname],
   );
 
   // 홈 본문 검색 바가 같은 패널을 연다

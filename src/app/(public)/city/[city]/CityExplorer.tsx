@@ -174,11 +174,11 @@ export function CityExplorer({
     channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
 
   return (
-    <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7 lg:px-(--gutter) lg:pt-4">
-      {/* 지도 — 이 화면의 본체. 시트가 데스크톱에서 이 안에 절대배치되므로 relative 필수 */}
-      <div className="relative lg:sticky lg:top-4 lg:order-2">
+    <div className="canvas-page">
+      {/* 지도 — 이 화면의 본체. 시트가 이 안에 절대배치되므로 relative 필수 */}
+      <div className="canvas-map">
         <MapView
-          className="h-[42dvh] w-full lg:h-[calc(100dvh-2rem)]"
+          className="h-full w-full"
           pins={pins}
           activeId={visibleActiveId}
           onPinClick={onPinClick}
@@ -201,8 +201,16 @@ export function CityExplorer({
         ) : null}
       </div>
 
-      <section className="lg:order-1">
-        <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:px-0 lg:pt-0">
+      <section className="canvas-panel">
+        <div className="hidden px-(--gutter) pt-4 pb-1 lg:block">
+          <h1
+            className="font-black"
+            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+          >
+            {cityName}
+          </h1>
+        </div>
+        <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:pt-3">
           {presentTypes.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
               <Chip active={type === null} onClick={() => selectType(null)}>
@@ -258,7 +266,7 @@ export function CityExplorer({
           </div>
         </div>
 
-        <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
+        <div className="flex flex-col gap-(--block) px-(--gutter) pb-10">
           {shown.length === 0 ? (
             <div className="flex flex-col items-start gap-3">
               <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>

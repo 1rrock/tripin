@@ -134,7 +134,7 @@ export default async function CityPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:px-(--gutter)">
+      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:hidden">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link
             href={localePath("/", locale)}

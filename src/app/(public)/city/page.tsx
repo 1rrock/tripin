@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
 import type { Locale } from "@/shared/i18n/config";
 import Link from "next/link";
-import { loadCityIndex, type CityRow } from "@/shared/api/cities";
+import { loadCityIndex, loadHomeMap, type CityRow } from "@/shared/api/cities";
+import { loadHomeFeed } from "@/shared/api/home";
+import { ExplorerCanvas } from "../HomeCanvas";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
@@ -43,13 +45,19 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CityIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const cities = await loadCityIndex();
+  const [cities, places, { creators }] = await Promise.all([
+    loadCityIndex(),
+    loadHomeMap(locale),
+    loadHomeFeed(),
+  ]);
   const popular = cities.filter((c) => c.placeCount >= POPULAR_MIN_PLACES);
   const rest = cities.filter((c) => c.placeCount < POPULAR_MIN_PLACES);
   const totalPlaces = cities.reduce((sum, c) => sum + c.placeCount, 0);
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4">
+    <>
+    <ExplorerCanvas lead="region" places={places} cities={cities} creators={creators} />
+    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4 lg:hidden">
       <JsonLd
         data={[
           breadcrumbList([
@@ -110,6 +118,7 @@ export default async function CityIndexPage() {
         </>
       )}
     </main>
+    </>
   );
 }
 

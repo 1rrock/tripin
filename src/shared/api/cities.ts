@@ -2,8 +2,14 @@ import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
+import { coordsFromMapsUrl } from "@/shared/lib/resolve-google-place";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
-import type { EnSource } from "@/shared/i18n/display";
+import {
+  displaySummary,
+  type EnSource,
+  type SummaryDisplay,
+} from "@/shared/i18n/display";
+import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 도시 축 로더 — 채널 무관 진입점 (CONCEPT.md 4.5).
@@ -290,4 +296,122 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
     places,
     creators: [...creatorCount.values()].sort((a, b) => b.placeCount - a.placeCount),
   };
+}
+
+/**
+ * 홈 캔버스용 핀 — 도시 지도와 같은 확정 장소.
+ * 좌표가 비어 있으면 구글 지도 링크에서 읽고, 그래도 없으면 올린다.
+ */
+export interface HomeMapPlace {
+  id: string;
+  slug: string;
+  name: string;
+  nameLocal: string | null;
+  placeType: PlaceType;
+  lat: number;
+  lng: number;
+  address: string | null;
+  mapUrl: string | null;
+  citySlug: string;
+  cityName: string;
+  cityNameEn: string | null;
+  countryCode: string;
+  summary: SummaryDisplay;
+  sources: PlaceSource[];
+  searchText: string;
+}
+
+function placeCoords(p: { lat: number | null; lng: number | null; google_maps_url: string | null }) {
+  if (p.lat !== null && p.lng !== null) return { lat: p.lat, lng: p.lng };
+  return coordsFromMapsUrl(p.google_maps_url);
+}
+
+export async function loadHomeMap(locale: Locale): Promise<HomeMapPlace[]> {
+  const { cities, links, placeById, videoById, creatorById } = await loadGraph();
+  const publishedCities = new Set((await loadCityIndex()).map((c) => c.slug));
+  const cityById = new Map(cities.map((c) => [c.id, c]));
+
+  const byPlace = new Map<string, PlaceSource[]>();
+  for (const link of links) {
+    const place = placeById.get(link.place_id);
+    if (!place) continue;
+    const city = cityById.get(place.city_id);
+    if (!city || !publishedCities.has(city.slug)) continue;
+    if (!placeCoords(place)) continue;
+    const video = videoById.get(link.video_id);
+    if (!video) continue;
+    const creator = creatorById.get(video.creator_id);
+    if (!creator) continue;
+    const list = byPlace.get(place.id) ?? [];
+    list.push({
+      creatorSlug: creator.slug,
+      creatorName: creator.display_name,
+      initials: creator.initials,
+      accentColor: creator.accent_color,
+      avatarUrl: creator.avatar_url,
+      youtubeId: video.youtube_video_id,
+      videoTitle: video.title,
+      timestampSec: link.timestamp_sec,
+    });
+    byPlace.set(place.id, list);
+  }
+
+  const out: HomeMapPlace[] = [];
+  for (const [placeId, sources] of byPlace) {
+    const p = placeById.get(placeId)!;
+    const city = cityById.get(p.city_id)!;
+    const coords = placeCoords(p)!;
+    const summary = displaySummary(
+      {
+        summary: p.summary,
+        summaryBullets: p.summary_bullets ?? [],
+        priceHint: p.price_hint,
+        summaryEn: p.summary_en,
+        summaryBulletsEn: p.summary_bullets_en ?? [],
+        priceHintEn: p.price_hint_en,
+        enSource: p.en_source,
+      },
+      locale,
+    );
+    const searchText = [
+      p.name,
+      p.name_local,
+      city.name,
+      city.name_en,
+      p.place_type,
+      p.address,
+      ...(p.summary_bullets ?? []),
+      ...sources.map((s) => `${s.creatorName} ${s.creatorSlug} ${s.videoTitle}`),
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    out.push({
+      id: p.id,
+      slug: p.slug,
+      name: p.name,
+      nameLocal: p.name_local,
+      placeType: p.place_type,
+      lat: coords.lat,
+      lng: coords.lng,
+      address: p.address,
+      mapUrl:
+        primaryMapLink({
+          googleMapsUrl: p.google_maps_url,
+          googlePlaceId: p.google_place_id,
+          kakaoPlaceId: p.kakao_place_id,
+          naverPlaceId: p.naver_place_id,
+          lat: coords.lat,
+          lng: coords.lng,
+        })?.url ?? null,
+      citySlug: city.slug,
+      cityName: city.name,
+      cityNameEn: city.name_en,
+      countryCode: city.country_code,
+      summary,
+      sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
+      searchText,
+    });
+  }
+  return out.sort((a, b) => a.name.localeCompare(b.name, "ko"));
 }

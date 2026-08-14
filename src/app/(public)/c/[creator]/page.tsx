@@ -124,7 +124,7 @@ export default async function CreatorHubPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-2.5 px-(--gutter) pt-4 pb-0">
+      <header className="flex flex-col gap-2.5 px-(--gutter) pt-4 pb-0 lg:hidden">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
             {m.common.home}

@@ -14,8 +14,8 @@
 import { useMemo, useState } from "react";
 import Link from "next/link";
 import { MagnifyingGlass } from "@phosphor-icons/react";
-import type { FeedPiece, FeedVideo } from "@/shared/api/home";
-import type { CityRow } from "@/shared/api/cities";
+import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
+import type { CityRow, HomeMapPlace } from "@/shared/api/cities";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
@@ -23,6 +23,7 @@ import { DestinationRail } from "@/shared/ui/DestinationRail";
 import { TabBar } from "@/shared/ui/TabBar";
 import { ResultRow } from "@/shared/ui/ResultRow";
 import { EmptyState } from "@/shared/ui/EmptyState";
+import { HomeCanvas } from "./HomeCanvas";
 
 const MINI = 5;
 const RAIL = 8;
@@ -37,10 +38,14 @@ export function HomeSheet({
   pieces,
   cities,
   videos,
+  creators,
+  places,
 }: {
   pieces: FeedPiece[];
   cities: CityRow[];
   videos: FeedVideo[];
+  creators: FeedCreator[];
+  places: HomeMapPlace[];
 }) {
   const { messages: m, href, t, locale } = useLocale();
   const [tab, setTab] = useState<Tab>("recommend");
@@ -50,7 +55,9 @@ export function HomeSheet({
   const recent = useMemo(() => videos.slice(0, MINI), [videos]);
 
   return (
-    <div className="mx-auto w-full max-w-lg">
+    <>
+    <HomeCanvas places={places} cities={cities} creators={creators} />
+    <div className="mx-auto w-full max-w-lg lg:hidden">
       <h1 className="sr-only">{m.home.srHeading}</h1>
 
       <div className="px-(--gutter) pt-4 pb-5">
@@ -141,5 +148,6 @@ export function HomeSheet({
         </div>
       </section>
     </div>
+    </>
   );
 }

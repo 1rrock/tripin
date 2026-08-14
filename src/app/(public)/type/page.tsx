@@ -5,6 +5,9 @@ import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { TypeIndex } from "./TypeIndex";
+import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
+import { loadHomeFeed } from "@/shared/api/home";
+import { ExplorerCanvas } from "../HomeCanvas";
 
 /**
  * 종류 인덱스 — 홈 그리드와 같은 타일 + 결과 행.
@@ -24,10 +27,17 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function TypeIndexPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const types = await loadTypeIndex();
+  const [types, cities, places, { creators }] = await Promise.all([
+    loadTypeIndex(),
+    loadCityIndex(),
+    loadHomeMap(locale),
+    loadHomeFeed(),
+  ]);
 
   return (
-    <main className="mx-auto w-full max-w-lg">
+    <>
+    <ExplorerCanvas lead="type" places={places} cities={cities} creators={creators} />
+    <main className="mx-auto w-full max-w-lg lg:hidden">
       <JsonLd
         data={[
           breadcrumbList([
@@ -45,5 +55,6 @@ export default async function TypeIndexPage() {
       />
       <TypeIndex types={types} />
     </main>
+    </>
   );
 }

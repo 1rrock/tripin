@@ -115,6 +115,43 @@ export function groupByGeoRegion<T extends { countryCode: string; placeCount: nu
  */
 export const OWN_REGION_MIN_CITIES = 3;
 
+/** 홈 지역 필터 — 유저가 말한 칸. 도시 인덱스 권역과 별개다. */
+export type HomeRegionId =
+  | "europe"
+  | "asia"
+  | "korea"
+  | "japan"
+  | "china"
+  | "americas"
+  | "oceania"
+  | "other";
+
+export const HOME_REGION_ORDER: HomeRegionId[] = [
+  "europe",
+  "asia",
+  "korea",
+  "japan",
+  "china",
+  "americas",
+  "oceania",
+  "other",
+];
+
+export function homeRegionForCountry(countryCode: string): HomeRegionId {
+  const key = countryCode.trim().toUpperCase();
+  if (key === "JP") return "japan";
+  if (key === "KR") return "korea";
+  if (key === "CN") return "china";
+  const geo = regionForCountry(key);
+  if (geo === "eastAsia" || geo === "seAsia") return "asia";
+  if (geo === "europe" || geo === "americas" || geo === "oceania") return geo;
+  return "other";
+}
+
+export function isHomeRegionId(v: string | null | undefined): v is HomeRegionId {
+  return Boolean(v && (HOME_REGION_ORDER as string[]).includes(v));
+}
+
 export function groupForCityIndex<T extends { countryCode: string; placeCount: number }>(
   items: T[],
 ): { id: GeoRegionId; items: T[] }[] {

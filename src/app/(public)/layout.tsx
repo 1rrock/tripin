@@ -5,7 +5,7 @@ import { getLocale, localePath } from "@/shared/i18n/locale";
 import { LocaleProvider } from "@/shared/i18n/LocaleContext";
 import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
-import { Nav, TabDock } from "./Nav";
+import { DesktopRail, Nav, TabDock } from "./Nav";
 import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 
@@ -24,9 +24,10 @@ export default async function PublicLayout({ children }: { children: React.React
     <LocaleProvider locale={locale} messages={m}>
       {/* 모바일은 하단 탭바(Nav)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
           않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터 */}
-      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] xl:max-w-6xl md:pb-0">
+      <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 lg:max-w-none lg:pl-[88px]">
+        <DesktopRail />
         <header
-          className="sticky top-0 z-30 flex items-center gap-3 border-b bg-(--ground)/95 px-(--gutter) pt-3 pb-2.5 backdrop-blur"
+          className="sticky top-0 z-30 flex items-center gap-3 border-b bg-(--ground)/95 px-(--gutter) pt-3 pb-2.5 backdrop-blur lg:hidden"
           style={{ borderColor: "var(--hairline)" }}
         >
           <Link

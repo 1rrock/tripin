@@ -136,7 +136,7 @@ export function PlaceSheet({
       role="dialog"
       aria-modal={isModal ? "true" : undefined}
       aria-label={t(m.map.detailAria, { name: place.name })}
-      className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[62dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-x-3 lg:bottom-3 lg:max-h-[46%] lg:pb-4"
+      className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[62dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-x-auto lg:right-4 lg:bottom-4 lg:w-[min(380px,calc(100vw-520px))] lg:max-h-[46%] lg:pb-4"
       style={{
         background: "var(--sheet)",
         color: "var(--paper)",

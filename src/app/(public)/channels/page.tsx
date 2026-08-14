@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { loadHomeFeed } from "@/shared/api/home";
+import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
+import { ExplorerCanvas } from "../HomeCanvas";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
@@ -43,10 +45,16 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function ChannelsPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const { creators } = await loadHomeFeed();
+  const [{ creators }, cities, places] = await Promise.all([
+    loadHomeFeed(),
+    loadCityIndex(),
+    loadHomeMap(locale),
+  ]);
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4">
+    <>
+    <ExplorerCanvas lead="channel" places={places} cities={cities} creators={creators} />
+    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4 lg:hidden">
       <JsonLd
         data={[
           breadcrumbList([
@@ -141,5 +149,6 @@ export default async function ChannelsPage() {
         </>
       )}
     </main>
+    </>
   );
 }

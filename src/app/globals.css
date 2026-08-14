@@ -376,8 +376,102 @@ body {
   .bone-line,
   .bone-ava {
     transition-duration: 1ms;
+    animation: none;
   }
-  .bone,
-  .bone-line,
-  .bone-ava { animation: none; }
+}
+
+/* ── 데스크톱 맵 캔버스 ──────────────────────────────────────────
+   지면은 지도. 레일·목록은 그 위에 뜨는 시트다.
+   모바일은 예전처럼 지도가 위, 목록이 아래. */
+
+.desktop-rail {
+  display: none;
+}
+@media (min-width: 1024px) {
+  .desktop-rail {
+    position: fixed;
+    z-index: 40;
+    top: 16px;
+    left: 16px;
+    bottom: 16px;
+    width: 64px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 0 10px;
+    background: var(--ground);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+  }
+}
+.desktop-rail-btn {
+  position: relative;
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 10px;
+  color: var(--dim);
+}
+.desktop-rail-btn[aria-current="page"] {
+  color: var(--wax);
+}
+.desktop-rail-btn[aria-current="page"]::after {
+  content: "";
+  position: absolute;
+  inset: 6px;
+  background: var(--halo);
+  border-radius: 999px;
+  z-index: 0;
+}
+.desktop-rail-btn > * {
+  position: relative;
+  z-index: 1;
+}
+@media (hover: hover) {
+  .desktop-rail-btn:hover:not([aria-current="page"]) {
+    color: var(--paper);
+    background: var(--hover);
+  }
+}
+
+.canvas-page {
+  display: flex;
+  flex-direction: column;
+}
+.canvas-map {
+  position: relative;
+  height: 42dvh;
+}
+.canvas-panel {
+  min-width: 0;
+}
+@media (min-width: 1024px) {
+  html:has(.canvas-page) {
+    overflow: hidden;
+  }
+  .canvas-page {
+    position: fixed;
+    inset: 0;
+    z-index: 10;
+    display: block;
+  }
+  .canvas-map {
+    position: absolute;
+    inset: 0;
+    height: auto;
+  }
+  .canvas-panel {
+    position: absolute;
+    z-index: 20;
+    top: 16px;
+    left: 92px;
+    bottom: 16px;
+    width: min(400px, calc(100vw - 120px));
+    background: var(--ground);
+    border-radius: 16px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
+    overflow: auto;
+  }
 }

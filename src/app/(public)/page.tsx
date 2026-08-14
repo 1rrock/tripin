@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
-import { loadCityIndex } from "@/shared/api/cities";
+import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
@@ -26,9 +26,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ videos, creators, pieces }, cities] = await Promise.all([
+  const [{ videos, creators, pieces }, cities, places] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
+    loadHomeMap(locale),
   ]);
 
   if (videos.length === 0) {
@@ -58,7 +59,13 @@ export default async function HomePage() {
           })),
         )}
       />
-      <HomeSheet pieces={pieces} cities={cities} videos={videos} />
+      <HomeSheet
+        pieces={pieces}
+        cities={cities}
+        videos={videos}
+        creators={creators}
+        places={places}
+      />
     </main>
   );
 }
