@@ -1,15 +1,15 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 780 160" role="img" aria-label="EATRIPIN">
-  <title>EATRIPIN — wax accent (warm paper)</title>
-  <desc>eat+trip+pin with shared T and P in wax; pairs with slash coral mark</desc>
-  <rect width="780" height="160" fill="#f0e8db"/>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 720 160" role="img" aria-label="Eatripin">
+  <title>eatripin — T·P wax accent</title>
+  <desc>eat+trip+pin with shared T and P in wax; pairs with TP ligature mark</desc>
+  <rect width="720" height="160" fill="#ffffff"/>
   <text
-    x="390" y="96"
+    x="360" y="104"
     text-anchor="middle"
     font-family="Archivo, 'Helvetica Neue', Helvetica, Arial, sans-serif"
     font-weight="700"
     font-size="72"
-    letter-spacing="0.22em"
+    letter-spacing="-0.035em"
   >
-    <tspan fill="#2a2118">EA</tspan><tspan fill="#c9441a">T</tspan><tspan fill="#2a2118">RI</tspan><tspan fill="#c9441a">P</tspan><tspan fill="#2a2118">IN</tspan>
+    <tspan fill="#171717">ea</tspan><tspan fill="#c9441a">t</tspan><tspan fill="#171717">ri</tspan><tspan fill="#c9441a">p</tspan><tspan fill="#171717">in</tspan>
   </text>
 </svg>

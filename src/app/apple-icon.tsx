@@ -1,20 +1,14 @@
 import { ImageResponse } from "next/og";
+import { MARK_CREAM, MARK_WAX, TP_COUNTER, TP_OUTER } from "@/shared/ui/mark-geom";
 
 /**
- * Apple touch icon — Slash coral (wax fill + ink slash).
- * satori 는 SVG stroke 가 불완전해서 회전 막대로 근사한다.
+ * Apple touch icon — TP ligature (cream field + wax letters).
+ * satori 는 evenodd 가 불완전해서 카운터를 크림으로 덮는다.
  */
 export const size = { width: 180, height: 180 };
 export const contentType = "image/png";
 
-const wax = "#c9441a";
-const ink = "#171717";
-
 export default function AppleIcon() {
-  // 68/512 * 180 ≈ 23.9
-  const thickness = 24;
-  // 대각 길이 (광학 inset 반영)
-  const barLen = 132;
   return new ImageResponse(
     (
       <div
@@ -22,19 +16,13 @@ export default function AppleIcon() {
           width: "100%",
           height: "100%",
           display: "flex",
-          alignItems: "center",
-          justifyContent: "center",
-          background: wax,
+          background: MARK_CREAM,
         }}
       >
-        <div
-          style={{
-            width: barLen,
-            height: thickness,
-            background: ink,
-            transform: "rotate(-45deg)",
-          }}
-        />
+        <svg width="180" height="180" viewBox="0 0 512 512">
+          <path d={TP_OUTER} fill={MARK_WAX} />
+          <path d={TP_COUNTER} fill={MARK_CREAM} />
+        </svg>
       </div>
     ),
     { ...size },

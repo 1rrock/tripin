@@ -1,5 +1,5 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Eatripin">
-  <!-- Slash coral · wax #c9441a · ink #171717 · optical -45° -->
-  <rect width="512" height="512" fill="#c9441a"/>
-  <path d="M 148 364 L 364 148" fill="none" stroke="#171717" stroke-width="68" stroke-linecap="square"/>
+  <!-- TP ligature · cream #ebebe3 · wax #c9441a · optically centered -->
+  <rect width="512" height="512" fill="#ebebe3"/>
+  <path fill="#c9441a" fill-rule="evenodd" d="M 276.5 87.4 L 332.5 94.0 L 320.1 158.6 L 229.6 169.8 L 220.0 281.4 L 243.9 283.3 L 249.8 233.2 L 238.1 232.5 L 244.6 183.8 C 290.5 176.4 350.5 173.4 388.5 187.4 C 416.5 197.9 430.5 217.4 428.9 247.4 C 427.5 277.4 412.5 309.4 380.5 325.4 C 356.5 337.4 320.5 336.4 294.7 334.8 L 286.3 411.4 L 235.5 424.6 L 225.7 423.2 L 237.4 334.1 L 215.3 326.2 L 211.5 352.4 L 151.4 363.8 L 169.7 176.4 L 83.0 183.8 L 100.6 126.3 L 268.7 120.3 L 272.6 95.3 Z M 304.5 227.4 L 338.5 224.9 C 360.5 223.9 370.5 233.4 368.0 251.4 C 366.0 269.4 352.5 284.4 332.5 285.9 L 299.5 286.4 Z"/>
 </svg>

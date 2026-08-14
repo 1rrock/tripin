@@ -1,8 +1,8 @@
 /**
- * EATRIPIN 워드마크 — Slash coral 마크와 짝.
+ * Eatripin 워드마크 — TP ligature 마크와 짝.
  *
- * 철자 EATRIPIN (t·p 각 1). 화면은 로마자, 읽히는 이름은 부모 aria.
- * 산호는 글자 두 개(T·P)에만 — 면적을 먹지 않는다.
+ * 철자 eatripin (t·p 각 1). 화면은 로마자, 읽히는 이름은 부모 aria.
+ * 산호는 글자 두 개(t·p)에만 — 면적을 먹지 않는다.
  */
 
 import type { CSSProperties } from "react";

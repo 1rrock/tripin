@@ -15,7 +15,7 @@ import "./globals.css";
  * 페이퍼로지(Paperlogy) — 한글 구조와 본문. 굵기로 얼굴을 가른다(700/800 제목, 400/500 본문).
  * Archivo — 라틴 숫자 tabular. 타임코드·개수 정렬.
  *
- * 브랜드 마크: Slash coral (산호 면 + 잉크 슬래시). 워드마크는 Paperlogy.
+ * 브랜드 마크: TP ligature (크림 면 + 산호 T·P). 워드마크는 Paperlogy.
  *
  * next/font 셀프호스팅 — 외부 요청이 LCP 앞에 끼지 않는다.
  */
