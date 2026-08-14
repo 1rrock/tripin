@@ -163,6 +163,15 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /* 구글에서 돌아오는 자리는 통째로 비켜준다.
+     여기서 refreshSession() 을 돌리면 리프레시 토큰이 한 번 회전하는데,
+     라우트 핸들러는 그 회전 이전의 쿠키를 들고 exchangeCodeForSession 을 부른다.
+     둘이 어긋나면 교환이 실패하고, 증상은 "로그인이 가끔 안 됨" 으로만 보인다.
+     로케일도 필요 없다 — 이 라우트는 화면을 그리지 않고 redirect 만 한다. */
+  if (pathname.startsWith("/auth/")) {
+    return NextResponse.next();
+  }
+
   /* 세션 갱신은 로케일 판정보다 **먼저** 한다 — withLocale 이 request.headers 를
      복사해 내려보내므로, 갱신된 쿠키가 그 복사 전에 request 에 실려 있어야
      이 요청의 서버 컴포넌트가 새 토큰을 본다. */

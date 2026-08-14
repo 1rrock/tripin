@@ -257,10 +257,18 @@ export async function setSubscribed(creatorId: string, next: boolean): Promise<b
  *    linkIdentity 가 같은 auth.users.id 에 구글 신원을 붙인다. id 가 유지되므로
  *    saved_places·subscriptions 를 손대지 않아도 그대로 따라온다.
  *    signInWithOAuth 를 쓰면 **새 유저가 생기고 모아둔 것이 전부 사라진다.**
+ *
+ * @param backTo 연결이 끝난 뒤 돌아올 **사이트 안 경로**(`/saved`, `/en/account` …).
+ *   전체 URL 이 아니다 — 구글은 `/auth/callback` 으로 보내고, 거기서 여기로 다시 민다.
  */
-export async function linkGoogle(redirectTo: string): Promise<string | null> {
+export async function linkGoogle(backTo: string): Promise<string | null> {
   const sb = supabaseBrowser();
   const { data: session } = await sb.auth.getSession();
+
+  /* 구글 → Supabase → **우리 콜백 라우트** → backTo.
+     화면 URL 을 그대로 redirectTo 로 주면 코드 교환이 하이드레이션 뒤로 밀려서
+     돌아온 첫 렌더가 옛 세션을 본다(`app/auth/callback/route.ts` 주석). */
+  const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(backTo)}`;
 
   if (session.session) {
     const { error } = await sb.auth.linkIdentity({
