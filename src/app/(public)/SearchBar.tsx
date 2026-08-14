@@ -93,8 +93,10 @@ export function SearchBar() {
       const desktop =
         typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
       const onHome = bare === "/";
-      const onCanvas =
-        bare === "/map" || bare === "/type";
+      /* 지도를 품은 화면은 이제 `/map` 하나다 — 검색 결과를 페이지 이동 대신
+         현재 지도의 필터로 꽂을 수 있는 곳. `/type` 은 홈으로 접혔고
+         `/channels` 는 목록이라 여기 들어오지 않는다 */
+      const onCanvas = bare === "/map";
       const mapFilter =
         doc.kind === "city" || doc.kind === "channel" || doc.kind === "type";
       if (onHome && mapFilter) {

@@ -61,10 +61,12 @@ export function CategoryGrid() {
         href={href("/map")}
         variant="tool"
       />
+      {/* 채널만 지도로 보내지 않는다 — "누구를 따라갈까"의 답은 장소가 아니라
+          사람이라 핀을 뿌려 봐야 구분이 안 된다. 채널 목록으로 보낸다 */}
       <Tile
         icon={TOOL_ICON.channel}
         label={m.nav.channel}
-        href={href("/map")}
+        href={href("/channels")}
         variant="tool"
       />
       <Tile

@@ -14,5 +14,5 @@ export { MapSkeleton, CitySkeleton, CreatorSkeleton } from "./skeleton/CanvasSke
 export { PieceSkeleton } from "./skeleton/PieceSkeleton";
 export { VideoSkeleton } from "./skeleton/VideoSkeleton";
 export { TypeDetailSkeleton } from "./skeleton/TypeDetailSkeleton";
-export { TypeIndexSkeleton } from "./skeleton/TypeIndexSkeleton";
+export { ChannelsSkeleton } from "./skeleton/ChannelsSkeleton";
 export { ProseSkeleton } from "./skeleton/ProseSkeleton";

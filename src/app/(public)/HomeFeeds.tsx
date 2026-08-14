@@ -87,7 +87,7 @@ export function ChannelFeed({ creators }: { creators: FeedCreator[] }) {
       <Head
         id="channels-h"
         title={m.home.feedChannels}
-        moreHref={href("/map")}
+        moreHref={href("/channels")}
         moreLabel={m.home.moreFeed}
       />
       <ul className="mt-4 flex flex-col">

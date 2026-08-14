@@ -85,9 +85,10 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
     <main className="mx-auto flex w-full max-w-lg flex-col gap-(--block) px-(--gutter) pt-4">
       <JsonLd
         data={[
+          /* 종류 인덱스(`/type`)를 없앴으므로 부모는 홈이다 — 홈 카테고리
+             그리드가 종류 전부를 깔고 있어서 그게 이 페이지의 목록 자리다 */
           breadcrumbList([
             { name: m.typeDetail.home, url: absoluteUrl("/", locale) },
-            { name: m.typeDetail.type, url: absoluteUrl("/type", locale) },
             { name: label, url: absoluteUrl(`/type/${type}`, locale) },
           ]),
           placeList(label, schemaPlaces),
@@ -100,13 +101,6 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
             className="underline-offset-4 hover:underline"
           >
             {m.typeDetail.home}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <Link
-            href={localePath("/type", locale)}
-            className="underline-offset-4 hover:underline"
-          >
-            {m.typeDetail.type}
           </Link>
           <Icon.chevron className="size-2.5" />
           <span style={{ color: "var(--paper)" }}>{label}</span>
@@ -255,8 +249,9 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
         })}
       </div>
 
+      {/* 다른 종류로 가는 길 — 목록이 홈 카테고리 그리드로 옮겨졌으므로 홈으로 보낸다 */}
       <Link
-        href={localePath("/type", locale)}
+        href={localePath("/", locale)}
         className="index inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
         style={{ color: "var(--dim)" }}
       >
