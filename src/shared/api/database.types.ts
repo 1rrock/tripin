@@ -167,6 +167,43 @@ export type SearchMiss = {
   last_seen_at: string;
 }
 
+/* ── 계정 — 0009_accounts.sql ──────────────────────────
+   전부 소유자 전용 RLS 다. 공개 테이블과 달리 select 조차 auth.uid() 로 잠겨 있어
+   `supabase-server.ts` / `supabase-browser.ts` 의 세션 클라이언트로만 읽힌다.
+
+   ⚠️ 이 파일의 Row 타입은 반드시 `type` 별칭이어야 한다. `interface` 로 쓰면 안 된다.
+      interface 는 암묵적 인덱스 시그니처를 갖지 않아 supabase-js 의
+      `GenericTable`(Row extends Record<string, unknown>) 제약을 통과하지 못한다.
+      하나만 interface 여도 Database 전체가 제약에서 탈락해 **모든 테이블의 쿼리가
+      never 로 무너진다** — 정작 에러는 이 파일이 아니라 쿼리하는 파일 수백 곳에
+      "Property 'id' does not exist on type 'never'" 로 뜬다. 실제로 한 번 겪었다.  */
+
+/** 커뮤니티 확장 예비. display_name·avatar_url 은 지금 아무 화면도 읽지 않는다. */
+export type Profile = {
+  id: string;
+  display_name: string | null;
+  avatar_url: string | null;
+  created_at: string;
+};
+
+/** 저장한 장소 + 갔던 곳. 둘은 같은 (유저, 장소) 쌍에 붙는 두 상태다. */
+export type SavedPlace = {
+  user_id: string;
+  place_id: string;
+  visited: boolean;
+  visited_at: string | null;
+  /** 🚧 공개 목록 공유 예비. 지금은 'private' 고정. */
+  visibility: "private" | "unlisted" | "public";
+  saved_at: string;
+};
+
+/** 이 서비스 안에서의 채널 구독. 유튜브 구독과 무관하다. */
+export type Subscription = {
+  user_id: string;
+  creator_id: string;
+  created_at: string;
+};
+
 /**
  * supabase-js 가 기대하는 테이블 타입 형태.
  * Insert/Update 는 Partial<Row> — 필수 필드 검증은 DB 제약(NOT NULL·check)에 맡긴다.
@@ -190,6 +227,9 @@ export type Database = {
       creator_cities: TableOf<CreatorCity>;
       takedown_requests: TableOf<TakedownRequest>;
       search_misses: TableOf<SearchMiss>;
+      profiles: TableOf<Profile>;
+      saved_places: TableOf<SavedPlace>;
+      subscriptions: TableOf<Subscription>;
     };
     Views: Record<string, never>;
     Functions: {

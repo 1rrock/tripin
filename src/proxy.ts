@@ -1,6 +1,8 @@
 import { NextResponse, type NextRequest } from "next/server";
+import { createServerClient } from "@supabase/ssr";
 import { ADMIN_COOKIE, getAdminSecret, verifyToken } from "@/shared/lib/admin-auth";
 import { LOCALE_HEADER } from "@/shared/i18n/paths";
+import { publicEnv } from "@/shared/config/env";
 
 /**
  * 1) /en/* → 내부 경로 rewrite + x-tripin-locale
@@ -67,6 +69,47 @@ function withLocale(request: NextRequest, locale: "ko" | "en", rewritePath?: str
   return NextResponse.next({ request: { headers: requestHeaders } });
 }
 
+/**
+ * 로그인한(익명 포함) 유저의 세션 토큰을 갱신한다.
+ *
+ * ⚠️ 세션 쿠키가 **있을 때만** 돈다. 이 가드가 핵심이다 —
+ *    getUser() 는 Supabase 로 네트워크 왕복을 한다. 가드 없이 걸면 검색 유입
+ *    비로그인 방문자(주 트래픽)마다 왕복이 하나씩 붙는다. 저장 한 번 안 한
+ *    사람에게 그 비용을 물릴 이유가 없다.
+ *
+ * 갱신된 토큰은 두 곳에 쓴다:
+ *   · request.cookies — 이 요청의 서버 컴포넌트가 새 토큰을 보게
+ *   · 반환 배열 → 응답 쿠키 — 브라우저가 새 토큰을 갖게
+ *
+ * 서버 컴포넌트는 쿠키를 못 쓰기 때문에(`supabase-server.ts` 참조) 토큰 갱신은
+ * 결국 여기서만 일어난다. 이 함수를 지우면 세션이 1시간 뒤 조용히 죽는다.
+ */
+async function refreshSession(request: NextRequest) {
+  const hasSession = request.cookies
+    .getAll()
+    .some((c) => c.name.startsWith("sb-") && c.name.includes("auth-token"));
+  if (!hasSession) return [];
+
+  const pending: { name: string; value: string; options?: Record<string, unknown> }[] = [];
+
+  const sb = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
+    cookies: {
+      getAll: () => request.cookies.getAll(),
+      setAll: (list) => {
+        for (const { name, value, options } of list) {
+          request.cookies.set(name, value);
+          pending.push({ name, value, options });
+        }
+      },
+    },
+  });
+
+  // 토큰이 만료됐으면 여기서 갱신된다. 결과값 자체는 쓰지 않는다.
+  await sb.auth.getUser();
+
+  return pending;
+}
+
 async function protectAdmin(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isApi = pathname.startsWith("/api/admin");
@@ -120,10 +163,19 @@ export default async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  /* 세션 갱신은 로케일 판정보다 **먼저** 한다 — withLocale 이 request.headers 를
+     복사해 내려보내므로, 갱신된 쿠키가 그 복사 전에 request 에 실려 있어야
+     이 요청의 서버 컴포넌트가 새 토큰을 본다. */
+  const refreshed = await refreshSession(request);
+  const attach = (res: NextResponse) => {
+    for (const { name, value, options } of refreshed) res.cookies.set(name, value, options);
+    return res;
+  };
+
   // EN: /en → / , /en/city → /city
   if (pathname === "/en" || pathname.startsWith("/en/")) {
     const bare = pathname === "/en" ? "/" : pathname.slice(3) || "/";
-    return withLocale(request, "en", bare);
+    return attach(withLocale(request, "en", bare));
   }
 
   /* 언어 감지는 홈 첫 진입에서만 한다. 하위 경로까지 걸면 검색 결과로 들어온
@@ -134,14 +186,14 @@ export default async function proxy(request: NextRequest) {
       url.pathname = "/en";
       const res = NextResponse.redirect(url, 307);
       res.headers.set("Vary", "Accept-Language, Sec-Fetch-Site");
-      return res;
+      return attach(res);
     }
   }
 
   /* 통과 응답에는 Vary 를 안 건다 — NextResponse.next() 의 헤더는 뒤이어 오는 페이지
      응답이 덮어써서 실제로 안 나간다(확인함). 리다이렉트 쪽에만 붙어 있으면 되고,
      공개 페이지는 전부 동적(ƒ)이라 CDN 이 언어를 섞어 캐시할 여지도 없다. */
-  return withLocale(request, "ko");
+  return attach(withLocale(request, "ko"));
 }
 
 export const config = {
