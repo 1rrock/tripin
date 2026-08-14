@@ -1,3 +1,4 @@
+import { cache } from "react";
 import { supabase } from "./supabase";
 import { supabaseServer } from "./supabase-server";
 import { primaryMapLink } from "@/shared/lib/map-links";
@@ -27,8 +28,14 @@ export interface SavedPlaceRow {
   cityNameEn: string | null;
   citySlug: string;
   mapUrl: string | null;
-  visited: boolean;
   savedAt: string;
+}
+
+export interface SavedListRow {
+  id: string;
+  name: string;
+  /** 이 그룹에 담긴 (공개 상태인) 장소 수 */
+  count: number;
 }
 
 export interface SavedView {
@@ -37,25 +44,58 @@ export interface SavedView {
   /** 익명이 아니라 실제 신원(구글 등)이 붙어 있는가 */
   linked: boolean;
   places: SavedPlaceRow[];
+  lists: SavedListRow[];
+  /** 장소 id → 담긴 그룹 id 들. 클라이언트로 넘기므로 Map 이 아니라 배열이다. */
+  membership: Record<string, string[]>;
+  /** 어느 그룹에도 안 담긴 장소 수 */
+  ungroupedCount: number;
 }
 
-export async function loadSavedView(): Promise<SavedView> {
+/**
+ * 레이아웃(사이드바)과 페이지(목록)가 같은 요청 안에서 둘 다 부른다.
+ * `cache` 로 감싸지 않으면 한 화면을 그리는 데 같은 질의가 두 벌 나간다.
+ */
+export const loadSavedView = cache(_loadSavedView);
+
+async function _loadSavedView(): Promise<SavedView> {
   const sb = await supabaseServer();
   const { data: auth } = await sb.auth.getUser();
   const user = auth.user;
 
-  if (!user) return { userId: null, linked: false, places: [] };
+  const EMPTY: SavedView = {
+    userId: null,
+    linked: false,
+    places: [],
+    lists: [],
+    membership: {},
+    ungroupedCount: 0,
+  };
+  if (!user) return EMPTY;
 
   /* is_anonymous 는 익명 세션에서 true 다. 구글로 승격하면 false 가 된다. */
   const linked = user.is_anonymous !== true;
 
-  const { data: saves } = await sb
-    .from("saved_places")
-    .select("place_id, visited, saved_at")
-    .order("saved_at", { ascending: false });
+  /* 저장·그룹·담김을 한 번에 — 사이드바가 그룹 개수를 그려야 해서 셋이 다 필요하다 */
+  const [savesRes, listsRes, membersRes] = await Promise.all([
+    sb.from("saved_places").select("place_id, saved_at").order("saved_at", { ascending: false }),
+    sb
+      .from("saved_lists")
+      .select("id, name, position")
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
+    sb.from("saved_list_places").select("list_id, place_id"),
+  ]);
+  const saves = savesRes.data;
 
   const ids = (saves ?? []).map((s) => s.place_id).filter(Boolean) as string[];
-  if (ids.length === 0) return { userId: user.id, linked, places: [] };
+  if (ids.length === 0) {
+    return {
+      ...EMPTY,
+      userId: user.id,
+      linked,
+      lists: (listsRes.data ?? []).map((l) => ({ id: l.id, name: l.name, count: 0 })),
+    };
+  }
 
   const { data: places } = await supabase
     .from("places")
@@ -101,10 +141,29 @@ export async function loadSavedView(): Promise<SavedView> {
           lat: p.lat,
           lng: p.lng,
         })?.url ?? null,
-      visited: s.visited === true,
       savedAt: s.saved_at,
     });
   }
 
-  return { userId: user.id, linked, places: rows };
+  /* 담김은 **실제로 그려지는 장소** 기준으로만 센다. 비공개로 내려간 장소가
+     그룹에 남아 있으면 사이드바 숫자와 목록 길이가 어긋난다. */
+  const visible = new Set(rows.map((r) => r.id));
+  const membership: Record<string, string[]> = {};
+  const countByList = new Map<string, number>();
+
+  for (const mrow of membersRes.data ?? []) {
+    if (!mrow.place_id || !mrow.list_id || !visible.has(mrow.place_id)) continue;
+    (membership[mrow.place_id] ??= []).push(mrow.list_id);
+    countByList.set(mrow.list_id, (countByList.get(mrow.list_id) ?? 0) + 1);
+  }
+
+  const lists: SavedListRow[] = (listsRes.data ?? []).map((l) => ({
+    id: l.id,
+    name: l.name,
+    count: countByList.get(l.id) ?? 0,
+  }));
+
+  const ungroupedCount = rows.filter((r) => (membership[r.id]?.length ?? 0) === 0).length;
+
+  return { userId: user.id, linked, places: rows, lists, membership, ungroupedCount };
 }

@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * 하트(저장) · 체크(갔던 곳).
+ * 하트(저장) · 그룹 담기 · 채널 구독.
  *
  * 로그인 UI 를 절대 띄우지 않는다. 누르면 그냥 저장된다 —
  * 익명 세션은 `ensureSession()` 이 뒤에서 만든다(PRODUCT.md 원칙 5 "게이트는 없다").
@@ -108,46 +108,6 @@ export function ListButton({
         <ListPicker placeId={placeId} placeName={placeName} onClose={() => setOpen(false)} />
       ) : null}
     </>
-  );
-}
-
-/** '갔던 곳' 체크 — 저장 목록 안에서만 쓴다. */
-export function VisitedButton({
-  placeId,
-  placeName,
-  className = "",
-}: {
-  placeId: string;
-  placeName: string;
-  className?: string;
-}) {
-  const { messages: m, t } = useLocale();
-  const { isVisited, toggleVisited } = useSaved();
-  const on = isVisited(placeId);
-
-  return (
-    <button
-      type="button"
-      onClick={(e) => {
-        e.stopPropagation();
-        e.preventDefault();
-        void toggleVisited(placeId);
-      }}
-      aria-pressed={on}
-      aria-label={t(on ? m.saved.unvisitAria : m.saved.visitAria, { name: placeName })}
-      className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 px-3 transition-transform active:scale-95 ${className}`}
-      style={{
-        borderRadius: "var(--r-frame)",
-        fontSize: "var(--t-meta)",
-        fontWeight: 600,
-        boxShadow: on ? "none" : "inset 0 0 0 1px var(--hairline)",
-        background: on ? "var(--paper)" : "transparent",
-        color: on ? "var(--sheet)" : "var(--dim)",
-      }}
-    >
-      <Icon.check className="size-4" weight={on ? "bold" : "regular"} />
-      {on ? m.saved.visited : m.saved.markVisited}
-    </button>
   );
 }
 

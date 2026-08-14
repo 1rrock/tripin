@@ -49,8 +49,6 @@ export type ListMeta = { id: string; name: string; position: number };
 export type SavedSnapshot = {
   /** 저장한 장소 id */
   places: Set<string>;
-  /** 그중 '갔던 곳' 으로 체크한 장소 id */
-  visited: Set<string>;
   /** 구독한 채널 id */
   creators: Set<string>;
   /** 그룹 목록 — 표시 순서대로 */
@@ -61,7 +59,6 @@ export type SavedSnapshot = {
 
 export const EMPTY_SNAPSHOT: SavedSnapshot = {
   places: new Set(),
-  visited: new Set(),
   creators: new Set(),
   lists: [],
   membership: new Map(),
@@ -87,7 +84,7 @@ export async function loadSaved(): Promise<SavedSnapshot> {
   if (!session.session) return EMPTY_SNAPSHOT;
 
   const [saves, subs, lists, members] = await Promise.all([
-    sb.from("saved_places").select("place_id, visited"),
+    sb.from("saved_places").select("place_id"),
     sb.from("subscriptions").select("creator_id"),
     sb
       .from("saved_lists")
@@ -99,7 +96,6 @@ export async function loadSaved(): Promise<SavedSnapshot> {
 
   const snapshot: SavedSnapshot = {
     places: new Set(),
-    visited: new Set(),
     creators: new Set(),
     lists: [],
     membership: new Map(),
@@ -108,7 +104,6 @@ export async function loadSaved(): Promise<SavedSnapshot> {
   for (const row of saves.data ?? []) {
     if (!row.place_id) continue;
     snapshot.places.add(row.place_id);
-    if (row.visited) snapshot.visited.add(row.place_id);
   }
   for (const row of subs.data ?? []) {
     if (row.creator_id) snapshot.creators.add(row.creator_id);
@@ -238,29 +233,6 @@ export async function setSaved(placeId: string, next: boolean): Promise<boolean>
     supabaseBrowser()
       .from("saved_places")
       .upsert({ user_id: uid, place_id: placeId }, { onConflict: "user_id,place_id" }),
-  );
-}
-
-/**
- * '갔던 곳' 토글.
- *
- * 저장이 안 돼 있으면 같이 저장한다 — 가본 곳을 목록에서 못 보는 게 더 이상하다.
- * `visited_at` 을 같이 넘기는 것은 선택이 아니다. DB 의
- * `saved_places_visited_needs_time` 제약이 visited=true 인데 시각이 비면 거부한다.
- */
-export async function setVisited(placeId: string, next: boolean): Promise<boolean> {
-  return withSession(async (uid) =>
-    supabaseBrowser()
-      .from("saved_places")
-      .upsert(
-        {
-          user_id: uid,
-          place_id: placeId,
-          visited: next,
-          visited_at: next ? new Date().toISOString() : null,
-        },
-        { onConflict: "user_id,place_id" },
-      ),
   );
 }
 

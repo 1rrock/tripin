@@ -199,12 +199,9 @@ export const ko = {
        홈·지도·상세에는 로그인 권유가 뜨지 않는다. */
     nav: "저장",
     title: "저장한 곳",
+    likedNav: "좋아요",
     addAria: "{name} 저장하기",
     removeAria: "{name} 저장 해제",
-    markVisited: "가봤어요",
-    visited: "가봤음",
-    visitAria: "{name} 가본 곳으로 표시",
-    unvisitAria: "{name} 가본 곳 표시 해제",
     subscribe: "구독",
     subscribed: "구독중",
     subscribeAria: "{name} 채널 구독",
@@ -213,7 +210,6 @@ export const ko = {
     emptyHint: "지도나 채널에서 하트를 누르면 여기 모입니다.",
     emptyCta: "지도 열기",
     countLabel: "{n}곳",
-    visitedCount: "{n}곳 가봤음",
     /* 기기 넘김 안내 — 가치를 이미 받은 사람에게만 보인다 */
     localOnly: "이 기기에서만 볼 수 있어요",
     localOnlyHint: "연결하면 다른 기기에서도 이어서 볼 수 있어요.",
@@ -524,12 +520,9 @@ export type Messages = {
   saved: {
     nav: string;
     title: string;
+    likedNav: string;
     addAria: string;
     removeAria: string;
-    markVisited: string;
-    visited: string;
-    visitAria: string;
-    unvisitAria: string;
     subscribe: string;
     subscribed: string;
     subscribeAria: string;
@@ -538,7 +531,6 @@ export type Messages = {
     emptyHint: string;
     emptyCta: string;
     countLabel: string;
-    visitedCount: string;
     localOnly: string;
     localOnlyHint: string;
     connect: string;

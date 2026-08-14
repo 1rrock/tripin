@@ -186,12 +186,13 @@ export type Profile = {
   created_at: string;
 };
 
-/** 저장한 장소 + 갔던 곳. 둘은 같은 (유저, 장소) 쌍에 붙는 두 상태다. */
+/**
+ * 저장한 장소(하트). 그룹은 이 위에 얹는 분류다 — saved_lists 참조.
+ * '가봤어요'(visited)는 0011 에서 걷어냈다.
+ */
 export type SavedPlace = {
   user_id: string;
   place_id: string;
-  visited: boolean;
-  visited_at: string | null;
   /** 🚧 공개 목록 공유 예비. 지금은 'private' 고정. */
   visibility: "private" | "unlisted" | "public";
   saved_at: string;

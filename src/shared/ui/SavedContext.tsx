@@ -27,7 +27,6 @@ import {
   setInList,
   setSaved,
   setSubscribed,
-  setVisited,
   type ListMeta,
   type ListResult,
   type SavedSnapshot,
@@ -36,11 +35,9 @@ import {
 type Ctx = {
   ready: boolean;
   isSaved: (placeId: string) => boolean;
-  isVisited: (placeId: string) => boolean;
   isSubscribed: (creatorId: string) => boolean;
   savedCount: number;
   toggleSaved: (placeId: string) => Promise<void>;
-  toggleVisited: (placeId: string) => Promise<void>;
   toggleSubscribed: (creatorId: string) => Promise<void>;
 
   /* 그룹 */
@@ -84,13 +81,8 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   const toggleSavedCb = useCallback(
     async (placeId: string) => {
       const next = !snap.places.has(placeId);
-      /* 낙관적 갱신 — 해제할 때는 '갔던 곳' 도 같이 내린다. 저장이 없으면
-         목록에 안 나오는데 visited 만 남아 있으면 상태가 어긋난다. */
-      setSnap((s) => ({
-        ...s,
-        places: toggled(s.places, placeId, next),
-        visited: next ? s.visited : toggled(s.visited, placeId, false),
-      }));
+      /* 낙관적 갱신 — 하트는 누른 즉시 켜져야 한다 */
+      setSnap((s) => ({ ...s, places: toggled(s.places, placeId, next) }));
 
       const ok = await setSaved(placeId, next);
       if (!ok) {
@@ -101,24 +93,6 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       }
     },
     [snap.places],
-  );
-
-  const toggleVisitedCb = useCallback(
-    async (placeId: string) => {
-      const next = !snap.visited.has(placeId);
-      /* 가본 곳으로 찍으면 저장도 같이 켠다 — setVisited 가 DB 에서도 같이 넣는다 */
-      setSnap((s) => ({
-        ...s,
-        visited: toggled(s.visited, placeId, next),
-        places: next ? toggled(s.places, placeId, true) : s.places,
-      }));
-
-      const ok = await setVisited(placeId, next);
-      if (!ok) {
-        setSnap((s) => ({ ...s, visited: toggled(s.visited, placeId, !next) }));
-      }
-    },
-    [snap.visited],
   );
 
   const toggleSubscribedCb = useCallback(
@@ -212,11 +186,9 @@ export function SavedProvider({ children }: { children: ReactNode }) {
       value={{
         ready,
         isSaved: (id) => snap.places.has(id),
-        isVisited: (id) => snap.visited.has(id),
         isSubscribed: (id) => snap.creators.has(id),
         savedCount: snap.places.size,
         toggleSaved: toggleSavedCb,
-        toggleVisited: toggleVisitedCb,
         toggleSubscribed: toggleSubscribedCb,
         lists: snap.lists,
         listsOf: (placeId) => snap.membership.get(placeId) ?? new Set(),
@@ -248,11 +220,9 @@ export function useSaved(): Ctx {
     useContext(SavedContext) ?? {
       ready: false,
       isSaved: () => false,
-      isVisited: () => false,
       isSubscribed: () => false,
       savedCount: 0,
       toggleSaved: async () => {},
-      toggleVisited: async () => {},
       toggleSubscribed: async () => {},
       lists: [],
       listsOf: () => new Set<string>(),
