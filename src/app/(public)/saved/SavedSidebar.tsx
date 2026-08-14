@@ -12,6 +12,8 @@
  */
 
 import Link from "next/link";
+import { Heart } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import { usePathname } from "next/navigation";
 import type { SavedListRow } from "@/shared/api/saved-server";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -39,7 +41,7 @@ export function SavedSidebar({
     : lists;
   const liked = ready ? savedCount : likedCount;
 
-  const item = (path: string, label: string, n: number, on: boolean) => (
+  const item = (path: string, label: ReactNode, n: number, on: boolean) => (
     <Link
       key={path}
       href={href(path)}
@@ -53,7 +55,7 @@ export function SavedSidebar({
         color: on ? "var(--paper)" : "var(--dim)",
       }}
     >
-      <span className="min-w-0 truncate">{label}</span>
+      <span className="flex min-w-0 items-center gap-1.5 truncate">{label}</span>
       <span className="tnum shrink-0" style={{ opacity: 0.7 }}>
         {n}
       </span>
@@ -65,7 +67,15 @@ export function SavedSidebar({
       aria-label={m.saved.title}
       className="hidden w-[210px] shrink-0 flex-col gap-1 self-start lg:flex"
     >
-      {item("/saved", `♥ ${m.saved.likedNav}`, liked, pathname === "/saved")}
+      {item(
+        "/saved",
+        <>
+          <Heart className="size-3.5 shrink-0" weight="fill" style={{ color: "var(--wax)" }} />
+          {m.saved.likedNav}
+        </>,
+        liked,
+        pathname === "/saved",
+      )}
 
       {rows.length > 0 ? (
         <p className="index mt-3 mb-0.5 px-2.5" style={{ color: "var(--dim)" }}>

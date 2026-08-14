@@ -5,7 +5,7 @@
  * 가로 칩 대신 잡코리아식 드롭다운. 검색해서 고르고 적용한다.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
 import type { PlaceType } from "@/shared/api/database.types";
@@ -146,6 +146,7 @@ export function CanvasFilters({
   creators,
   channelCounts,
   typeCounts,
+  trailing,
   onApply,
 }: {
   region: HomeRegionId | null;
@@ -159,6 +160,9 @@ export function CanvasFilters({
   creators: FeedCreator[];
   channelCounts: Map<string, number>;
   typeCounts: Map<PlaceType, number>;
+  /** 필터 줄 끝에 붙는 것 — 저장 칩이 여기 들어온다. 별도 줄로 띄우면
+   *  규격이 어긋나 보이고 지도 세로 공간도 한 줄 더 먹는다. */
+  trailing?: ReactNode;
   onApply: (next: {
     region: HomeRegionId | null;
     city: string | null;
@@ -243,6 +247,7 @@ export function CanvasFilters({
           open={open === "channel"}
           onClick={() => openMenu("channel")}
         />
+        {trailing}
       </div>
 
       {open === "region" ? (

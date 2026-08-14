@@ -319,6 +319,17 @@ export function ExplorerCanvas({
           creators={creators}
           channelCounts={channelCounts}
           typeCounts={typeCounts}
+          trailing={
+            <SavedMapChips
+              savedOnly={savedOnly}
+              listId={listId}
+              onChange={(next) => {
+                setActiveId(null);
+                setSheetOpen(false);
+                replace({ saved: next.saved, list: next.list });
+              }}
+            />
+          }
           onApply={(next) => {
             setActiveId(null);
             setSheetOpen(false);
@@ -328,16 +339,6 @@ export function ExplorerCanvas({
               type: next.type,
               channel: next.channel,
             });
-          }}
-        />
-
-        <SavedMapChips
-          savedOnly={savedOnly}
-          listId={listId}
-          onChange={(next) => {
-            setActiveId(null);
-            setSheetOpen(false);
-            replace({ saved: next.saved, list: next.list });
           }}
         />
 

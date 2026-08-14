@@ -26,7 +26,7 @@ async function resolve(listParam: string) {
   const m = getDictionary(locale);
 
   if (listParam === LIKED) {
-    return { locale, m, view, title: `♥ ${m.saved.likedNav}`, kind: "liked" as const, list: null };
+    return { locale, m, view, title: m.saved.likedNav, kind: "liked" as const, list: null };
   }
   if (listParam === UNGROUPED) {
     return {

@@ -9,6 +9,8 @@
  */
 
 import Link from "next/link";
+import { Heart } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import type { SavedListRow } from "@/shared/api/saved-server";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
@@ -31,7 +33,7 @@ export function SavedIndex({
     : lists;
   const liked = ready ? savedCount : likedCount;
 
-  const card = (path: string, label: string, n: number, liked = false) => (
+  const card = (path: string, label: ReactNode, n: number, liked = false) => (
     <Link
       key={path}
       href={href(path)}
@@ -43,7 +45,10 @@ export function SavedIndex({
         color: liked ? "var(--halo-ink)" : "var(--paper)",
       }}
     >
-      <span className="min-w-0 truncate" style={{ fontSize: "var(--t-body)", fontWeight: 800 }}>
+      <span
+        className="flex min-w-0 items-center gap-2 truncate"
+        style={{ fontSize: "var(--t-body)", fontWeight: 800 }}
+      >
         {label}
       </span>
       <span
@@ -57,7 +62,15 @@ export function SavedIndex({
 
   return (
     <div className="flex flex-col gap-2.5 lg:hidden">
-      {card("/saved/liked", `♥ ${m.saved.likedNav}`, liked, true)}
+      {card(
+        "/saved/liked",
+        <>
+          <Heart className="size-4 shrink-0" weight="fill" />
+          {m.saved.likedNav}
+        </>,
+        liked,
+        true,
+      )}
 
       <div className="mt-2 flex items-center justify-between gap-3">
         <p className="index" style={{ color: "var(--dim)" }}>
