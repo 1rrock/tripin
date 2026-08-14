@@ -1,4 +1,3 @@
-import { Suspense } from "react";
 import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
@@ -6,7 +5,6 @@ import { LocaleProvider } from "@/shared/i18n/LocaleContext";
 import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
 import { DesktopRail, Nav, TabDock } from "./Nav";
-import { LanguageSwitch } from "./LanguageSwitch";
 import { SearchBar } from "./SearchBar";
 
 /**
@@ -41,15 +39,11 @@ export default async function PublicLayout({ children }: { children: React.React
           </Link>
 
           {/* 검색은 브랜드와 내비 사이를 채우며 가운데 선다(유튜브 문법).
-              헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다 */}
+              헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다.
+              언어는 proxy 가 Accept-Language 로 첫 진입 시 정한다 — KO/EN 토글 UI 없음. */}
           <SearchBar />
 
-          {/* 언어 전환은 푸터로 갔다 — 첫 진입 언어는 proxy 가 Accept-Language 로
-              정하므로 헤더에서 매번 고를 이유가 없다. 다만 **없애지는 않는다**:
-              자동 감지만 두고 수동 전환을 지우면 브라우저 언어와 다른 언어로 읽고
-              싶은 사람이 갇힌다(W3C i18n 권고).
-
-              내비를 감싸는 div 를 두지 않는다 — 모바일에서 그 안이 통째로 비는데
+          {/* 내비를 감싸는 div 를 두지 않는다 — 모바일에서 그 안이 통째로 비는데
               (데스크톱 내비는 hidden, 탭바는 fixed 라 흐름 밖) 껍데기가 헤더 gap 을
               한 칸 더 먹어서 검색 버튼이 우측 여백 18px 이 아니라 30px 에 섰다. */}
           <Nav />
@@ -85,30 +79,25 @@ export default async function PublicLayout({ children }: { children: React.React
             </Link>
 
             {/* flex-wrap 필수 — 없으면 EN 라벨 4개가 375px 화면 밖으로 나간다 */}
-            <div className="flex flex-wrap items-center gap-x-5 gap-y-2.5">
-              <nav
-                aria-label={m.notice.linksAria}
-                className="index flex flex-wrap gap-x-5 gap-y-2.5"
-              >
-                {[
-                  { href: "/about", label: m.common.about },
-                  { href: "/policy", label: m.common.policy },
-                  { href: "/privacy", label: m.common.privacy },
-                  { href: "/takedown", label: m.common.takedown },
-                ].map((it) => (
-                  <Link
-                    key={it.href}
-                    href={localePath(it.href, locale)}
-                    className="nav-link"
-                  >
-                    {it.label}
-                  </Link>
-                ))}
-              </nav>
-              <Suspense fallback={null}>
-                <LanguageSwitch />
-              </Suspense>
-            </div>
+            <nav
+              aria-label={m.notice.linksAria}
+              className="index flex flex-wrap gap-x-5 gap-y-2.5"
+            >
+              {[
+                { href: "/about", label: m.common.about },
+                { href: "/policy", label: m.common.policy },
+                { href: "/privacy", label: m.common.privacy },
+                { href: "/takedown", label: m.common.takedown },
+              ].map((it) => (
+                <Link
+                  key={it.href}
+                  href={localePath(it.href, locale)}
+                  className="nav-link"
+                >
+                  {it.label}
+                </Link>
+              ))}
+            </nav>
           </div>
 
           <h2 id="notice-h" className="index mt-(--block)" style={{ color: "var(--dim)" }}>

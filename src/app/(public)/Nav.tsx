@@ -17,7 +17,6 @@ import { House, MapTrifold } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
-import { LanguageSwitch } from "./LanguageSwitch";
 
 const ITEMS = [
   { path: "/", icon: House, labelKey: "home" },
@@ -95,9 +94,6 @@ export function DesktopRail() {
           </Link>
         );
       })}
-      <div className="mt-auto flex justify-center px-0.5">
-        <LanguageSwitch />
-      </div>
     </nav>
   );
 }

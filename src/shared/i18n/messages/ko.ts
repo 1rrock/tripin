@@ -188,9 +188,6 @@ export const ko = {
     watchVideo: "영상 보기",
     watchAt: "영상 {ts}",
     home: "홈",
-    language: "Language",
-    ko: "한국어",
-    en: "English",
     about: "소개",
     policy: "콘텐츠 정책",
     takedown: "삭제 요청",
@@ -468,9 +465,6 @@ export type Messages = {
     watchVideo: string;
     watchAt: string;
     home: string;
-    language: string;
-    ko: string;
-    en: string;
     about: string;
     policy: string;
     takedown: string;
