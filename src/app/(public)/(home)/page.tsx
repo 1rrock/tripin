@@ -5,7 +5,7 @@ import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, linkList } from "@/shared/seo/json-ld";
-import { HomeSheet } from "./HomeSheet";
+import { HomeSheet } from "../HomeSheet";
 
 /**
  * 홈 = 랜딩. 검색·종류·도시는 `/map` 으로 가서 필터를 고른다.

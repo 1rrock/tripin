@@ -3,8 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadCreatorVideos } from "@/shared/api/videos";
 import { loadCreatorMap } from "@/shared/api/creator-hub";
-import { VideoList } from "./VideoList";
-import { CreatorExplorer, type CreatorPlace } from "./CreatorExplorer";
+import { VideoList } from "../VideoList";
+import { CreatorExplorer, type CreatorPlace } from "../CreatorExplorer";
 import type { PlaceType } from "@/shared/api/database.types";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { Avatar } from "@/shared/ui/frame"

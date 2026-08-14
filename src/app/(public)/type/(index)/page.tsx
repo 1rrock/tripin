@@ -4,10 +4,10 @@ import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
-import { TypeIndex } from "./TypeIndex";
+import { TypeIndex } from "../TypeIndex";
 import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
 import { loadHomeFeed } from "@/shared/api/home";
-import { ExplorerCanvas } from "../HomeCanvas";
+import { ExplorerCanvas } from "../../HomeCanvas";
 
 /**
  * 종류 인덱스 — 홈 그리드와 같은 타일 + 결과 행.
