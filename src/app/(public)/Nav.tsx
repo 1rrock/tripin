@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { House, MapTrifold } from "@phosphor-icons/react";
+import { Heart, House, MapTrifold } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
@@ -21,6 +21,7 @@ import { Mark } from "@/shared/ui/Mark";
 const ITEMS = [
   { path: "/", icon: House, labelKey: "home" },
   { path: "/map", icon: MapTrifold, labelKey: "map" },
+  { path: "/saved", icon: Heart, labelKey: "saved" },
 ] as const;
 
 function isActive(pathname: string, href: string) {
@@ -34,7 +35,12 @@ function useNavItems() {
   return ITEMS.map((it) => ({
     path: it.path,
     href: href(it.path),
-    label: it.labelKey === "home" ? m.common.home : m.nav[it.labelKey],
+    label:
+      it.labelKey === "home"
+        ? m.common.home
+        : it.labelKey === "saved"
+          ? m.saved.nav
+          : m.nav[it.labelKey],
     Icon: it.icon,
   }));
 }
@@ -108,10 +114,15 @@ export function TabDock() {
     <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-50 lg:hidden">
       <div className="relative mx-auto flex h-14 max-w-2xl items-stretch">
         {activeIndex >= 0 ? (
+          /* 폭을 items.length 에서 뽑는다 — w-1/2 로 박아두면 탭이 늘 때
+             알약이 엉뚱한 칸에 선다(실제로 저장 탭을 넣으며 겪음). */
           <div
             aria-hidden
-            className="absolute inset-y-0 left-0 w-1/2 transition-transform duration-[400ms] ease-[cubic-bezier(0.3,1.28,0.45,1)] motion-reduce:transition-none"
-            style={{ transform: `translateX(${activeIndex * 100}%)` }}
+            className="absolute inset-y-0 left-0 transition-transform duration-[400ms] ease-[cubic-bezier(0.3,1.28,0.45,1)] motion-reduce:transition-none"
+            style={{
+              width: `${100 / items.length}%`,
+              transform: `translateX(${activeIndex * 100}%)`,
+            }}
           >
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
               <div

@@ -194,6 +194,34 @@ export const ko = {
     privacy: "개인정보처리방침",
     loading: "불러오는 중",
   },
+  saved: {
+    /* 하트·체크·구독. 로그인 문구는 저장 목록 화면에서만 쓴다 —
+       홈·지도·상세에는 로그인 권유가 뜨지 않는다. */
+    nav: "저장",
+    title: "저장한 곳",
+    addAria: "{name} 저장하기",
+    removeAria: "{name} 저장 해제",
+    markVisited: "가봤어요",
+    visited: "가봤음",
+    visitAria: "{name} 가본 곳으로 표시",
+    unvisitAria: "{name} 가본 곳 표시 해제",
+    subscribe: "구독",
+    subscribed: "구독중",
+    subscribeAria: "{name} 채널 구독",
+    unsubscribeAria: "{name} 채널 구독 해제",
+    empty: "아직 저장한 곳이 없어요.",
+    emptyHint: "지도나 채널에서 하트를 누르면 여기 모입니다.",
+    emptyCta: "지도 열기",
+    countLabel: "{n}곳",
+    visitedCount: "{n}곳 가봤음",
+    /* 기기 넘김 안내 — 가치를 이미 받은 사람에게만 보인다 */
+    localOnly: "이 기기에서만 볼 수 있어요",
+    localOnlyHint: "연결하면 다른 기기에서도 이어서 볼 수 있어요.",
+    connect: "구글로 연결하기",
+    connecting: "연결하는 중",
+    connectFailed: "연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    connected: "구글 계정에 연결됨",
+  },
   hub: {
     channelNav: "채널",
     stats: "{places}곳 · 도시 {cities} · 검수한 영상 {videos}",
@@ -470,6 +498,31 @@ export type Messages = {
     takedown: string;
     privacy: string;
     loading: string;
+  };
+  saved: {
+    nav: string;
+    title: string;
+    addAria: string;
+    removeAria: string;
+    markVisited: string;
+    visited: string;
+    visitAria: string;
+    unvisitAria: string;
+    subscribe: string;
+    subscribed: string;
+    subscribeAria: string;
+    unsubscribeAria: string;
+    empty: string;
+    emptyHint: string;
+    emptyCta: string;
+    countLabel: string;
+    visitedCount: string;
+    localOnly: string;
+    localOnlyHint: string;
+    connect: string;
+    connecting: string;
+    connectFailed: string;
+    connected: string;
   };
   hub: {
     channelNav: string;

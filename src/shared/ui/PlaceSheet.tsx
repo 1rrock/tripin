@@ -23,6 +23,7 @@ import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
+import { SaveButton } from "@/shared/ui/SaveButton";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
@@ -39,6 +40,8 @@ export interface SheetSource {
 }
 
 export interface SheetPlace {
+  /** places.id — 하트(저장)가 이 값으로 저장한다 */
+  id: string;
   name: string;
   nameLocal: string | null;
   typeLabel: string;
@@ -173,6 +176,9 @@ export function PlaceSheet({
             </p>
           ) : null}
         </div>
+
+        {/* 하트는 닫기 왼쪽 — 닫기가 오른쪽 끝이라는 위치를 흔들지 않는다 */}
+        <SaveButton placeId={place.id} placeName={place.name} className="size-8" />
 
         <button
           ref={closeBtnRef}

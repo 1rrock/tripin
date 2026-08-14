@@ -4,6 +4,7 @@ import { getLocale, localePath } from "@/shared/i18n/locale";
 import { LocaleProvider } from "@/shared/i18n/LocaleContext";
 import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
+import { SavedProvider } from "@/shared/ui/SavedContext";
 import { DesktopRail, Nav, TabDock } from "./Nav";
 import { SearchBar } from "./SearchBar";
 
@@ -20,6 +21,9 @@ export default async function PublicLayout({ children }: { children: React.React
 
   return (
     <LocaleProvider locale={locale} messages={m}>
+      {/* 저장 상태는 화면 전체가 공유한다. 세션 쿠키가 없으면 이 프로바이더는
+          네트워크를 타지 않는다 — 비로그인 방문자에게 비용이 붙지 않는다. */}
+      <SavedProvider>
       {/* 모바일은 하단 탭바(Nav)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
           않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터 */}
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 lg:max-w-none lg:pl-[88px]">
@@ -133,8 +137,9 @@ export default async function PublicLayout({ children }: { children: React.React
             </p>
           </div>
         </footer>
-      </div>
-      <TabDock />
+        </div>
+        <TabDock />
+      </SavedProvider>
     </LocaleProvider>
   );
 }

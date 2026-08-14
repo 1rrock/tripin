@@ -9,6 +9,7 @@ import type { PlaceType } from "@/shared/api/database.types";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { Avatar } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
+import { SubscribeButton } from "@/shared/ui/SaveButton";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName, displaySummary } from "@/shared/i18n/display";
@@ -161,10 +162,13 @@ export default async function CreatorHubPage({
                 videos: videos.length,
               })}
             </p>
-            <div className="mt-2">
+            {/* 구독은 이 서비스 안의 구독이다. 유튜브로 나가는 링크를 밀어내지 않는다 —
+                "나가는 길이 본업"(PRODUCT.md 원칙 4) 이라 둘을 나란히 둔다. */}
+            <div className="mt-2 flex flex-wrap items-center gap-2">
               <Act icon="out" href={channelUrl}>
                 {m.hub.channelLink}
               </Act>
+              <SubscribeButton creatorId={creator.id} creatorName={creator.display_name} />
             </div>
           </div>
         </div>

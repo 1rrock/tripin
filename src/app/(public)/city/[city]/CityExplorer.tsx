@@ -188,6 +188,7 @@ export function CityExplorer({
           <PlaceSheet
             index={activeIndex + 1}
             place={{
+              id: activePlace.id,
               name: displayPlaceName(activePlace, locale),
               nameLocal: activePlace.nameLocal,
               typeLabel: m.placeTypes[activePlace.placeType],

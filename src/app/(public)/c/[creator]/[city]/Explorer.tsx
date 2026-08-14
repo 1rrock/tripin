@@ -232,6 +232,7 @@ export function Explorer({
   const sheetSource = sheetIndex >= 0 ? confirmed[sheetIndex]! : null;
   const sheetPlace: SheetPlace | null = sheetSource
     ? {
+        id: sheetSource.id,
         name: displayPlaceName(sheetSource, locale),
         nameLocal: sheetSource.nameLocal,
         typeLabel: m.placeTypes[sheetSource.placeType],

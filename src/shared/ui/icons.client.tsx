@@ -18,10 +18,12 @@ import {
   ArrowSquareOut,
   Bed,
   CaretRight,
+  Check,
   Clock,
   Coffee,
   ForkKnife,
   Globe,
+  Heart,
   House,
   List,
   MagnifyingGlass,
@@ -68,6 +70,8 @@ export const IconGlobe = ph(Globe);
 export const IconMeal = ph(ForkKnife);
 export const IconCup = ph(Coffee);
 export const IconBed = ph(Bed);
+export const IconHeart = ph(Heart);
+export const IconCheck = ph(Check);
 
 /** Act 가 icon 이름으로 글리프를 고를 때만 쓰는 안쪽 표. 밖으로 내보내지 않는다. */
 const GLYPH = {
@@ -88,6 +92,8 @@ const GLYPH = {
   meal: IconMeal,
   cup: IconCup,
   bed: IconBed,
+  heart: IconHeart,
+  check: IconCheck,
 } as const;
 
 export type IconName = keyof typeof GLYPH;
