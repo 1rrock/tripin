@@ -230,6 +230,7 @@ export const ko = {
     listCreate: "만들기",
     listCancel: "취소",
     listRename: "이름 바꾸기",
+    listMenuAria: "{name} 그룹 메뉴",
     listDelete: "그룹 삭제",
     listDeleteConfirm: "‘{name}’ 그룹을 지울까요? 담긴 장소는 저장 목록에 그대로 남아요.",
     listDuplicate: "같은 이름의 그룹이 이미 있어요.",
@@ -550,6 +551,7 @@ export type Messages = {
     listCreate: string;
     listCancel: string;
     listRename: string;
+    listMenuAria: string;
     listDelete: string;
     listDeleteConfirm: string;
     listDuplicate: string;

@@ -6,7 +6,7 @@ import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Icon } from "@/shared/ui/icons";
 import { PlaceRows } from "../PlaceRows";
-import { ListActions } from "./ListActions";
+import { ListRowMenu } from "../ListRowMenu";
 
 /**
  * 그룹 상세 — 시안 C.
@@ -96,8 +96,12 @@ export default async function SavedListPage({ params }: { params: Promise<{ list
           >
             {title}
           </h1>
-          {/* 이름 바꾸기·삭제는 진짜 그룹에만. 좋아요·그룹 없음은 지울 수 있는 것이 아니다 */}
-          {kind === "list" && list ? <ListActions listId={list.id} name={list.name} /> : null}
+          {/* 이름 바꾸기·삭제는 진짜 그룹에만. 좋아요·그룹 없음은 지울 수 있는 것이 아니다.
+              목록의 행 메뉴와 같은 컴포넌트를 쓴다 — 같은 일을 두 벌로 만들면
+              한쪽만 고치는 일이 반드시 생긴다. */}
+          {kind === "list" && list ? (
+            <ListRowMenu listId={list.id} name={list.name} isCurrent />
+          ) : null}
         </div>
 
         {/* 지도로 넘기는 다리. 지도는 /map 하나뿐이라 여기서 지도를 그리지 않고

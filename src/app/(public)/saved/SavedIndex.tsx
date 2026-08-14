@@ -15,6 +15,7 @@ import type { SavedListRow } from "@/shared/api/saved-server";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { NewListButton } from "./NewListButton";
+import { ListRowMenu } from "./ListRowMenu";
 
 export function SavedIndex({
   lists,
@@ -33,17 +34,20 @@ export function SavedIndex({
     : lists;
   const liked = ready ? savedCount : likedCount;
 
-  const card = (path: string, label: ReactNode, n: number, liked = false) => (
-    <Link
+  const card = (path: string, label: ReactNode, n: number, liked = false, menu?: ReactNode) => (
+    <div
       key={path}
-      href={href(path)}
-      className="flex items-center justify-between gap-3 px-3.5 py-3.5 transition-colors active:bg-(--hover)"
+      className="flex items-center gap-1 pr-2"
       style={{
         borderRadius: "var(--r-frame)",
         boxShadow: liked ? "none" : "inset 0 0 0 1px var(--hairline)",
         background: liked ? "var(--halo)" : "transparent",
         color: liked ? "var(--halo-ink)" : "var(--paper)",
       }}
+    >
+    <Link
+      href={href(path)}
+      className="flex min-w-0 flex-1 items-center justify-between gap-3 py-3.5 pl-3.5 transition-colors active:opacity-70"
     >
       <span
         className="flex min-w-0 items-center gap-2 truncate"
@@ -58,6 +62,8 @@ export function SavedIndex({
         {t(m.saved.listCount, { n })}
       </span>
     </Link>
+      {menu}
+    </div>
   );
 
   return (
@@ -87,7 +93,15 @@ export function SavedIndex({
           </p>
         </div>
       ) : (
-        rows.map((l) => card(`/saved/${l.id}`, l.name, l.count))
+        rows.map((l) =>
+          card(
+            `/saved/${l.id}`,
+            l.name,
+            l.count,
+            false,
+            <ListRowMenu listId={l.id} name={l.name} />,
+          ),
+        )
       )}
 
       {ungroupedCount > 0

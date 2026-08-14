@@ -218,6 +218,7 @@ export const en: Messages = {
     listCreate: "Create",
     listCancel: "Cancel",
     listRename: "Rename",
+    listMenuAria: "{name} group menu",
     listDelete: "Delete group",
     listDeleteConfirm: "Delete “{name}”? The places stay in your saved list.",
     listDuplicate: "A group with that name already exists.",

@@ -20,6 +20,7 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { NewListButton } from "./NewListButton";
+import { ListRowMenu } from "./ListRowMenu";
 
 export function SavedSidebar({
   lists,
@@ -41,25 +42,34 @@ export function SavedSidebar({
     : lists;
   const liked = ready ? savedCount : likedCount;
 
-  const item = (path: string, label: ReactNode, n: number, on: boolean) => (
-    <Link
+  const item = (path: string, label: ReactNode, n: number, on: boolean, menu?: ReactNode) => (
+    /* 링크 안에 메뉴 버튼을 넣지 않는다 — 중첩 인터랙티브는 스크린리더에서
+       무엇을 누르는지 알 수 없고, 클릭이 링크로 새기도 한다. 형제로 둔다. */
+    <div
       key={path}
-      href={href(path)}
-      aria-current={on ? "page" : undefined}
-      className="flex items-center justify-between gap-2 px-2.5 py-2 transition-colors"
+      className="flex items-center gap-1 pr-1 transition-colors"
       style={{
         borderRadius: "var(--r-control)",
-        fontSize: "var(--t-meta)",
-        fontWeight: on ? 800 : 600,
         background: on ? "var(--hover)" : "transparent",
-        color: on ? "var(--paper)" : "var(--dim)",
       }}
     >
-      <span className="flex min-w-0 items-center gap-1.5 truncate">{label}</span>
-      <span className="tnum shrink-0" style={{ opacity: 0.7 }}>
-        {n}
-      </span>
-    </Link>
+      <Link
+        href={href(path)}
+        aria-current={on ? "page" : undefined}
+        className="flex min-w-0 flex-1 items-center justify-between gap-2 py-2 pl-2.5"
+        style={{
+          fontSize: "var(--t-meta)",
+          fontWeight: on ? 800 : 600,
+          color: on ? "var(--paper)" : "var(--dim)",
+        }}
+      >
+        <span className="flex min-w-0 items-center gap-1.5 truncate">{label}</span>
+        <span className="tnum shrink-0" style={{ opacity: 0.7 }}>
+          {n}
+        </span>
+      </Link>
+      {menu}
+    </div>
   );
 
   return (
@@ -84,7 +94,13 @@ export function SavedSidebar({
       ) : null}
 
       {rows.map((l) =>
-        item(`/saved/${l.id}`, l.name, l.count, pathname === `/saved/${l.id}`),
+        item(
+          `/saved/${l.id}`,
+          l.name,
+          l.count,
+          pathname === `/saved/${l.id}`,
+          <ListRowMenu listId={l.id} name={l.name} isCurrent={pathname === `/saved/${l.id}`} />,
+        ),
       )}
 
       {ungroupedCount > 0
