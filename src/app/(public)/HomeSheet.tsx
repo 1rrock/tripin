@@ -1,34 +1,25 @@
 "use client";
 
 /**
- * 홈 허브 — 눌러서 좁혀가는 화면.
+ * 홈 랜딩 — 검색이 첫 화면, 아래로 도시·영상·채널·조각.
  *
- * 검색 → 종류 그리드 → 도시 레일 → 미니 피드.
- * 히든스팟 홈과 같은 문법: 그리드가 주인공, 레일은 가로, 피드는 행 카드.
- *
- * 세로 리듬은 두 단이다 — 덩어리 **안**은 16px 이하, 덩어리 **사이**는 28px 이상.
- * 🔴 섹션 경계를 요소 간격과 같은 값으로 두지 말 것. 20px 굵은 섹션 제목이
- *    격자에 끼어 위계가 사라진다.
+ * 히어로는 Airbnb 알약 + Trip 종류 탭. 컷 위에 글자를 얹지 않는다.
+ * 검색 알약은 바로 지도로 보내지 않는다 — 통합 검색을 연다.
  */
 
-import { useMemo, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { MagnifyingGlass } from "@phosphor-icons/react";
+import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
 import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
-import type { CityRow, HomeMapPlace } from "@/shared/api/cities";
+import type { CityRow } from "@/shared/api/cities";
 import { useLocale } from "@/shared/i18n/LocaleContext";
-import { displayCityName } from "@/shared/i18n/display";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
-import { DestinationRail } from "@/shared/ui/DestinationRail";
-import { TabBar } from "@/shared/ui/TabBar";
-import { ResultRow } from "@/shared/ui/ResultRow";
-import { EmptyState } from "@/shared/ui/EmptyState";
-import { HomeCanvas } from "./HomeCanvas";
+import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
+import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
+import { ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
 
-const MINI = 5;
 const RAIL = 8;
-
-type Tab = "recommend" | "recent";
+const GRID = 12;
 
 function openSearch() {
   window.dispatchEvent(new Event("tripin:open-search"));
@@ -39,115 +30,166 @@ export function HomeSheet({
   cities,
   videos,
   creators,
-  places,
 }: {
   pieces: FeedPiece[];
   cities: CityRow[];
   videos: FeedVideo[];
   creators: FeedCreator[];
-  places: HomeMapPlace[];
 }) {
-  const { messages: m, href, t, locale } = useLocale();
-  const [tab, setTab] = useState<Tab>("recommend");
+  const { messages: m, href } = useLocale();
   const rail = cities.slice(0, RAIL);
-
-  const recommend = useMemo(() => pieces.slice(0, MINI), [pieces]);
-  const recent = useMemo(() => videos.slice(0, MINI), [videos]);
+  const grid = cities.slice(0, GRID);
 
   return (
-    <>
-    <HomeCanvas places={places} cities={cities} creators={creators} />
-    <div className="mx-auto w-full max-w-lg lg:hidden">
-      <h1 className="sr-only">{m.home.srHeading}</h1>
+    <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
+      <section className="px-(--gutter) pt-4 pb-4 lg:pt-8 lg:pb-6">
+        <h1 className="sr-only">
+          {m.home.title} {m.home.titleLine2}
+        </h1>
 
-      <div className="px-(--gutter) pt-4 pb-5">
+        <HeroSearch />
+
+        <nav
+          className="mt-6 hidden justify-center gap-1 lg:flex"
+          aria-label={m.home.filterAria}
+        >
+          {HOME_TYPES.map((type) => {
+            const Glyph = typeIcon(type);
+            return (
+              <Link
+                key={type}
+                href={href(`/map?type=${type}`)}
+                className="flex min-w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-3 py-2 text-(--paper) transition-colors hover:bg-(--hover)"
+              >
+                <Glyph size={22} weight="duotone" />
+                <span className="text-[12px] font-medium">{m.placeTypes[type]}</span>
+              </Link>
+            );
+          })}
+        </nav>
+      </section>
+
+      <div className="lg:hidden">
+        <CategoryGrid />
+        <hr className="rule mx-(--gutter)" />
+        <DestinationRail cities={rail} />
+      </div>
+
+      <div className="hidden lg:block">
+        <DestinationGrid cities={grid} />
+      </div>
+
+      <VideoFeed videos={videos} />
+      <ChannelFeed creators={creators} />
+      <PieceFeed pieces={pieces} />
+    </div>
+  );
+}
+
+/**
+ * 데스크톱: Airbnb 식 두 칸 + 산호 검색 알약.
+ * 모바일: 한 칸 — 종류는 아래 그리드가 맡는다.
+ * 검색 칸·버튼은 통합 검색을 연다. 종류만 지도 필터로 직행한다.
+ */
+function HeroSearch() {
+  const { messages: m, href } = useLocale();
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setOpen(false);
+    };
+    window.addEventListener("mousedown", onDown);
+    window.addEventListener("keydown", onKey);
+    return () => {
+      window.removeEventListener("mousedown", onDown);
+      window.removeEventListener("keydown", onKey);
+    };
+  }, [open]);
+
+  return (
+    <div className="mx-auto max-w-3xl">
+      <button
+        type="button"
+        onClick={openSearch}
+        aria-label={m.home.searchAria}
+        className="relative flex h-12 w-full items-center rounded-full bg-(--hover) pr-3 pl-11 text-left active:bg-[#ededed] lg:hidden"
+      >
+        <MagnifyingGlass
+          aria-hidden
+          className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-(--dim)"
+        />
+        <span className="truncate text-base text-(--dim)">{m.home.goWhere}</span>
+      </button>
+
+      <div
+        ref={box}
+        className="relative hidden items-center rounded-full bg-white lg:flex"
+        style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.10), 0 0 0 1px var(--hairline)" }}
+      >
         <button
           type="button"
           onClick={openSearch}
-          className="relative flex h-10 w-full cursor-pointer items-center rounded-xl bg-(--hover) pr-3 pl-9 text-left active:bg-[#ededed]"
+          className="flex min-w-0 flex-1 flex-col justify-center rounded-l-full py-3.5 pr-4 pl-6 text-left transition-colors hover:bg-(--hover)"
         >
-          <MagnifyingGlass
-            aria-hidden
-            className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--dim)"
-          />
-          <span className="text-base text-(--dim)">{m.home.goWhere}</span>
+          <span className="text-[12px] font-bold">{m.home.goWhere}</span>
+          <span className="mt-0.5 truncate text-[14px] text-(--dim)">{m.home.goWhereHint}</span>
+        </button>
+        <span aria-hidden className="h-8 w-px shrink-0 bg-(--hairline)" />
+        <div className="relative min-w-0 flex-1">
+          <button
+            type="button"
+            aria-expanded={open}
+            aria-haspopup="listbox"
+            onClick={() => setOpen((v) => !v)}
+            className="flex w-full items-center py-3.5 pr-3 pl-5 text-left transition-colors hover:bg-(--hover)"
+          >
+            <span className="min-w-0 flex-1">
+              <span className="block text-[12px] font-bold">{m.home.whatToSee}</span>
+              <span className="mt-0.5 block truncate text-[14px] text-(--dim)">
+                {m.home.whatToSeeHint}
+              </span>
+            </span>
+            <CaretDown className={`size-3.5 shrink-0 text-(--dim) ${open ? "rotate-180" : ""}`} />
+          </button>
+          {open ? (
+            <ul
+              role="listbox"
+              className="absolute top-[calc(100%+10px)] right-0 left-0 z-20 overflow-hidden rounded-2xl bg-white py-1"
+              style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 0 0 1px var(--hairline)" }}
+            >
+              {HOME_TYPES.map((type) => {
+                const Glyph = typeIcon(type);
+                return (
+                  <li key={type}>
+                    <Link
+                      href={href(`/map?type=${type}`)}
+                      role="option"
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-[14px] font-medium hover:bg-(--hover)"
+                    >
+                      <Glyph size={18} weight="duotone" />
+                      {m.placeTypes[type]}
+                    </Link>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
+        </div>
+        <button
+          type="button"
+          onClick={openSearch}
+          aria-label={m.home.searchGo}
+          className="m-2 grid size-12 shrink-0 place-items-center rounded-full bg-(--wax) text-white transition-opacity hover:opacity-90"
+        >
+          <MagnifyingGlass className="size-5" weight="bold" />
         </button>
       </div>
-
-      <CategoryGrid />
-
-      <hr className="rule mx-(--gutter)" />
-
-      <DestinationRail cities={rail} />
-
-      <section className="mt-7">
-        <TabBar
-          ariaLabel={m.home.feedTabsAria}
-          activeId={tab}
-          onSelect={(id) => setTab(id as Tab)}
-          items={[
-            { id: "recommend", label: m.home.tabRecommend },
-            { id: "recent", label: m.home.tabRecent },
-          ]}
-        />
-
-        {tab === "recommend" ? (
-          recommend.length === 0 ? (
-            <EmptyState message={m.home.empty} />
-          ) : (
-            <ul>
-              {recommend.map((p, i) => (
-                <li key={`${p.creatorSlug}:${p.city.slug}`} className="border-b border-(--hairline)">
-                  <ResultRow
-                    href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
-                    youtubeId={p.cut?.youtubeId ?? null}
-                    thumbAlt={p.cut?.title ?? p.creatorName}
-                    title={displayCityName(p.city, locale)}
-                    meta={`${p.creatorName} · ${t(m.home.placesUnit, { n: p.placeCount })}`}
-                    eager={i === 0}
-                  />
-                </li>
-              ))}
-            </ul>
-          )
-        ) : recent.length === 0 ? (
-          <EmptyState message={m.home.empty} />
-        ) : (
-          <ul>
-            {recent.map((v, i) => {
-              const place = v.placeNames[0];
-              const city = v.cities[0];
-              const type = v.placeTypes[0];
-              return (
-                <li key={v.youtubeId} className="border-b border-(--hairline)">
-                  <ResultRow
-                    href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)}
-                    youtubeId={v.youtubeId}
-                    thumbAlt={v.title}
-                    eyebrow={type ? m.placeTypes[type] : undefined}
-                    eyebrowType={type}
-                    title={place ?? v.title}
-                    meta={[v.creatorName, city ? displayCityName(city, locale) : null]
-                      .filter(Boolean)
-                      .join(" · ")}
-                    eager={i === 0}
-                  />
-                </li>
-              );
-            })}
-          </ul>
-        )}
-
-        <div className="px-(--gutter) pt-4 pb-2">
-          <Link
-            href={href(tab === "recommend" ? "/city" : "/channels")}
-            className="flex h-10 items-center justify-center rounded-full bg-(--hover) text-[13px] font-semibold active:scale-95"
-          >
-            {m.home.moreFeed}
-          </Link>
-        </div>
-      </section>
     </div>
-    </>
   );
 }

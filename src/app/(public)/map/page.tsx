@@ -1,13 +1,56 @@
-import { permanentRedirect } from "next/navigation";
-import { getLocale, localePath } from "@/shared/i18n/locale";
+import type { Metadata } from "next";
+import { loadHomeFeed } from "@/shared/api/home";
+import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
+import { getDictionary } from "@/shared/i18n/get-dictionary";
+import { getLocale } from "@/shared/i18n/locale";
+import { publicMeta } from "@/shared/seo/page-meta";
+import { HomeCanvas } from "../HomeCanvas";
 
 /**
- * 예전 전역 지도 진입점.
- *
- * 지역·채널·조각 화면에 이미 지도가 있어 메뉴에서 빼고,
- * 세 번째 축을 종류(`/type`)로 바꿨다. 북마크·외부 링크는 종류 목록으로 넘긴다.
+ * 전역 지도 — 홈에서 고른 종류·도시·검색이 여기 필터로 열린다.
+ * 데스크톱은 맵 위 플로팅 시트, 모바일은 지도 + 목록.
  */
-export default async function MapRedirectPage() {
+
+export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  permanentRedirect(localePath("/type", locale));
+  const m = getDictionary(locale);
+  return publicMeta({
+    locale,
+    title: m.meta.mapTitle,
+    description: m.meta.mapDescription,
+    bare: "/map",
+  });
+}
+
+export default async function MapPage() {
+  const locale = await getLocale();
+  const m = getDictionary(locale);
+  const [{ creators }, cities, places] = await Promise.all([
+    loadHomeFeed(),
+    loadCityIndex(),
+    loadHomeMap(locale),
+  ]);
+
+  if (places.length === 0) {
+    return (
+      <main className="px-(--gutter) pt-4">
+        <h1
+          className="font-black"
+          style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
+        >
+          {m.home.comingTitle}
+        </h1>
+        <p className="mt-4 max-w-[46ch]" style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
+          {m.home.comingBody}
+        </p>
+      </main>
+    );
+  }
+
+  return (
+    <main>
+      <h1 className="sr-only">{m.home.srHeading}</h1>
+      <HomeCanvas places={places} cities={cities} creators={creators} />
+    </main>
+  );
 }

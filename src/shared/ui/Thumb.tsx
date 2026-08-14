@@ -13,7 +13,7 @@
  *    비율이 다른 프레임에 넣으면 그 순간 '변형'이 되므로 프레임 비율을 바꾸지 말 것.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { thumbHq, thumbMax } from "@/shared/lib/youtube";
 
 function markReady(el: HTMLImageElement | null, done: () => void) {
@@ -33,6 +33,11 @@ export function Thumb({
 }) {
   const [src, setSrc] = useState(() => thumbMax(youtubeId));
   const [ready, setReady] = useState(false);
+
+  useEffect(() => {
+    setSrc(thumbMax(youtubeId));
+    setReady(false);
+  }, [youtubeId]);
 
   return (
     <>

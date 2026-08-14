@@ -436,6 +436,10 @@ body {
   }
 }
 
+html:has(.canvas-root) footer {
+  display: none;
+}
+
 .canvas-page {
   display: flex;
   flex-direction: column;
@@ -443,6 +447,11 @@ body {
 .canvas-map {
   position: relative;
   height: 42dvh;
+}
+@media (max-width: 1023px) {
+  .canvas-root .canvas-map {
+    height: 46dvh;
+  }
 }
 .canvas-panel {
   min-width: 0;

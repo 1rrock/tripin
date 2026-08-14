@@ -1,7 +1,7 @@
 /**
  * 페이지별 뼈대 — 실화면과 같은 섹션·리듬.
  *
- * 홈: 제목 행 → 도시 타일 6 → 선 → 조각 카드 2
+ * 홈: 제목 → 검색 → 도시 타일 → 피드 행
  * 지역: 제목 행 → 타일 6 → 다른 도시 행
  * 채널: 제목 → 롤 3 (얼굴 + 컷 4)
  *
@@ -38,31 +38,33 @@ function TitleRow({ right = true }: { right?: boolean }) {
 export function HomeSkeleton({ label }: { label: string }) {
   return (
     <div
-      className="px-(--gutter) pt-(--stack)"
+      className="px-(--gutter) pt-5"
       role="status"
       aria-busy="true"
       aria-label={label}
     >
       <span className="sr-only">{label}</span>
-      <TitleRow />
-      <TileBones n={6} />
+      <span className="mx-auto block h-7 w-[16rem] rounded-sm bg-(--hover)" />
+      <span className="mx-auto mt-2 block h-7 w-[12rem] rounded-sm bg-(--hover)" />
+      <span className="mx-auto mt-6 block h-14 w-full max-w-xl rounded-full bg-(--hover)" />
+      <div className="mt-7">
+        <TitleRow />
+      </div>
+      <TileBones n={6} className="mt-4" />
       <section
         className="mt-(--block) border-t pt-(--stack)"
         style={{ borderColor: "var(--hairline)" }}
       >
         <span className="bone-line w-[7.5rem]" style={{ height: "1.15rem" }} />
-        <ul className="mt-(--stack) flex flex-col gap-8 md:grid md:grid-cols-2 md:gap-x-4">
-          {Array.from({ length: 2 }, (_, i) => (
-            <li key={i}>
-              <span className="mb-2 flex items-center gap-2.5">
-                <span className="bone-ava" />
-                <span className="min-w-0 flex-1">
-                  <span className="bone-line w-[6.5rem]" />
-                  <span className="bone-line mt-2 w-[4.5rem]" />
-                </span>
-              </span>
-              <span className="frame">
+        <ul className="mt-(--stack) flex flex-col">
+          {Array.from({ length: 3 }, (_, i) => (
+            <li key={i} className="flex gap-3 py-3.5">
+              <span className="frame w-[112px] shrink-0">
                 <span className="bone" />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="bone-line w-[6.5rem]" />
+                <span className="bone-line mt-2 w-[4.5rem]" />
               </span>
             </li>
           ))}

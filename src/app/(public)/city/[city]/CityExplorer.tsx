@@ -394,7 +394,7 @@ export function CityExplorer({
           ) : null}
 
           <Link
-            href={href("/city")}
+            href={href("/map")}
             className="index inline-flex items-center gap-1.5 underline-offset-4 hover:underline"
             style={{ color: "var(--dim)" }}
           >

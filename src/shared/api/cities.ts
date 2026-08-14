@@ -319,6 +319,8 @@ export interface HomeMapPlace {
   summary: SummaryDisplay;
   sources: PlaceSource[];
   searchText: string;
+  youtubeId: string | null;
+  youtubeTitle: string | null;
 }
 
 function placeCoords(p: { lat: number | null; lng: number | null; google_maps_url: string | null }) {
@@ -411,6 +413,8 @@ export async function loadHomeMap(locale: Locale): Promise<HomeMapPlace[]> {
       summary,
       sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
       searchText,
+      youtubeId: sources[0]?.youtubeId ?? null,
+      youtubeTitle: sources[0]?.videoTitle ?? null,
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, "ko"));

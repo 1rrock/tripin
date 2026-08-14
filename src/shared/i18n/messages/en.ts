@@ -8,6 +8,7 @@ export const en: Messages = {
     region: "Places",
     channel: "Channels",
     type: "Categories",
+    map: "Map",
     menu: "Menu",
     tabsAria: "Main sections",
     notice: "Notice",
@@ -27,6 +28,10 @@ export const en: Messages = {
     morePlaces: "+{n} more",
     moreCities: "+{n} more",
     goWhere: "Where to?",
+    goWhereHint: "City, place, or channel",
+    whatToSee: "What to see?",
+    whatToSeeHint: "Food, cafés, stays",
+    searchGo: "Search",
     popular: "Popular now",
     categoryMore: "More",
     tabRecommend: "For you",
@@ -51,6 +56,12 @@ export const en: Messages = {
     regionFilter: "Region",
     regionAll: "All regions",
     regionPick: "Choose a region",
+    filterApply: "Apply",
+    filterReset: "Reset",
+    filterFind: "Search",
+    typeAll: "All types",
+    channelPick: "Choose a channel",
+    typePick: "Choose a type",
     homeRegions: {
       europe: "Europe",
       asia: "Asia",
@@ -265,5 +276,8 @@ export const en: Messages = {
     homeTitle: "Map of places travel YouTubers visited",
     homeDescription:
       "Restaurants and sights from travel YouTubers, grouped by channel and city. Every pin links back to its source video.",
+    mapTitle: "Map",
+    mapDescription:
+      "Pick restaurants, cafés, and sights from travel YouTubers on a map. Narrow by city, type, or channel.",
   },
 };

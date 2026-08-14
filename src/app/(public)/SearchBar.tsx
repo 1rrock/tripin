@@ -92,8 +92,27 @@ export function SearchBar() {
       const bare = stripLocalePrefix(pathname ?? "/");
       const desktop =
         typeof window !== "undefined" && window.matchMedia("(min-width: 1024px)").matches;
+      const onHome = bare === "/";
       const onCanvas =
-        bare === "/" || bare === "/city" || bare === "/channels" || bare === "/type";
+        bare === "/map" || bare === "/type";
+      const mapFilter =
+        doc.kind === "city" || doc.kind === "channel" || doc.kind === "type";
+      if (onHome && mapFilter) {
+        const params = new URLSearchParams();
+        if (doc.kind === "city") {
+          const slug = doc.path.split("/").pop();
+          if (slug) params.set("city", slug);
+        } else if (doc.kind === "channel") {
+          const slug = doc.path.split("/")[2];
+          if (slug) params.set("channel", slug);
+        } else if (doc.kind === "type") {
+          const key = doc.path.split("/").pop();
+          if (key) params.set("type", key);
+        }
+        const qs = params.toString();
+        router.push(qs ? `${href("/map")}?${qs}` : href("/map"));
+        return;
+      }
       if (onCanvas && desktop) {
         const params = new URLSearchParams();
         if (doc.kind === "city") {

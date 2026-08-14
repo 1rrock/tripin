@@ -6,6 +6,7 @@ export const ko = {
     region: "지역",
     channel: "채널",
     type: "카테고리",
+    map: "지도",
     menu: "메뉴",
     /** 모바일 하단 탭바 */
     tabsAria: "주요 화면",
@@ -28,6 +29,10 @@ export const ko = {
     /** 채널 행의 도시 꼬리 — 13개를 다 늘어놓으면 375에서 3개만 보이고 잘린다 */
     moreCities: "외 {n}",
     goWhere: "어디로 가세요?",
+    goWhereHint: "도시·가게·채널",
+    whatToSee: "뭐 볼래요?",
+    whatToSeeHint: "맛집·카페·숙소",
+    searchGo: "검색",
     popular: "지금 많이 찾는 곳",
     categoryMore: "더보기",
     tabRecommend: "추천",
@@ -54,6 +59,12 @@ export const ko = {
     regionFilter: "지역",
     regionAll: "전체 지역",
     regionPick: "지역 고르기",
+    filterApply: "적용하기",
+    filterReset: "초기화",
+    filterFind: "검색",
+    typeAll: "전체 종류",
+    channelPick: "채널 고르기",
+    typePick: "종류 고르기",
     homeRegions: {
       europe: "유럽",
       asia: "아시아",
@@ -273,6 +284,9 @@ export const ko = {
     homeTitle: "여행 유튜버가 간 곳 지도",
     homeDescription:
       "여행 유튜버가 다녀간 맛집·명소를 채널·도시별로 지도에 모았습니다. 모든 장소에 출처 영상 링크가 있습니다.",
+    mapTitle: "지도",
+    mapDescription:
+      "여행 유튜버가 다녀간 맛집·카페·명소를 지도에서 고릅니다. 지역·종류·채널로 좁힐 수 있습니다.",
   },
 };
 
@@ -284,6 +298,7 @@ export type Messages = {
     region: string;
     channel: string;
     type: string;
+    map: string;
     menu: string;
     tabsAria: string;
     notice: string;
@@ -303,6 +318,10 @@ export type Messages = {
     morePlaces: string;
     moreCities: string;
     goWhere: string;
+    goWhereHint: string;
+    whatToSee: string;
+    whatToSeeHint: string;
+    searchGo: string;
     popular: string;
     categoryMore: string;
     tabRecommend: string;
@@ -327,6 +346,12 @@ export type Messages = {
     regionFilter: string;
     regionAll: string;
     regionPick: string;
+    filterApply: string;
+    filterReset: string;
+    filterFind: string;
+    typeAll: string;
+    channelPick: string;
+    typePick: string;
     homeRegions: {
       europe: string;
       asia: string;
@@ -537,5 +562,7 @@ export type Messages = {
   meta: {
     homeTitle: string;
     homeDescription: string;
+    mapTitle: string;
+    mapDescription: string;
   };
 };

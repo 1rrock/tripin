@@ -19,7 +19,8 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Avatar } from "@/shared/ui/frame"
+import { Avatar, Frame } from "@/shared/ui/frame";
+import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
@@ -73,6 +74,7 @@ export function PlaceSheet({
   onClose: () => void;
 }) {
   const { messages: m, t } = useLocale();
+  const hero = place.sources[0] ?? null;
   const containerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -136,7 +138,7 @@ export function PlaceSheet({
       role="dialog"
       aria-modal={isModal ? "true" : undefined}
       aria-label={t(m.map.detailAria, { name: place.name })}
-      className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[62dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-x-auto lg:right-4 lg:bottom-4 lg:w-[min(380px,calc(100vw-520px))] lg:max-h-[46%] lg:pb-4"
+      className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-y-4 lg:right-4 lg:left-auto lg:w-[min(460px,calc(100vw-520px))] lg:max-h-none lg:p-5"
       style={{
         background: "var(--sheet)",
         color: "var(--paper)",
@@ -145,33 +147,18 @@ export function PlaceSheet({
       }}
     >
       <div className="flex items-start gap-3">
-        <span
-          aria-hidden
-          className="index tnum grid size-7 shrink-0 place-items-center"
-          style={{
-            borderRadius: "var(--r-frame)",
-            boxShadow: "inset 0 0 0 1.5px var(--wax)",
-            color: "var(--paper)",
-          }}
-        >
-          {index}
-        </span>
-
         <div className="min-w-0 flex-1">
           <h2
             className="font-black"
             style={{
-              fontSize: "var(--t-title)",
-              letterSpacing: "-0.03em",
-              lineHeight: 1.3,
+              fontSize: "var(--t-screen)",
+              letterSpacing: "-0.035em",
+              lineHeight: 1.2,
             }}
           >
             {place.name}
           </h2>
-          <p
-            className="mt-1"
-            style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-          >
+          <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
             {place.typeLabel}
             {place.nameLocal ? (
               <>
@@ -181,13 +168,7 @@ export function PlaceSheet({
             ) : null}
           </p>
           {place.address ? (
-            <p
-              className="mt-0.5"
-              style={{
-                fontSize: "var(--t-meta)",
-                color: "var(--dim)",
-              }}
-            >
+            <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
               {place.address}
             </p>
           ) : null}
@@ -204,71 +185,78 @@ export function PlaceSheet({
             boxShadow: "inset 0 0 0 1px var(--hairline)",
           }}
         >
-          <Icon.close
-            className="size-4"
-            style={{ color: "var(--paper)" }}
-          />
+          <Icon.close className="size-4" style={{ color: "var(--paper)" }} />
         </button>
       </div>
 
-      <SummaryBlock className="mt-3 pl-10" display={place.summary} dimColor="var(--dim)" />
+      {hero ? (
+        <OutboundA
+          href={youtubeUrl(hero.youtubeId, hero.timestampSec)}
+          title={hero.videoTitle}
+          className="mt-4 block"
+        >
+          <Frame className="block w-full">
+            <Thumb key={hero.youtubeId} youtubeId={hero.youtubeId} alt={hero.videoTitle} eager />
+          </Frame>
+          <span className="mt-2 block text-[13px] font-medium leading-snug">
+            {hero.videoTitle}
+          </span>
+        </OutboundA>
+      ) : null}
 
-      {/* 출처 — 여러 채널이 같은 곳을 갔으면 전부 보여준다. 도시 교차 진입의 값이 여기 있다.
+      <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+
+      {place.mapUrl ? (
+        <OutboundA
+          href={place.mapUrl}
+          className="mt-4 flex h-11 w-full items-center justify-center gap-1.5 font-bold"
+          style={{
+            fontSize: "var(--t-body)",
+            borderRadius: "var(--r-frame)",
+            background: "var(--paper)",
+            color: "var(--sheet)",
+          }}
+        >
+          <Icon.out className="size-4" />
+          {m.map.openInMapApp}
+        </OutboundA>
+      ) : null}
+
+      {/* 출처 — 여러 채널이 같은 곳을 갔으면 전부 보여준다.
           유튜브로 돌아가는 링크를 가리지 않는 것은 정책 요건이다(LEGAL.md 4.5-(3)) */}
-      <div className="mt-4 flex flex-col gap-2 pl-10">
+      <div className="mt-5 flex flex-col gap-3">
         {place.sources.map((s, i) => (
-          <div
+          <OutboundA
             key={`${s.youtubeId}-${i}`}
-            className="flex flex-wrap items-center gap-2"
+            href={youtubeUrl(s.youtubeId, s.timestampSec)}
+            title={s.videoTitle}
+            className="flex gap-3"
           >
-            <Avatar
-              initials={s.initials}
-              accent={s.accentColor}
-              src={s.avatarUrl}
-              size={22}
-            />
-            <span
-              className="min-w-0 flex-1 truncate"
-              style={{ fontSize: "var(--t-meta)", fontWeight: 500 }}
-            >
-              {s.creatorName}
+            <Frame className="w-[120px] shrink-0">
+              <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
+            </Frame>
+            <span className="min-w-0 flex-1">
+              <span className="flex items-center gap-2">
+                <Avatar
+                  initials={s.initials}
+                  accent={s.accentColor}
+                  src={s.avatarUrl}
+                  size={20}
+                />
+                <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
+              </span>
+              <span className="mt-1 block text-[13px] leading-snug font-medium">
+                {s.videoTitle}
+              </span>
+              <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)">
+                <Icon.play className="size-3.5" />
+                {s.timestampSec !== null
+                  ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
+                  : m.common.watchVideo}
+              </span>
             </span>
-            <OutboundA
-              href={youtubeUrl(s.youtubeId, s.timestampSec)}
-              title={s.videoTitle}
-              className="inline-flex shrink-0 items-center gap-1.5 px-2.5 py-1.5"
-              style={{
-                fontSize: "var(--t-meta)",
-                fontWeight: 500,
-                borderRadius: "var(--r-control)",
-                boxShadow: "inset 0 0 0 1px var(--hairline)",
-              }}
-            >
-              <Icon.play className="size-3.5" />
-              {s.timestampSec !== null
-                ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
-                : m.common.watchVideo}
-            </OutboundA>
-          </div>
+          </OutboundA>
         ))}
-
-        {place.mapUrl ? (
-          <div className="mt-1">
-            <OutboundA
-              href={place.mapUrl}
-              className="inline-flex items-center gap-1.5 px-3 py-2 font-bold"
-              style={{
-                fontSize: "var(--t-meta)",
-                borderRadius: "var(--r-frame)",
-                background: "var(--paper)",
-                color: "var(--sheet)",
-              }}
-            >
-              <Icon.out className="size-4" />
-              {m.map.openInMapApp}
-            </OutboundA>
-          </div>
-        ) : null}
       </div>
     </div>
   );

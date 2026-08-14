@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
-import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
+import { loadCityIndex } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
@@ -8,8 +8,8 @@ import { JsonLd, linkList } from "@/shared/seo/json-ld";
 import { HomeSheet } from "./HomeSheet";
 
 /**
- * 홈 = 문장 → 검색 → 도시 시트 → 조각 시트.
- * 채널 목록·최근 영상·유형은 홈에 없다. `/channels` · 조각 안 · `/type`.
+ * 홈 = 랜딩. 검색·종류·도시는 `/map` 으로 가서 필터를 고른다.
+ * 채널 목록·최근 영상은 홈 미니 피드와 `/channels`.
  */
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -26,10 +26,9 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function HomePage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ videos, creators, pieces }, cities, places] = await Promise.all([
+  const [{ videos, creators, pieces }, cities] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
-    loadHomeMap(locale),
   ]);
 
   if (videos.length === 0) {
@@ -59,13 +58,7 @@ export default async function HomePage() {
           })),
         )}
       />
-      <HomeSheet
-        pieces={pieces}
-        cities={cities}
-        videos={videos}
-        creators={creators}
-        places={places}
-      />
+      <HomeSheet pieces={pieces} cities={cities} videos={videos} creators={creators} />
     </main>
   );
 }

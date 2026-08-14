@@ -109,7 +109,7 @@ export default async function CreatorHubPage({
         data={[
           breadcrumbList([
             { name: m.common.home, url: absoluteUrl("/", locale) },
-            { name: m.hub.channelNav, url: absoluteUrl("/channels", locale) },
+            { name: m.nav.map, url: absoluteUrl("/map", locale) },
             {
               name: creator.display_name,
               url: absoluteUrl(`/c/${creatorSlug}`, locale),
@@ -131,10 +131,10 @@ export default async function CreatorHubPage({
           </Link>
           <Icon.chevron className="size-2.5" />
           <Link
-            href={localePath("/channels", locale)}
+            href={localePath("/map", locale)}
             className="underline-offset-4 hover:underline"
           >
-            {m.hub.channelNav}
+            {m.nav.map}
           </Link>
           <Icon.chevron className="size-2.5" />
           <span style={{ color: "var(--paper)" }}>{creator.display_name}</span>

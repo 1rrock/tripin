@@ -2,6 +2,7 @@
 
 /**
  * 카테고리 그리드 — 홈의 주인공. 앱을 열고 10초 안에 "뭐 볼지" 고르는 자리.
+ * 종류 칸은 `/map?type=` 으로 직행한다. 지역·더보기는 필터를 고르러 `/map`.
  *
  * 🔴 아이콘에 색을 주지 말 것. 10칸이 한 번에 깔리므로 각자 색이면 무지개,
  *    전부 산호면 벽이 된다. 면/선만으로 가른다 — theme=채운 원, tool=테두리 원.
@@ -51,25 +52,25 @@ export function CategoryGrid() {
           key={type}
           icon={typeIcon(type)}
           label={m.placeTypes[type]}
-          href={href(`/type/${type}`)}
+          href={href(`/map?type=${type}`)}
         />
       ))}
       <Tile
         icon={TOOL_ICON.region}
         label={m.nav.region}
-        href={href("/city")}
+        href={href("/map")}
         variant="tool"
       />
       <Tile
         icon={TOOL_ICON.channel}
         label={m.nav.channel}
-        href={href("/channels")}
+        href={href("/map")}
         variant="tool"
       />
       <Tile
         icon={TOOL_ICON.more}
         label={m.home.categoryMore}
-        href={href("/type")}
+        href={href("/map")}
         variant="tool"
       />
     </nav>

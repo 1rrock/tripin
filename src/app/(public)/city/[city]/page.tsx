@@ -119,7 +119,7 @@ export default async function CityPage({
         data={[
           breadcrumbList([
             { name: m.cityDetail.home, url: absoluteUrl("/", locale) },
-            { name: m.cityDetail.region, url: absoluteUrl("/city", locale) },
+            { name: m.nav.map, url: absoluteUrl("/map", locale) },
             { name: cityLabel, url: absoluteUrl(`/city/${data.slug}`, locale) },
           ]),
           placeList(
@@ -144,10 +144,10 @@ export default async function CityPage({
           </Link>
           <Icon.chevron className="size-2.5" />
           <Link
-            href={localePath("/city", locale)}
+            href={localePath("/map", locale)}
             className="underline-offset-4 hover:underline"
           >
-            {m.cityDetail.region}
+            {m.nav.map}
           </Link>
           <Icon.chevron className="size-2.5" />
           <span style={{ color: "var(--paper)" }}>{cityLabel}</span>

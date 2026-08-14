@@ -1,12 +1,12 @@
 "use client";
 
 /**
- * 데스크톱 홈 — 맵 캔버스. 클릭·검색은 이 지도를 좁힌다.
- * 종류는 전 지역 장소 목록. 지역은 모달에서 골라 필터에 붙인다.
+ * 전역 지도 캔버스. `/map` 은 전 구간, 지역·종류·채널은 데스크톱만.
+ * 클릭·검색은 이 지도를 좁힌다. 종류·지역·채널은 필터.
  * 핀은 번호가 아니라 점 → 가까이서 상호. 누르면 상세.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
@@ -14,11 +14,11 @@ import type { CityRow, HomeMapPlace } from "@/shared/api/cities";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
-import { Avatar, Chip } from "@/shared/ui/frame";
+import { Frame } from "@/shared/ui/frame";
+import { Thumb } from "@/shared/ui/Thumb";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { EmptyState } from "@/shared/ui/EmptyState";
-import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { choseong, isChoseongQuery } from "@/shared/lib/search";
 import {
@@ -27,6 +27,7 @@ import {
   isHomeRegionId,
   type HomeRegionId,
 } from "@/shared/lib/geo-regions";
+import { CanvasFilters } from "./CanvasFilters";
 
 function matchesQuery(hay: string, q: string) {
   const needle = q.trim().toLowerCase();
@@ -42,7 +43,7 @@ export function HomeCanvas(props: {
   cities: CityRow[];
   creators: FeedCreator[];
 }) {
-  return <ExplorerCanvas lead="home" {...props} />;
+  return <ExplorerCanvas lead="home" surface="page" {...props} />;
 }
 
 export function ExplorerCanvas({
@@ -50,11 +51,14 @@ export function ExplorerCanvas({
   cities,
   creators,
   lead = "home",
+  surface = "overlay",
 }: {
   places: HomeMapPlace[];
   cities: CityRow[];
   creators: FeedCreator[];
   lead?: CanvasLead;
+  /** page = /map 전 구간. overlay = 지역·종류·채널 데스크톱만. */
+  surface?: "page" | "overlay";
 }) {
   const { messages: m, t, locale } = useLocale();
   const router = useRouter();
@@ -70,14 +74,8 @@ export function ExplorerCanvas({
     typeRaw && (FILTERABLE_TYPES as string[]).includes(typeRaw) ? (typeRaw as PlaceType) : null;
   const q = sp.get("q") ?? "";
 
-  const [draft, setDraft] = useState(q);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const [regionOpen, setRegionOpen] = useState(false);
-
-  useEffect(() => {
-    setDraft(q);
-  }, [q]);
 
   const selectedChannel = creators.find((c) => c.slug === channel) ?? null;
   const selectedCity = cities.find((c) => c.slug === city) ?? null;
@@ -143,18 +141,8 @@ export function ExplorerCanvas({
   const activeIndex = activePlace ? filtered.findIndex((p) => p.id === activePlace.id) : -1;
   const hasFilter = Boolean(city || region || channel || type || q.trim());
 
-  const applyDraft = (value: string) => {
-    setDraft(value);
-    replace({ q: value });
-  };
-
   const sourcesFor = (place: HomeMapPlace) =>
     channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
-
-  const browsing =
-    (lead === "region" && !city && !region) ||
-    (lead === "channel" && !channel) ||
-    (lead === "type" && !type);
 
   const title =
     lead === "region" ? m.nav.region : lead === "channel" ? m.nav.channel : lead === "type" ? m.nav.type : m.home.srHeading;
@@ -235,7 +223,7 @@ export function ExplorerCanvas({
   }, [places, cities, channel, type, q]);
 
   return (
-    <div className="canvas-page hidden lg:block">
+    <div className={surface === "page" ? "canvas-page canvas-root" : "canvas-page hidden lg:block"}>
       <div className="canvas-map">
         <MapView
           className="absolute inset-0 h-full w-full"
@@ -271,97 +259,70 @@ export function ExplorerCanvas({
         ) : null}
 
         <div className={`px-4 pb-3 ${lead === "home" ? "pt-4" : "pt-3"}`}>
-          <label className="relative flex h-10 w-full items-center rounded-xl bg-(--hover) pr-3 pl-9">
-            <MagnifyingGlass
-              aria-hidden
-              className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--dim)"
-            />
-            <input
-              value={draft}
-              onChange={(e) => applyDraft(e.target.value)}
-              placeholder={m.home.goWhere}
-              className="w-full bg-transparent text-base outline-none placeholder:text-(--dim)"
-            />
-            {draft ? (
+          <div className="relative flex h-10 w-full items-center">
+            <button
+              type="button"
+              onClick={() => window.dispatchEvent(new Event("tripin:open-search"))}
+              className="relative flex h-10 min-w-0 flex-1 items-center rounded-xl bg-(--hover) pr-3 pl-9 text-left"
+            >
+              <MagnifyingGlass
+                aria-hidden
+                className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-(--dim)"
+              />
+              <span className={`truncate text-base ${q ? "text-(--paper)" : "text-(--dim)"}`}>
+                {q || m.home.goWhere}
+              </span>
+            </button>
+            {q ? (
               <button
                 type="button"
                 aria-label={m.search.close}
-                onClick={() => applyDraft("")}
-                className="grid size-7 place-items-center rounded-full text-(--dim) hover:bg-white"
+                onClick={() => {
+                  setActiveId(null);
+                  setSheetOpen(false);
+                  replace({ q: "" });
+                }}
+                className="absolute top-1/2 right-1.5 grid size-7 -translate-y-1/2 place-items-center rounded-full text-(--dim) hover:bg-white"
               >
                 <X className="size-3.5" />
               </button>
             ) : null}
-          </label>
+          </div>
         </div>
 
-        {lead !== "type" || type ? (
-          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3">
-            {lead !== "region" || city || region ? (
-              <Chip active={Boolean(city || region)} onClick={() => setRegionOpen(true)}>
-                {regionLabel}
-              </Chip>
-            ) : null}
-            {lead !== "type" ? (
-              <>
-                <Chip active={type === null} onClick={() => replace({ type: null })}>
-                  {m.cityDetail.allTypes}
-                </Chip>
-                {HOME_TYPES.map((key) => (
-                  <Chip
-                    key={key}
-                    active={type === key}
-                    onClick={() => replace({ type: type === key ? null : key })}
-                  >
-                    {m.placeTypes[key]}
-                  </Chip>
-                ))}
-              </>
-            ) : type ? (
-              <Chip active onClick={() => replace({ type: null })}>
-                {m.placeTypes[type]}
-              </Chip>
-            ) : null}
-          </div>
-        ) : null}
-
-        {lead !== "channel" && creators.length > 1 ? (
-          <div className="no-scrollbar flex gap-2 overflow-x-auto px-4 pb-3">
-            <Chip active={channel === null} onClick={() => replace({ channel: null })}>
-              {m.cityDetail.allChannels}
-            </Chip>
-            {creators.map((c) => (
-              <Chip
-                key={c.slug}
-                active={channel === c.slug}
-                onClick={() => replace({ channel: channel === c.slug ? null : c.slug })}
-              >
-                <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={18} />
-                {c.displayName}
-              </Chip>
-            ))}
-          </div>
-        ) : null}
-
-        {lead === "channel" && channel ? (
-          <div className="px-4 pb-3">
-            <Chip active onClick={() => replace({ channel: null })}>
-              {selectedChannel?.displayName ?? channel}
-            </Chip>
-          </div>
-        ) : null}
+        <CanvasFilters
+          region={region}
+          city={city}
+          type={type}
+          channel={channel}
+          regionLabel={regionLabel}
+          typeLabel={type ? m.placeTypes[type] : m.nav.type}
+          channelLabel={selectedChannel?.displayName ?? m.nav.channel}
+          groups={modalCities}
+          creators={creators}
+          channelCounts={channelCounts}
+          typeCounts={typeCounts}
+          onApply={(next) => {
+            setActiveId(null);
+            setSheetOpen(false);
+            replace({
+              region: next.region,
+              city: next.city,
+              type: next.type,
+              channel: next.channel,
+            });
+          }}
+        />
 
         <div className="flex items-center justify-between gap-3 px-4 pb-2">
           <p className="index tnum" style={{ color: "var(--dim)" }}>
             {t(m.cityDetail.placesAll, { n: filtered.length })}
-            {selectedChannel && lead !== "channel" ? ` · ${selectedChannel.displayName}` : ""}
           </p>
           {hasFilter ? (
             <button
               type="button"
               className="index text-(--wax) underline-offset-4 hover:underline"
               onClick={() => {
-                setDraft("");
                 setActiveId(null);
                 setSheetOpen(false);
                 replace({ city: null, channel: null, type: null, q: "", region: null });
@@ -372,110 +333,36 @@ export function ExplorerCanvas({
           ) : null}
         </div>
 
-        {browsing && lead === "region" ? (
-          <div className="px-4 pb-6">
-            {modalCities.map((group) => (
-              <section key={group.id} className="mb-5">
-                <button
-                  type="button"
-                  className="mb-2 flex w-full items-baseline justify-between text-left"
-                  onClick={() => replace({ region: group.id, city: null })}
-                >
-                  <h2 className="text-[15px] font-bold tracking-[-0.02em]">
-                    {m.home.homeRegions[group.id]}
-                  </h2>
-                  <span className="index text-(--dim)">
-                    {t(m.home.placesUnit, {
-                      n: group.items.reduce((s, c) => s + c.placeCount, 0),
-                    })}
-                  </span>
-                </button>
-                <div className="flex flex-wrap gap-2">
-                  {group.items.map((c) => (
-                    <Chip key={c.slug} onClick={() => replace({ city: c.slug, region: null })}>
-                      {displayCityName(c, locale)}
-                      <span className="tnum opacity-60">{c.placeCount}</span>
-                    </Chip>
-                  ))}
-                </div>
-              </section>
-            ))}
-          </div>
-        ) : browsing && lead === "channel" ? (
-          <ul>
-            {creators.map((c) => {
-              const n = channelCounts.get(c.slug) ?? 0;
-              if (n === 0) return null;
-              return (
-                <li key={c.slug} className="border-b border-(--hairline)">
-                  <button
-                    type="button"
-                    onClick={() => replace({ channel: c.slug })}
-                    className="flex w-full items-center gap-3 px-4 py-3.5 text-left hover:bg-(--hover)"
-                  >
-                    <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={40} />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">
-                        {c.displayName}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-(--dim)">
-                        {t(m.home.placesUnit, { n })}
-                        {c.cities[0]
-                          ? ` · ${displayCityName(c.cities[0], locale)}`
-                          : ""}
-                      </span>
-                    </span>
-                  </button>
-                </li>
-              );
-            })}
-          </ul>
-        ) : browsing && lead === "type" ? (
-          <nav className="grid grid-cols-3 gap-x-2 gap-y-4 px-4 pb-6">
-            {HOME_TYPES.map((key) => {
-              const n = typeCounts.get(key) ?? 0;
-              const Glyph = typeIcon(key);
-              return (
-                <button
-                  key={key}
-                  type="button"
-                  disabled={n === 0}
-                  onClick={() => replace({ type: key })}
-                  className="flex flex-col items-center gap-1.5 disabled:opacity-40"
-                >
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-(--halo)">
-                    <Glyph className="text-[#383838]" size={22} weight="duotone" />
-                  </span>
-                  <span className="text-center text-[12px] font-medium">{m.placeTypes[key]}</span>
-                  <span className="index text-(--dim)">{t(m.home.placesUnit, { n })}</span>
-                </button>
-              );
-            })}
-          </nav>
-        ) : filtered.length === 0 ? (
+        {filtered.length === 0 ? (
           <EmptyState message={m.home.empty} />
         ) : (
-          <ul>
-            {filtered.map((p) => {
+          <ul className="px-4 pb-6">
+            {filtered.map((p, i) => {
               const on = p.id === activeId;
               return (
-                <li key={p.id} className="border-b border-(--hairline)">
+                <li key={p.id} className={i > 0 ? "mt-5" : ""}>
                   <button
                     type="button"
                     onClick={() => onPinClick(p.id)}
                     aria-pressed={on}
-                    className="flex w-full items-start gap-3 px-4 py-3 text-left"
-                    style={{ background: on ? "var(--hover)" : undefined }}
+                    className="w-full text-left"
                   >
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate text-[15px] font-semibold tracking-[-0.01em]">
-                        {displayPlaceName(p, locale)}
-                      </span>
-                      <span className="mt-0.5 block truncate text-[13px] text-(--dim)">
-                        {m.placeTypes[p.placeType]}
-                        {" · "}
-                        {displayCityName({ name: p.cityName, nameEn: p.cityNameEn }, locale)}
-                      </span>
+                    <Frame className={`block w-full ${on ? "waxed" : ""}`}>
+                      {p.youtubeId ? (
+                        <Thumb
+                          youtubeId={p.youtubeId}
+                          alt={p.youtubeTitle ?? displayPlaceName(p, locale)}
+                          eager={i < 2}
+                        />
+                      ) : null}
+                    </Frame>
+                    <span className="mt-2.5 block truncate text-[15px] font-semibold tracking-[-0.01em]">
+                      {displayPlaceName(p, locale)}
+                    </span>
+                    <span className="mt-0.5 block truncate text-[13px] text-(--dim)">
+                      {m.placeTypes[p.placeType]}
+                      {" · "}
+                      {displayCityName({ name: p.cityName, nameEn: p.cityNameEn }, locale)}
                     </span>
                   </button>
                 </li>
@@ -484,82 +371,6 @@ export function ExplorerCanvas({
           </ul>
         )}
       </section>
-
-      {regionOpen ? (
-        <div className="fixed inset-0 z-50">
-          <button
-            type="button"
-            aria-label={m.search.close}
-            className="absolute inset-0 bg-black/30"
-            onClick={() => setRegionOpen(false)}
-          />
-          <div
-            role="dialog"
-            aria-modal="true"
-            aria-label={m.home.regionPick}
-            className="absolute top-1/2 left-[calc(92px+200px)] w-[min(420px,calc(100vw-140px))] -translate-x-1/2 -translate-y-1/2 overflow-hidden rounded-2xl bg-white shadow-[0_16px_60px_rgba(0,0,0,0.18)]"
-          >
-            <div className="flex items-center justify-between border-b border-(--hairline) px-5 py-3.5">
-              <strong className="text-[17px] tracking-[-0.03em]">{m.home.regionPick}</strong>
-              <button
-                type="button"
-                aria-label={m.search.close}
-                onClick={() => setRegionOpen(false)}
-                className="grid size-8 place-items-center rounded-full hover:bg-(--hover)"
-              >
-                <X className="size-4" />
-              </button>
-            </div>
-            <div className="max-h-[min(68vh,560px)] overflow-auto px-5 py-4">
-              <button
-                type="button"
-                className="chip mb-4"
-                data-active={!city && !region ? "true" : undefined}
-                onClick={() => {
-                  replace({ city: null, region: null });
-                  setRegionOpen(false);
-                }}
-              >
-                {m.home.regionAll}
-              </button>
-              {modalCities.map((group) => (
-                <section key={group.id} className="mb-5">
-                  <div className="mb-2 flex items-center justify-between">
-                    <h2 className="text-[15px] font-bold tracking-[-0.02em]">
-                      {m.home.homeRegions[group.id]}
-                    </h2>
-                    <button
-                      type="button"
-                      className="index text-(--dim) underline-offset-4 hover:underline"
-                      onClick={() => {
-                        replace({ region: group.id, city: null });
-                        setRegionOpen(false);
-                      }}
-                    >
-                      {m.home.regionFilter}
-                    </button>
-                  </div>
-                  <div className="flex flex-wrap gap-2">
-                    {group.items.map((c) => (
-                      <Chip
-                        key={c.slug}
-                        active={city === c.slug}
-                        onClick={() => {
-                          replace({ city: c.slug, region: null });
-                          setRegionOpen(false);
-                        }}
-                      >
-                        {displayCityName(c, locale)}
-                        <span className="tnum opacity-60">{c.placeCount}</span>
-                      </Chip>
-                    ))}
-                  </div>
-                </section>
-              ))}
-            </div>
-          </div>
-        </div>
-      ) : null}
     </div>
   );
 }
