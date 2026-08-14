@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, House, MapTrifold } from "@phosphor-icons/react";
+import { Heart, House, MapTrifold, Playlist } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
@@ -21,6 +21,7 @@ import { Mark } from "@/shared/ui/Mark";
 const ITEMS = [
   { path: "/", icon: House, labelKey: "home" },
   { path: "/map", icon: MapTrifold, labelKey: "map" },
+  { path: "/channels", icon: Playlist, labelKey: "channel" },
   { path: "/saved", icon: Heart, labelKey: "saved" },
 ] as const;
 

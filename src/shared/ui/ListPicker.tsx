@@ -142,7 +142,7 @@ export function ListPicker({
                     className="grid size-5 shrink-0 place-items-center"
                     style={{
                       borderRadius: "6px",
-                      background: on ? "var(--brand)" : "transparent",
+                      background: on ? "var(--wax)" : "transparent",
                       boxShadow: on ? "none" : "inset 0 0 0 1px var(--hairline)",
                       color: "#fff",
                     }}
@@ -184,7 +184,7 @@ export function ListPicker({
               }}
             />
             {error ? (
-              <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--brand)" }}>
+              <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
                 {error}
               </p>
             ) : null}

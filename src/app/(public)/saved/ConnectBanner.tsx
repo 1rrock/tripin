@@ -73,7 +73,7 @@ export function ConnectBanner({ linked }: { linked: boolean }) {
       </button>
 
       {failed ? (
-        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--brand)" }}>
+        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
           {m.saved.connectFailed}
         </p>
       ) : null}

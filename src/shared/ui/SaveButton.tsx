@@ -46,7 +46,7 @@ export function SaveButton({
       style={{
         borderRadius: "var(--r-frame)",
         boxShadow: "inset 0 0 0 1px var(--hairline)",
-        color: on ? "var(--brand)" : "var(--dim)",
+        color: on ? "var(--wax)" : "var(--dim)",
       }}
     >
       <Icon.heart className="size-[18px]" weight={on ? "fill" : "regular"} />

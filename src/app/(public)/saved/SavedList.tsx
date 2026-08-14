@@ -15,7 +15,7 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
-import { ListButton, SaveButton, VisitedButton } from "@/shared/ui/SaveButton";
+import { ListButton, SaveButton } from "@/shared/ui/SaveButton";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { TYPE_COLOR } from "@/shared/ui/type-icons";
 
@@ -25,7 +25,7 @@ const UNGROUPED = "__ungrouped__";
 
 export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
   const { locale, messages: m, t, href } = useLocale();
-  const { isSaved, isVisited, ready, lists, listsOf, editList, removeList } = useSaved();
+  const { isSaved, ready, lists, listsOf, editList, removeList } = useSaved();
   const [filter, setFilter] = useState<string>(ALL);
   const [renaming, setRenaming] = useState<string | null>(null);
   const [draft, setDraft] = useState("");
@@ -66,7 +66,6 @@ export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
     );
   }
 
-  const visitedCount = visible.filter((r) => isVisited(r.id)).length;
   const ungroupedCount = saved.filter((r) => listsOf(r.id).size === 0).length;
 
   /** 필터 칩 하나. */
@@ -147,7 +146,7 @@ export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
               }}
             />
             {error ? (
-              <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--brand)" }}>
+              <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
                 {error}
               </p>
             ) : null}
@@ -223,7 +222,7 @@ export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
                 fontSize: "var(--t-meta)",
                 borderRadius: "var(--r-frame)",
                 boxShadow: "inset 0 0 0 1px var(--hairline)",
-                color: "var(--brand)",
+                color: "var(--wax)",
               }}
             >
               {m.saved.listDelete}
@@ -234,7 +233,6 @@ export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
 
       <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
         {t(m.saved.countLabel, { n: visible.length })}
-        {visitedCount > 0 ? ` · ${t(m.saved.visitedCount, { n: visitedCount })}` : ""}
       </p>
 
       {visible.length === 0 ? (
@@ -266,9 +264,7 @@ export function SavedList({ rows }: { rows: SavedPlaceRow[] }) {
                   {name}
                 </span>
                 <span className="mt-1 block truncate text-[13px] text-(--dim)">{city}</span>
-
                 <div className="mt-2 flex items-center gap-2">
-                  <VisitedButton placeId={r.id} placeName={name} />
                   {r.mapUrl ? (
                     <OutboundA
                       href={r.mapUrl}
