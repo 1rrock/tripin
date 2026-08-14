@@ -72,7 +72,22 @@ export default async function SavedPage() {
 
       {/* 데스크톱 — 좋아요 목록이 바로 뜬다 */}
       <div className="hidden flex-col gap-3 lg:flex">
-        <h2 style={{ fontSize: "var(--t-title)", fontWeight: 800 }}>♥ {m.saved.likedNav}</h2>
+        <div className="flex items-center justify-between gap-3">
+          <h2 style={{ fontSize: "var(--t-title)", fontWeight: 800 }}>♥ {m.saved.likedNav}</h2>
+          <Link
+            href={localePath("/map?saved=1", locale)}
+            className="inline-flex h-9 items-center gap-1.5 px-3.5 font-bold"
+            style={{
+              fontSize: "var(--t-meta)",
+              borderRadius: "var(--r-frame)",
+              background: "var(--halo)",
+              color: "var(--halo-ink)",
+            }}
+          >
+            <Icon.map className="size-4" />
+            {m.saved.viewOnMap}
+          </Link>
+        </div>
         <PlaceRows rows={view.places} emptyText={m.saved.empty} />
       </div>
     </>

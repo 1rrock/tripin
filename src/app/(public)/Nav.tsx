@@ -13,15 +13,22 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, House, MapTrifold, Playlist } from "@phosphor-icons/react";
+import { Heart, House, MapTrifold } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
 
+/**
+ * 탭은 셋이다.
+ *
+ * 채널(/channels)은 화면으로는 살아 있지만 **탭에서는 뺀다** — 홈에 채널 목록이
+ * 이미 있고, PRODUCT.md 의 모델도 "지역·종류·채널은 /map 필터" 다. 넷이 되면
+ * 모바일 탭바에서 라벨이 좁아지고 엄지로 누르는 영역이 줄어든다.
+ * 검색 유입은 /channels 로 그대로 들어오므로 SEO 는 잃지 않는다.
+ */
 const ITEMS = [
   { path: "/", icon: House, labelKey: "home" },
   { path: "/map", icon: MapTrifold, labelKey: "map" },
-  { path: "/channels", icon: Playlist, labelKey: "channel" },
   { path: "/saved", icon: Heart, labelKey: "saved" },
 ] as const;
 

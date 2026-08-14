@@ -190,6 +190,8 @@ export const en: Messages = {
     nav: "Saved",
     title: "Saved places",
     likedNav: "Liked",
+    mapFilter: "Saved",
+    viewOnMap: "View on map",
     addAria: "Save {name}",
     removeAria: "Remove {name} from saved",
     subscribe: "Follow",

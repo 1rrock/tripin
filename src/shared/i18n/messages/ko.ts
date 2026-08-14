@@ -200,6 +200,8 @@ export const ko = {
     nav: "저장",
     title: "저장한 곳",
     likedNav: "좋아요",
+    mapFilter: "저장한 곳",
+    viewOnMap: "지도에서 보기",
     addAria: "{name} 저장하기",
     removeAria: "{name} 저장 해제",
     subscribe: "구독",
@@ -521,6 +523,8 @@ export type Messages = {
     nav: string;
     title: string;
     likedNav: string;
+    mapFilter: string;
+    viewOnMap: string;
     addAria: string;
     removeAria: string;
     subscribe: string;

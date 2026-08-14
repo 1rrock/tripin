@@ -99,6 +99,28 @@ export default async function SavedListPage({ params }: { params: Promise<{ list
           {/* 이름 바꾸기·삭제는 진짜 그룹에만. 좋아요·그룹 없음은 지울 수 있는 것이 아니다 */}
           {kind === "list" && list ? <ListActions listId={list.id} name={list.name} /> : null}
         </div>
+
+        {/* 지도로 넘기는 다리. 지도는 /map 하나뿐이라 여기서 지도를 그리지 않고
+            필터를 켠 채로 보낸다 — Google Maps 가 로드당 과금이라 화면마다 지도를
+            두면 비용이 그대로 배가 된다. */}
+        {rows.length > 0 ? (
+          <Link
+            href={localePath(
+              kind === "list" ? `/map?list=${listParam}` : "/map?saved=1",
+              locale,
+            )}
+            className="inline-flex h-9 w-fit items-center gap-1.5 px-3.5 font-bold"
+            style={{
+              fontSize: "var(--t-meta)",
+              borderRadius: "var(--r-frame)",
+              background: "var(--halo)",
+              color: "var(--halo-ink)",
+            }}
+          >
+            <Icon.map className="size-4" />
+            {m.saved.viewOnMap}
+          </Link>
+        ) : null}
       </header>
 
       <PlaceRows

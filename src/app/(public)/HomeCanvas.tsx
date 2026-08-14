@@ -28,6 +28,8 @@ import {
   type HomeRegionId,
 } from "@/shared/lib/geo-regions";
 import { CanvasFilters } from "./CanvasFilters";
+import { SavedMapChips } from "./SavedMapChips";
+import { useSaved } from "@/shared/ui/SavedContext";
 
 function matchesQuery(hay: string, q: string) {
   const needle = q.trim().toLowerCase();
@@ -73,9 +75,13 @@ export function ExplorerCanvas({
   const type =
     typeRaw && (FILTERABLE_TYPES as string[]).includes(typeRaw) ? (typeRaw as PlaceType) : null;
   const q = sp.get("q") ?? "";
+  /* 저장 필터 — 지도를 하나로 두기 위해 /saved 대신 여기서 푼다(SavedMapChips 주석 참조) */
+  const savedOnly = sp.get("saved") === "1";
+  const listId = sp.get("list");
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const { isSaved, listsOf } = useSaved();
 
   const selectedChannel = creators.find((c) => c.slug === channel) ?? null;
   const selectedCity = cities.find((c) => c.slug === city) ?? null;
@@ -87,6 +93,8 @@ export function ExplorerCanvas({
       type?: string | null;
       q?: string;
       region?: string | null;
+      saved?: boolean;
+      list?: string | null;
     }) => {
       const params = new URLSearchParams();
       const c = "city" in next ? next.city : city;
@@ -94,19 +102,27 @@ export function ExplorerCanvas({
       const tp = "type" in next ? next.type : type;
       const query = "q" in next ? next.q : q;
       const rg = "region" in next ? next.region : region;
+      const sv = "saved" in next ? next.saved : savedOnly;
+      const ls = "list" in next ? next.list : listId;
       if (c) params.set("city", c);
       else if (rg) params.set("region", rg);
       if (ch) params.set("channel", ch);
       if (tp) params.set("type", tp);
       if (query?.trim()) params.set("q", query.trim());
+      /* 그룹이 있으면 saved 는 자명하므로 URL 에 둘 다 싣지 않는다 */
+      if (ls) params.set("list", ls);
+      else if (sv) params.set("saved", "1");
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [city, channel, type, q, region, pathname, router],
+    [city, channel, type, q, region, savedOnly, listId, pathname, router],
   );
 
   const filtered = useMemo(() => {
     return places.filter((p) => {
+      /* 저장·그룹은 서버가 모르는 값이라(유저별) 여기서만 걸린다 */
+      if (listId && !listsOf(p.id).has(listId)) return false;
+      if (savedOnly && !isSaved(p.id)) return false;
       if (city && p.citySlug !== city) return false;
       if (!city && region && homeRegionForCountry(p.countryCode) !== region) return false;
       if (channel && !p.sources.some((s) => s.creatorSlug === channel)) return false;
@@ -114,7 +130,7 @@ export function ExplorerCanvas({
       if (q && !matchesQuery(p.searchText, q)) return false;
       return true;
     });
-  }, [places, city, region, channel, type, q]);
+  }, [places, city, region, channel, type, q, savedOnly, listId, isSaved, listsOf]);
 
   const pins = useMemo(
     () =>
@@ -139,7 +155,7 @@ export function ExplorerCanvas({
 
   const activePlace = filtered.find((p) => p.id === activeId) ?? null;
   const activeIndex = activePlace ? filtered.findIndex((p) => p.id === activePlace.id) : -1;
-  const hasFilter = Boolean(city || region || channel || type || q.trim());
+  const hasFilter = Boolean(city || region || channel || type || q.trim() || savedOnly || listId);
 
   const sourcesFor = (place: HomeMapPlace) =>
     channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
@@ -315,6 +331,16 @@ export function ExplorerCanvas({
           }}
         />
 
+        <SavedMapChips
+          savedOnly={savedOnly}
+          listId={listId}
+          onChange={(next) => {
+            setActiveId(null);
+            setSheetOpen(false);
+            replace({ saved: next.saved, list: next.list });
+          }}
+        />
+
         <div className="flex items-center justify-between gap-3 px-4 pb-2">
           <p className="index tnum" style={{ color: "var(--dim)" }}>
             {t(m.cityDetail.placesAll, { n: filtered.length })}
@@ -326,7 +352,15 @@ export function ExplorerCanvas({
               onClick={() => {
                 setActiveId(null);
                 setSheetOpen(false);
-                replace({ city: null, channel: null, type: null, q: "", region: null });
+                replace({
+                city: null,
+                channel: null,
+                type: null,
+                q: "",
+                region: null,
+                saved: false,
+                list: null,
+              });
               }}
             >
               {m.cityDetail.clearFilters}
