@@ -14,7 +14,7 @@ import { displayCityName } from "@/shared/i18n/display";
 import { Avatar } from "@/shared/ui/frame";
 import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
 import { choseong, isChoseongQuery } from "@/shared/lib/search";
-import { HOME_REGION_ORDER, type HomeRegionId } from "@/shared/lib/geo-regions";
+import type { HomeRegionId } from "@/shared/lib/geo-regions";
 
 function hit(hay: string, q: string) {
   const needle = q.trim().toLowerCase();

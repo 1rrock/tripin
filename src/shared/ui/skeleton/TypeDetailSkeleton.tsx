@@ -8,8 +8,16 @@ import { Index, Rule } from "@/shared/ui/frame";
 import { Icon } from "@/shared/ui/icons";
 import { Bone, BoneAct, BoneChip, BoneCrumb, BoneFrame, BoneRoot, times } from "./bones";
 
-const CITY_SECTIONS = 3;
-const ROWS_PER_CITY = 4;
+/**
+ * 도시 섹션의 행 수 — 실화면은 장소 많은 도시부터 내려오므로 위에서 아래로 줄인다.
+ *
+ * 종류별 규모가 크게 갈린다: 맛집 219곳(도시 21)이 혼자 튀고 나머지 다섯은
+ * 5~14곳(도시 2~7)이다. 맛집에 맞춰 12행(VISIBLE_PER_CITY 상한)을 깔아 봤더니
+ * 카페(5곳)에서 1,302px 이 남아돌았다 — 다수에 맞추고 맛집만 짧게 둔다.
+ * 모자란 쪽이 낫다: 뼈대가 짧으면 본문이 아래로 자라지만, 길면 남은 자리가
+ * 접히면서 화면이 위로 튄다.
+ */
+const CITY_ROWS = [4, 3, 2];
 
 export function TypeDetailSkeleton({ label }: { label: string }) {
   return (
@@ -35,7 +43,7 @@ export function TypeDetailSkeleton({ label }: { label: string }) {
       </header>
 
       <div className="flex flex-col gap-(--block)">
-        {times(CITY_SECTIONS).map((gi) => (
+        {CITY_ROWS.map((rows, gi) => (
           <section key={gi} className="flex flex-col gap-3">
             <div className="flex items-baseline justify-between gap-3">
               <h2 className="font-bold" style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}>
@@ -48,7 +56,7 @@ export function TypeDetailSkeleton({ label }: { label: string }) {
             </div>
 
             <ol className="flex flex-col">
-              {times(ROWS_PER_CITY).map((i) => (
+              {times(rows).map((i) => (
                 <li key={i}>
                   <Rule />
                   <div className="flex items-start gap-3.5 py-(--stack)">

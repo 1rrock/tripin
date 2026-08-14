@@ -21,18 +21,15 @@ export function VideoSkeleton({ label }: { label: string }) {
           <p className="index" style={{ color: "var(--dim)" }}>
             <Bone w="9rem" />
           </p>
-          {/* 유튜브 원본 제목이라 데스크톱 폭에서도 대개 두 줄로 접힌다 — 한 줄로 두면
-              가운데 정렬(md:items-center)된 이 칸이 통째로 한 줄만큼 위로 뜬다 */}
+          {/* 한 줄로 둔다. md 부터는 2단이라 헤더 높이를 16:9 썸네일이 정하므로 제목
+              줄 수가 레이아웃에 영향을 주지 않고, 1단인 모바일에서만 아래가 밀린다.
+              제목 길이는 알 수 없으니 모자란 쪽으로 — 짧으면 본문이 아래로 자라지만
+              길면 남은 자리가 접히며 화면이 위로 튄다 */}
           <h1
             className="font-black"
             style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.2 }}
           >
-            <span className="block">
-              <Bone w="98%" />
-            </span>
-            <span className="block">
-              <Bone w="52%" />
-            </span>
+            <Bone w="92%" />
           </h1>
           <p className="index tnum" style={{ color: "var(--dim)" }}>
             <Bone w="10rem" />
