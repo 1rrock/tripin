@@ -52,7 +52,9 @@ export function TypeIndexSkeleton({ label }: { label: string }) {
           <ul className="px-4 pb-6">
             {times(RESULT_ROWS).map((i) => (
               <li key={i} className={i > 0 ? "mt-5" : ""}>
-                <div className="w-full text-left">
+                {/* 실화면은 `<button>` 이라 li 가 6px 더 크다(버튼은 아래 모서리가
+                    baseline). `inline-block + overflow-hidden` 으로 같게 만든다 */}
+                <span className="inline-block w-full overflow-hidden text-left">
                   <BoneFrame className="block w-full" />
                   <span className="mt-2.5 block truncate text-[15px] font-semibold tracking-[-0.01em]">
                     <Bone w="70%" />
@@ -60,7 +62,7 @@ export function TypeIndexSkeleton({ label }: { label: string }) {
                   <span className="mt-0.5 block truncate text-[13px] text-(--dim)">
                     <Bone w="45%" />
                   </span>
-                </div>
+                </span>
               </li>
             ))}
           </ul>

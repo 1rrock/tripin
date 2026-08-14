@@ -102,7 +102,13 @@ export function MapSkeleton({ label }: { label: string }) {
           <ul className="px-4 pb-6">
             {times(6).map((i) => (
               <li key={i} className={i > 0 ? "mt-5" : ""}>
-                <div className="w-full text-left">
+                {/* 실화면은 `<button>` 이라 li 가 버튼보다 6px 크다 — 버튼은 안쪽
+                    baseline 을 내놓지 않아 아래 모서리가 baseline 이 되고, 그 밑으로
+                    부모 strut 의 descender 가 붙는다. block div 로 두면 카드마다
+                    6px 씩 짧아져 목록 끝에서 36px 어긋난다.
+                    `inline-block + overflow-hidden` 이 같은 baseline 을 만든다
+                    (버튼을 그대로 쓰면 로딩 중에 포커스 잡히는 빈 버튼이 6개 생긴다) */}
+                <span className="inline-block w-full overflow-hidden text-left">
                   <BoneFrame className="block w-full" />
                   <span className="mt-2.5 block text-[15px] font-semibold tracking-[-0.01em]">
                     <Bone w="60%" />
@@ -110,7 +116,7 @@ export function MapSkeleton({ label }: { label: string }) {
                   <span className="mt-0.5 block text-[13px]">
                     <Bone w="45%" />
                   </span>
-                </div>
+                </span>
               </li>
             ))}
           </ul>
