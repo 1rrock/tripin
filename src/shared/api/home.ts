@@ -17,6 +17,8 @@ import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
  */
 
 export interface FeedCreator {
+  /** 구독 토글이 쓴다 — `subscriptions.creator_id` 는 slug 가 아니라 uuid 다. */
+  id: string;
   slug: string;
   displayName: string;
   initials: string;
@@ -251,6 +253,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     // feed 는 이미 최신순 — 검수를 거쳐 피드에 오른 영상만 센다
     const myVideos = feed.filter((f) => f.creatorSlug === c.slug);
     creatorRows.push({
+      id: c.id,
       slug: c.slug,
       displayName: c.display_name,
       initials: c.initials,

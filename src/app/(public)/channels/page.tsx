@@ -7,6 +7,7 @@ import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Avatar, Rule } from "@/shared/ui/frame";
+import { SubscribeButton } from "@/shared/ui/SaveButton";
 
 /**
  * 채널 인덱스 — 구독 목록 문법.
@@ -96,56 +97,65 @@ export default async function ChannelsPage() {
             return (
               <li key={c.slug}>
                 {i > 0 ? <Rule /> : null}
-                <Link
-                  href={localePath(`/c/${c.slug}`, locale)}
-                  className="roll -mx-2.5 flex items-start gap-4 rounded-(--r-control) px-2.5 py-5"
-                  aria-label={t(m.channels.openChannel, {
-                    name: c.displayName,
-                    places: c.placeCount,
-                  })}
-                >
-                  <Avatar
-                    initials={c.initials}
-                    accent={c.accentColor}
-                    src={c.avatarUrl}
-                    size={64}
-                  />
+                {/* 구독 버튼은 행 링크 **밖에** 선다. <a> 안에 <button> 을 넣으면
+                    HTML 상 무효라 하이드레이션이 어긋난다 — 버튼 쪽에서
+                    stopPropagation 을 불러도 못 막는 층위의 문제다. */}
+                <div className="flex items-start gap-2">
+                  <Link
+                    href={localePath(`/c/${c.slug}`, locale)}
+                    className="roll -mx-2.5 flex min-w-0 flex-1 items-start gap-4 rounded-(--r-control) px-2.5 py-5"
+                    aria-label={t(m.channels.openChannel, {
+                      name: c.displayName,
+                      places: c.placeCount,
+                    })}
+                  >
+                    <Avatar
+                      initials={c.initials}
+                      accent={c.accentColor}
+                      src={c.avatarUrl}
+                      size={64}
+                    />
 
-                  <span className="min-w-0 flex-1">
-                    <span className="block truncate text-base font-bold tracking-[-0.02em] lg:text-lg">
-                      {c.displayName}
-                    </span>
-
-                    {/* 핸들과 지표는 한 줄 — 구독자 수 자리에 우리 단위(영상·곳)를 넣는다 */}
-                    <span
-                      className="mt-1 block truncate"
-                      style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                    >
-                      {[
-                        c.handle,
-                        t(m.channels.rollMeta, {
-                          videos: c.videoCount,
-                          places: c.placeCount,
-                        }),
-                      ]
-                        .filter(Boolean)
-                        .join(" · ")}
-                    </span>
-
-                    {blurb ? (
-                      <span
-                        className="mt-1.5 line-clamp-2 block"
-                        style={{
-                          fontSize: "var(--t-meta)",
-                          color: "var(--dim)",
-                          lineHeight: 1.6,
-                        }}
-                      >
-                        {blurb}
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate text-base font-bold tracking-[-0.02em] lg:text-lg">
+                        {c.displayName}
                       </span>
-                    ) : null}
+
+                      {/* 핸들과 지표는 한 줄 — 구독자 수 자리에 우리 단위(영상·곳)를 넣는다 */}
+                      <span
+                        className="mt-1 block truncate"
+                        style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                      >
+                        {[
+                          c.handle,
+                          t(m.channels.rollMeta, {
+                            videos: c.videoCount,
+                            places: c.placeCount,
+                          }),
+                        ]
+                          .filter(Boolean)
+                          .join(" · ")}
+                      </span>
+
+                      {blurb ? (
+                        <span
+                          className="mt-1.5 line-clamp-2 block"
+                          style={{
+                            fontSize: "var(--t-meta)",
+                            color: "var(--dim)",
+                            lineHeight: 1.6,
+                          }}
+                        >
+                          {blurb}
+                        </span>
+                      ) : null}
+                    </span>
+                  </Link>
+
+                  <span className="shrink-0 self-center">
+                    <SubscribeButton creatorId={c.id} creatorName={c.displayName} />
                   </span>
-                </Link>
+                </div>
               </li>
             );
           })}
