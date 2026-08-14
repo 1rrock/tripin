@@ -1,0 +1,179 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>03 · GATE B14 — Eatripin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;700;800&display=swap">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    :root{--night:#0c1118;--paper:#f4ede0;--safety:#ff531a;--steel:#8b95a5;--carbon:#1a2230}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--night);color:var(--paper);font-family:Pretendard,sans-serif}
+    button{font:inherit;color:inherit}
+    .app{max-width:760px;margin:0 auto;padding:18px 16px 80px}
+    .brand{display:flex;align-items:center;justify-content:space-between;margin-bottom:22px}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:inherit}
+    .logo svg{display:block}
+    .word{font-family:"Barlow Condensed",sans-serif;font-weight:800;letter-spacing:.22em;font-size:18px}
+    .clock{font-variant-numeric:tabular-nums;color:var(--steel);font-size:13px}
+    h1{font-family:"Barlow Condensed",sans-serif;font-weight:800;font-size:clamp(40px,9vw,72px);letter-spacing:-.02em;line-height:.9;margin:0 0 8px}
+    h1 span{color:var(--safety)}
+    .lede{color:var(--steel);margin:0 0 22px;max-width:40ch}
+
+    .ticket{display:grid;grid-template-columns:1fr 92px;background:var(--paper);color:var(--night);margin:0 0 14px;text-decoration:none;position:relative;overflow:hidden}
+    .ticket::before,.ticket::after{content:"";position:absolute;width:18px;height:18px;background:var(--night);border-radius:50%;left:calc(100% - 92px - 9px)}
+    .ticket::before{top:-9px}
+    .ticket::after{bottom:-9px}
+    .t-main{padding:16px 18px 14px}
+    .t-main .from{font-size:11px;letter-spacing:.16em;color:#7a7266;font-weight:700}
+    .t-main h2{margin:4px 0 0;font-family:"Barlow Condensed",sans-serif;font-size:34px;letter-spacing:.02em}
+    .t-row{display:flex;gap:18px;margin-top:10px;font-size:12px;color:#5c564c}
+    .t-row b{display:block;color:var(--night);font-size:14px}
+    .t-stub{background:var(--safety);color:#1a0b05;display:flex;flex-direction:column;align-items:center;justify-content:center;border-left:1.5px dashed #1a0b0555}
+    .t-stub em{font-style:normal;font-family:"Barlow Condensed",sans-serif;font-size:28px;font-weight:800}
+    .t-stub small{letter-spacing:.14em;font-size:10px;font-weight:800}
+
+    .itin{display:grid;gap:0}
+    @media(min-width:860px){.itin{grid-template-columns:1fr 1.1fr;gap:18px}}
+    .pass{background:var(--paper);color:var(--night);padding:18px}
+    .pass .k{font-size:11px;letter-spacing:.18em;color:#7a7266;font-weight:700}
+    .pass h2{font-family:"Barlow Condensed",sans-serif;font-size:48px;margin:4px 0 0;letter-spacing:.02em}
+    .pass .sub{color:#5c564c;margin:0 0 14px}
+    .row{display:grid;grid-template-columns:36px 1fr auto;gap:10px;padding:10px 0;border-top:1px solid #e3d9c8;width:100%;background:none;border-left:0;border-right:0;border-bottom:0;text-align:left;cursor:pointer;color:inherit}
+    .row .n{font-family:"Barlow Condensed",sans-serif;font-size:22px;font-weight:800;color:var(--safety)}
+    .row small{color:#6b6458}
+    .gate-map{position:relative;min-height:420px;background:#15202c url(assets/map.jpg) center/cover;filter:grayscale(.15) contrast(1.1)}
+    .pin{position:absolute;transform:translate(-50%,-100%);border:0;background:none;cursor:pointer;padding:0}
+    .pin i{display:block;width:12px;height:12px;background:var(--safety);border-radius:50%;box-shadow:0 0 0 4px #ff531a44}
+
+    #sheet{position:fixed;inset:0;z-index:40}
+    #sheet[hidden]{display:none}
+    .sheet-scrim{position:absolute;inset:0;background:#0008}
+    .sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--paper);color:var(--night);max-height:88dvh;overflow:auto}
+    @media(min-width:800px){.sheet-card{left:50%;transform:translateX(-50%);width:420px;bottom:20px}}
+    .sheet-cut img{width:100%;height:150px;object-fit:cover;display:block}
+    .sheet-body{padding:16px}
+    .sheet-k{margin:0;color:var(--safety);font-size:11px;letter-spacing:.16em;font-weight:800}
+    .sheet-body h2{margin:4px 0 0;font-family:"Barlow Condensed",sans-serif;font-size:32px}
+    .sheet-local,.sheet-addr{margin:2px 0;color:#6b6458;font-size:13px}
+    .sheet-sum{line-height:1.55}
+    .sheet-src{display:grid;grid-template-columns:72px 1fr;gap:10px;margin:12px 0}
+    .sheet-src img{width:72px;height:40px;object-fit:cover}
+    .sheet-src span{display:block;font-size:12px;color:#6b6458}
+    .sheet-cta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn-yt{background:var(--night);color:var(--paper);text-align:center;padding:12px;text-decoration:none;font-weight:800}
+    .btn-map{background:var(--safety);color:#1a0b05;text-align:center;padding:12px;text-decoration:none;font-weight:800}
+    .sheet-x{position:absolute;right:10px;top:10px;border:0;background:#fff;width:32px;height:32px;cursor:pointer;color:#111}
+  </style>
+</head>
+<body>
+  <div class="labbar">
+    <a href="index.html">← 시안</a>
+    <span class="lab-name">03 GATE B14 · 출국 전날</span>
+    <nav>
+      <a href="01-split.html">1</a>
+      <a href="02-map.html">2</a>
+      <a href="03-gate.html" aria-current="page">3</a>
+      <a href="04-line.html">4</a>
+      <a href="05-desk.html">5</a>
+      <a href="06-chapters.html">6</a>
+    </nav>
+  </div>
+
+  <div class="app">
+    <section data-page="home">
+      <div class="brand">
+        <a class="logo" href="#" data-open="home" aria-label="Eatripin">
+          <svg width="28" height="28" viewBox="0 0 32 32">
+            <rect width="32" height="22" y="5" fill="#f4ede0"/>
+            <circle cx="0" cy="16" r="4" fill="#0c1118"/>
+            <circle cx="32" cy="16" r="4" fill="#0c1118"/>
+            <circle cx="23" cy="16" r="3" fill="#ff531a"/>
+          </svg>
+          <span class="word">EATRIPIN</span>
+        </a>
+        <span class="clock">DEP 02:40 · NRT</span>
+      </div>
+      <h1>지금 많이 찾는<br><span>도시 티켓</span></h1>
+      <p class="lede">출국 전날 밤. 승객은 채널, 목적지는 도시. 티켓을 뜯으면 그 지도가 열립니다.</p>
+
+      <a class="ticket" href="#" data-open="piece">
+        <div class="t-main">
+          <div class="from">PASSENGER · 곽튜브</div>
+          <h2>TOKYO</h2>
+          <div class="t-row">
+            <div>FROM<b>SEOUL</b></div>
+            <div>CLASS<b>맛집 34</b></div>
+            <div>SEAT<b>채널 4</b></div>
+          </div>
+        </div>
+        <div class="t-stub"><small>GATE</small><em>B14</em></div>
+      </a>
+      <a class="ticket" href="#" data-open="piece">
+        <div class="t-main">
+          <div class="from">PASSENGER · 츄성훈</div>
+          <h2>OSAKA</h2>
+          <div class="t-row">
+            <div>FROM<b>SEOUL</b></div>
+            <div>CLASS<b>맛집 21</b></div>
+            <div>SEAT<b>채널 3</b></div>
+          </div>
+        </div>
+        <div class="t-stub"><small>GATE</small><em>C07</em></div>
+      </a>
+      <a class="ticket" href="#" data-open="piece">
+        <div class="t-main">
+          <div class="from">PASSENGER · 빠니보틀</div>
+          <h2>BANGKOK</h2>
+          <div class="t-row">
+            <div>FROM<b>SEOUL</b></div>
+            <div>CLASS<b>맛집 27</b></div>
+            <div>SEAT<b>채널 2</b></div>
+          </div>
+        </div>
+        <div class="t-stub"><small>GATE</small><em>D02</em></div>
+      </a>
+    </section>
+
+    <section data-page="piece" hidden>
+      <div class="brand">
+        <a class="logo" href="#" data-open="home"><span class="word">← BOARDING</span></a>
+        <span class="clock">곽튜브 · NRT</span>
+      </div>
+      <div class="itin">
+        <div class="pass">
+          <div class="k">ITINERARY · 34 STOPS</div>
+          <h2>TOKYO</h2>
+          <p class="sub">게이트를 통과하면 이 순서대로 영상이 갑니다.</p>
+          <div id="rows"></div>
+        </div>
+        <div class="gate-map" id="map"></div>
+      </div>
+    </section>
+  </div>
+  <div id="sheet" hidden></div>
+  <script src="common.js"></script>
+  <script>
+    const rows = document.getElementById("rows");
+    const map = document.getElementById("map");
+    EATRIPIN.places.forEach((p) => {
+      rows.insertAdjacentHTML("beforeend", `
+        <button class="row" data-pin="${p.id}">
+          <span class="n">${String(p.id).padStart(2,"0")}</span>
+          <span><b>${p.name}</b><br><small>${p.type} · ${p.area}</small></span>
+          <span>${p.t}</span>
+        </button>`);
+      const b = document.createElement("button");
+      b.className = "pin";
+      b.dataset.pin = p.id;
+      b.style.left = p.x + "%";
+      b.style.top = p.y + "%";
+      b.innerHTML = "<i></i>";
+      b.setAttribute("aria-label", p.name);
+      map.appendChild(b);
+    });
+  </script>
+</body>
+</html>

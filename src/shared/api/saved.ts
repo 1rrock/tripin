@@ -14,6 +14,8 @@
 
 import { supabaseBrowser, ensureSession } from "./supabase-browser";
 
+export type ListMeta = { id: string; name: string; position: number };
+
 export type SavedSnapshot = {
   /** 저장한 장소 id */
   places: Set<string>;
@@ -21,13 +23,24 @@ export type SavedSnapshot = {
   visited: Set<string>;
   /** 구독한 채널 id */
   creators: Set<string>;
+  /** 그룹 목록 — 표시 순서대로 */
+  lists: ListMeta[];
+  /** 장소 id → 그 장소가 속한 그룹 id 들 */
+  membership: Map<string, Set<string>>;
 };
 
 export const EMPTY_SNAPSHOT: SavedSnapshot = {
   places: new Set(),
   visited: new Set(),
   creators: new Set(),
+  lists: [],
+  membership: new Map(),
 };
+
+/** 이름 중복 유니크 인덱스(saved_lists_user_name_idx)에 걸렸을 때의 PG 코드. */
+const PG_UNIQUE_VIOLATION = "23505";
+
+export type ListResult = { ok: true; id: string } | { ok: false; reason: "duplicate" | "failed" };
 
 /**
  * 현재 유저의 저장 상태를 한 번에 읽는다.
@@ -43,15 +56,23 @@ export async function loadSaved(): Promise<SavedSnapshot> {
   const { data: session } = await sb.auth.getSession();
   if (!session.session) return EMPTY_SNAPSHOT;
 
-  const [saves, subs] = await Promise.all([
+  const [saves, subs, lists, members] = await Promise.all([
     sb.from("saved_places").select("place_id, visited"),
     sb.from("subscriptions").select("creator_id"),
+    sb
+      .from("saved_lists")
+      .select("id, name, position")
+      .order("position", { ascending: true })
+      .order("created_at", { ascending: true }),
+    sb.from("saved_list_places").select("list_id, place_id"),
   ]);
 
   const snapshot: SavedSnapshot = {
     places: new Set(),
     visited: new Set(),
     creators: new Set(),
+    lists: [],
+    membership: new Map(),
   };
 
   for (const row of saves.data ?? []) {
@@ -62,7 +83,108 @@ export async function loadSaved(): Promise<SavedSnapshot> {
   for (const row of subs.data ?? []) {
     if (row.creator_id) snapshot.creators.add(row.creator_id);
   }
+  for (const row of lists.data ?? []) {
+    if (row.id && row.name) {
+      snapshot.lists.push({ id: row.id, name: row.name, position: row.position ?? 0 });
+    }
+  }
+  for (const row of members.data ?? []) {
+    if (!row.place_id || !row.list_id) continue;
+    const set = snapshot.membership.get(row.place_id) ?? new Set<string>();
+    set.add(row.list_id);
+    snapshot.membership.set(row.place_id, set);
+  }
   return snapshot;
+}
+
+/* ── 그룹 ─────────────────────────────────────────────── */
+
+/**
+ * 그룹을 만든다.
+ *
+ * 이름 중복은 DB 유니크 인덱스가 막는다(대소문자·앞뒤 공백 무시).
+ * 앱에서 미리 검사하지 않고 에러 코드로 가르는 이유: 두 탭에서 동시에 만들면
+ * 앱 검사는 통과하고 DB 에서만 걸린다. 어차피 여기서 처리해야 한다.
+ */
+export async function createList(name: string): Promise<ListResult> {
+  const uid = await ensureSession();
+  if (!uid) return { ok: false, reason: "failed" };
+
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 40) return { ok: false, reason: "failed" };
+
+  const sb = supabaseBrowser();
+  const { data, error } = await sb
+    .from("saved_lists")
+    .insert({ user_id: uid, name: trimmed })
+    .select("id")
+    .single();
+
+  if (error) {
+    return { ok: false, reason: error.code === PG_UNIQUE_VIOLATION ? "duplicate" : "failed" };
+  }
+  return { ok: true, id: data.id };
+}
+
+export async function renameList(listId: string, name: string): Promise<ListResult> {
+  const trimmed = name.trim();
+  if (!trimmed || trimmed.length > 40) return { ok: false, reason: "failed" };
+
+  const sb = supabaseBrowser();
+  const { error } = await sb.from("saved_lists").update({ name: trimmed }).eq("id", listId);
+  if (error) {
+    return { ok: false, reason: error.code === PG_UNIQUE_VIOLATION ? "duplicate" : "failed" };
+  }
+  return { ok: true, id: listId };
+}
+
+/**
+ * 그룹을 지운다.
+ *
+ * 안에 있던 장소는 **저장 목록에 그대로 남는다** — saved_list_places 만 cascade 로
+ * 지워지고 saved_places 는 건드리지 않는다. 그룹은 분류일 뿐이라 분류를 없앤다고
+ * 모아둔 곳이 사라지면 안 된다.
+ */
+export async function deleteList(listId: string): Promise<boolean> {
+  const sb = supabaseBrowser();
+  const { error } = await sb.from("saved_lists").delete().eq("id", listId);
+  return !error;
+}
+
+/**
+ * 장소를 그룹에 넣거나 뺀다.
+ *
+ * 넣을 때 saved_places 에도 같이 넣는다 — 그룹에는 있는데 저장 목록에는 없는
+ * 상태를 만들지 않는다. 뺄 때는 저장을 유지한다(분류만 푸는 것이다).
+ */
+export async function setInList(
+  listId: string,
+  placeId: string,
+  next: boolean,
+): Promise<boolean> {
+  const uid = await ensureSession();
+  if (!uid) return false;
+  const sb = supabaseBrowser();
+
+  if (!next) {
+    const { error } = await sb
+      .from("saved_list_places")
+      .delete()
+      .eq("list_id", listId)
+      .eq("place_id", placeId);
+    return !error;
+  }
+
+  const saved = await setSaved(placeId, true);
+  if (!saved) return false;
+
+  const { error } = await sb
+    .from("saved_list_places")
+    .upsert(
+      { list_id: listId, place_id: placeId, user_id: uid },
+      { onConflict: "list_id,place_id" },
+    );
+  return !error;
 }
 
 /** 저장 토글. 성공하면 true. 익명 세션 생성이 막혀 있으면 false. */

@@ -1,0 +1,140 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>05 · DESK — Eatripin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bodoni+Moda:opsz,wght@6..96,500;6..96,700&family=Noto+Serif+KR:wght@500;700&display=swap">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    :root{--wood:#2c1c12;--stat:#f2e4c4;--lamp:#c4782a;--moss:#2c4a36;--ink:#1f160e;--dim:#6b5340}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:#3a2618;color:var(--ink);font-family:"Noto Serif KR",serif}
+    body{background:radial-gradient(1200px 600px at 20% 0%, #c4782a33, transparent 60%), #2a1b12}
+    button{font:inherit}
+    .desk{max-width:1080px;margin:0 auto;padding:20px 16px 80px}
+    header.app{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px;color:var(--stat)}
+    .logo{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--stat)}
+    .logo img{width:36px;height:36px;object-fit:cover;border-radius:50%}
+    .word{font-family:"Bodoni Moda",serif;letter-spacing:.18em;font-size:15px}
+    h1{font-family:"Bodoni Moda",serif;font-size:clamp(34px,6vw,58px);color:var(--stat);margin:0 0 8px;letter-spacing:-.03em;font-weight:700}
+    .lede{color:#e6d3b0;max-width:42ch;margin:0 0 26px}
+
+    .scatter{position:relative;min-height:620px}
+    .card{position:absolute;width:min(260px,70vw);background:var(--stat);padding:10px 10px 14px;box-shadow:0 18px 40px -20px #000a;text-decoration:none;color:inherit;display:block}
+    .card img{width:100%;height:150px;object-fit:cover;display:block}
+    .card b{display:block;margin:8px 4px 0;font-size:18px}
+    .card span{display:block;margin:0 4px;font-size:12px;color:var(--dim)}
+    .c1{left:4%;top:10px;transform:rotate(-4deg)}
+    .c2{left:32%;top:70px;transform:rotate(3deg)}
+    .c3{left:60%;top:20px;transform:rotate(-2deg)}
+    .c4{left:10%;top:300px;transform:rotate(2deg)}
+    .c5{left:42%;top:330px;transform:rotate(-5deg)}
+    .c6{left:68%;top:280px;transform:rotate(4deg)}
+    .card:hover{transform:rotate(0deg) scale(1.03);z-index:2}
+    @media(max-width:700px){
+      .scatter{display:flex;flex-direction:column;gap:16px;min-height:0}
+      .card{position:relative;left:auto!important;top:auto!important;transform:none;width:100%}
+    }
+
+    .spread{display:grid;gap:16px}
+    @media(min-width:900px){.spread{grid-template-columns:1.3fr .7fr}}
+    .blot{position:relative;min-height:520px;background:var(--stat) url(assets/map.jpg) center/cover;box-shadow:0 20px 50px -24px #000c}
+    .pin{position:absolute;transform:translate(-50%,-50%);border:0;background:none;cursor:pointer;padding:0}
+    .pin i{display:block;width:16px;height:16px;background:var(--moss);border-radius:50%;box-shadow:0 0 0 5px #2c4a3640}
+    .notes{display:flex;flex-direction:column;gap:12px}
+    .note{background:#fff6c8;padding:14px 14px 16px;box-shadow:0 10px 24px -16px #0008;transform:rotate(-1deg);border:0;text-align:left;cursor:pointer}
+    .note:nth-child(even){background:#e7f0d8;transform:rotate(1.2deg)}
+    .note b{display:block;font-size:16px}
+    .note small{color:var(--dim)}
+
+    #sheet{position:fixed;inset:0;z-index:40}
+    #sheet[hidden]{display:none}
+    .sheet-scrim{position:absolute;inset:0;background:#1f160e66}
+    .sheet-card{position:absolute;left:0;right:0;bottom:0;background:var(--stat);max-height:88dvh;overflow:auto}
+    @media(min-width:800px){.sheet-card{left:50%;transform:translateX(-50%);width:400px;bottom:24px;box-shadow:0 20px 50px -20px #000}}
+    .sheet-cut img{width:100%;height:150px;object-fit:cover;display:block}
+    .sheet-body{padding:16px}
+    .sheet-k{margin:0;color:var(--moss);font-size:12px}
+    .sheet-body h2{margin:4px 0 0;font-family:"Bodoni Moda",serif;font-size:28px}
+    .sheet-local,.sheet-addr{margin:2px 0;color:var(--dim);font-size:13px}
+    .sheet-sum{line-height:1.65}
+    .sheet-src{display:grid;grid-template-columns:72px 1fr;gap:10px;margin:12px 0}
+    .sheet-src img{width:72px;height:40px;object-fit:cover}
+    .sheet-src span{display:block;font-size:12px;color:var(--dim)}
+    .sheet-cta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn-yt{background:var(--moss);color:#f2e4c4;text-align:center;padding:12px;text-decoration:none;font-weight:700}
+    .btn-map{background:var(--lamp);color:#1f160e;text-align:center;padding:12px;text-decoration:none;font-weight:700}
+    .sheet-x{position:absolute;right:10px;top:10px;border:0;background:#fff;width:32px;height:32px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="labbar">
+    <a href="index.html">← 시안</a>
+    <span class="lab-name">05 DESK · 호텔 책상</span>
+    <nav>
+      <a href="01-split.html">1</a>
+      <a href="02-map.html">2</a>
+      <a href="03-gate.html">3</a>
+      <a href="04-line.html">4</a>
+      <a href="05-desk.html" aria-current="page">5</a>
+      <a href="06-chapters.html">6</a>
+    </nav>
+  </div>
+
+  <div class="desk">
+    <section data-page="home">
+      <header class="app">
+        <a class="logo" href="#" data-open="home">
+          <img src="assets/seal.jpg" alt="">
+          <span class="word">eatripin</span>
+        </a>
+        <span>램프 아래 · 내일 동선</span>
+      </header>
+      <h1>책상 위의 도시</h1>
+      <p class="lede">호텔에 도착한 밤. 채널이 보낸 엽서를 펼칩니다. 겹친 사진을 집어 들면 그 도시 지도가 나옵니다.</p>
+      <div class="scatter">
+        <a class="card c1" href="#" data-open="piece"><img src="assets/tokyo.jpg" alt=""><b>도쿄</b><span>곽튜브가 남긴 엽서 · 34곳</span></a>
+        <a class="card c2" href="#" data-open="piece"><img src="assets/osaka.jpg" alt=""><b>오사카</b><span>츄성훈 · 21곳</span></a>
+        <a class="card c3" href="#" data-open="piece"><img src="assets/fukuoka.jpg" alt=""><b>후쿠오카</b><span>곽튜브 · 12곳</span></a>
+        <a class="card c4" href="#" data-open="piece"><img src="assets/bangkok.jpg" alt=""><b>방콕</b><span>빠니보틀 · 27곳</span></a>
+        <a class="card c5" href="#" data-open="piece"><img src="assets/taipei.jpg" alt=""><b>타이베이</b><span>원지의하루 · 15곳</span></a>
+        <a class="card c6" href="#" data-open="piece"><img src="assets/paris.jpg" alt=""><b>파리</b><span>빠니보틀 · 18곳</span></a>
+      </div>
+    </section>
+
+    <section data-page="piece" hidden>
+      <header class="app">
+        <a class="logo" href="#" data-open="home"><span class="word">← 책상으로</span></a>
+        <span>곽튜브가 접어 둔 도쿄</span>
+      </header>
+      <div class="spread">
+        <div class="blot" id="map"></div>
+        <div class="notes" id="notes"></div>
+      </div>
+    </section>
+  </div>
+  <div id="sheet" hidden></div>
+  <script src="common.js"></script>
+  <script>
+    const notes = document.getElementById("notes");
+    const map = document.getElementById("map");
+    EATRIPIN.places.forEach((p) => {
+      notes.insertAdjacentHTML("beforeend", `
+        <button class="note" data-pin="${p.id}">
+          <b>${p.name}</b>
+          <small>${p.type} · ${p.area} · 영상 ${p.t}</small>
+        </button>`);
+      const b = document.createElement("button");
+      b.className = "pin";
+      b.dataset.pin = p.id;
+      b.style.left = p.x + "%";
+      b.style.top = p.y + "%";
+      b.innerHTML = "<i></i>";
+      b.setAttribute("aria-label", p.name);
+      map.appendChild(b);
+    });
+  </script>
+</body>
+</html>

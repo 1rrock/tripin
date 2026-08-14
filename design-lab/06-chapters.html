@@ -1,0 +1,174 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>06 · CHAPTERS — Eatripin</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/gh/orioncactus/pretendard@v1.3.9/dist/web/static/pretendard.min.css">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;600&display=swap">
+  <link rel="stylesheet" href="lab.css">
+  <style>
+    :root{--bg:#101010;--ph:#f4f4f0;--cue:#ff2a2a;--gold:#c9a227;--dim:#8a8a84}
+    *{box-sizing:border-box}
+    html,body{margin:0;background:var(--bg);color:var(--ph);font-family:Pretendard,sans-serif}
+    button{font:inherit;color:inherit}
+    header.app{display:flex;align-items:center;justify-content:space-between;padding:12px 16px}
+    .logo{display:flex;align-items:center;gap:8px;text-decoration:none;color:inherit}
+    .bar{width:22px;height:4px;background:var(--cue);position:relative}
+    .bar::after{content:"";position:absolute;right:-6px;top:-5px;width:10px;height:14px;background:var(--cue);clip-path:polygon(50% 100%, 0 0, 100% 0)}
+    .word{font-family:Oswald,sans-serif;letter-spacing:.2em;font-size:14px}
+    .stage{max-width:1100px;margin:0 auto;padding:0 16px 80px}
+
+    .player{position:relative;background:#000}
+    .player img.frame{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;opacity:.92}
+    .pip{position:absolute;right:12px;top:12px;width:min(34%,220px);border:1px solid #ffffff33;background:#000}
+    .pip img{width:100%;aspect-ratio:1;object-fit:cover;display:block;opacity:.9}
+    .pip span{display:block;padding:6px 8px;font-size:11px;color:var(--dim)}
+    .scrim{position:absolute;left:0;right:0;bottom:0;padding:40px 16px 14px;background:linear-gradient(transparent,#000 70%)}
+    .scrim h1{margin:0 0 4px;font-family:Oswald,sans-serif;font-size:clamp(26px,5vw,42px);letter-spacing:.02em}
+    .scrim p{margin:0 0 10px;color:#cfcfc8;font-size:14px}
+    .scrub{position:relative;height:28px}
+    .scrub .track{position:absolute;left:0;right:0;top:12px;height:3px;background:#ffffff2a}
+    .scrub .fill{position:absolute;left:0;width:38%;top:12px;height:3px;background:var(--cue)}
+    .mark{position:absolute;top:6px;width:12px;height:12px;border-radius:50%;background:var(--gold);border:2px solid #000;transform:translateX(-50%);cursor:pointer;padding:0}
+
+    .chapters{margin-top:18px}
+    .chapters h2{font-size:13px;letter-spacing:.16em;color:var(--dim);font-weight:700;margin:0 0 8px}
+    .ch{display:grid;grid-template-columns:56px 72px 1fr auto;gap:12px;align-items:center;width:100%;padding:10px 0;border:0;border-top:1px solid #ffffff14;background:none;text-align:left;cursor:pointer}
+    .ch .t{font-variant-numeric:tabular-nums;color:var(--gold);font-family:Oswald,sans-serif}
+    .ch img{width:72px;height:40px;object-fit:cover}
+    .ch small{color:var(--dim)}
+
+    .also{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin-top:28px}
+    @media(min-width:800px){.also{grid-template-columns:repeat(4,1fr)}}
+    .also a{display:block;text-decoration:none;color:inherit}
+    .also img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block}
+    .also b{display:block;margin-top:6px;font-size:14px}
+    .also span{color:var(--dim);font-size:12px}
+
+    .split{display:grid;gap:16px}
+    @media(min-width:900px){.split{grid-template-columns:1.4fr .8fr;align-items:start}}
+    .map{position:relative;min-height:360px;background:#1a1a1a url(assets/map.jpg) center/cover;filter:saturate(.7)}
+    .pin{position:absolute;transform:translate(-50%,-100%);border:0;background:none;cursor:pointer;padding:0}
+    .pin i{display:block;width:10px;height:10px;background:var(--cue);border-radius:50%;box-shadow:0 0 0 4px #ff2a2a44}
+
+    #sheet{position:fixed;inset:0;z-index:40}
+    #sheet[hidden]{display:none}
+    .sheet-scrim{position:absolute;inset:0;background:#0008}
+    .sheet-card{position:absolute;left:0;right:0;bottom:0;background:#1a1a1a;max-height:88dvh;overflow:auto;border-top:2px solid var(--cue)}
+    @media(min-width:800px){.sheet-card{left:auto;right:16px;width:400px;bottom:16px;border:1px solid #333;border-top:2px solid var(--cue)}}
+    .sheet-cut img{width:100%;height:150px;object-fit:cover;display:block}
+    .sheet-body{padding:16px}
+    .sheet-k{margin:0;color:var(--gold);font-size:12px;letter-spacing:.1em}
+    .sheet-body h2{margin:4px 0 0;font-family:Oswald,sans-serif;font-size:28px}
+    .sheet-local,.sheet-addr{margin:2px 0;color:var(--dim);font-size:13px}
+    .sheet-sum{line-height:1.55;color:#ddd}
+    .sheet-src{display:grid;grid-template-columns:72px 1fr;gap:10px;margin:12px 0}
+    .sheet-src img{width:72px;height:40px;object-fit:cover}
+    .sheet-src span{display:block;font-size:12px;color:var(--dim)}
+    .sheet-cta{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+    .btn-yt{background:var(--cue);color:#fff;text-align:center;padding:12px;text-decoration:none;font-weight:800}
+    .btn-map{background:#fff;color:#111;text-align:center;padding:12px;text-decoration:none;font-weight:800}
+    .sheet-x{position:absolute;right:10px;top:10px;border:0;background:#000;color:#fff;width:32px;height:32px;cursor:pointer}
+  </style>
+</head>
+<body>
+  <div class="labbar">
+    <a href="index.html">← 시안</a>
+    <span class="lab-name">06 CHAPTERS · 영상이 목차</span>
+    <nav>
+      <a href="01-split.html">1</a>
+      <a href="02-map.html">2</a>
+      <a href="03-gate.html">3</a>
+      <a href="04-line.html">4</a>
+      <a href="05-desk.html">5</a>
+      <a href="06-chapters.html" aria-current="page">6</a>
+    </nav>
+  </div>
+
+  <header class="app">
+    <a class="logo" href="#" data-open="home"><span class="bar"></span><span class="word">EATRIPIN</span></a>
+    <span style="color:var(--dim);font-size:13px">일시정지된 지도</span>
+  </header>
+
+  <div class="stage">
+    <section data-page="home">
+      <div class="player">
+        <img class="frame" src="assets/tokyo.jpg" alt="">
+        <div class="pip">
+          <img src="assets/map.jpg" alt="">
+          <span>이 장면의 지도</span>
+        </div>
+        <div class="scrim">
+          <h1>곽튜브 · 도쿄에서 먹은 것들</h1>
+          <p>챕터 하나가 가게 하나. 스크러버의 금색 점이 핀입니다.</p>
+          <div class="scrub" id="scrub"></div>
+        </div>
+      </div>
+      <div class="chapters">
+        <h2>CHAPTERS · 장소 목차</h2>
+        <div id="chs"></div>
+      </div>
+      <div class="also">
+        <a href="#" data-open="piece"><img src="assets/osaka.jpg" alt=""><b>츄성훈 · 오사카</b><span>21 챕터</span></a>
+        <a href="#" data-open="piece"><img src="assets/bangkok.jpg" alt=""><b>빠니보틀 · 방콕</b><span>27 챕터</span></a>
+        <a href="#" data-open="piece"><img src="assets/taipei.jpg" alt=""><b>원지의하루 · 타이베이</b><span>15 챕터</span></a>
+        <a href="#" data-open="piece"><img src="assets/fukuoka.jpg" alt=""><b>곽튜브 · 후쿠오카</b><span>12 챕터</span></a>
+      </div>
+    </section>
+
+    <section data-page="piece" hidden>
+      <div class="split">
+        <div>
+          <div class="player">
+            <img class="frame" src="assets/ramen.jpg" alt="">
+            <div class="scrim">
+              <h1>도쿄 · 34 챕터</h1>
+              <p>핀과 목차가 같은 시간축입니다.</p>
+              <div class="scrub" id="scrub2"></div>
+            </div>
+          </div>
+          <div class="chapters" id="chs2"></div>
+        </div>
+        <div class="map" id="map"></div>
+      </div>
+    </section>
+  </div>
+  <div id="sheet" hidden></div>
+  <script src="common.js"></script>
+  <script>
+    function marks(el) {
+      EATRIPIN.places.forEach((p, i) => {
+        const left = 10 + i * 14;
+        el.insertAdjacentHTML("beforeend", `<button class="mark" style="left:${left}%" data-pin="${p.id}" aria-label="${p.name}"></button>`);
+      });
+    }
+    marks(document.getElementById("scrub"));
+    marks(document.getElementById("scrub2"));
+    function list(el, openPiece) {
+      EATRIPIN.places.forEach((p) => {
+        el.insertAdjacentHTML("beforeend", `
+          <button class="ch" ${openPiece ? 'data-open="piece"' : `data-pin="${p.id}"`}>
+            <span class="t">${p.t}</span>
+            <img src="assets/${p.img}" alt="">
+            <span><b>${p.name}</b><br><small>${p.type} · ${p.area}</small></span>
+            <span>→</span>
+          </button>`);
+      });
+    }
+    list(document.getElementById("chs"), true);
+    list(document.getElementById("chs2"), false);
+    const map = document.getElementById("map");
+    EATRIPIN.places.forEach((p) => {
+      const b = document.createElement("button");
+      b.className = "pin";
+      b.dataset.pin = p.id;
+      b.style.left = p.x + "%";
+      b.style.top = p.y + "%";
+      b.innerHTML = "<i></i>";
+      b.setAttribute("aria-label", p.name);
+      map.appendChild(b);
+    });
+  </script>
+</body>
+</html>

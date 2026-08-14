@@ -10,7 +10,9 @@
  * 이고, 컨텍스트가 다 읽은 뒤(`ready`) 켜진다. 그 사이 전환이 튀지 않게 색만 바뀐다.
  */
 
+import { useState } from "react";
 import { Icon } from "@/shared/ui/icons";
+import { ListPicker } from "@/shared/ui/ListPicker";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 
@@ -49,6 +51,63 @@ export function SaveButton({
     >
       <Icon.heart className="size-[18px]" weight={on ? "fill" : "regular"} />
     </button>
+  );
+}
+
+/**
+ * 그룹 담기 — 하트 옆에 선다.
+ *
+ * 하트와 따로 두는 이유: 하트는 한 손가락으로 끝나야 한다. 그룹 고르기를
+ * 하트에 묶으면 "그냥 저장" 이 두 단계가 된다. 대충 담아두는 사람이 대부분이고,
+ * 정리하는 사람만 이 버튼을 누른다.
+ */
+export function ListButton({
+  placeId,
+  placeName,
+  className = "",
+}: {
+  placeId: string;
+  placeName: string;
+  className?: string;
+}) {
+  const { messages: m, t } = useLocale();
+  const { listsOf } = useSaved();
+  const [open, setOpen] = useState(false);
+  const count = listsOf(placeId).size;
+
+  return (
+    <>
+      <button
+        type="button"
+        onClick={(e) => {
+          e.stopPropagation();
+          e.preventDefault();
+          setOpen(true);
+        }}
+        aria-label={t(m.saved.listAddAria, { name: placeName })}
+        aria-haspopup="dialog"
+        className={`grid size-9 shrink-0 cursor-pointer place-items-center transition-transform active:scale-90 ${className}`}
+        style={{
+          borderRadius: "var(--r-frame)",
+          boxShadow: "inset 0 0 0 1px var(--hairline)",
+          color: count > 0 ? "var(--paper)" : "var(--dim)",
+        }}
+      >
+        {/* 담긴 그룹이 있으면 개수를, 없으면 아이콘을 보인다 —
+            "이미 어디 담겨 있나" 가 한눈에 보이는 게 아이콘보다 쓸모 있다 */}
+        {count > 0 ? (
+          <span className="tnum" style={{ fontSize: "var(--t-meta)", fontWeight: 800 }}>
+            {count}
+          </span>
+        ) : (
+          <Icon.menu className="size-[18px]" />
+        )}
+      </button>
+
+      {open ? (
+        <ListPicker placeId={placeId} placeName={placeName} onClose={() => setOpen(false)} />
+      ) : null}
+    </>
   );
 }
 

@@ -23,7 +23,7 @@ import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
-import { SaveButton } from "@/shared/ui/SaveButton";
+import { ListButton, SaveButton } from "@/shared/ui/SaveButton";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
@@ -177,7 +177,8 @@ export function PlaceSheet({
           ) : null}
         </div>
 
-        {/* 하트는 닫기 왼쪽 — 닫기가 오른쪽 끝이라는 위치를 흔들지 않는다 */}
+        {/* 하트·그룹은 닫기 왼쪽 — 닫기가 오른쪽 끝이라는 위치를 흔들지 않는다 */}
+        <ListButton placeId={place.id} placeName={place.name} className="size-8" />
         <SaveButton placeId={place.id} placeName={place.name} className="size-8" />
 
         <button

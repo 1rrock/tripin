@@ -19,11 +19,17 @@ import {
   type ReactNode,
 } from "react";
 import {
+  createList,
+  deleteList,
   EMPTY_SNAPSHOT,
   loadSaved,
+  renameList,
+  setInList,
   setSaved,
   setSubscribed,
   setVisited,
+  type ListMeta,
+  type ListResult,
   type SavedSnapshot,
 } from "@/shared/api/saved";
 
@@ -36,6 +42,15 @@ type Ctx = {
   toggleSaved: (placeId: string) => Promise<void>;
   toggleVisited: (placeId: string) => Promise<void>;
   toggleSubscribed: (creatorId: string) => Promise<void>;
+
+  /* 그룹 */
+  lists: ListMeta[];
+  listsOf: (placeId: string) => Set<string>;
+  countIn: (listId: string) => number;
+  addList: (name: string) => Promise<ListResult>;
+  editList: (listId: string, name: string) => Promise<ListResult>;
+  removeList: (listId: string) => Promise<void>;
+  toggleInList: (listId: string, placeId: string) => Promise<void>;
 };
 
 const SavedContext = createContext<Ctx | null>(null);
@@ -119,6 +134,79 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     [snap.creators],
   );
 
+  const addListCb = useCallback(async (name: string) => {
+    const res = await createList(name);
+    if (res.ok) {
+      /* 낙관적으로 넣지 않는다 — id 가 서버에서 오고, 이름 중복이면 실패한다.
+         저장·하트와 달리 즉시성이 덜 중요하고 실패 경우가 실제로 있다. */
+      setSnap((s) => ({
+        ...s,
+        lists: [...s.lists, { id: res.id, name: name.trim(), position: s.lists.length }],
+      }));
+    }
+    return res;
+  }, []);
+
+  const editListCb = useCallback(async (listId: string, name: string) => {
+    const res = await renameList(listId, name);
+    if (res.ok) {
+      setSnap((s) => ({
+        ...s,
+        lists: s.lists.map((l) => (l.id === listId ? { ...l, name: name.trim() } : l)),
+      }));
+    }
+    return res;
+  }, []);
+
+  const removeListCb = useCallback(async (listId: string) => {
+    /* 그룹만 지운다. 안에 있던 장소는 저장 목록에 그대로 남는다 —
+       membership 에서만 뺀다. */
+    setSnap((s) => {
+      const membership = new Map(s.membership);
+      for (const [placeId, ids] of membership) {
+        if (!ids.has(listId)) continue;
+        const copy = new Set(ids);
+        copy.delete(listId);
+        membership.set(placeId, copy);
+      }
+      return { ...s, lists: s.lists.filter((l) => l.id !== listId), membership };
+    });
+    await deleteList(listId);
+  }, []);
+
+  const toggleInListCb = useCallback(
+    async (listId: string, placeId: string) => {
+      const next = !(snap.membership.get(placeId)?.has(listId) ?? false);
+
+      setSnap((s) => {
+        const membership = new Map(s.membership);
+        const ids = new Set(membership.get(placeId) ?? []);
+        if (next) ids.add(listId);
+        else ids.delete(listId);
+        membership.set(placeId, ids);
+        /* 그룹에 넣으면 저장도 같이 켠다 — setInList 가 DB 에서도 같이 넣는다 */
+        return {
+          ...s,
+          membership,
+          places: next ? toggled(s.places, placeId, true) : s.places,
+        };
+      });
+
+      const ok = await setInList(listId, placeId, next);
+      if (!ok) {
+        setSnap((s) => {
+          const membership = new Map(s.membership);
+          const ids = new Set(membership.get(placeId) ?? []);
+          if (next) ids.delete(listId);
+          else ids.add(listId);
+          membership.set(placeId, ids);
+          return { ...s, membership };
+        });
+      }
+    },
+    [snap.membership],
+  );
+
   return (
     <SavedContext.Provider
       value={{
@@ -130,6 +218,17 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         toggleSaved: toggleSavedCb,
         toggleVisited: toggleVisitedCb,
         toggleSubscribed: toggleSubscribedCb,
+        lists: snap.lists,
+        listsOf: (placeId) => snap.membership.get(placeId) ?? new Set(),
+        countIn: (listId) => {
+          let n = 0;
+          for (const ids of snap.membership.values()) if (ids.has(listId)) n += 1;
+          return n;
+        },
+        addList: addListCb,
+        editList: editListCb,
+        removeList: removeListCb,
+        toggleInList: toggleInListCb,
       }}
     >
       {children}
@@ -155,6 +254,13 @@ export function useSaved(): Ctx {
       toggleSaved: async () => {},
       toggleVisited: async () => {},
       toggleSubscribed: async () => {},
+      lists: [],
+      listsOf: () => new Set<string>(),
+      countIn: () => 0,
+      addList: async () => ({ ok: false, reason: "failed" }),
+      editList: async () => ({ ok: false, reason: "failed" }),
+      removeList: async () => {},
+      toggleInList: async () => {},
     }
   );
 }

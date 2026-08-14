@@ -204,6 +204,28 @@ export type Subscription = {
   created_at: string;
 };
 
+/** 저장 그룹 — "도쿄 3박4일" 처럼 묶는다. 0010_saved_lists.sql */
+export type SavedList = {
+  id: string;
+  user_id: string;
+  name: string;
+  position: number;
+  /** 🚧 공개 공유 예비. 지금은 'private' 고정. */
+  visibility: "private" | "unlisted" | "public";
+  created_at: string;
+};
+
+/**
+ * 그룹 ↔ 장소 (N:M). 한 장소가 여러 그룹에 들어간다.
+ * user_id 는 RLS 를 조인 없이 걸기 위한 비정규화다 — 0010 주석 참조.
+ */
+export type SavedListPlace = {
+  list_id: string;
+  place_id: string;
+  user_id: string;
+  added_at: string;
+};
+
 /**
  * supabase-js 가 기대하는 테이블 타입 형태.
  * Insert/Update 는 Partial<Row> — 필수 필드 검증은 DB 제약(NOT NULL·check)에 맡긴다.
@@ -230,6 +252,8 @@ export type Database = {
       profiles: TableOf<Profile>;
       saved_places: TableOf<SavedPlace>;
       subscriptions: TableOf<Subscription>;
+      saved_lists: TableOf<SavedList>;
+      saved_list_places: TableOf<SavedListPlace>;
     };
     Views: Record<string, never>;
     Functions: {

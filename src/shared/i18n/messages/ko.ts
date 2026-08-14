@@ -221,6 +221,28 @@ export const ko = {
     connecting: "연결하는 중",
     connectFailed: "연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
     connected: "구글 계정에 연결됨",
+
+    /* 그룹 — "도쿄 3박4일" 처럼 묶는다. 한 장소가 여러 그룹에 들어간다. */
+    lists: "그룹",
+    listAdd: "그룹에 담기",
+    listAddAria: "{name} 를 그룹에 담기",
+    listSheetTitle: "어느 그룹에 담을까요",
+    listNew: "새 그룹",
+    listNamePlaceholder: "예: 도쿄 3박4일",
+    listCreate: "만들기",
+    listCancel: "취소",
+    listRename: "이름 바꾸기",
+    listDelete: "그룹 삭제",
+    listDeleteConfirm: "‘{name}’ 그룹을 지울까요? 담긴 장소는 저장 목록에 그대로 남아요.",
+    listDuplicate: "같은 이름의 그룹이 이미 있어요.",
+    listFailed: "처리하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    listEmpty: "아직 그룹이 없어요.",
+    listEmptyHint: "여행별로 묶어두면 갈 때 꺼내 보기 좋아요.",
+    listCount: "{n}곳",
+    listAll: "전체",
+    listUngrouped: "그룹 없음",
+    listDone: "완료",
+    listPlacesEmpty: "이 그룹은 아직 비어 있어요.",
   },
   hub: {
     channelNav: "채널",
@@ -523,6 +545,26 @@ export type Messages = {
     connecting: string;
     connectFailed: string;
     connected: string;
+    lists: string;
+    listAdd: string;
+    listAddAria: string;
+    listSheetTitle: string;
+    listNew: string;
+    listNamePlaceholder: string;
+    listCreate: string;
+    listCancel: string;
+    listRename: string;
+    listDelete: string;
+    listDeleteConfirm: string;
+    listDuplicate: string;
+    listFailed: string;
+    listEmpty: string;
+    listEmptyHint: string;
+    listCount: string;
+    listAll: string;
+    listUngrouped: string;
+    listDone: string;
+    listPlacesEmpty: string;
   };
   hub: {
     channelNav: string;

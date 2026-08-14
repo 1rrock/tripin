@@ -1,0 +1,20 @@
+/* Lab chrome — not part of any world */
+.labbar{
+  position:sticky;top:0;z-index:80;
+  display:flex;align-items:center;gap:10px;
+  padding:8px 14px;
+  background:#111;color:#eee;
+  font:600 12px/1 ui-sans-serif,system-ui,sans-serif;
+  letter-spacing:.02em;
+}
+.labbar a{color:#eee;text-decoration:none;opacity:.7}
+.labbar a:hover{opacity:1}
+.labbar .lab-now{opacity:1;color:#fff}
+.labbar nav{display:flex;gap:4px;margin-left:auto;flex-wrap:wrap}
+.labbar nav a{
+  width:26px;height:26px;display:grid;place-items:center;
+  border-radius:999px;background:#2a2a2a;color:#ccc;
+}
+.labbar nav a[aria-current="page"]{background:#fff;color:#111}
+.labbar .lab-name{display:none}
+@media(min-width:720px){.labbar .lab-name{display:inline;opacity:.55;margin-left:6px}}
