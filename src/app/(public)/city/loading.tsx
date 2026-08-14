@@ -1,8 +1,4 @@
-import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { getLocale } from "@/shared/i18n/locale";
-import { CitySkeleton } from "@/shared/ui/Skeleton";
-
-export default async function Loading() {
-  const locale = await getLocale();
-  return <CitySkeleton label={getDictionary(locale).common.loading} />;
+/** `/map` 으로 넘기는 리다이렉트 구간 — 다른 화면 뼈대를 깜빡이지 않는다. */
+export default function Loading() {
+  return null;
 }
