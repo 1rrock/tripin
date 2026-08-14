@@ -285,3 +285,35 @@ export async function linkGoogle(backTo: string): Promise<string | null> {
   });
   return error ? error.message : null;
 }
+
+/**
+ * 로그아웃.
+ *
+ * scope 를 'local' 로 둔다 — 기본값 'global' 은 **그 유저가 로그인한 모든 기기**를
+ * 끊는다. 집 컴퓨터에서 로그아웃했다고 폰의 저장 목록이 잠기면 안 된다.
+ *
+ * `resetSession()` 을 같이 부르지 않으면 확인 캐시(`verifiedUid`)가 남아서
+ * 다음 하트가 이미 없는 유저로 쓰기를 시도한다.
+ */
+export async function signOut(): Promise<boolean> {
+  const { error } = await supabaseBrowser().auth.signOut({ scope: "local" });
+  resetSession();
+  return !error;
+}
+
+/**
+ * 탈퇴 — auth.users row 를 지운다. 저장·그룹·구독은 FK cascade 로 같이 사라진다.
+ *
+ * 클라이언트에서 직접 못 한다. anon 키에는 유저 삭제 권한이 없고, RLS 로 열어줄
+ * 수도 없다(auth 스키마다). service_role 키가 필요하고 그건 서버에만 있다
+ * (`shared/config/env.ts:82`). 그래서 라우트 핸들러를 한 번 경유한다.
+ */
+export async function deleteAccount(): Promise<boolean> {
+  const res = await fetch("/api/account/delete", { method: "POST" });
+  if (!res.ok) return false;
+  /* 서버가 유저를 지웠으므로 남은 쿠키는 죽은 토큰이다. 지우지 않으면
+     다음 쓰기가 23503 을 맞고 나서야 회복한다. */
+  await supabaseBrowser().auth.signOut({ scope: "local" });
+  resetSession();
+  return true;
+}

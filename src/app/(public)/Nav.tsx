@@ -13,7 +13,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, House, MapTrifold } from "@phosphor-icons/react";
+import { Heart, House, MapTrifold, UserCircle } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
@@ -108,6 +108,21 @@ export function DesktopRail() {
           </Link>
         );
       })}
+
+      {/* 계정은 레일 **맨 아래**에 따로 선다. 탭 셋과 같은 무리로 보이면 안 된다 —
+          홈·지도·저장은 콘텐츠를 가르는 축이고, 이건 설정함이다.
+          mt-auto 가 그 거리를 만든다(레일이 bottom:16px 까지 늘어나 있다). */}
+      <Link
+        href={href("/account")}
+        aria-label={m.account.nav}
+        aria-current={isActive(pathname, "/account") ? "page" : undefined}
+        className="desktop-rail-btn mt-auto"
+      >
+        <UserCircle
+          className="size-5"
+          weight={isActive(pathname, "/account") ? "fill" : "regular"}
+        />
+      </Link>
     </nav>
   );
 }

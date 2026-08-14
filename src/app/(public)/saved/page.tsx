@@ -52,6 +52,24 @@ export default async function SavedPage() {
             <Icon.map className="size-4" />
             {m.saved.emptyCta}
           </Link>
+
+          {/* 이 줄이 없으면 **기기를 넘어온 사람이 로그인을 찾을 방법이 없다.**
+              연결 배너는 아래 본문에 있는데, 저장이 0개면 여기서 return 해버려서
+              배너까지 못 간다. 그런데 새 기기는 정의상 저장이 0개다 —
+              `ROADMAP.md` 의 "로그인은 기기를 넘을 때만 요구" 가 하필 그 순간에만
+              작동하지 않던 구멍이다. 아직 연결 안 한 사람에게만 보인다. */}
+          {!view.linked ? (
+            <p className="mt-(--stack)" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+              {m.saved.restore}{" "}
+              <Link
+                href={localePath("/account", locale)}
+                className="underline underline-offset-4"
+                style={{ color: "var(--paper)", fontWeight: 700 }}
+              >
+                {m.saved.restoreCta}
+              </Link>
+            </p>
+          ) : null}
         </div>
       </>
     );

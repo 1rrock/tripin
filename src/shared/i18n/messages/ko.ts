@@ -242,6 +242,51 @@ export const ko = {
     listUngrouped: "그룹 없음",
     listDone: "완료",
     listPlacesEmpty: "이 그룹은 아직 비어 있어요.",
+    /* 저장이 0개일 때 — 새 기기로 옮겨온 사람이 로그인을 찾을 수 있는 유일한 줄 */
+    restore: "다른 기기에서 저장하셨나요?",
+    restoreCta: "구글로 연결해서 가져오기",
+  },
+  account: {
+    /* 마이페이지. 게이트가 아니라 **설정함**이다 — 여기 안 와도 전부 된다.
+       로그인 권유는 여전히 /saved 배너가 맡고, 이 화면은 이미 만든 계정을
+       관리하는 자리다(로그아웃·탈퇴는 여기 말고 있을 데가 없다). */
+    nav: "마이",
+    title: "마이페이지",
+    anon: "이 기기에서만 쓰는 중",
+    anonHint: "구글로 연결하면 다른 기기에서도 이어서 볼 수 있어요.",
+    connect: "구글로 연결하기",
+    connecting: "연결하는 중",
+    connectedAs: "구글 계정에 연결됨",
+    signOut: "로그아웃",
+    signOutHint: "이 기기에서만 나갑니다. 저장한 곳은 지워지지 않아요.",
+    signOutConfirm: "로그아웃할까요? 다시 연결하면 저장한 곳이 그대로 돌아와요.",
+
+    savedHeading: "저장",
+    savedPlaces: "저장한 곳",
+    savedLists: "그룹",
+    countPlaces: "{n}곳",
+    countLists: "{n}개",
+
+    subsHeading: "구독한 채널",
+    subsCount: "{n}개 채널",
+    subsEmpty: "아직 구독한 채널이 없어요.",
+    subsEmptyHint: "채널 화면에서 구독하면 여기 모입니다.",
+    subsEmptyCta: "채널 둘러보기",
+    unsubscribeAria: "{name} 구독 해제",
+
+    noticeHeading: "약관 · 정책",
+
+    dangerHeading: "계정",
+    deleteAccount: "탈퇴하기",
+    deleteHint: "저장한 곳·그룹·구독이 모두 지워집니다. 되돌릴 수 없어요.",
+    deleteConfirm: "정말 탈퇴할까요? 저장한 곳 {n}곳과 구독이 모두 지워지고 되돌릴 수 없어요.",
+    deleting: "지우는 중",
+    deleteFailed: "탈퇴하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+
+    /* 구글에서 돌아온 뒤의 실패. 반환값이 아니라 URL 로 오기 때문에
+       이 문구가 없으면 유저는 아무 일도 안 일어난 것처럼 본다. */
+    errAlreadyLinked: "이 구글 계정은 이미 다른 계정에 연결돼 있어요. 로그아웃한 뒤 그 계정으로 로그인해 주세요.",
+    errGeneric: "연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
   },
   hub: {
     channelNav: "채널",
@@ -563,6 +608,40 @@ export type Messages = {
     listUngrouped: string;
     listDone: string;
     listPlacesEmpty: string;
+    restore: string;
+    restoreCta: string;
+  };
+  account: {
+    nav: string;
+    title: string;
+    anon: string;
+    anonHint: string;
+    connect: string;
+    connecting: string;
+    connectedAs: string;
+    signOut: string;
+    signOutHint: string;
+    signOutConfirm: string;
+    savedHeading: string;
+    savedPlaces: string;
+    savedLists: string;
+    countPlaces: string;
+    countLists: string;
+    subsHeading: string;
+    subsCount: string;
+    subsEmpty: string;
+    subsEmptyHint: string;
+    subsEmptyCta: string;
+    unsubscribeAria: string;
+    noticeHeading: string;
+    dangerHeading: string;
+    deleteAccount: string;
+    deleteHint: string;
+    deleteConfirm: string;
+    deleting: string;
+    deleteFailed: string;
+    errAlreadyLinked: string;
+    errGeneric: string;
   };
   hub: {
     channelNav: string;

@@ -230,6 +230,47 @@ export const en: Messages = {
     listUngrouped: "Ungrouped",
     listDone: "Done",
     listPlacesEmpty: "This group is empty.",
+    restore: "Saved these on another device?",
+    restoreCta: "Connect with Google to bring them over",
+  },
+  account: {
+    nav: "You",
+    title: "Your account",
+    anon: "This device only",
+    anonHint: "Connect with Google to pick up where you left off on any device.",
+    connect: "Connect with Google",
+    connecting: "Connecting",
+    connectedAs: "Connected to Google",
+    signOut: "Sign out",
+    signOutHint: "Signs out on this device only. Nothing you saved is deleted.",
+    signOutConfirm: "Sign out? Everything you saved comes back when you reconnect.",
+
+    savedHeading: "Saved",
+    savedPlaces: "Saved places",
+    savedLists: "Groups",
+    countPlaces: "{n}",
+    countLists: "{n}",
+
+    subsHeading: "Channels you follow",
+    subsCount: "{n} channels",
+    subsEmpty: "You aren't following any channels yet.",
+    subsEmptyHint: "Follow a channel and it shows up here.",
+    subsEmptyCta: "Browse channels",
+    unsubscribeAria: "Unfollow {name}",
+
+    noticeHeading: "Terms & policies",
+
+    dangerHeading: "Account",
+    deleteAccount: "Delete account",
+    deleteHint: "Your saved places, groups and follows are all removed. This can't be undone.",
+    deleteConfirm:
+      "Delete your account? All {n} saved places and your follows are removed for good.",
+    deleting: "Deleting",
+    deleteFailed: "Couldn't delete your account. Please try again shortly.",
+
+    errAlreadyLinked:
+      "That Google account is already connected to another account. Sign out and sign in with it instead.",
+    errGeneric: "Couldn't connect. Please try again shortly.",
   },
   hub: {
     channelNav: "Channels",

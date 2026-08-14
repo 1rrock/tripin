@@ -2,6 +2,7 @@ import Link from "next/link";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { LocaleProvider } from "@/shared/i18n/LocaleContext";
+import { Icon } from "@/shared/ui/icons";
 import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
 import { SavedProvider } from "@/shared/ui/SavedContext";
@@ -54,6 +55,20 @@ export default async function PublicLayout({ children }: { children: React.React
           <a href="#notice" className="nav-link index hidden shrink-0 md:inline">
             {m.nav.notice}
           </a>
+
+          {/* 계정 — 헤더 우측. 탭바에 넣지 않는 이유가 있다:
+              `c197783` 에서 엄지 영역을 위해 탭을 일부러 셋으로 줄였고, 계정은
+              콘텐츠 축(홈·지도·저장)과 성격이 다른 설정함이다. 넷째 탭이 되면
+              저장을 한 번도 안 하는 사람에게 평생 안 누르는 칸이 하나 생긴다.
+              데스크톱(lg+)에서는 이 헤더가 숨고 DesktopRail 맨 아래가 같은 일을 한다. */}
+          <Link
+            href={localePath("/account", locale)}
+            aria-label={m.account.title}
+            className="grid size-9 shrink-0 place-items-center rounded-full transition-colors active:opacity-70"
+            style={{ color: "var(--dim)" }}
+          >
+            <Icon.user className="size-[22px]" />
+          </Link>
         </header>
 
         <div className="flex-1">{children}</div>

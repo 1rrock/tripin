@@ -31,7 +31,10 @@ import {
   MapTrifold,
   Play,
   Playlist,
+  SignOut,
   Tag,
+  Trash,
+  UserCircle,
   X,
   type Icon as PhosphorIcon,
   type IconWeight,
@@ -72,6 +75,9 @@ export const IconCup = ph(Coffee);
 export const IconBed = ph(Bed);
 export const IconHeart = ph(Heart);
 export const IconCheck = ph(Check);
+export const IconUser = ph(UserCircle);
+export const IconSignOut = ph(SignOut);
+export const IconTrash = ph(Trash);
 
 /** Act 가 icon 이름으로 글리프를 고를 때만 쓰는 안쪽 표. 밖으로 내보내지 않는다. */
 const GLYPH = {
@@ -94,6 +100,9 @@ const GLYPH = {
   bed: IconBed,
   heart: IconHeart,
   check: IconCheck,
+  user: IconUser,
+  signOut: IconSignOut,
+  trash: IconTrash,
 } as const;
 
 export type IconName = keyof typeof GLYPH;

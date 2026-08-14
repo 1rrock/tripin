@@ -25,7 +25,10 @@ import {
   IconPin,
   IconPlay,
   IconSearch,
+  IconSignOut,
   IconTag,
+  IconTrash,
+  IconUser,
 } from "@/shared/ui/icons.client";
 
 export { Act } from "@/shared/ui/icons.client";
@@ -51,4 +54,7 @@ export const Icon = {
   bed: IconBed,
   heart: IconHeart,
   check: IconCheck,
+  user: IconUser,
+  signOut: IconSignOut,
+  trash: IconTrash,
 } as const;
