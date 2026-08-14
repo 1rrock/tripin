@@ -185,16 +185,30 @@ GET /auth/v1/user/identities/authorize?provider=google
 같은 요청에서 익명 가입(`POST /auth/v1/signup`)은 200 이므로 **익명 인증만 켜져 있는 상태**다.
 증상이 "눌러도 아무 일도 안 남" 하나로만 보여서 원인을 가리기 어려웠다.
 
-순서대로 확인할 것:
+대시보드를 직접 훑어 항목별로 확인한 결과(2026-08-15):
 
-| # | 위치 | 항목 | 안 되면 나는 증상 |
+| # | 위치 | 항목 | 상태 |
 |---|---|---|---|
-| 1 | Supabase · Auth → Providers | **Google 활성화** + GCP `Eatripin Web (Supabase)` 의 Client ID·Secret | `provider is not enabled` ← **지금 여기** |
-| 2 | Supabase · Auth → Advanced | **Enable manual linking** | 익명 계정 승격(`linkIdentity`)이 422. 저장한 게 있는 유저 전원이 여기 걸린다 |
-| 3 | Supabase · Auth → URL Configuration | Redirect URLs 에 `http://localhost:3000/**` 와 배포 도메인 `/**` | Site URL 로 조용히 튕김 |
-| 4 | GCP · OAuth 동의 화면 | 앱 게시(위 참조) | 구글 화면에서 "액세스 차단됨" |
+| 1 | Supabase · Auth → Providers | **Google 활성화** + Client ID·Secret | 🔴 **미완 — 유일하게 남은 것** |
+| 2 | Supabase · Auth → Providers · User Signups | Allow manual linking | ✅ 이미 켜져 있었다 |
+| 3 | Supabase · Auth → URL Configuration | Redirect URLs | ✅ `http://localhost:3000/**` 추가함 |
+| 4 | GCP · 대상 | 테스트 사용자 | ✅ `minddoni0703@gmail.com` 추가함 |
 
-2번이 특히 놓치기 쉽다 — 기본값이 꺼짐인데, 1번만 켜면 **저장한 적 없는 사람은 로그인되고 저장한 사람은 안 되는** 갈린 증상이 나온다.
+1번의 Client ID 는 이것이다(공개값 — OAuth URL 에 그대로 실려 나간다):
+
+```
+226117802795-2dmvtbunb8amblkd32i61lelb06q6460.apps.googleusercontent.com
+```
+
+Client Secret 은 GCP 콘솔의 같은 클라이언트 상세에 있다. 붙여넣고 저장하면 끝이다.
+
+**2번은 켜져 있어서 다행이다.** 기본값이 꺼짐이라 흔히 놓치는데, 1번만 켜고 2번이 꺼져 있으면
+**저장한 적 없는 사람은 로그인되고 저장한 사람은 안 되는** 갈린 증상이 나온다
+(후자는 익명 계정 승격이라 `linkIdentity` 경로를 탄다).
+
+⚠️ **앱은 계속 "테스트 중"이다.** 지금은 테스트 사용자 1명만 로그인할 수 있다.
+`대상 → 앱 게시` 는 **배포 시점에** 한다 — Site URL 이 아직 `http://localhost:3000` 이라
+지금 공개해 봐야 열어줄 곳이 없다. 게시할 때 Redirect URLs 에 배포 도메인 `/**` 도 같이 추가한다.
 
 ### 🔜 Maps API 를 `eatripin` 프로젝트로 이전
 
