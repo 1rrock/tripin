@@ -6,21 +6,22 @@ import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
-import { Avatar, Frame, Index, Rule } from "@/shared/ui/frame";
-import { Thumb } from "@/shared/ui/Thumb";
+import { Avatar, Rule } from "@/shared/ui/frame";
 
 /**
- * 채널 인덱스 — 필름 롤 (채널 하나가 롤 하나).
+ * 채널 인덱스 — 구독 목록 문법.
  *
- * 이름·숫자만으로는 채널이 구분되지 않는다 — 곽튜브와 성시경의 차이는
- * 컷 4장이 이름보다 빨리 말해 준다. 이 월드에서 롤 = 채널이라는 정의
- * (globals.css 방향 계약)를 목록 문법으로 그대로 옮긴 화면이다.
+ * 큰 원형 프로필 + 이름 + `@핸들 · 지표` + 소개 줄. 유튜브 "모든 구독 채널"이
+ * 그 문법이고, 이 화면이 답해야 하는 질문("누구를 따라갈까")과 정확히 같은
+ * 질문을 푸는 화면이라 그대로 가져왔다.
  *
- * 🔴 이 화면에 지도를 얹지 않는다. 지도는 "어디로 갈까"를 묻는 화면(`/map`)의
- *    것이고, 여기는 "누구를 따라갈까"를 묻는다 — 답이 장소가 아니라 사람이라
- *    핀을 뿌려 봐야 채널이 구분되지 않는다. 한때 데스크톱에만 맵 캔버스를
- *    얹고 목록을 `lg:hidden` 으로 감췄었는데, 그러면 넓은 화면에서 정작
- *    "어떤 채널이 있나"를 볼 수 없었다. 목록은 전 구간에 선다.
+ * 컷 4장짜리 필름 롤을 걷어냈다 — 롤은 "이 채널이 뭘 찍나"를 보여주지만
+ * 목록에서 필요한 건 채널을 **서로 구분**하는 일이고, 그건 프로필 사진과
+ * 이름·소개가 더 빨리 한다. 컷이 깔리면 한 줄이 200px 을 먹어 한 화면에
+ * 서너 채널밖에 안 들어왔다.
+ *
+ * 🔴 지도를 얹지 않는다. 답이 장소가 아니라 사람이라 핀을 뿌려 봐야 채널이
+ *    구분되지 않는다. 지도는 `/map` 의 것이다.
  */
 
 export async function generateMetadata(): Promise<Metadata> {
@@ -52,7 +53,7 @@ export default async function ChannelsPage() {
   const { creators } = await loadHomeFeed();
 
   return (
-    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-4 lg:max-w-3xl">
+    <main className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) pt-5 lg:max-w-3xl">
       <JsonLd
         data={[
           breadcrumbList([
@@ -68,79 +69,86 @@ export default async function ChannelsPage() {
           ),
         ]}
       />
-      {/* 화면에는 안 보이지만 문서에는 남는 제목. 시각적 헤더는 짧게 두어도
-          스크린리더의 목차와 검색엔진의 주제 신호는 있어야 한다.
-          `title` 은 훅("누구 따라갈까요?")이라 여기 쓰지 않는다 — `srHeading` 은 설명형이다. */}
-      <header className="pb-3">
-        <h1 className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">{m.nav.channel}</h1>
+      {/* `title`("누구 따라갈까요?")은 훅이라 제목 자리에 쓰지 않는다.
+          화면에는 짧은 이름만 세우고, 설명형 `srHeading` 은 문서에 남긴다. */}
+      <header className="pb-2">
+        <h1
+          className="font-black"
+          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+        >
+          {m.nav.channel}
+        </h1>
         <p className="sr-only">{m.channels.srHeading}</p>
       </header>
 
       {creators.length === 0 ? (
-        <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.channels.empty}</p>
+        <p className="pt-2" style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
+          {m.channels.empty}
+        </p>
       ) : (
-        <ul className="mt-(--stack) flex flex-col">
-          {creators.map((c, i) => (
-            <li key={c.slug}>
-              {i > 0 ? <Rule /> : null}
-              <Link
-                href={localePath(`/c/${c.slug}`, locale)}
-                className="roll -mx-2.5 block rounded-(--r-control) px-2.5 py-(--stack)"
-                aria-label={t(m.channels.openChannel, {
-                  name: c.displayName,
-                  places: c.placeCount,
-                })}
-              >
-                {/* 이름+핸들 묶음을 타이트하게 두고 아바타와 세로 중앙.
-                    핸들 간격이 넓으면 블록이 아래로 처져 프로필과 어긋난다.
-                    영상/곳 수는 이름과 같은 줄. */}
-                <span className="flex items-center gap-3.5">
+        <ul className="flex flex-col">
+          {creators.map((c, i) => {
+            /* 소개가 비면 다녀간 도시가 그 자리를 받는다 — 이 앱에서 채널을
+               가르는 진짜 신호는 "어디를 다녔나"라 빈 줄로 두는 것보다 낫다 */
+            const cityLine = c.cities.map((x) => displayCityName(x, locale)).join(" · ");
+            const blurb = c.bio?.trim() || cityLine;
+
+            return (
+              <li key={c.slug}>
+                {i > 0 ? <Rule /> : null}
+                <Link
+                  href={localePath(`/c/${c.slug}`, locale)}
+                  className="roll -mx-2.5 flex items-start gap-4 rounded-(--r-control) px-2.5 py-5"
+                  aria-label={t(m.channels.openChannel, {
+                    name: c.displayName,
+                    places: c.placeCount,
+                  })}
+                >
                   <Avatar
                     initials={c.initials}
                     accent={c.accentColor}
                     src={c.avatarUrl}
-                    size={42}
+                    size={64}
                   />
+
                   <span className="min-w-0 flex-1">
-                    <span className="flex items-baseline justify-between gap-3">
-                      <span
-                        className="min-w-0 truncate font-bold"
-                        style={{
-                          fontSize: "var(--t-title)",
-                          letterSpacing: "-0.025em",
-                          lineHeight: 1.15,
-                        }}
-                      >
-                        {c.displayName}
-                      </span>
-                      <Index className="tnum shrink-0">
-                        {t(m.channels.rollMeta, {
+                    <span className="block truncate text-base font-bold tracking-[-0.02em] lg:text-lg">
+                      {c.displayName}
+                    </span>
+
+                    {/* 핸들과 지표는 한 줄 — 구독자 수 자리에 우리 단위(영상·곳)를 넣는다 */}
+                    <span
+                      className="mt-1 block truncate"
+                      style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                    >
+                      {[
+                        c.handle,
+                        t(m.channels.rollMeta, {
                           videos: c.videoCount,
                           places: c.placeCount,
-                        })}
-                      </Index>
+                        }),
+                      ]
+                        .filter(Boolean)
+                        .join(" · ")}
                     </span>
-                    <span className="mt-0.5 block truncate leading-none">
-                      <Index>
-                        {[c.handle, ...c.cities.map((x) => displayCityName(x, locale))]
-                          .filter(Boolean)
-                          .join(" · ")}
-                      </Index>
-                    </span>
-                  </span>
-                </span>
 
-                <span className="no-scrollbar -mx-(--gutter) mt-3 flex gap-2 overflow-x-auto px-(--gutter) sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0">
-                  {/* 첫 채널의 첫 컷만 eager — 이 페이지의 LCP 후보 */}
-                  {c.recentVideos.map((v, vi) => (
-                    <Frame key={v.youtubeId} className="w-[46%] shrink-0 sm:w-auto">
-                      <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i === 0 && vi === 0} />
-                    </Frame>
-                  ))}
-                </span>
-              </Link>
-            </li>
-          ))}
+                    {blurb ? (
+                      <span
+                        className="mt-1.5 line-clamp-2 block"
+                        style={{
+                          fontSize: "var(--t-meta)",
+                          color: "var(--dim)",
+                          lineHeight: 1.6,
+                        }}
+                      >
+                        {blurb}
+                      </span>
+                    ) : null}
+                  </span>
+                </Link>
+              </li>
+            );
+          })}
           <Rule />
         </ul>
       )}

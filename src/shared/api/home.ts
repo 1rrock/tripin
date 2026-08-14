@@ -24,6 +24,8 @@ export interface FeedCreator {
   avatarUrl: string | null;
   /** DB 에 `@` 포함 저장 — 표시할 때 `@` 를 덧붙이지 마라 */
   handle: string | null;
+  /** 채널 소개. 채널 목록의 설명 줄이 쓴다 — 비어 있으면 도시 목록이 그 자리를 받는다 */
+  bio: string | null;
   placeCount: number;
   videoCount: number;
   /** 최근 영상 순 — 채널 목록의 필름 롤이 이 컷들을 쓴다. 제목은 alt 용 원문 그대로 */
@@ -98,7 +100,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
 
   const { data: creators } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_handle")
+    .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_handle, bio")
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
 
@@ -255,6 +257,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       accentColor: c.accent_color,
       avatarUrl: c.avatar_url,
       handle: c.youtube_handle,
+      bio: c.bio,
       placeCount,
       videoCount: myVideos.length,
       recentVideos: myVideos.slice(0, 4).map((v) => ({ youtubeId: v.youtubeId, title: v.title })),
