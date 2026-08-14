@@ -185,22 +185,22 @@ GET /auth/v1/user/identities/authorize?provider=google
 같은 요청에서 익명 가입(`POST /auth/v1/signup`)은 200 이므로 **익명 인증만 켜져 있는 상태**다.
 증상이 "눌러도 아무 일도 안 남" 하나로만 보여서 원인을 가리기 어려웠다.
 
-대시보드를 직접 훑어 항목별로 확인한 결과(2026-08-15):
+대시보드를 직접 훑어 항목별로 확인·조치한 결과 — **넷 다 완료. 로그인 동작 확인함**(2026-08-15):
 
 | # | 위치 | 항목 | 상태 |
 |---|---|---|---|
-| 1 | Supabase · Auth → Providers | **Google 활성화** + Client ID·Secret | 🔴 **미완 — 유일하게 남은 것** |
+| 1 | Supabase · Auth → Providers | **Google 활성화** + Client ID·Secret | ✅ 설정함 |
 | 2 | Supabase · Auth → Providers · User Signups | Allow manual linking | ✅ 이미 켜져 있었다 |
 | 3 | Supabase · Auth → URL Configuration | Redirect URLs | ✅ `http://localhost:3000/**` 추가함 |
 | 4 | GCP · 대상 | 테스트 사용자 | ✅ `minddoni0703@gmail.com` 추가함 |
 
-1번의 Client ID 는 이것이다(공개값 — OAuth URL 에 그대로 실려 나간다):
+1번의 Client ID(공개값 — OAuth URL 에 그대로 실려 나간다). 재설정하거나 다른 환경을 붙일 때 쓴다:
 
 ```
 226117802795-2dmvtbunb8amblkd32i61lelb06q6460.apps.googleusercontent.com
 ```
 
-Client Secret 은 GCP 콘솔의 같은 클라이언트 상세에 있다. 붙여넣고 저장하면 끝이다.
+Client Secret 은 GCP 콘솔의 같은 클라이언트 상세(`클라이언트 → Eatripin Web (Supabase)` → 추가 정보)에 있다.
 
 **2번은 켜져 있어서 다행이다.** 기본값이 꺼짐이라 흔히 놓치는데, 1번만 켜고 2번이 꺼져 있으면
 **저장한 적 없는 사람은 로그인되고 저장한 사람은 안 되는** 갈린 증상이 나온다
