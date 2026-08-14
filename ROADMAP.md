@@ -160,6 +160,33 @@ blinded_at  timestamptz,   -- 임시조치 시작 시각. +30일이 결론 기�
 
    이 셋은 이 제품에서 자연스럽게 나오지만, **재료(저장·구독 데이터)가 먼저 쌓여야** 만들 수 있다.
 
+### 구글 클라우드 — `eatripin` 프로젝트 (2026-08-14 생성)
+
+계정: `minddoni0703@gmail.com` (Supabase tripin 프로젝트와 동일 계정).
+
+- OAuth 동의 화면: 앱 이름 **Eatripin**, 대상 **외부**
+- OAuth 클라이언트: `Eatripin Web (Supabase)` (웹 애플리케이션)
+- 리디렉션 URI: `https://cdimzihwqkesvcmogdkd.supabase.co/auth/v1/callback`
+
+**optisearch 에 만들지 않은 이유:** OAuth 동의 화면은 GCP 프로젝트당 하나다. optisearch 에 만들면 Eatripin 유저가 구글 로그인할 때 "optisearch에 로그인" 이 뜬다. 로그인은 신뢰가 걸린 유일한 순간이라 여기서 낯선 이름이 뜨면 그대로 이탈한다.
+
+**⚠️ 앱이 아직 "테스트" 모드다.** 외부 대상은 게시 전까지 테스트 사용자만 로그인할 수 있다. 실제 유저에게 열려면 `대상 → 앱 게시`. 요청 스코프가 email·profile·openid 뿐이라 **구글 검증 심사는 필요 없다** (민감 스코프 아님).
+
+### 🔜 Maps API 를 `eatripin` 프로젝트로 이전
+
+지금은 optisearch 프로젝트에 있다. 옮기는 것이 맞지만 **별도 작업**으로 잡는다 — OAuth 와 달리 Maps 는 **결제 계정 등록이 선행**돼야 하고, 프로덕션 지도가 걸려 있다.
+
+순서를 지켜야 한다:
+1. `eatripin` 에 결제 계정 등록
+2. 새 키 발급 + 제한 설정 — API 제한 **Maps JavaScript API 하나만**, HTTP 리퍼러(`localhost:3000` + 배포 도메인) (`shared/config/env.ts:41`)
+3. `.env.local` **과 Vercel 환경변수** 양쪽 교체
+4. 실제 지도 렌더 확인
+5. 그제서야 optisearch 쪽 구키 삭제
+
+`GOOGLE_PLACES_API_KEY`(서버 키)도 따로 옮긴다. `env.ts:43` — **브라우저 키와 절대 같은 키를 쓰지 않는다.**
+
+미루면 오늘 두 번 겪은 "계정이 달라 콘솔에 못 들어감" 문제가 지도에도 남는다.
+
 ### 그 외 제출물
 
 - **App Privacy 라벨 / Play Data safety** — 계정이 생기는 순간 둘 다 제출물이 된다.
