@@ -300,7 +300,8 @@ export const ko = {
     allTypes: "전체",
     placesAll: "{n}곳",
     placesFiltered: "{shown} / {total}곳",
-    pinHint: " · 목록은 영상 · 핀은 상세",
+    /* 이 화면에는 핀이 없다 — 지도를 /map 으로 넘겼다(CreatorExplorer 주석) */
+    pinHint: " · 누르면 출처 영상으로",
     onlyThisCity: "이 도시 지도만 보기",
     noMatch: "조건에 맞는 장소가 없어요.",
     clearFilters: "필터 지우기",

@@ -284,7 +284,7 @@ export const en: Messages = {
     allTypes: "All",
     placesAll: "{n} places",
     placesFiltered: "{shown} / {total}",
-    pinHint: " · list opens video · pin opens details",
+    pinHint: " · tap a row for its source video",
     onlyThisCity: "Open this city map only",
     noMatch: "No places match these filters.",
     clearFilters: "Clear filters",

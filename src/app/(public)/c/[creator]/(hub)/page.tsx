@@ -125,7 +125,9 @@ export default async function CreatorHubPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-2.5 px-(--gutter) pt-4 pb-0 lg:hidden">
+      {/* 데스크톱에서도 보인다. 예전엔 지도 패널 안에 별도 h1 이 있어서 여기를
+          lg:hidden 으로 접었는데, 지도를 걷어내며 그 h1 도 같이 사라졌다. */}
+      <header className="mx-auto flex w-full max-w-lg flex-col gap-2.5 px-(--gutter) pt-4 pb-0 lg:max-w-3xl">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
             {m.common.home}
@@ -176,10 +178,6 @@ export default async function CreatorHubPage({
 
       <CreatorExplorer
         creatorSlug={creatorSlug}
-        creatorName={creator.display_name}
-        creatorInitials={creator.initials}
-        creatorAccent={creator.accent_color}
-        creatorAvatar={creator.avatar_url}
         places={places}
         cities={cities}
         initialType={parseType(sp.type)}
@@ -189,7 +187,7 @@ export default async function CreatorHubPage({
       {videos.length > 0 ? (
         <section
           aria-labelledby="video-h"
-          className="flex flex-col gap-(--stack) px-(--gutter)"
+          className="mx-auto flex w-full max-w-lg flex-col gap-(--stack) px-(--gutter) lg:max-w-3xl"
         >
           <h2 id="video-h" className="index" style={{ color: "var(--dim)" }}>
             {t(m.hub.videosHeading, { n: videos.length })}

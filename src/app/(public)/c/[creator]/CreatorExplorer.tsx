@@ -1,20 +1,25 @@
 "use client";
 
 /**
- * 채널 지도 — 이 유튜버가 간 **모든 도시**의 장소를 한 지도에.
+ * 채널이 간 곳 목록 — 지역·종류로 걸러 본다.
  *
- *   · 핀 → 상세 시트 (요약·출처)
- *   · 목록 행 → 출처 **영상 페이지** (`/c/.../v/...`) — 가짜 아코디언 금지
- *   · `?city=`·`?type=` 을 replace 로 동기화
+ * 🔴 **여기에 지도를 두지 않는다.** `/channels` 와 같은 규율이다.
+ *
+ *   · Google Maps 는 **로드당 과금**이다. 화면마다 지도를 두면 코드도 비용도
+ *     그대로 늘어난다 (커밋 c197783 에서 같은 이유로 지도를 /map 하나로 모았다).
+ *   · 이 화면이 답하는 질문은 "이 채널이 어디를 다녔나" 이고, 그건 도시 칩과
+ *     목록이 더 빨리 답한다. 핀을 뿌려 봐야 채널이 구분되지 않는다.
+ *   · 지도가 필요한 순간에는 `/map?channel=…` 으로 넘긴다. 지금 걸어둔
+ *     지역·종류 필터를 그대로 들고 가므로 화면이 끊기지 않는다.
+ *
+ * 목록 행 → 출처 **영상 페이지**(`/c/.../v/...`). 가짜 아코디언 금지.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { CreatorCityOption } from "@/shared/api/creator-hub";
-import { MapView } from "@/shared/ui/MapView";
-import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -60,20 +65,12 @@ function placeHref(
 
 export function CreatorExplorer({
   creatorSlug,
-  creatorName,
-  creatorInitials,
-  creatorAccent,
-  creatorAvatar,
   places,
   cities,
   initialType,
   initialCity,
 }: {
   creatorSlug: string;
-  creatorName: string;
-  creatorInitials: string;
-  creatorAccent: string;
-  creatorAvatar: string | null;
   places: CreatorPlace[];
   cities: CreatorCityOption[];
   initialType: PlaceType | null;
@@ -84,9 +81,6 @@ export function CreatorExplorer({
   const pathname = usePathname();
   const [type, setType] = useState<PlaceType | null>(initialType);
   const [city, setCity] = useState<string | null>(initialCity);
-  const [activeId, setActiveId] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
-  const rowRefs = useRef<globalThis.Map<string, HTMLLIElement>>(new globalThis.Map());
 
   const syncQuery = useCallback(
     (nextType: PlaceType | null, nextCity: string | null) => {
@@ -119,140 +113,69 @@ export function CreatorExplorer({
     [places, type, city],
   );
 
-  const visibleActiveId =
-    activeId !== null && shown.some((p) => p.id === activeId) ? activeId : null;
-
-  const pins = useMemo(
-    () =>
-      shown.map((p, i) => ({
-        id: p.id,
-        name: p.name,
-        lat: p.lat,
-        lng: p.lng,
-        index: i + 1,
-      })),
-    [shown],
-  );
-
   const presentTypes = FILTERABLE_TYPES.filter((t) =>
     places.some((p) => p.placeType === t),
   );
 
-  const onPinClick = useCallback(
-    (id: string) => {
-      if (activeId === id && sheetOpen) {
-        setSheetOpen(false);
-        setActiveId(null);
-        return;
-      }
-      setActiveId(id);
-      setSheetOpen(true);
-      const el = rowRefs.current.get(id);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        if (r.top < 0 || r.bottom > window.innerHeight) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
-        }
-      }
-    },
-    [activeId, sheetOpen],
-  );
-
-  const activeIndex = shown.findIndex((p) => p.id === visibleActiveId);
-  const activePlace = activeIndex >= 0 ? shown[activeIndex]! : null;
+  /* 지금 화면의 필터를 그대로 지도로 넘긴다. /map 은 channel·city·type 을
+     같은 이름으로 읽는다(`HomeCanvas.tsx`) — 여기서 이름을 바꾸면 조용히 무시된다. */
+  const mapHref = useMemo(() => {
+    const params = new URLSearchParams({ channel: creatorSlug });
+    if (city) params.set("city", city);
+    if (type) params.set("type", type);
+    return href(`/map?${params.toString()}`);
+  }, [creatorSlug, city, type, href]);
 
   return (
-    <div className="canvas-page">
-      <div className="canvas-map">
-        <MapView
-          className="h-full w-full"
-          pins={pins}
-          activeId={visibleActiveId}
-          onPinClick={onPinClick}
-          cluster
-        />
-        {sheetOpen && activePlace ? (
-          <PlaceSheet
-            index={activeIndex + 1}
-            place={{
-              id: activePlace.id,
-              name: displayPlaceName(activePlace, locale),
-              nameLocal: activePlace.nameLocal,
-              typeLabel: m.placeTypes[activePlace.placeType],
-              address: activePlace.address,
-              summary: activePlace.summary,
-              mapUrl: activePlace.mapUrl,
-              sources: activePlace.sources.map((s) => ({
-                creatorSlug,
-                creatorName,
-                initials: creatorInitials,
-                accentColor: creatorAccent,
-                avatarUrl: creatorAvatar,
-                youtubeId: s.youtubeId,
-                videoTitle: s.videoTitle,
-                timestampSec: s.timestampSec,
-              })),
-            }}
-            onClose={() => setSheetOpen(false)}
-          />
+    <section className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) lg:max-w-3xl">
+      <div className="flex flex-col gap-2 pt-1 pb-2">
+        {cities.length > 1 ? (
+          <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
+            <Chip active={city === null} onClick={() => selectCity(null)}>
+              {m.hub.allCities}
+            </Chip>
+            {cities.map((c) => (
+              <Chip
+                key={c.slug}
+                active={city === c.slug}
+                onClick={() => selectCity(city === c.slug ? null : c.slug)}
+              >
+                {displayCityName(c, locale)}
+                <span className="tnum ml-1.5 opacity-60">{c.placeCount}</span>
+              </Chip>
+            ))}
+          </div>
         ) : null}
-      </div>
 
-      <section className="canvas-panel">
-        <div className="hidden px-(--gutter) pt-4 pb-1 lg:block">
-          <h1
-            className="font-black"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-          >
-            {creatorName}
-          </h1>
-        </div>
-        <div className="flex flex-col gap-2 px-(--gutter) pt-3 pb-2">
-          {cities.length > 1 ? (
-            <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-              <Chip active={city === null} onClick={() => selectCity(null)}>
-                {m.hub.allCities}
+        {presentTypes.length > 1 ? (
+          <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
+            <Chip active={type === null} onClick={() => selectType(null)}>
+              {m.hub.allTypes}
+            </Chip>
+            {presentTypes.map((tKey) => (
+              <Chip
+                key={tKey}
+                active={type === tKey}
+                onClick={() => selectType(type === tKey ? null : tKey)}
+              >
+                {m.placeTypes[tKey]}
               </Chip>
-              {cities.map((c) => (
-                <Chip
-                  key={c.slug}
-                  active={city === c.slug}
-                  onClick={() => selectCity(city === c.slug ? null : c.slug)}
-                >
-                  {displayCityName(c, locale)}
-                  <span className="tnum ml-1.5 opacity-60">{c.placeCount}</span>
-                </Chip>
-              ))}
-            </div>
-          ) : null}
+            ))}
+          </div>
+        ) : null}
 
-          {presentTypes.length > 1 ? (
-            <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-              <Chip active={type === null} onClick={() => selectType(null)}>
-                {m.hub.allTypes}
-              </Chip>
-              {presentTypes.map((tKey) => (
-                <Chip
-                  key={tKey}
-                  active={type === tKey}
-                  onClick={() => selectType(type === tKey ? null : tKey)}
-                >
-                  {m.placeTypes[tKey]}
-                </Chip>
-              ))}
-            </div>
-          ) : null}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
+          <p className="index tnum" style={{ color: "var(--dim)" }}>
+            {shown.length === places.length
+              ? t(m.hub.placesAll, { n: places.length })
+              : t(m.hub.placesFiltered, {
+                  shown: shown.length,
+                  total: places.length,
+                })}
+            {m.hub.pinHint}
+          </p>
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-            <p className="index tnum" style={{ color: "var(--dim)" }}>
-              {shown.length === places.length
-                ? t(m.hub.placesAll, { n: places.length })
-                : t(m.hub.placesFiltered, {
-                    shown: shown.length,
-                    total: places.length,
-                  })}
-              {m.hub.pinHint}
-            </p>
             {city ? (
               <Link
                 href={href(`/c/${creatorSlug}/${city}`)}
@@ -262,92 +185,95 @@ export function CreatorExplorer({
                 {m.hub.onlyThisCity}
               </Link>
             ) : null}
+            {/* 지도는 /map 의 것이다. 필터를 들고 넘어간다. */}
+            <Link
+              href={mapHref}
+              className="inline-flex h-9 shrink-0 items-center gap-1.5 px-3.5 font-bold"
+              style={{
+                fontSize: "var(--t-meta)",
+                borderRadius: "var(--r-frame)",
+                background: "var(--halo)",
+                color: "var(--halo-ink)",
+              }}
+            >
+              <Icon.map className="size-4" />
+              {m.hub.openMap}
+            </Link>
           </div>
         </div>
+      </div>
 
-        <div className="flex flex-col px-(--gutter) pb-10">
-          {shown.length === 0 ? (
-            <div className="flex flex-col items-start gap-2 pt-2">
-              <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                {m.hub.noMatch}
-              </p>
-              <Chip
-                onClick={() => {
-                  setType(null);
-                  setCity(null);
-                  syncQuery(null, null);
-                }}
-              >
-                {m.hub.clearFilters}
-              </Chip>
-            </div>
-          ) : (
-            <ol>
-              {shown.map((place, index) => {
-                const active = place.id === visibleActiveId;
-                const cityLabel = displayCityName(
-                  { name: place.cityName, nameEn: place.cityNameEn },
-                  locale,
-                );
-                const secondary = displayPlaceSecondary(place, locale);
-                return (
-                  <li
-                    key={place.id}
-                    id={place.slug}
-                    ref={(el: HTMLLIElement | null) => {
-                      if (el) rowRefs.current.set(place.id, el);
-                      else rowRefs.current.delete(place.id);
-                    }}
+      <div className="flex flex-col pb-10">
+        {shown.length === 0 ? (
+          <div className="flex flex-col items-start gap-2 pt-2">
+            <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.hub.noMatch}</p>
+            <Chip
+              onClick={() => {
+                setType(null);
+                setCity(null);
+                syncQuery(null, null);
+              }}
+            >
+              {m.hub.clearFilters}
+            </Chip>
+          </div>
+        ) : (
+          <ol>
+            {shown.map((place, index) => {
+              const cityLabel = displayCityName(
+                { name: place.cityName, nameEn: place.cityNameEn },
+                locale,
+              );
+              const secondary = displayPlaceSecondary(place, locale);
+              return (
+                <li key={place.id} id={place.slug}>
+                  <Rule />
+                  <Link
+                    href={placeHref(creatorSlug, place, href)}
+                    className="roll -mx-2.5 flex items-start gap-3 rounded-(--r-control) px-2.5 py-2.5"
+                    aria-label={t(m.hub.openVideoAria, {
+                      name: displayPlaceName(place, locale),
+                    })}
                   >
-                    <Rule />
-                    <Link
-                      href={placeHref(creatorSlug, place, href)}
-                      className="roll -mx-2.5 flex items-start gap-3 rounded-(--r-control) px-2.5 py-2.5"
-                      style={{ background: active ? "var(--sheet)" : undefined }}
-                      aria-label={t(m.hub.openVideoAria, {
-                        name: displayPlaceName(place, locale),
-                      })}
-                    >
-                      <FrameNo n={index + 1} active={active} />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className="block font-bold"
-                          style={{
-                            fontSize: "var(--t-title)",
-                            letterSpacing: "-0.025em",
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          {displayPlaceName(place, locale)}
-                        </span>
-                        <span
-                          className="mt-0.5 block"
-                          style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                        >
-                          {cityLabel}
-                          {" · "}
-                          {m.placeTypes[place.placeType]}
-                          {secondary ? (
-                            <>
-                              {" · "}
-                              <span lang={locale === "en" ? "ko" : "ja"}>{secondary}</span>
-                            </>
-                          ) : null}
-                        </span>
+                    <FrameNo n={index + 1} />
+                    <span className="min-w-0 flex-1">
+                      <span
+                        className="block font-bold"
+                        style={{
+                          fontSize: "var(--t-title)",
+                          letterSpacing: "-0.025em",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {displayPlaceName(place, locale)}
                       </span>
-                      <Icon.chevron
-                        className="mt-1 size-4 shrink-0"
-                        style={{ color: "var(--dim)" }}
-                      />
-                    </Link>
-                  </li>
-                );
-              })}
-              <Rule />
-            </ol>
-          )}
-        </div>
-      </section>
-    </div>
+                      <span
+                        className="mt-0.5 block"
+                        style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
+                      >
+                        {cityLabel}
+                        {" · "}
+                        {m.placeTypes[place.placeType]}
+                        {secondary ? (
+                          <>
+                            {" · "}
+                            <span lang={locale === "en" ? "ko" : "ja"}>{secondary}</span>
+                          </>
+                        ) : null}
+                      </span>
+                    </span>
+                    <Icon.chevron
+                      className="mt-1 size-4 shrink-0"
+                      style={{ color: "var(--dim)" }}
+                    />
+                  </Link>
+                </li>
+              );
+            })}
+            <Rule />
+          </ol>
+        )}
+      </div>
+    </section>
   );
 }

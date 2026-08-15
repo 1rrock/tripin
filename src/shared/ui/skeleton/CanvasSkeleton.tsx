@@ -247,7 +247,9 @@ export function CitySkeleton({ label }: { label: string }) {
 export function CreatorSkeleton({ label }: { label: string }) {
   return (
     <BoneRoot label={label} className="flex flex-col gap-(--stack)">
-      <header className="flex flex-col gap-2.5 px-(--gutter) pt-4 pb-0 lg:hidden">
+      {/* 지도가 없다 — 허브는 목록 화면이다(`CreatorExplorer` 주석).
+          여기에 BoneMap 을 남겨두면 로딩 중엔 지도가 있다가 사라진다. */}
+      <header className="mx-auto flex w-full max-w-lg flex-col gap-2.5 px-(--gutter) pt-4 pb-0 lg:max-w-3xl">
         <BoneCrumb last="5.5rem" />
         <div className="flex items-center gap-4">
           <BoneDot size={54} />
@@ -268,30 +270,21 @@ export function CreatorSkeleton({ label }: { label: string }) {
         </div>
       </header>
 
-      <div className="canvas-page">
-        <BoneMap />
-
-        <section className="canvas-panel">
-          <div className="hidden px-(--gutter) pt-4 pb-1 lg:block">
-            <h1
-              className="font-black"
-              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-            >
-              <Bone w="55%" />
-            </h1>
-          </div>
-
-          <div className="flex flex-col gap-2 px-(--gutter) pt-3 pb-2">
+      <div>
+        <section className="mx-auto flex w-full max-w-lg flex-col px-(--gutter) lg:max-w-3xl">
+          <div className="flex flex-col gap-2 pt-1 pb-2">
             <ChipRow widths={["4rem", "5.5rem", "5rem", "6rem", "4.5rem"]} />
             <ChipRow widths={["3.5rem", "4rem", "3.5rem", "4.5rem"]} />
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+            <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-2">
               <p className="index tnum">
                 <Bone w="10rem" />
               </p>
+              {/* 지도 열기 버튼 — h-9 알약 */}
+              <BoneAct w="6rem" />
             </div>
           </div>
 
-          <div className="flex flex-col px-(--gutter) pb-10">
+          <div className="flex flex-col pb-10">
             <ol>
               {times(7).map((i) => (
                 <li key={i}>
@@ -327,7 +320,7 @@ export function CreatorSkeleton({ label }: { label: string }) {
       </div>
 
       {/* 영상 목록 — VideoList */}
-      <section className="flex flex-col gap-(--stack) px-(--gutter)">
+      <section className="mx-auto flex w-full max-w-lg flex-col gap-(--stack) px-(--gutter) lg:max-w-3xl">
         <h2 className="index">
           <Bone w="7rem" />
         </h2>
