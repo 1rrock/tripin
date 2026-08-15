@@ -81,15 +81,22 @@ export function SavedProvider({ children }: { children: ReactNode }) {
   const toggleSavedCb = useCallback(
     async (placeId: string) => {
       const next = !snap.places.has(placeId);
-      /* 낙관적 갱신 — 하트는 누른 즉시 켜져야 한다 */
-      setSnap((s) => ({ ...s, places: toggled(s.places, placeId, next) }));
+      /* 낙관적 갱신 — 하트는 누른 즉시 켜져야 한다.
+         끌 때는 그룹 담김도 같이 비운다(setSaved 가 DB 에서도 같이 지운다). */
+      const prevMembership = snap.membership.get(placeId);
+      setSnap((s) => {
+        const membership = new Map(s.membership);
+        if (!next) membership.delete(placeId);
+        return { ...s, places: toggled(s.places, placeId, next), membership };
+      });
 
       const ok = await setSaved(placeId, next);
       if (!ok) {
-        setSnap((s) => ({
-          ...s,
-          places: toggled(s.places, placeId, !next),
-        }));
+        setSnap((s) => {
+          const membership = new Map(s.membership);
+          if (!next && prevMembership) membership.set(placeId, prevMembership);
+          return { ...s, places: toggled(s.places, placeId, !next), membership };
+        });
       }
     },
     [snap.places],

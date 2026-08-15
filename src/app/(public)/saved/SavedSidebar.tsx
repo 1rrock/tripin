@@ -3,9 +3,8 @@
 /**
  * 저장 화면의 왼쪽 사이드바 — **데스크톱 전용**.
  *
- * 시안 C. 그룹 사이를 오가는 것이 이 화면의 주 동작이라, 데스크톱에서는
- * 목록을 상시 띄워 클릭 한 번에 넘나들게 한다. 모바일은 같은 것을 카드 목록으로
- * 그리고 상세로 밀어넣는다(`SavedIndex`) — 좁은 화면에서 사이드바는 내용을 먹는다.
+ * 시안 D. 인덱스는 엽서가 맡으므로 사이드바는 **상세에서만** 선다.
+ * 좋아요는 `/saved/liked` — `/saved` 는 이제 인덱스다.
  *
  * 서버가 준 그룹·개수를 초기값으로 쓰되, 그룹을 새로 만들면 컨텍스트가 먼저 알므로
  * 둘을 합친다. 안 그러면 새 그룹이 새로고침 전까지 사이드바에 안 뜬다.
@@ -72,19 +71,23 @@ export function SavedSidebar({
     </div>
   );
 
+  /* 인덱스(`/saved`)는 엽서가 항해한다. 사이드바가 같은 그룹을 한 번 더 그리면
+     데스크톱에서 두 벌이 된다. */
+  if (pathname === "/saved") return null;
+
   return (
     <nav
       aria-label={m.saved.title}
       className="hidden w-[210px] shrink-0 flex-col gap-1 self-start lg:flex"
     >
       {item(
-        "/saved",
+        "/saved/liked",
         <>
           <Heart className="size-3.5 shrink-0" weight="fill" style={{ color: "var(--wax)" }} />
           {m.saved.likedNav}
         </>,
         liked,
-        pathname === "/saved",
+        pathname === "/saved/liked",
       )}
 
       {rows.length > 0 ? (

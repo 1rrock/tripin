@@ -46,7 +46,7 @@ export function CategoryGrid() {
   const { messages: m, href } = useLocale();
 
   return (
-    <nav className="grid grid-cols-5 gap-y-5 px-(--gutter) pb-6" aria-label={m.home.filterAria}>
+    <nav className="grid grid-cols-5 gap-x-1 gap-y-5 px-(--gutter) pt-2 pb-6" aria-label={m.home.filterAria}>
       {HOME_TYPES.map((type) => (
         <Tile
           key={type}

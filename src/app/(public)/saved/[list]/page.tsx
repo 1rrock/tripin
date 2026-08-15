@@ -9,7 +9,7 @@ import { PlaceRows } from "../PlaceRows";
 import { ListRowMenu } from "../ListRowMenu";
 
 /**
- * 그룹 상세 — 시안 C.
+ * 그룹 상세 — 시안 D. 인덱스의 엽서를 누르면 여기로 온다.
  *
  * 데스크톱은 레이아웃의 사이드바가 그대로 남고 본문만 이 그룹으로 바뀐다.
  * 모바일은 `/saved` 인덱스에서 밀려 들어온 화면이라 뒤로 가는 길을 준다.

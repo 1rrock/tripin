@@ -330,7 +330,7 @@ export default async function CreatorCityPage({
   searchParams,
 }: {
   params: Promise<PageParams>;
-  searchParams: Promise<{ type?: string; picked?: string }>;
+  searchParams: Promise<{ type?: string }>;
 }) {
   const [routeParams, query] = await Promise.all([params, searchParams]);
   const locale = await getLocale();
@@ -416,7 +416,6 @@ export default async function CreatorCityPage({
         places={places}
         activeType={(query.type as PlaceType | undefined) ?? null}
         basePath={bare}
-        initialPicked={query.picked?.split(",").filter(Boolean) ?? []}
         otherCities={data.otherCities.map(
           (c): RelatedPiece => ({
             slug: c.slug,

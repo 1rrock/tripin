@@ -4,14 +4,14 @@
  * "어느 그룹에 담을까요" — 체크박스 목록 + 새 그룹 만들기.
  *
  * 구글 지도의 목록 담기와 같은 문법이다. 한 장소가 여러 그룹에 들어가므로
- * 라디오가 아니라 **체크박스**다. 고르는 즉시 반영된다(확인 버튼이 없다) —
- * 담고 빼는 걸 여러 번 하다가 마지막에 "취소" 를 누르면 뭐가 남는지 헷갈린다.
+ * 라디오가 아니라 **체크박스**다. 고르는 즉시 반영된다(확인 버튼이 없다).
  *
- * 하트와 분리된 이유: 하트는 한 손가락으로 끝나야 한다. 그룹 고르기를 하트에
- * 묶으면 "그냥 저장" 이 두 단계가 된다.
+ * body 로 포탈한다 — PlaceSheet 가 overflow/transform 을 갖고 있어
+ * 그 안에서 fixed 를 그리면 잘리거나 탭바(z-50) 밑에 깔린다.
  */
 
 import { useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
 import { Icon } from "@/shared/ui/icons";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -27,7 +27,8 @@ export function ListPicker({
 }) {
   const { messages: m, t } = useLocale();
   const { lists, listsOf, toggleInList, addList } = useSaved();
-  const [creating, setCreating] = useState(false);
+  const [creating, setCreating] = useState(() => lists.length === 0);
+  const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -35,6 +36,10 @@ export function ListPicker({
   const panelRef = useRef<HTMLDivElement>(null);
 
   const inList = listsOf(placeId);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   useEffect(() => {
     if (creating) inputRef.current?.focus();
@@ -51,7 +56,12 @@ export function ListPicker({
       if (e.key === "Escape") onCloseRef.current();
     };
     window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      window.removeEventListener("keydown", onKey);
+      document.body.style.overflow = prev;
+    };
   }, []);
 
   async function submit() {
@@ -70,9 +80,11 @@ export function ListPicker({
     setBusy(false);
   }
 
-  return (
+  if (!mounted) return null;
+
+  return createPortal(
     <div
-      className="fixed inset-0 z-50 flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center"
       role="dialog"
       aria-modal="true"
       aria-label={m.saved.listSheetTitle}
@@ -103,6 +115,9 @@ export function ListPicker({
             </h2>
             <p className="mt-0.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
               {placeName}
+            </p>
+            <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+              {m.saved.listPickHint}
             </p>
           </div>
           <button
@@ -239,9 +254,10 @@ export function ListPicker({
         )}
 
         <p className="mt-3" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-          {t(m.saved.listCount, { n: inList.size })}
+          {t(m.saved.listInCount, { n: inList.size })}
         </p>
       </div>
-    </div>
+    </div>,
+    document.body,
   );
 }

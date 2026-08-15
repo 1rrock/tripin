@@ -1,5 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
+import { mergeAnonymousInto, isUserId } from "@/shared/api/account-merge";
+import { isLinkedUser } from "@/shared/api/auth-user";
 import { publicEnv } from "@/shared/config/env";
 
 /**
@@ -25,7 +27,15 @@ import { publicEnv } from "@/shared/config/env";
  *    이미 다른 계정에 붙어 있는 구글 신원을 익명 계정에 붙이려 하면
  *    `identity_already_exists` 가 여기로 오고(@supabase/auth-js `GoTrueClient.js:397`),
  *    이 라우트가 없으면 **아무 표시 없이 조용히 무시된다.**
+ *
+ * ⚠️ Supabase 는 실패를 가끔 **해시**(`#error=`)로 돌려보낸다. 해시는 서버에
+ *    도착하지 않는다. `?code` 도 `?error` 도 없으면 HTML 을 내려 해시에서
+ *    에러를 읽어 쿼리로 다시 붙인다. 안 그러면 missing_code 로 덮어씌워
+ *    "연결했는데 그대로" 처럼 보인다.
  */
+
+const MERGE_COOKIE = "tripin_merge_from";
+const SWITCH_COOKIE = "tripin_auth_switch";
 
 /** 오픈 리다이렉트 방지 — 우리 사이트 안의 경로만 돌아갈 곳으로 받는다. */
 function safeNext(raw: string | null): string {
@@ -35,45 +45,130 @@ function safeNext(raw: string | null): string {
   return raw;
 }
 
+type CookieToSet = { name: string; value: string; options?: Record<string, unknown> };
+
+function redirectWith(
+  location: string,
+  pending: CookieToSet[],
+  extra: Array<{ name: string; value: string; options: Record<string, unknown> }> = [],
+) {
+  const response = NextResponse.redirect(location);
+  for (const { name, value, options } of pending) {
+    response.cookies.set(name, value, options);
+  }
+  for (const { name, value, options } of extra) {
+    response.cookies.set(name, value, options);
+  }
+  return response;
+}
+
 export async function GET(request: NextRequest) {
   const { searchParams, origin } = request.nextUrl;
   const next = safeNext(searchParams.get("next"));
 
-  /* 구글·Supabase 가 실패를 알려주는 경로. error_code 가 더 구체적이라 그걸 우선한다. */
-  const errorCode = searchParams.get("error_code") ?? searchParams.get("error");
-  if (errorCode) {
-    return NextResponse.redirect(`${origin}${withParam(next, "auth_error", errorCode)}`);
-  }
-
-  const code = searchParams.get("code");
-  if (!code) {
-    return NextResponse.redirect(`${origin}${withParam(next, "auth_error", "missing_code")}`);
-  }
-
-  /* 쿠키를 실제로 응답에 실어야 하므로 redirect 응답을 먼저 만들고 거기에 쓴다.
-     NextResponse.next() 에 쓰면 이 라우트의 응답에는 붙지 않는다. */
-  const response = NextResponse.redirect(`${origin}${next}`);
-
+  const pending: CookieToSet[] = [];
   const sb = createServerClient(publicEnv.supabaseUrl, publicEnv.supabaseAnonKey, {
     cookies: {
       getAll: () => request.cookies.getAll(),
       setAll: (list) => {
-        for (const { name, value, options } of list) {
-          response.cookies.set(name, value, options);
-        }
+        for (const cookie of list) pending.push(cookie);
       },
     },
   });
 
+  /* 구글·Supabase 가 실패를 알려주는 경로. error_code 가 더 구체적이라 그걸 우선한다. */
+  const errorCode = searchParams.get("error_code") ?? searchParams.get("error");
+  if (errorCode) {
+    return handleAuthError({ request, sb, origin, next, errorCode, pending });
+  }
+
+  const code = searchParams.get("code");
+  if (!code) {
+    /* 해시 에러는 서버가 못 본다. 브라우저가 읽어서 이 라우트로 다시 오게 한다. */
+    return hashProbePage(origin, next);
+  }
+
   const { error } = await sb.auth.exchangeCodeForSession(code);
   if (error) {
     /* 여기서 실패해도 기존 익명 세션은 살아 있다 — 모아둔 것이 사라지지 않는다. */
-    return NextResponse.redirect(
-      `${origin}${withParam(next, "auth_error", error.code ?? "exchange_failed")}`,
+    return handleAuthError({
+      request,
+      sb,
+      origin,
+      next,
+      errorCode: error.code ?? "exchange_failed",
+      pending,
+    });
+  }
+
+  const { data: auth } = await sb.auth.getUser();
+  const user = auth.user;
+  if (!user || !isLinkedUser(user)) {
+    return redirectWith(
+      `${origin}${withParam(next, "auth_error", "not_linked")}`,
+      pending,
     );
   }
 
-  return response;
+  const from = request.cookies.get(MERGE_COOKIE)?.value;
+  if (from && from !== user.id && isUserId(from)) {
+    try {
+      await mergeAnonymousInto(from, user.id);
+    } catch (err) {
+      console.error("[auth] 익명 저장 이전 실패:", err);
+    }
+  }
+
+  const done = redirectWith(`${origin}${next}`, pending);
+  done.cookies.set(MERGE_COOKIE, "", { path: "/", maxAge: 0 });
+  done.cookies.set(SWITCH_COOKIE, "", { path: "/", maxAge: 0 });
+  return done;
+}
+
+async function handleAuthError({
+  request,
+  sb,
+  origin,
+  next,
+  errorCode,
+  pending,
+}: {
+  request: NextRequest;
+  sb: ReturnType<typeof createServerClient>;
+  origin: string;
+  next: string;
+  errorCode: string;
+  pending: CookieToSet[];
+}) {
+  /* 이 구글은 이미 다른 유저에 붙어 있다. 유저는 "연결"을 골랐으니
+     그 계정으로 들어가게 한다. 한 번만 — 루프 방지 쿠키. */
+  if (errorCode === "identity_already_exists" && !request.cookies.get(SWITCH_COOKIE)) {
+    const { data: current } = await sb.auth.getUser();
+    const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
+    const { data, error } = await sb.auth.signInWithOAuth({
+      provider: "google",
+      options: { redirectTo, skipBrowserRedirect: true },
+    });
+    if (!error && data.url) {
+      const extras: Array<{ name: string; value: string; options: Record<string, unknown> }> = [
+        {
+          name: SWITCH_COOKIE,
+          value: "1",
+          options: { path: "/", maxAge: 600, sameSite: "lax", httpOnly: true },
+        },
+      ];
+      if (current.user?.id) {
+        extras.push({
+          name: MERGE_COOKIE,
+          value: current.user.id,
+          options: { path: "/", maxAge: 600, sameSite: "lax", httpOnly: true },
+        });
+      }
+      return redirectWith(data.url, pending, extras);
+    }
+  }
+
+  return redirectWith(`${origin}${withParam(next, "auth_error", errorCode)}`, pending);
 }
 
 /** 이미 쿼리가 붙어 있을 수 있다(`/saved?tab=x`). 통째로 덮어쓰지 않는다. */
@@ -82,4 +177,23 @@ function withParam(path: string, key: string, value: string): string {
   const params = new URLSearchParams(search);
   params.set(key, value);
   return `${bare}?${params.toString()}`;
+}
+
+function hashProbePage(origin: string, next: string): NextResponse {
+  const safe = JSON.stringify(`${origin}${next}`);
+  const html = `<!doctype html><meta charset="utf-8"><title>…</title>
+<script>
+(function () {
+  var next = ${safe};
+  var hash = new URLSearchParams(location.hash.slice(1));
+  var err = hash.get("error_code") || hash.get("error");
+  var url = new URL(next, location.origin);
+  url.searchParams.set("auth_error", err || "missing_code");
+  location.replace(url.pathname + url.search);
+})();
+</script>`;
+  return new NextResponse(html, {
+    status: 200,
+    headers: { "content-type": "text/html; charset=utf-8", "cache-control": "no-store" },
+  });
 }

@@ -23,7 +23,9 @@ import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
-import { ListButton, SaveButton } from "@/shared/ui/SaveButton";
+import { PlaceMenu } from "@/shared/ui/PlaceMenu";
+import { SaveButton } from "@/shared/ui/SaveButton";
+import { useSaved } from "@/shared/ui/SavedContext";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
@@ -77,7 +79,9 @@ export function PlaceSheet({
   onClose: () => void;
 }) {
   const { messages: m, t } = useLocale();
+  const { lists, listsOf } = useSaved();
   const hero = place.sources[0] ?? null;
+  const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
   const containerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
 
@@ -175,11 +179,15 @@ export function PlaceSheet({
               {place.address}
             </p>
           ) : null}
+          {groups.length > 0 ? (
+            <p className="mt-1.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+              {groups.join(" · ")}
+            </p>
+          ) : null}
         </div>
 
-        {/* 하트·그룹은 닫기 왼쪽 — 닫기가 오른쪽 끝이라는 위치를 흔들지 않는다 */}
-        <ListButton placeId={place.id} placeName={place.name} className="size-8" />
         <SaveButton placeId={place.id} placeName={place.name} className="size-8" />
+        <PlaceMenu placeId={place.id} placeName={place.name} className="size-8" />
 
         <button
           ref={closeBtnRef}

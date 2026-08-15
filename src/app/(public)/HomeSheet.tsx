@@ -71,7 +71,7 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
   const chips = cities.slice(0, 4);
 
   return (
-    <section className="relative min-h-[300px] overflow-hidden px-(--gutter) pt-7 pb-7 lg:min-h-[420px] lg:px-14 lg:pt-[60px] lg:pb-14">
+    <section className="relative overflow-hidden px-(--gutter) pt-7 pb-[68px] lg:min-h-[420px] lg:px-14 lg:pt-[60px] lg:pb-14">
       <div aria-hidden className="pointer-events-none absolute inset-0">
         {/* 장식 지면. 본문 LCP 가 아니라 next/image 를 쓰지 않는다. */}
         <img
@@ -82,11 +82,13 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
           fetchPriority="high"
           className="size-full object-cover opacity-45 grayscale contrast-[0.85] lg:opacity-50"
         />
+        {/* 모바일 — 문구 뒤에도 지면이 아주 옅게 비친다. 아래로 갈수록 걷히다
+            맨 밑은 흰색으로 끝나야 바로 밑 카테고리 칸과 이어진다. */}
         <span
           className="absolute inset-0 lg:hidden"
           style={{
             background:
-              "linear-gradient(180deg, rgba(255,255,255,0.94) 42%, rgba(255,255,255,0.62))",
+              "linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.88) 13%, rgba(255,255,255,0.8) 46%, rgba(255,255,255,0.62) 74%, rgba(255,255,255,0.85) 93%, #fff 100%)",
           }}
         />
         <span
@@ -98,11 +100,11 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
         />
         <MapPin
           weight="fill"
-          className="absolute right-[14%] bottom-[22%] size-6 text-(--wax) lg:right-[16%] lg:top-[24%] lg:bottom-auto lg:size-[30px]"
+          className="absolute right-[15%] bottom-[16%] size-[22px] text-(--wax) lg:right-[16%] lg:top-[24%] lg:bottom-auto lg:size-[30px]"
         />
         <MapPin
           weight="fill"
-          className="absolute bottom-[12%] left-[16%] size-[17px] text-(--wax) lg:top-[56%] lg:right-[29%] lg:bottom-auto lg:left-auto lg:size-[22px]"
+          className="absolute bottom-[8%] left-[22%] size-[16px] text-(--wax) lg:top-[56%] lg:right-[29%] lg:bottom-auto lg:left-auto lg:size-[22px]"
         />
         <MapPin
           weight="fill"
@@ -132,10 +134,12 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
           </span>
         </button>
 
+        {/* 칩 줄은 모바일에서 화면 끝까지 흘려보낸다 — 거터 안에서 끊기면
+            마지막 칩이 잘린 것처럼 보인다. */}
         {chips.length > 0 ? (
           <nav
             aria-label={m.home.citiesAria}
-            className="mt-3.5 flex gap-1.5 overflow-x-auto pb-0.5 lg:mt-[18px] lg:flex-wrap"
+            className="no-scrollbar mt-3.5 -mr-(--gutter) flex gap-1.5 overflow-x-auto pr-(--gutter) pb-0.5 lg:mt-[18px] lg:mr-0 lg:flex-wrap lg:pr-0"
           >
             {chips.map((city, i) => {
               const name = displayCityName(city, locale);

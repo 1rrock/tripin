@@ -13,7 +13,13 @@ import { useEffect, useRef, useState } from "react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
 
-export function NewListButton({ className = "" }: { className?: string }) {
+export function NewListButton({
+  className = "",
+  variant = "button",
+}: {
+  className?: string;
+  variant?: "button" | "slot";
+}) {
   const { messages: m, href } = useLocale();
   const { addList } = useSaved();
   const router = useRouter();
@@ -44,6 +50,23 @@ export function NewListButton({ className = "" }: { className?: string }) {
   }
 
   if (!open) {
+    if (variant === "slot") {
+      return (
+        <button
+          type="button"
+          onClick={() => setOpen(true)}
+          className={`flex aspect-video cursor-pointer items-center justify-center font-bold transition-opacity active:opacity-70 ${className}`}
+          style={{
+            fontSize: "var(--t-meta)",
+            borderRadius: "var(--r-frame)",
+            boxShadow: "inset 0 0 0 1px var(--hairline)",
+            color: "var(--dim)",
+          }}
+        >
+          + {m.saved.listNew}
+        </button>
+      );
+    }
     return (
       <button
         type="button"

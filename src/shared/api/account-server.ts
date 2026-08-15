@@ -1,6 +1,8 @@
 import { cache } from "react";
+import { isLinkedUser, linkedEmail } from "./auth-user";
 import { supabase } from "./supabase";
 import { supabaseServer } from "./supabase-server";
+import { loadPlaceCuts } from "./saved-server";
 
 /**
  * 마이페이지가 필요로 하는 것 전부를 한 번에 읽는다.
@@ -24,6 +26,11 @@ export interface SubscribedCreator {
   handle: string | null;
 }
 
+export interface AccountCut {
+  youtubeId: string;
+  videoTitle: string;
+}
+
 export interface AccountView {
   /** 세션이 아예 없으면 null — 저장도 구독도 한 적이 없는 사람이다. */
   userId: string | null;
@@ -33,6 +40,8 @@ export interface AccountView {
   email: string | null;
   savedCount: number;
   listCount: number;
+  /** 최근 저장의 컷 — 마이페이지 얼굴. 최대 8. */
+  cuts: AccountCut[];
   creators: SubscribedCreator[];
 }
 
@@ -42,6 +51,7 @@ export const EMPTY_ACCOUNT: AccountView = {
   email: null,
   savedCount: 0,
   listCount: 0,
+  cuts: [],
   creators: [],
 };
 
@@ -53,15 +63,19 @@ async function _loadAccount(): Promise<AccountView> {
   const user = auth.user;
   if (!user) return EMPTY_ACCOUNT;
 
-  /* is_anonymous 는 익명 세션에서 true 다. 구글로 승격하면 false 가 된다. */
-  const linked = user.is_anonymous !== true;
+  const linked = isLinkedUser(user);
 
   /* 개수만 필요한 두 질의는 행을 안 가져온다 — head:true 로 count 만 받는다.
      저장이 수백 개인 유저에게 목록을 통째로 실어 나를 이유가 없다. */
-  const [subsRes, savedRes, listsRes] = await Promise.all([
+  const [subsRes, savedRes, listsRes, recentRes] = await Promise.all([
     sb.from("subscriptions").select("creator_id").order("created_at", { ascending: false }),
     sb.from("saved_places").select("place_id", { count: "exact", head: true }),
     sb.from("saved_lists").select("id", { count: "exact", head: true }),
+    sb
+      .from("saved_places")
+      .select("place_id")
+      .order("saved_at", { ascending: false })
+      .limit(8),
   ]);
 
   const creatorIds = (subsRes.data ?? []).map((s) => s.creator_id).filter(Boolean) as string[];
@@ -95,9 +109,20 @@ async function _loadAccount(): Promise<AccountView> {
   return {
     userId: user.id,
     linked,
-    email: linked ? (user.email ?? null) : null,
+    email: linkedEmail(user),
     savedCount: savedRes.count ?? 0,
     listCount: listsRes.count ?? 0,
+    cuts: await cutsFromRecent(
+      (recentRes.data ?? []).map((r) => r.place_id).filter((id): id is string => Boolean(id)),
+    ),
     creators,
   };
+}
+
+async function cutsFromRecent(placeIds: string[]): Promise<AccountCut[]> {
+  const cuts = await loadPlaceCuts(placeIds);
+  return placeIds.flatMap((id) => {
+    const cut = cuts.get(id);
+    return cut ? [cut] : [];
+  });
 }

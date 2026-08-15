@@ -220,16 +220,21 @@ export const ko = {
     countLabel: "{n}곳",
     /* 기기 넘김 안내 — 가치를 이미 받은 사람에게만 보인다 */
     localOnly: "이 기기에서만 볼 수 있어요",
-    localOnlyHint: "연결하면 다른 기기에서도 이어서 볼 수 있어요.",
-    connect: "구글로 연결하기",
-    connecting: "연결하는 중",
-    connectFailed: "연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
-    connected: "구글 계정에 연결됨",
+    localOnlyHint: "로그인하면 다른 기기에서도 이어서 볼 수 있어요.",
+    connect: "로그인",
+    connecting: "로그인하는 중",
+    connectFailed: "로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    connected: "로그인됨",
 
     /* 그룹 — "도쿄 3박4일" 처럼 묶는다. 한 장소가 여러 그룹에 들어간다. */
     lists: "그룹",
     listAdd: "그룹에 담기",
     listAddAria: "{name} 를 그룹에 담기",
+    listMove: "그룹 이동",
+    listRemoveHere: "이 그룹에서 빼기",
+    placeMenuAria: "{name} 더보기",
+    listPickHint: "여러 그룹에 넣을 수 있어요. 다시 누르면 빠져요.",
+    listInCount: "담긴 그룹 {n}개",
     listSheetTitle: "어느 그룹에 담을까요",
     listNew: "새 그룹",
     listNamePlaceholder: "예: 도쿄 3박4일",
@@ -250,28 +255,40 @@ export const ko = {
     listPlacesEmpty: "이 그룹은 아직 비어 있어요.",
     /* 저장이 0개일 때 — 새 기기로 옮겨온 사람이 로그인을 찾을 수 있는 유일한 줄 */
     restore: "다른 기기에서 저장하셨나요?",
-    restoreCta: "구글로 연결해서 가져오기",
+    restoreCta: "로그인해서 가져오기",
   },
   account: {
     /* 마이페이지. 게이트가 아니라 **설정함**이다 — 여기 안 와도 전부 된다.
-       로그인 권유는 여전히 /saved 배너가 맡고, 이 화면은 이미 만든 계정을
+       로그인 권유는 /saved 배너와 /login 이 맡고, 이 화면은 이미 만든 계정을
        관리하는 자리다(로그아웃·탈퇴는 여기 말고 있을 데가 없다). */
     nav: "마이",
     title: "마이페이지",
     anon: "이 기기에서만 쓰는 중",
-    anonHint: "구글로 연결하면 다른 기기에서도 이어서 볼 수 있어요.",
-    connect: "구글로 연결하기",
-    connecting: "연결하는 중",
-    connectedAs: "구글 계정에 연결됨",
+    anonHint: "로그인하면 다른 기기에서도 이어서 볼 수 있어요.",
+    connect: "로그인",
+    connecting: "로그인하는 중",
+    connectedAs: "로그인됨",
     signOut: "로그아웃",
     signOutHint: "이 기기에서만 나갑니다. 저장한 곳은 지워지지 않아요.",
-    signOutConfirm: "로그아웃할까요? 다시 연결하면 저장한 곳이 그대로 돌아와요.",
+    signOutConfirm: "로그아웃할까요? 다시 로그인하면 저장한 곳이 그대로 돌아와요.",
+    loginPageTitle: "로그인",
+    loginTitle: "로그인",
+    loginHint: "다른 기기에서도 이어서 보려면 로그인하세요. 하트는 로그인 없이 그대로 됩니다.",
+    loggingIn: "로그인하는 중",
+    withGoogle: "구글로 로그인",
+    withApple: "애플로 로그인",
+    withKakao: "카카오로 로그인",
+    withNaver: "네이버로 로그인",
+    loginSoon: "준비 중",
 
     savedHeading: "저장",
     savedPlaces: "저장한 곳",
     savedLists: "그룹",
     countPlaces: "{n}곳",
     countLists: "{n}개",
+    deviceList: "이 기기의 목록",
+    savedLine: "저장한 곳 {n}",
+    connectShort: "연결",
 
     subsHeading: "구독한 채널",
     subsCount: "{n}개 채널",
@@ -291,8 +308,11 @@ export const ko = {
 
     /* 구글에서 돌아온 뒤의 실패. 반환값이 아니라 URL 로 오기 때문에
        이 문구가 없으면 유저는 아무 일도 안 일어난 것처럼 본다. */
-    errAlreadyLinked: "이 구글 계정은 이미 다른 계정에 연결돼 있어요. 로그아웃한 뒤 그 계정으로 로그인해 주세요.",
-    errGeneric: "연결하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    errAlreadyLinked: "이 구글 계정은 이미 다른 계정에 연결되어 있어요. 그 계정으로 다시 로그인해 주세요.",
+    errDenied: "이 구글 계정으로는 아직 로그인할 수 없어요. 다른 계정을 쓰거나 잠시 뒤 다시 시도해 주세요.",
+    errMissing: "구글에서 돌아오는 길을 놓쳤어요. 다시 로그인해 주세요.",
+    errNotLinked: "구글 로그인은 됐는데 이 기기에 붙지는 않았어요. 다시 시도해 주세요.",
+    errGeneric: "로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
   },
   hub: {
     channelNav: "채널",
@@ -322,15 +342,10 @@ export const ko = {
     filterAll: "전체",
     emptyFiltered: "이 카테고리의 확정 장소가 아직 없어요.",
     emptyAll: "확정된 장소가 아직 없어요.",
-    pick: "담기",
-    picked: "담음",
     pendingHeading: "위치 확인 중 {n}",
     otherCitiesHeading: "{creator}의 다른 도시",
     otherCreatorsHeading: "{city}에 간 다른 채널",
     cityWide: "{city} 전체 지도",
-    myListCount: "내 목록 {n}곳",
-    copyLink: "링크 복사",
-    copied: "복사됨",
     sourceVideoFallback: "출처 영상",
     machineTranslated: "자동 번역",
     showOriginal: "원문 보기",
@@ -601,6 +616,11 @@ export type Messages = {
     lists: string;
     listAdd: string;
     listAddAria: string;
+    listMove: string;
+    listRemoveHere: string;
+    placeMenuAria: string;
+    listPickHint: string;
+    listInCount: string;
     listSheetTitle: string;
     listNew: string;
     listNamePlaceholder: string;
@@ -633,11 +653,23 @@ export type Messages = {
     signOut: string;
     signOutHint: string;
     signOutConfirm: string;
+    loginPageTitle: string;
+    loginTitle: string;
+    loginHint: string;
+    loggingIn: string;
+    withGoogle: string;
+    withApple: string;
+    withKakao: string;
+    withNaver: string;
+    loginSoon: string;
     savedHeading: string;
     savedPlaces: string;
     savedLists: string;
     countPlaces: string;
     countLists: string;
+    deviceList: string;
+    savedLine: string;
+    connectShort: string;
     subsHeading: string;
     subsCount: string;
     subsEmpty: string;
@@ -652,6 +684,9 @@ export type Messages = {
     deleting: string;
     deleteFailed: string;
     errAlreadyLinked: string;
+    errDenied: string;
+    errMissing: string;
+    errNotLinked: string;
     errGeneric: string;
   };
   hub: {
@@ -681,15 +716,10 @@ export type Messages = {
     filterAll: string;
     emptyFiltered: string;
     emptyAll: string;
-    pick: string;
-    picked: string;
     pendingHeading: string;
     otherCitiesHeading: string;
     otherCreatorsHeading: string;
     cityWide: string;
-    myListCount: string;
-    copyLink: string;
-    copied: string;
     sourceVideoFallback: string;
     machineTranslated: string;
     showOriginal: string;

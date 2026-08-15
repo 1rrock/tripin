@@ -1,4 +1,5 @@
 import { cache } from "react";
+import { isLinkedUser } from "./auth-user";
 import { supabase } from "./supabase";
 import { supabaseServer } from "./supabase-server";
 import { primaryMapLink } from "@/shared/lib/map-links";
@@ -29,6 +30,9 @@ export interface SavedPlaceRow {
   citySlug: string;
   mapUrl: string | null;
   savedAt: string;
+  /** 출처 영상 — 컷 스트립·엽서에 쓴다. 영상 링크가 없으면 null. */
+  youtubeId: string | null;
+  videoTitle: string | null;
 }
 
 export interface SavedListRow {
@@ -55,6 +59,35 @@ export interface SavedView {
  * 레이아웃(사이드바)과 페이지(목록)가 같은 요청 안에서 둘 다 부른다.
  * `cache` 로 감싸지 않으면 한 화면을 그리는 데 같은 질의가 두 벌 나간다.
  */
+/** 장소 id → 그 장소가 처음 나온 영상의 컷. 한 장소에 영상이 여러 편이면 먼저 잡힌 하나. */
+export async function loadPlaceCuts(
+  placeIds: string[],
+): Promise<Map<string, { youtubeId: string; videoTitle: string }>> {
+  const out = new Map<string, { youtubeId: string; videoTitle: string }>();
+  if (placeIds.length === 0) return out;
+
+  const { data: links } = await supabase
+    .from("video_places")
+    .select("place_id, video_id")
+    .in("place_id", placeIds);
+  const videoIds = [...new Set((links ?? []).map((l) => l.video_id).filter(Boolean))] as string[];
+  if (videoIds.length === 0) return out;
+
+  const { data: videos } = await supabase
+    .from("videos")
+    .select("id, youtube_video_id, title")
+    .in("id", videoIds);
+  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
+
+  for (const link of links ?? []) {
+    if (!link.place_id || out.has(link.place_id)) continue;
+    const v = videoById.get(link.video_id);
+    if (!v) continue;
+    out.set(link.place_id, { youtubeId: v.youtube_video_id, videoTitle: v.title });
+  }
+  return out;
+}
+
 export const loadSavedView = cache(_loadSavedView);
 
 async function _loadSavedView(): Promise<SavedView> {
@@ -72,8 +105,7 @@ async function _loadSavedView(): Promise<SavedView> {
   };
   if (!user) return EMPTY;
 
-  /* is_anonymous 는 익명 세션에서 true 다. 구글로 승격하면 false 가 된다. */
-  const linked = user.is_anonymous !== true;
+  const linked = isLinkedUser(user);
 
   /* 저장·그룹·담김을 한 번에 — 사이드바가 그룹 개수를 그려야 해서 셋이 다 필요하다 */
   const [savesRes, listsRes, membersRes] = await Promise.all([
@@ -97,13 +129,16 @@ async function _loadSavedView(): Promise<SavedView> {
     };
   }
 
-  const { data: places } = await supabase
-    .from("places")
-    .select(
-      "id, slug, name, name_local, name_en, place_type, city_id, google_maps_url, google_place_id, kakao_place_id, naver_place_id, lat, lng",
-    )
-    .in("id", ids)
-    .eq("is_published", true);
+  const [{ data: places }, cuts] = await Promise.all([
+    supabase
+      .from("places")
+      .select(
+        "id, slug, name, name_local, name_en, place_type, city_id, google_maps_url, google_place_id, kakao_place_id, naver_place_id, lat, lng",
+      )
+      .in("id", ids)
+      .eq("is_published", true),
+    loadPlaceCuts(ids),
+  ]);
 
   const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
   const { data: cities } = await supabase
@@ -142,6 +177,8 @@ async function _loadSavedView(): Promise<SavedView> {
           lng: p.lng,
         })?.url ?? null,
       savedAt: s.saved_at,
+      youtubeId: cuts.get(p.id)?.youtubeId ?? null,
+      videoTitle: cuts.get(p.id)?.videoTitle ?? null,
     });
   }
 

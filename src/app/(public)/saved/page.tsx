@@ -1,21 +1,19 @@
 import type { Metadata } from "next";
+import type { ReactNode } from "react";
 import Link from "next/link";
+import { Suspense } from "react";
 import { loadSavedView } from "@/shared/api/saved-server";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Icon } from "@/shared/ui/icons";
 import { ConnectBanner } from "./ConnectBanner";
-import { PlaceRows } from "./PlaceRows";
 import { SavedIndex } from "./SavedIndex";
 
 /**
- * 저장 첫 화면 — 플랫폼마다 답이 다르다(시안 C).
+ * 저장 첫 화면 — 시안 D.
  *
- *   모바일   그룹 인덱스(좋아요 카드 + 그룹 카드) → 눌러서 상세로
- *   데스크톱 사이드바가 인덱스를 맡으므로 본문은 바로 **좋아요 목록**
- *
- * 두 벌을 다 그리고 CSS 로 가른다. 데이터는 이미 한 번에 읽어와서
- * 질의가 늘지 않고, 서버 컴포넌트라 뷰포트를 알 방법도 없다.
+ *   모바일·데스크톱 둘 다 엽서 인덱스(좋아요 컷 + 그룹 스택)
+ *   상세는 `/saved/liked` · `/saved/[id]`
  *
  * 색인하지 않는다 — 유저별 화면이라 크롤러에게 보일 것이 없다.
  */
@@ -35,13 +33,31 @@ export default async function SavedPage() {
   if (view.places.length === 0) {
     return (
       <>
-        <Header locale={locale} title={m.saved.title} homeLabel={m.common.home} />
-        <div className="flex flex-col items-start gap-3 py-8">
+        <Header
+          locale={locale}
+          title={m.saved.title}
+          homeLabel={m.common.home}
+          extra={
+            !view.linked ? (
+              <p className="hidden lg:block" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+                {m.saved.restore}{" "}
+                <Link
+                  href={`${localePath("/login", locale)}?next=${encodeURIComponent(localePath("/saved", locale))}`}
+                  className="font-bold underline underline-offset-4"
+                  style={{ color: "var(--paper)" }}
+                >
+                  {m.saved.restoreCta}
+                </Link>
+              </p>
+            ) : null
+          }
+        />
+        <div className="flex flex-col items-start gap-3 py-8 lg:max-w-md lg:py-14">
           <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
           <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
           <Link
             href={localePath("/map", locale)}
-            className="mt-1 inline-flex h-10 items-center gap-1.5 px-4 font-bold"
+            className="mt-1 inline-flex h-10 items-center gap-1.5 px-4 font-bold lg:h-11"
             style={{
               fontSize: "var(--t-body)",
               borderRadius: "var(--r-frame)",
@@ -53,16 +69,11 @@ export default async function SavedPage() {
             {m.saved.emptyCta}
           </Link>
 
-          {/* 이 줄이 없으면 **기기를 넘어온 사람이 로그인을 찾을 방법이 없다.**
-              연결 배너는 아래 본문에 있는데, 저장이 0개면 여기서 return 해버려서
-              배너까지 못 간다. 그런데 새 기기는 정의상 저장이 0개다 —
-              `ROADMAP.md` 의 "로그인은 기기를 넘을 때만 요구" 가 하필 그 순간에만
-              작동하지 않던 구멍이다. 아직 연결 안 한 사람에게만 보인다. */}
           {!view.linked ? (
-            <p className="mt-(--stack)" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+            <p className="mt-(--stack) lg:hidden" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
               {m.saved.restore}{" "}
               <Link
-                href={localePath("/account", locale)}
+                href={`${localePath("/login", locale)}?next=${encodeURIComponent(localePath("/saved", locale))}`}
                 className="underline underline-offset-4"
                 style={{ color: "var(--paper)", fontWeight: 700 }}
               >
@@ -77,43 +88,30 @@ export default async function SavedPage() {
 
   return (
     <>
-      <Header locale={locale} title={m.saved.title} homeLabel={m.common.home} />
-
-      <ConnectBanner linked={view.linked} />
-
-      {/* 모바일 — 그룹 인덱스 */}
+      <Header
+        locale={locale}
+        title={m.saved.title}
+        homeLabel={m.common.home}
+        extra={
+          <div className="hidden lg:block">
+            <Suspense>
+              <ConnectBanner linked={view.linked} />
+            </Suspense>
+          </div>
+        }
+      />
+      <div className="lg:hidden">
+        <Suspense>
+          <ConnectBanner linked={view.linked} />
+        </Suspense>
+      </div>
       <SavedIndex
         lists={view.lists}
+        places={view.places}
+        membership={view.membership}
         likedCount={view.places.length}
         ungroupedCount={view.ungroupedCount}
       />
-
-      {/* 데스크톱 — 좋아요 목록이 바로 뜬다 */}
-      <div className="hidden flex-col gap-3 lg:flex">
-        <div className="flex items-center justify-between gap-3">
-          <h2
-            className="flex items-center gap-2"
-            style={{ fontSize: "var(--t-title)", fontWeight: 800 }}
-          >
-            <Icon.heart className="size-4" weight="fill" style={{ color: "var(--wax)" }} />
-            {m.saved.likedNav}
-          </h2>
-          <Link
-            href={localePath("/map?saved=1", locale)}
-            className="inline-flex h-9 items-center gap-1.5 px-3.5 font-bold"
-            style={{
-              fontSize: "var(--t-meta)",
-              borderRadius: "var(--r-frame)",
-              background: "var(--halo)",
-              color: "var(--halo-ink)",
-            }}
-          >
-            <Icon.map className="size-4" />
-            {m.saved.viewOnMap}
-          </Link>
-        </div>
-        <PlaceRows rows={view.places} emptyText={m.saved.empty} />
-      </div>
     </>
   );
 }
@@ -122,26 +120,31 @@ function Header({
   locale,
   title,
   homeLabel,
+  extra,
 }: {
   locale: Awaited<ReturnType<typeof getLocale>>;
   title: string;
   homeLabel: string;
+  extra?: ReactNode;
 }) {
   return (
-    <header className="flex flex-col gap-3 pb-1">
-      <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
+    <header className="flex flex-col gap-2 pb-1">
+      <nav className="index flex items-center gap-1.5 lg:hidden" style={{ color: "var(--dim)" }}>
         <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
           {homeLabel}
         </Link>
         <Icon.chevron className="size-2.5" />
         <span style={{ color: "var(--paper)" }}>{title}</span>
       </nav>
-      <h1
-        className="font-black"
-        style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-      >
-        {title}
-      </h1>
+      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
+        <h1
+          className="font-black"
+          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+        >
+          {title}
+        </h1>
+        {extra}
+      </div>
     </header>
   );
 }

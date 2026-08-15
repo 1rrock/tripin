@@ -223,6 +223,10 @@ export async function setInList(
 export async function setSaved(placeId: string, next: boolean): Promise<boolean> {
   if (!next) {
     const sb = supabaseBrowser();
+    /* 하트를 끄면 분류도 같이 지운다. saved_list_places 는 saved_places 와
+       FK 가 없어서, 여기 안 지우면 다시 하트를 켤 때 옛 그룹이 유령처럼 돌아온다. */
+    const { error: memErr } = await sb.from("saved_list_places").delete().eq("place_id", placeId);
+    if (memErr) return false;
     const { error } = await sb.from("saved_places").delete().eq("place_id", placeId);
     return !error;
   }
@@ -269,11 +273,12 @@ export async function linkGoogle(backTo: string): Promise<string | null> {
      화면 URL 을 그대로 redirectTo 로 주면 코드 교환이 하이드레이션 뒤로 밀려서
      돌아온 첫 렌더가 옛 세션을 본다(`app/auth/callback/route.ts` 주석). */
   const redirectTo = `${window.location.origin}/auth/callback?next=${encodeURIComponent(backTo)}`;
+  const oauth = { redirectTo, scopes: "email profile openid" };
 
   if (session.session) {
     const { error } = await sb.auth.linkIdentity({
       provider: "google",
-      options: { redirectTo },
+      options: oauth,
     });
     return error ? error.message : null;
   }
@@ -281,7 +286,7 @@ export async function linkGoogle(backTo: string): Promise<string | null> {
   /* 저장한 것이 없는 상태에서 로그인부터 하는 경우 — 승계할 게 없으니 평범한 로그인 */
   const { error } = await sb.auth.signInWithOAuth({
     provider: "google",
-    options: { redirectTo },
+    options: oauth,
   });
   return error ? error.message : null;
 }

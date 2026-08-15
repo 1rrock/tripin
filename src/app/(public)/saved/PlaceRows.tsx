@@ -3,9 +3,8 @@
 /**
  * 저장된 장소 목록의 행들 — 좋아요 화면과 그룹 상세가 같이 쓴다.
  *
- * 클라이언트인 이유: 하트를 눌러 해제하거나 그룹에서 빼면 **즉시 목록에서 빠져야**
- * 한다. 서버가 그린 목록을 그대로 두면 눌러도 행이 남아 "안 지워졌나" 싶어진다.
- * 그래서 서버 목록을 초기값으로 받고, 이후엔 컨텍스트가 정답이다.
+ * 행은 구글 지도 저장 목록 문법: 이름·도시가 본문, 오른쪽은 지도·하트·⋯.
+ * 그룹 이름은 한 줄 메타. 칩·바꾸기·지도 버튼을 아래로 쌓지 않는다.
  */
 
 import type { SavedPlaceRow } from "@/shared/api/saved-server";
@@ -13,7 +12,8 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
-import { ListButton, SaveButton } from "@/shared/ui/SaveButton";
+import { PlaceMenu } from "@/shared/ui/PlaceMenu";
+import { SaveButton } from "@/shared/ui/SaveButton";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { TYPE_COLOR } from "@/shared/ui/type-icons";
 
@@ -31,7 +31,7 @@ export function PlaceRows({
   emptyText: string;
 }) {
   const { locale, messages: m, t } = useLocale();
-  const { isSaved, listsOf, ready } = useSaved();
+  const { isSaved, lists, listsOf, ready } = useSaved();
 
   const visible = !ready
     ? rows
@@ -56,7 +56,6 @@ export function PlaceRows({
         {t(m.saved.countLabel, { n: visible.length })}
       </p>
 
-      {/* 데스크톱은 두 칸으로 — 한 칸이면 넓은 화면에서 줄이 지나치게 길어진다 */}
       <ul className="grid grid-cols-1 gap-x-6 xl:grid-cols-2">
         {visible.map((r) => {
           const name = displayPlaceName(
@@ -65,11 +64,12 @@ export function PlaceRows({
           );
           const city = displayCityName({ name: r.cityName, nameEn: r.cityNameEn }, locale);
           const color = TYPE_COLOR[r.placeType];
+          const groups = lists.filter((l) => listsOf(r.id).has(l.id)).map((l) => l.name);
 
           return (
             <li
               key={r.id}
-              className="flex items-center gap-3 border-b py-3.5"
+              className="flex items-start gap-2 border-b py-3.5"
               style={{ borderColor: "var(--hairline)" }}
             >
               <div className="min-w-0 flex-1">
@@ -80,28 +80,29 @@ export function PlaceRows({
                   {name}
                 </span>
                 <span className="mt-1 block truncate text-[13px] text-(--dim)">{city}</span>
-
-                {r.mapUrl ? (
-                  <OutboundA
-                    href={r.mapUrl}
-                    className="mt-2 inline-flex h-9 items-center gap-1.5 px-3"
-                    style={{
-                      fontSize: "var(--t-meta)",
-                      fontWeight: 600,
-                      borderRadius: "var(--r-frame)",
-                      boxShadow: "inset 0 0 0 1px var(--hairline)",
-                      color: "var(--paper)",
-                    }}
-                  >
-                    <Icon.out className="size-3.5" />
-                    {m.common.openMap}
-                  </OutboundA>
+                {groups.length > 0 ? (
+                  <span className="mt-1 block truncate text-[13px] text-(--dim)">
+                    {groups.join(" · ")}
+                  </span>
                 ) : null}
               </div>
 
-              <div className="flex shrink-0 items-center gap-2">
-                <ListButton placeId={r.id} placeName={name} />
-                <SaveButton placeId={r.id} placeName={name} />
+              <div className="flex shrink-0 items-center">
+                {r.mapUrl ? (
+                  <OutboundA
+                    href={r.mapUrl}
+                    aria-label={m.common.openMap}
+                    className="grid size-9 place-items-center"
+                    style={{
+                      borderRadius: "var(--r-frame)",
+                      color: "var(--dim)",
+                    }}
+                  >
+                    <Icon.out className="size-4" />
+                  </OutboundA>
+                ) : null}
+                <SaveButton placeId={r.id} placeName={name} bare />
+                <PlaceMenu placeId={r.id} placeName={name} listId={listId} />
               </div>
             </li>
           );

@@ -2,10 +2,10 @@ import { loadSavedView } from "@/shared/api/saved-server";
 import { SavedSidebar } from "./SavedSidebar";
 
 /**
- * 저장 화면 골격 — 시안 C.
+ * 저장 화면 골격 — 시안 D.
  *
- * 데스크톱: 왼쪽 사이드바 상시 + 오른쪽 본문. 그룹 사이 이동이 클릭 한 번이다.
- * 모바일: 사이드바가 없다. `/saved` 가 그룹 인덱스가 되고 상세로 밀어넣는다.
+ * 인덱스(`/saved`)는 엽서 그리드. 사이드바는 상세에서만 선다(SavedSidebar).
+ * 모바일은 처음부터 인덱스가 본문이다.
  *
  * 사이드바를 레이아웃에 둔 이유: 그룹을 오갈 때마다 다시 그리면 스크롤 위치와
  * 포커스가 매번 초기화된다. 레이아웃에 있으면 본문만 바뀐다.
@@ -17,7 +17,7 @@ export default async function SavedLayout({ children }: { children: React.ReactN
   const view = await loadSavedView();
 
   return (
-    <main className="mx-auto flex w-full max-w-lg gap-8 px-(--gutter) pt-4 lg:max-w-5xl">
+    <main className="mx-auto flex w-full max-w-lg gap-8 px-(--gutter) pt-4 lg:max-w-5xl lg:pt-8">
       <SavedSidebar
         lists={view.lists}
         likedCount={view.places.length}
