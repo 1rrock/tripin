@@ -275,6 +275,7 @@ export function CanvasFilters({
                 onClick={() => {
                   setPane("all");
                   setDraftR({ region: null, city: null });
+                  onApply({ region: null, city: null, type, channel });
                 }}
                 className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
                 style={{
@@ -291,6 +292,7 @@ export function CanvasFilters({
                   onClick={() => {
                     setPane(g.id);
                     setDraftR({ region: g.id, city: null });
+                    onApply({ region: g.id, city: null, type, channel });
                   }}
                   className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
                   style={{
@@ -309,12 +311,15 @@ export function CanvasFilters({
                   <button
                     key={c.slug}
                     type="button"
-                    onClick={() =>
-                      setDraftR({
+                    onClick={() => {
+                      const next = {
                         region: pane === "all" ? null : pane,
                         city: on ? null : c.slug,
-                      })
-                    }
+                      };
+                      setDraftR(next);
+                      onApply({ ...next, type, channel });
+                      setOpen(null);
+                    }}
                     className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px]"
                     style={{
                       background: on ? "var(--halo)" : undefined,
@@ -365,7 +370,12 @@ export function CanvasFilters({
                 <button
                   key={key}
                   type="button"
-                  onClick={() => setDraftT(on ? null : key)}
+                  onClick={() => {
+                    const next = on ? null : key;
+                    setDraftT(next);
+                    onApply({ region, city, type: next, channel });
+                    setOpen(null);
+                  }}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px]"
                   style={{
                     background: on ? "var(--halo)" : undefined,
@@ -411,7 +421,12 @@ export function CanvasFilters({
                 <button
                   key={c.slug}
                   type="button"
-                  onClick={() => setDraftC(on ? null : c.slug)}
+                  onClick={() => {
+                    const next = on ? null : c.slug;
+                    setDraftC(next);
+                    onApply({ region, city, type, channel: next });
+                    setOpen(null);
+                  }}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left"
                   style={{
                     background: on ? "var(--halo)" : undefined,

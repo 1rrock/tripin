@@ -6,7 +6,7 @@
  * 핀은 번호가 아니라 점 → 가까이서 상호. 누르면 상세.
  */
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlass, X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
@@ -20,23 +20,21 @@ import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
-import { choseong, isChoseongQuery } from "@/shared/lib/search";
 import {
   HOME_REGION_ORDER,
   homeRegionForCountry,
   isHomeRegionId,
   type HomeRegionId,
 } from "@/shared/lib/geo-regions";
+import {
+  keepAxesForApply,
+  placeMatchesMapFilter,
+  reconcileMapFilter,
+  type MapFilterAxes,
+} from "@/shared/lib/map-filters";
 import { CanvasFilters } from "./CanvasFilters";
 import { SavedMapChips } from "./SavedMapChips";
 import { useSaved } from "@/shared/ui/SavedContext";
-
-function matchesQuery(hay: string, q: string) {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  if (hay.includes(needle)) return true;
-  return isChoseongQuery(needle) && choseong(hay).includes(needle);
-}
 
 export type CanvasLead = "home" | "region" | "channel" | "type";
 
@@ -81,9 +79,14 @@ export function ExplorerCanvas({
 
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
-  const { isSaved, listsOf } = useSaved();
+  const { isSaved, listsOf, ready: savedReady } = useSaved();
 
-  const selectedChannel = creators.find((c) => c.slug === channel) ?? null;
+  const saved = useMemo(() => ({ isSaved, listsOf }), [isSaved, listsOf]);
+  const axes = useMemo<MapFilterAxes>(
+    () => ({ city, region, channel, type, q, savedOnly, listId }),
+    [city, region, channel, type, q, savedOnly, listId],
+  );
+
   const selectedCity = cities.find((c) => c.slug === city) ?? null;
 
   const replace = useCallback(
@@ -118,19 +121,50 @@ export function ExplorerCanvas({
     [city, channel, type, q, region, savedOnly, listId, pathname, router],
   );
 
-  const filtered = useMemo(() => {
-    return places.filter((p) => {
-      /* 저장·그룹은 서버가 모르는 값이라(유저별) 여기서만 걸린다 */
-      if (listId && !listsOf(p.id).has(listId)) return false;
-      if (savedOnly && !isSaved(p.id)) return false;
-      if (city && p.citySlug !== city) return false;
-      if (!city && region && homeRegionForCountry(p.countryCode) !== region) return false;
-      if (channel && !p.sources.some((s) => s.creatorSlug === channel)) return false;
-      if (type && p.placeType !== type) return false;
-      if (q && !matchesQuery(p.searchText, q)) return false;
-      return true;
+  const filtered = useMemo(
+    () => places.filter((p) => placeMatchesMapFilter(p, axes, saved)),
+    [places, axes, saved],
+  );
+
+  const inboundKey = `${city ?? ""}|${region ?? ""}|${channel ?? ""}|${type ?? ""}|${q}|${savedOnly ? "1" : "0"}|${listId ?? ""}`;
+  const inboundSeen = useRef<string | null>(null);
+  useEffect(() => {
+    if ((savedOnly || listId) && !savedReady) return;
+    if (inboundSeen.current === inboundKey) return;
+    inboundSeen.current = inboundKey;
+    if (q.trim()) return;
+    if (filtered.length > 0) return;
+    const next = reconcileMapFilter(places, axes, [], saved);
+    if (
+      next.city === city &&
+      next.region === region &&
+      next.channel === channel &&
+      next.type === type
+    ) {
+      return;
+    }
+    replace({
+      city: next.city,
+      region: next.region,
+      channel: next.channel,
+      type: next.type,
     });
-  }, [places, city, region, channel, type, q, savedOnly, listId, isSaved, listsOf]);
+  }, [
+    inboundKey,
+    filtered.length,
+    places,
+    axes,
+    saved,
+    city,
+    region,
+    channel,
+    type,
+    q,
+    replace,
+    savedOnly,
+    listId,
+    savedReady,
+  ]);
 
   const pins = useMemo(
     () =>
@@ -170,24 +204,20 @@ export function ExplorerCanvas({
       : m.home.regionFilter;
 
   const typeCounts = useMemo(() => {
+    const facet = { ...axes, type: null };
     const map = new Map<PlaceType, number>();
     for (const p of places) {
-      if (city && p.citySlug !== city) continue;
-      if (!city && region && homeRegionForCountry(p.countryCode) !== region) continue;
-      if (channel && !p.sources.some((s) => s.creatorSlug === channel)) continue;
-      if (q && !matchesQuery(p.searchText, q)) continue;
+      if (!placeMatchesMapFilter(p, facet, saved)) continue;
       map.set(p.placeType, (map.get(p.placeType) ?? 0) + 1);
     }
     return map;
-  }, [places, city, region, channel, q]);
+  }, [places, axes, saved]);
 
   const channelCounts = useMemo(() => {
+    const facet = { ...axes, channel: null };
     const map = new Map<string, number>();
     for (const p of places) {
-      if (city && p.citySlug !== city) continue;
-      if (!city && region && homeRegionForCountry(p.countryCode) !== region) continue;
-      if (type && p.placeType !== type) continue;
-      if (q && !matchesQuery(p.searchText, q)) continue;
+      if (!placeMatchesMapFilter(p, facet, saved)) continue;
       const seen = new Set<string>();
       for (const s of p.sources) {
         if (seen.has(s.creatorSlug)) continue;
@@ -196,15 +226,39 @@ export function ExplorerCanvas({
       }
     }
     return map;
-  }, [places, city, region, type, q]);
+  }, [places, axes, saved]);
+
+  const channelOptions = useMemo(() => {
+    const seen = new Set(creators.map((c) => c.slug));
+    const extra: FeedCreator[] = [];
+    for (const p of places) {
+      for (const s of p.sources) {
+        if (seen.has(s.creatorSlug)) continue;
+        if (!(channelCounts.get(s.creatorSlug) ?? 0)) continue;
+        seen.add(s.creatorSlug);
+        extra.push({
+          id: s.creatorSlug,
+          slug: s.creatorSlug,
+          displayName: s.creatorName,
+          initials: s.initials,
+          accentColor: s.accentColor,
+          avatarUrl: s.avatarUrl,
+          handle: null,
+          bio: null,
+          placeCount: channelCounts.get(s.creatorSlug) ?? 0,
+          videoCount: 0,
+          recentVideos: [],
+          cities: [],
+        });
+      }
+    }
+    return extra.length ? [...creators, ...extra] : creators;
+  }, [creators, places, channelCounts]);
 
   const modalCities = useMemo(() => {
-    const pool = places.filter((p) => {
-      if (channel && !p.sources.some((s) => s.creatorSlug === channel)) return false;
-      if (type && p.placeType !== type) return false;
-      if (q && !matchesQuery(p.searchText, q)) return false;
-      return true;
-    });
+    const pool = places.filter((p) =>
+      placeMatchesMapFilter(p, { ...axes, city: null, region: null }, saved),
+    );
     const byCity = new Map<
       string,
       { slug: string; name: string; nameEn: string | null; countryCode: string; placeCount: number }
@@ -236,7 +290,7 @@ export function ExplorerCanvas({
       items.sort((a, b) => b.placeCount - a.placeCount);
       return [{ id, items }];
     });
-  }, [places, cities, channel, type, q]);
+  }, [places, cities, axes, saved]);
 
   return (
     <div className={surface === "page" ? "canvas-page canvas-root" : "canvas-page hidden lg:block"}>
@@ -314,9 +368,11 @@ export function ExplorerCanvas({
           channel={channel}
           regionLabel={regionLabel}
           typeLabel={type ? m.placeTypes[type] : m.nav.type}
-          channelLabel={selectedChannel?.displayName ?? m.nav.channel}
+          channelLabel={
+            channelOptions.find((c) => c.slug === channel)?.displayName ?? m.nav.channel
+          }
           groups={modalCities}
-          creators={creators}
+          creators={channelOptions}
           channelCounts={channelCounts}
           typeCounts={typeCounts}
           trailing={
@@ -326,18 +382,38 @@ export function ExplorerCanvas({
               onChange={(next) => {
                 setActiveId(null);
                 setSheetOpen(false);
-                replace({ saved: next.saved, list: next.list });
+                const proposed = { ...axes, savedOnly: next.saved, listId: next.list };
+                const reconciled = reconcileMapFilter(places, proposed, [], saved);
+                replace({
+                  saved: next.saved,
+                  list: next.list,
+                  region: reconciled.region,
+                  city: reconciled.city,
+                  type: reconciled.type,
+                  channel: reconciled.channel,
+                });
               }}
             />
           }
           onApply={(next) => {
             setActiveId(null);
             setSheetOpen(false);
-            replace({
-              region: next.region,
+            const proposed = {
               city: next.city,
-              type: next.type,
+              region: next.region,
               channel: next.channel,
+              type: next.type,
+              q,
+              savedOnly,
+              listId,
+            };
+            const keep = keepAxesForApply(axes, proposed);
+            const reconciled = reconcileMapFilter(places, proposed, keep, saved);
+            replace({
+              region: reconciled.region,
+              city: reconciled.city,
+              type: reconciled.type,
+              channel: reconciled.channel,
             });
           }}
         />
