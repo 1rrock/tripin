@@ -9,6 +9,10 @@
  * 태블릿: 헤더 안 텍스트+아이콘.
  * 모바일: 하단 탭바 — 헤더 밖에 둔다. 헤더 backdrop-filter 안에 fixed 를 두면
  * 뷰포트가 아니라 헤더 바닥에 붙는다.
+ *
+ * 계정(마이)은 어느 폭에서든 **내비의 맨 오른쪽/맨 아래**에 선다. 헤더에 두면
+ * 브랜드·검색과 같은 줄에서 크롬처럼 보이는데, 실제로는 사람들이 찾아 들어가는
+ * 목적지다. 탭바 넷째 칸이 그 자리다.
  */
 
 import Link from "next/link";
@@ -32,6 +36,12 @@ const ITEMS = [
   { path: "/saved", icon: Heart, labelKey: "saved" },
 ] as const;
 
+/**
+ * 계정은 배열 밖에 따로 둔다 — 홈·지도·저장은 콘텐츠를 가르는 축이고, 이건 설정함이다.
+ * 레일에서는 mt-auto 로 떨어져 서고, 탭바에서는 맨 오른쪽 칸을 받는다.
+ */
+const ACCOUNT = { path: "/account", icon: UserCircle } as const;
+
 function isActive(pathname: string, href: string) {
   const bare = stripLocalePrefix(pathname);
   if (href === "/") return bare === "/";
@@ -51,6 +61,16 @@ function useNavItems() {
           : m.nav[it.labelKey],
     Icon: it.icon,
   }));
+}
+
+function useAccountItem() {
+  const { messages: m, href } = useLocale();
+  return {
+    path: ACCOUNT.path,
+    href: href(ACCOUNT.path),
+    label: m.account.nav,
+    Icon: ACCOUNT.icon,
+  };
 }
 
 export function Nav() {
@@ -83,6 +103,8 @@ export function DesktopRail() {
   const pathname = usePathname() ?? "/";
   const { messages: m, href } = useLocale();
   const items = useNavItems();
+  const account = useAccountItem();
+  const accountOn = isActive(pathname, account.path);
 
   return (
     <nav aria-label={m.nav.menu} className="desktop-rail">
@@ -113,15 +135,12 @@ export function DesktopRail() {
           홈·지도·저장은 콘텐츠를 가르는 축이고, 이건 설정함이다.
           mt-auto 가 그 거리를 만든다(레일이 bottom:16px 까지 늘어나 있다). */}
       <Link
-        href={href("/account")}
-        aria-label={m.account.nav}
-        aria-current={isActive(pathname, "/account") ? "page" : undefined}
+        href={account.href}
+        aria-label={account.label}
+        aria-current={accountOn ? "page" : undefined}
         className="desktop-rail-btn mt-auto"
       >
-        <UserCircle
-          className="size-5"
-          weight={isActive(pathname, "/account") ? "fill" : "regular"}
-        />
+        <account.Icon className="size-5" weight={accountOn ? "fill" : "regular"} />
       </Link>
     </nav>
   );
@@ -130,7 +149,9 @@ export function DesktopRail() {
 export function TabDock() {
   const pathname = usePathname() ?? "/";
   const { messages: m } = useLocale();
-  const items = useNavItems();
+  /* 계정이 맨 오른쪽 넷째 칸이다 — 헤더에 있던 아이콘을 여기로 내렸다.
+     알약 폭은 items.length 에서 뽑으니 칸이 늘어도 자리는 저절로 맞는다. */
+  const items = [...useNavItems(), useAccountItem()];
   const activeIndex = items.findIndex((it) => isActive(pathname, it.path));
 
   return (
@@ -147,10 +168,13 @@ export function TabDock() {
               transform: `translateX(${activeIndex * 100}%)`,
             }}
           >
+            {/* 알약 높이는 아이콘+라벨 덩어리(20 + gap 3 + 12*1.2 ≈ 37px)보다 커야 한다.
+                h-9(36px)일 때는 오히려 덩어리보다 작아서 아이콘 머리가 배경 밖으로
+                나왔다. 48px 이면 위아래 5px 이 남고, 바(56px) 안에서도 4px 뜬다. */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2">
               <div
                 key={activeIndex}
-                className="animate-nav-pill-liquid h-9 w-16 rounded-full bg-(--halo)"
+                className="animate-nav-pill-liquid h-12 w-16 rounded-full bg-(--halo)"
               />
             </div>
           </div>
@@ -165,7 +189,7 @@ export function TabDock() {
               aria-current={on ? "page" : undefined}
               className="tab relative z-[1]"
             >
-              <Glyph className="size-[22px]" weight={on ? "fill" : "regular"} />
+              <Glyph className="size-5" weight={on ? "fill" : "regular"} />
               <span className="index">{it.label}</span>
             </Link>
           );

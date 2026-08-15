@@ -13,8 +13,14 @@ export const ko = {
     notice: "고지",
   },
   home: {
-    title: "유튜브에서 본",
-    titleLine2: "그 가게, 지도로.",
+    title: "여행 유튜브에 나온 맛집",
+    /** 헤드라인에서 산호로 찍는 구절 — 핀과 같은 역할 */
+    titleHot: "맛집",
+    titleLine2: "",
+    blurb: "",
+    /** 지면 카드 검색 알약 */
+    fieldSearch: "채널·도시·가게 이름으로",
+    fieldSearchMob: "채널·도시·가게",
     stats: "{places}곳 · 도시 {cities} · 채널 {creators}",
     searchAria: "가게 이름·영상·도시·채널 검색",
     searchPlaceholder: "가게·음식·도시로 찾기",
@@ -397,7 +403,11 @@ export type Messages = {
   };
   home: {
     title: string;
+    titleHot: string;
     titleLine2: string;
+    blurb: string;
+    fieldSearch: string;
+    fieldSearchMob: string;
     stats: string;
     searchAria: string;
     searchPlaceholder: string;

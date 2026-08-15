@@ -1,21 +1,21 @@
 "use client";
 
 /**
- * 홈 랜딩 — 검색이 첫 화면, 아래로 도시·영상·채널·조각.
+ * 홈 랜딩 — 히어로는 시안 4 「지면 위의 카드」.
  *
- * 히어로는 Airbnb 알약 + Trip 종류 탭. 컷 위에 글자를 얹지 않는다.
+ * 흐린 지도가 바닥이고, 그 위에 문장·검색·도시 칩이 뜬다.
  * 검색 알약은 바로 지도로 보내지 않는다 — 통합 검색을 연다.
+ * 컷 위에 글자를 얹지 않는다.
  */
 
-import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
+import { MagnifyingGlass, MapPin } from "@phosphor-icons/react";
 import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { displayCityName } from "@/shared/i18n/display";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
 import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
-import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
 import { ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
 
 const RAIL = 8;
@@ -36,160 +36,153 @@ export function HomeSheet({
   videos: FeedVideo[];
   creators: FeedCreator[];
 }) {
-  const { messages: m, href } = useLocale();
   const rail = cities.slice(0, RAIL);
   const grid = cities.slice(0, GRID);
 
   return (
-    <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
-      <section className="px-(--gutter) pt-4 pb-4 lg:pt-8 lg:pb-6">
-        <h1 className="sr-only">
-          {m.home.title} {m.home.titleLine2}
-        </h1>
+    <div>
+      <FieldHero cities={cities} />
 
-        <HeroSearch />
+      <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
+        <div className="lg:hidden">
+          <CategoryGrid />
+          <hr className="rule mx-(--gutter)" />
+          <DestinationRail cities={rail} />
+        </div>
 
-        <nav
-          className="mt-6 hidden justify-center gap-1 lg:flex"
-          aria-label={m.home.filterAria}
-        >
-          {HOME_TYPES.map((type) => {
-            const Glyph = typeIcon(type);
-            return (
-              <Link
-                key={type}
-                href={href(`/map?type=${type}`)}
-                className="flex min-w-[4.5rem] flex-col items-center gap-1.5 rounded-xl px-3 py-2 text-(--paper) transition-colors hover:bg-(--hover)"
-              >
-                <Glyph size={22} weight="duotone" />
-                <span className="text-[12px] font-medium">{m.placeTypes[type]}</span>
-              </Link>
-            );
-          })}
-        </nav>
-      </section>
+        <div className="hidden lg:block">
+          <DestinationGrid cities={grid} />
+        </div>
 
-      <div className="lg:hidden">
-        <CategoryGrid />
-        <hr className="rule mx-(--gutter)" />
-        <DestinationRail cities={rail} />
+        <VideoFeed videos={videos} />
+        <ChannelFeed creators={creators} />
+        <PieceFeed pieces={pieces} />
       </div>
-
-      <div className="hidden lg:block">
-        <DestinationGrid cities={grid} />
-      </div>
-
-      <VideoFeed videos={videos} />
-      <ChannelFeed creators={creators} />
-      <PieceFeed pieces={pieces} />
     </div>
   );
 }
 
 /**
- * 데스크톱: Airbnb 식 두 칸 + 산호 검색 알약.
- * 모바일: 한 칸 — 종류는 아래 그리드가 맡는다.
- * 검색 칸·버튼은 통합 검색을 연다. 종류만 지도 필터로 직행한다.
+ * 시안 4 — 지면 위의 카드.
+ * 지도 타일은 정적 이미지(회색·반투명). 라이브 지도를 홈에 또 올리지 않는다.
  */
-function HeroSearch() {
-  const { messages: m, href } = useLocale();
-  const [open, setOpen] = useState(false);
-  const box = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    const onDown = (e: MouseEvent) => {
-      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
-    };
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") setOpen(false);
-    };
-    window.addEventListener("mousedown", onDown);
-    window.addEventListener("keydown", onKey);
-    return () => {
-      window.removeEventListener("mousedown", onDown);
-      window.removeEventListener("keydown", onKey);
-    };
-  }, [open]);
+function FieldHero({ cities }: { cities: CityRow[] }) {
+  const { messages: m, href, locale } = useLocale();
+  const chips = cities.slice(0, 4);
 
   return (
-    <div className="mx-auto max-w-3xl">
-      <button
-        type="button"
-        onClick={openSearch}
-        aria-label={m.home.searchAria}
-        className="relative flex h-12 w-full items-center rounded-full bg-(--hover) pr-3 pl-11 text-left active:bg-[#ededed] lg:hidden"
-      >
-        <MagnifyingGlass
-          aria-hidden
-          className="pointer-events-none absolute top-1/2 left-3.5 h-4 w-4 -translate-y-1/2 text-(--dim)"
+    <section className="relative min-h-[300px] overflow-hidden px-(--gutter) pt-7 pb-7 lg:min-h-[420px] lg:px-14 lg:pt-[60px] lg:pb-14">
+      <div aria-hidden className="pointer-events-none absolute inset-0">
+        {/* 장식 지면. 본문 LCP 가 아니라 next/image 를 쓰지 않는다. */}
+        <img
+          src="/hero/field-map.webp"
+          alt=""
+          width={1280}
+          height={1280}
+          fetchPriority="high"
+          className="size-full object-cover opacity-45 grayscale contrast-[0.85] lg:opacity-50"
         />
-        <span className="truncate text-base text-(--dim)">{m.home.goWhere}</span>
-      </button>
-
-      <div
-        ref={box}
-        className="relative hidden items-center rounded-full bg-white lg:flex"
-        style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.10), 0 0 0 1px var(--hairline)" }}
-      >
-        <button
-          type="button"
-          onClick={openSearch}
-          className="flex min-w-0 flex-1 flex-col justify-center rounded-l-full py-3.5 pr-4 pl-6 text-left transition-colors hover:bg-(--hover)"
-        >
-          <span className="text-[12px] font-bold">{m.home.goWhere}</span>
-          <span className="mt-0.5 truncate text-[14px] text-(--dim)">{m.home.goWhereHint}</span>
-        </button>
-        <span aria-hidden className="h-8 w-px shrink-0 bg-(--hairline)" />
-        <div className="relative min-w-0 flex-1">
-          <button
-            type="button"
-            aria-expanded={open}
-            aria-haspopup="listbox"
-            onClick={() => setOpen((v) => !v)}
-            className="flex w-full items-center py-3.5 pr-3 pl-5 text-left transition-colors hover:bg-(--hover)"
-          >
-            <span className="min-w-0 flex-1">
-              <span className="block text-[12px] font-bold">{m.home.whatToSee}</span>
-              <span className="mt-0.5 block truncate text-[14px] text-(--dim)">
-                {m.home.whatToSeeHint}
-              </span>
-            </span>
-            <CaretDown className={`size-3.5 shrink-0 text-(--dim) ${open ? "rotate-180" : ""}`} />
-          </button>
-          {open ? (
-            <ul
-              role="listbox"
-              className="absolute top-[calc(100%+10px)] right-0 left-0 z-20 overflow-hidden rounded-2xl bg-white py-1"
-              style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 0 0 1px var(--hairline)" }}
-            >
-              {HOME_TYPES.map((type) => {
-                const Glyph = typeIcon(type);
-                return (
-                  <li key={type}>
-                    <Link
-                      href={href(`/map?type=${type}`)}
-                      role="option"
-                      className="flex items-center gap-2.5 px-4 py-2.5 text-[14px] font-medium hover:bg-(--hover)"
-                    >
-                      <Glyph size={18} weight="duotone" />
-                      {m.placeTypes[type]}
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-        </div>
-        <button
-          type="button"
-          onClick={openSearch}
-          aria-label={m.home.searchGo}
-          className="m-2 grid size-12 shrink-0 place-items-center rounded-full bg-(--wax) text-white transition-opacity hover:opacity-90"
-        >
-          <MagnifyingGlass className="size-5" weight="bold" />
-        </button>
+        <span
+          className="absolute inset-0 lg:hidden"
+          style={{
+            background:
+              "linear-gradient(180deg, rgba(255,255,255,0.94) 42%, rgba(255,255,255,0.62))",
+          }}
+        />
+        <span
+          className="absolute inset-0 hidden lg:block"
+          style={{
+            background:
+              "linear-gradient(100deg, #fff 34%, rgba(255,255,255,0.6) 62%, rgba(255,255,255,0.25))",
+          }}
+        />
+        <MapPin
+          weight="fill"
+          className="absolute right-[14%] bottom-[22%] size-6 text-(--wax) lg:right-[16%] lg:top-[24%] lg:bottom-auto lg:size-[30px]"
+        />
+        <MapPin
+          weight="fill"
+          className="absolute bottom-[12%] left-[16%] size-[17px] text-(--wax) lg:top-[56%] lg:right-[29%] lg:bottom-auto lg:left-auto lg:size-[22px]"
+        />
+        <MapPin
+          weight="fill"
+          className="absolute top-[64%] right-[9%] hidden size-[18px] text-(--wax) lg:block"
+        />
       </div>
-    </div>
+
+      <div className="relative max-w-[40rem]">
+        <h1 className="text-[32px] leading-[1.08] font-black tracking-[-0.048em] lg:text-[52px]">
+          <Hot text={m.home.title} hot={m.home.titleHot} />
+        </h1>
+
+        <button
+          type="button"
+          onClick={openSearch}
+          aria-label={m.home.searchAria}
+          className="mt-5 flex h-[52px] w-full items-center gap-2.5 rounded-full bg-white pr-2 pl-4 text-left lg:mt-7 lg:h-14 lg:pr-2 lg:pl-5"
+          style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.09), 0 0 0 1px var(--hairline)" }}
+        >
+          <MagnifyingGlass aria-hidden className="size-[17px] shrink-0 text-(--dim) lg:size-[19px]" />
+          <span className="min-w-0 flex-1 truncate text-[15px] text-(--dim) lg:text-base">
+            <span className="lg:hidden">{m.home.fieldSearchMob}</span>
+            <span className="hidden lg:inline">{m.home.fieldSearch}</span>
+          </span>
+          <span className="grid size-[38px] shrink-0 place-items-center rounded-full bg-(--wax) text-white lg:size-[42px]">
+            <MagnifyingGlass className="size-4 lg:size-[18px]" weight="bold" />
+          </span>
+        </button>
+
+        {chips.length > 0 ? (
+          <nav
+            aria-label={m.home.citiesAria}
+            className="mt-3.5 flex gap-1.5 overflow-x-auto pb-0.5 lg:mt-[18px] lg:flex-wrap"
+          >
+            {chips.map((city, i) => {
+              const name = displayCityName(city, locale);
+              const on = i === 0;
+              return (
+                <Link
+                  key={city.slug}
+                  href={href(`/map?city=${city.slug}`)}
+                  className="inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[13px] font-medium"
+                  style={
+                    on
+                      ? { background: "var(--paper)", color: "#fff" }
+                      : {
+                          background: "var(--ground)",
+                          color: "#383838",
+                          boxShadow: "inset 0 0 0 1px var(--hairline)",
+                        }
+                  }
+                >
+                  {name} {city.placeCount}
+                </Link>
+              );
+            })}
+          </nav>
+        ) : null}
+      </div>
+    </section>
   );
 }
+
+function Hot({ text, hot }: { text: string; hot: string }) {
+  if (!hot || !text.includes(hot)) return text;
+  const i = text.indexOf(hot);
+  const before = text.slice(0, i).trimEnd();
+  const after = text.slice(i + hot.length);
+  return (
+    <>
+      {before ? (
+        <>
+          {before}
+          <br />
+        </>
+      ) : null}
+      <span style={{ color: "var(--wax)" }}>{hot}</span>
+      {after}
+    </>
+  );
+}
+
+

@@ -354,7 +354,9 @@ body {
   align-items: center;
   justify-content: center;
   gap: 3px;
-  padding: 8px 0 10px;
+  /* 위아래 같은 값 — 8/10 이면 아이콘+라벨 덩어리가 1px 위로 올라가 앉아서
+     가운데 정렬된 활성 알약과 어긋난다. */
+  padding: 9px 0;
   color: var(--dim);
   transition: color 0.15s ease, transform 0.12s ease;
 }

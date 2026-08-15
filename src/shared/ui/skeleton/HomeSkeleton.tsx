@@ -2,8 +2,8 @@
  * 홈 뼈대 — `src/app/(public)/HomeSheet.tsx` + `HomeFeeds.tsx` 의 미러.
  *
  * 홈은 모바일과 데스크톱이 **다른 물건**이다:
- *   모바일 — 알약 검색 → 종류 그리드 10칸 → 룰 → 도시 가로 롤 → 피드 3덩어리
- *   데스크톱 — 두 칸 검색 알약 → 종류 내비 7칸 → 도시 4열 그리드 → 피드(영상만 4열)
+ *   모바일 — 지면 카드 → 종류 그리드 10칸 → 룰 → 도시 가로 롤 → 피드 3덩어리
+ *   데스크톱 — 지면 카드 → 도시 4열 그리드 → 피드(영상만 4열)
  * 그래서 스켈레톤도 `lg:hidden` / `hidden lg:block` 을 실화면 그대로 들고 간다.
  * 한쪽만 그리면 반대쪽 화면에서 로딩과 본화면이 통째로 어긋난다.
  */
@@ -27,58 +27,24 @@ function Head({ w = "6.5rem" }: { w?: string }) {
 export function HomeSkeleton({ label }: { label: string }) {
   return (
     <BoneRoot label={label}>
-      <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
-        {/* 히어로 — HomeSheet 의 첫 section */}
-        <section className="px-(--gutter) pt-4 pb-4 lg:pt-8 lg:pb-6">
-          <div className="mx-auto max-w-3xl">
-            {/* 모바일 알약 h-12 — `lg:hidden` 은 반드시 **감싼 div** 에 준다.
-                뼈에 직접 주면 layer 밖 `.bone-line{display:block}` 이 이겨서
-                데스크톱에도 알약이 남고 그 아래 전부가 48px 씩 밀린다 */}
-            <div className="lg:hidden">
-              <BoneBlock h={48} />
-            </div>
-
-            {/* 데스크톱 두 칸 알약 — 높이는 m-2 size-12 버튼이 정한다(64px) */}
-            <div
-              className="relative hidden items-center rounded-full bg-white lg:flex"
-              style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.10), 0 0 0 1px var(--hairline)" }}
-            >
-              <div className="flex min-w-0 flex-1 flex-col justify-center py-3.5 pr-4 pl-6">
-                <span className="text-[12px] font-bold">
-                  <Bone w="3.5rem" />
-                </span>
-                <span className="mt-0.5 block text-[14px]">
-                  <Bone w="8rem" />
-                </span>
-              </div>
-              <span aria-hidden className="h-8 w-px shrink-0 bg-(--hairline)" />
-              <div className="min-w-0 flex-1 py-3.5 pr-3 pl-5">
-                <span className="block text-[12px] font-bold">
-                  <Bone w="3.5rem" />
-                </span>
-                <span className="mt-0.5 block text-[14px]">
-                  <Bone w="9rem" />
-                </span>
-              </div>
-              <BoneBlock w={48} h={48} className="m-2 shrink-0" />
-            </div>
+      {/* 히어로 — FieldHero. 피드 컬럼 밖으로 전폭 */}
+      <section className="px-(--gutter) pt-7 pb-7 lg:px-14 lg:pt-[60px] lg:pb-14">
+        <div className="max-w-[520px]">
+          <h2 className="text-[32px] leading-[1.08] font-black tracking-[-0.048em] lg:text-[52px]">
+            <Bone w="16rem" />
+          </h2>
+          <div className="mt-5 lg:mt-7">
+            <BoneBlock h={52} className="lg:h-14" />
           </div>
-
-          {/* 데스크톱 종류 내비 — HOME_TYPES 7칸 */}
-          <div className="mt-6 hidden justify-center gap-1 lg:flex">
-            {times(7).map((i) => (
-              <span
-                key={i}
-                className="flex min-w-[4.5rem] flex-col items-center gap-1.5 px-3 py-2"
-              >
-                <BoneDot size={22} radius="6px" />
-                <span className="text-[12px] font-medium">
-                  <Bone w="2.75rem" />
-                </span>
-              </span>
+          <div className="mt-3.5 flex gap-1.5 lg:mt-[18px]">
+            {times(4).map((i) => (
+              <BoneBlock key={i} w={72} h={32} />
             ))}
           </div>
-        </section>
+        </div>
+      </section>
+
+      <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
 
         {/* ── 모바일: 종류 그리드 + 도시 롤 ───────────────────────── */}
         <div className="lg:hidden">
