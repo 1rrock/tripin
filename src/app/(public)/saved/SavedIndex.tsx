@@ -42,8 +42,14 @@ export function SavedIndex({
     : lists;
   const liked = ready ? savedCount : likedCount;
 
+  /* 위에 선을 긋지 않는다 — 공용 헤더의 헤어라인이 이미 목록의 첫 선이다(layout 주석).
+     마지막 행의 아래 선도 지운다 — 조금 밑에 푸터의 border-t 가 또 한 줄 긋는다.
+     목록의 선은 **행과 행 사이**에만 있으면 된다. */
   return (
-    <ul className="-mx-(--gutter) border-t" style={{ borderColor: "var(--hairline)" }}>
+    <ul
+      className="-mx-(--gutter) lg:border-t [&>li:last-child]:border-b-0"
+      style={{ borderColor: "var(--hairline)" }}
+    >
       {/* 저장한 곳 전체 — 그룹 행과 같은 길로 간다. 목록만 있는 화면을 따로 두면
           같은 것을 두 벌로 그리게 된다(`[list]/page.tsx` 주석). */}
       <SavedRow

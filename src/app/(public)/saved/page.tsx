@@ -47,7 +47,9 @@ export default async function SavedPage() {
 
       {blank ? (
         <>
-          <div className="flex flex-col items-start gap-2 pb-2">
+          {/* 빈 화면은 글부터 시작한다 — 헤어라인에 글줄이 붙지 않게 위 여백을 준다
+              (목록 화면과 달리 헤더의 선을 이어받을 목록이 여기엔 없다). */}
+          <div className="flex flex-col items-start gap-2 pt-4 pb-2 lg:pt-0">
             <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
             <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
             <Link
@@ -67,7 +69,10 @@ export default async function SavedPage() {
 
           {/* 빈 화면에도 같은 두 행은 남는다 — 그룹을 먼저 만드는 길과,
               다른 기기에 저장이 있는 사람이 그것을 되찾는 길. */}
-          <ul className="-mx-(--gutter) border-t" style={{ borderColor: "var(--hairline)" }}>
+          <ul
+            className="-mx-(--gutter) border-t [&>li:last-child]:border-b-0"
+            style={{ borderColor: "var(--hairline)" }}
+          >
             <NewListButton variant="row" hint={m.saved.listEmptyHint} />
             <Suspense>
               <AccountRow linked={view.linked} copy="restore" />
