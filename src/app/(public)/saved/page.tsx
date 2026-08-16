@@ -7,6 +7,7 @@ import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Icon } from "@/shared/ui/icons";
 import { AccountRow } from "./AccountRow";
 import { NewListButton } from "./NewListButton";
+import { SavedHeader } from "./SavedHeader";
 import { SavedIndex } from "./SavedIndex";
 
 /**
@@ -38,18 +39,18 @@ export default async function SavedPage() {
      그룹부터 만든 사람(NewListButton 주석의 순서)이 방금 만든 그룹을 잃는다. */
   const blank = view.places.length === 0 && view.lists.length === 0;
 
+  /* 제목·규모·주 행동은 SavedHeader 가 든다 — 모바일에서는 sr-only h1 로만 남고,
+     공용 헤더가 숨는 lg 부터 큰 제목으로 선다. */
   return (
-    <div className="flex flex-col gap-4">
-      {/* 제목은 보이지 않는다 — 첫 행이 이미 "저장한 곳" 이라 같은 낱말이 두 번 선다.
-          지우지 않고 sr-only 로 두는 이유: 화면에 h1 이 하나도 없으면 스크린리더가
-          이 화면을 무엇이라 부를지 알 수 없다(탭바의 "저장" 은 항해 이름이지 제목이 아니다). */}
-      <h1 className="sr-only">{m.saved.title}</h1>
-
+    <div className="flex flex-col">
       {blank ? (
         <>
+          <SavedHeader action={false} />
+
           {/* 빈 화면은 글부터 시작한다 — 헤어라인에 글줄이 붙지 않게 위 여백을 준다
-              (목록 화면과 달리 헤더의 선을 이어받을 목록이 여기엔 없다). */}
-          <div className="flex flex-col items-start gap-2 pt-4 pb-2 lg:pt-0">
+              (목록 화면과 달리 헤더의 선을 이어받을 목록이 여기엔 없다).
+              데스크톱에서는 글줄이 화면 폭만큼 늘어나지 않게 한 단(34rem)으로 묶는다. */}
+          <div className="flex max-w-[34rem] flex-col items-start gap-2 pt-4 pb-2 lg:pt-0">
             <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
             <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
             <Link
@@ -68,9 +69,10 @@ export default async function SavedPage() {
           </div>
 
           {/* 빈 화면에도 같은 두 행은 남는다 — 그룹을 먼저 만드는 길과,
-              다른 기기에 저장이 있는 사람이 그것을 되찾는 길. */}
+              다른 기기에 저장이 있는 사람이 그것을 되찾는 길.
+              두 줄뿐이라 데스크톱에서도 가르지 않는다 — 한 단으로 세운다. */}
           <ul
-            className="-mx-(--gutter) border-t [&>li:last-child]:border-b-0"
+            className="-mx-(--gutter) mt-(--stack) max-w-[calc(34rem+2*var(--gutter))] border-t [&>li:last-child]:border-b-0"
             style={{ borderColor: "var(--hairline)" }}
           >
             <NewListButton variant="row" hint={m.saved.listEmptyHint} />

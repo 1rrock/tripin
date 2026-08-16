@@ -240,6 +240,8 @@ export const ko = {
     listEmpty: "아직 그룹이 없어요.",
     listEmptyHint: "여행별로 묶어두면 갈 때 꺼내 보기 좋아요.",
     listCount: "{n}곳",
+    /* 데스크톱 제목 아래 한 줄 — 화면 전체의 규모를 한 번에 말한다 */
+    listSummary: "{p}곳 · 그룹 {l}개",
     listDone: "완료",
     /* 저장이 0개일 때 — 새 기기로 옮겨온 사람이 로그인을 찾을 수 있는 유일한 줄 */
     restore: "다른 기기에서 저장하셨나요?",
@@ -616,6 +618,7 @@ export type Messages = {
     listEmpty: string;
     listEmptyHint: string;
     listCount: string;
+    listSummary: string;
     listDone: string;
     restore: string;
     restoreCta: string;

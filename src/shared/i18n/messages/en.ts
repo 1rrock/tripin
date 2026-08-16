@@ -226,6 +226,7 @@ export const en: Messages = {
     listEmpty: "No groups yet.",
     listEmptyHint: "Group places by trip so they're easy to pull up later.",
     listCount: "{n} places",
+    listSummary: "{p} {p|place|places} · {l} {l|group|groups}",
     listDone: "Done",
     restore: "Saved these on another device?",
     restoreCta: "Sign in to bring them over",

@@ -26,9 +26,12 @@ export function AccountRow({
    * 저장을 되찾을 수 있는 유일한 줄이 이것이다.
    */
   copy = "local",
+  className,
 }: {
   linked: boolean;
   copy?: "local" | "restore";
+  /** 격자 안에서는 한 줄을 통째로 쓴다(SavedIndex) */
+  className?: string;
 }) {
   const { messages: m, href } = useLocale();
   const pathname = usePathname() ?? "/saved";
@@ -39,6 +42,7 @@ export function AccountRow({
     return (
       <SavedRow
         href={href("/account")}
+        className={className}
         icon={<UserCircle className="size-5" weight="fill" />}
         name={m.saved.connected}
         meta={m.account.title}
@@ -49,6 +53,7 @@ export function AccountRow({
   return (
     <SavedRow
       href={`${href("/login")}?next=${encodeURIComponent(pathname)}`}
+      className={className}
       icon={<UserCircle className="size-5" weight="fill" />}
       name={copy === "restore" ? m.saved.restoreCta : m.saved.connect}
       meta={

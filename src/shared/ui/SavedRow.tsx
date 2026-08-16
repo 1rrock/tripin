@@ -61,6 +61,7 @@ export function SavedRow({
   name,
   meta,
   trailing,
+  className = "",
 }: {
   href: string;
   icon: ReactNode;
@@ -69,9 +70,11 @@ export function SavedRow({
   /** 이름 아래 회색 한 줄 — 개수나 안내. 없으면 이름만 선다. */
   meta?: ReactNode;
   trailing?: ReactNode;
+  /** 칸이 격자에 설 때 쓰는 자리 지정(열 넓이·세로 구분선). 행의 안쪽은 안 바뀐다. */
+  className?: string;
 }) {
   return (
-    <li className="flex items-center border-b" style={{ borderColor: "var(--hairline)" }}>
+    <li className={`flex items-center border-b ${className}`} style={{ borderColor: "var(--hairline)" }}>
       <Link href={href} className={`roll ${ROW_BODY}`}>
         <RowIcon tone={tone}>{icon}</RowIcon>
         <RowText name={name} meta={meta} />
