@@ -130,11 +130,22 @@ function markerContent(pin: MapPin, active: boolean, named = false): HTMLElement
       "line-height:1",
       "white-space:nowrap",
       "overflow:hidden",
-      "text-overflow:ellipsis",
       "cursor:pointer",
       "box-shadow:var(--lift-pin)",
     ].join(";");
-    el.textContent = pin.name;
+    /* 이름은 **속의 span** 이 든다. 칩이 flex 라서 글을 바로 넣으면 익명 플렉스
+       아이템이 되는데, text-overflow 는 거기까지 닿지 않는다 — 말줄임 없이 글자
+       한가운데가 잘려 나갔다(영상 제목이 그대로 이름인 장소에서 특히). 아이템을
+       실제 요소로 세우고 min-width:0 을 줘야 줄어들다가 …로 끊긴다. */
+    const text = document.createElement("span");
+    text.style.cssText = [
+      "min-width:0",
+      "overflow:hidden",
+      "text-overflow:ellipsis",
+      "white-space:nowrap",
+    ].join(";");
+    text.textContent = pin.name;
+    el.append(text);
     el.title = pin.name;
     return el;
   }

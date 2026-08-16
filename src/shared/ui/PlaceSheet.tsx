@@ -357,8 +357,12 @@ export function PlaceSheet({
         <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
           <div className="flex items-start gap-2">
             <div className="min-w-0 flex-1">
+              {/* 세 줄에서 끊는다 — 영상 제목이 그대로 이름인 장소가 있어서, 안 끊으면
+                  제목 하나가 패널 첫 화면의 3분의 1을 먹고 사진과 본문을 아래로 민다.
+                  전문은 title 속성에 남는다(핀 라벨과 같은 처방 — MapView 주석). */}
               <h2
-                className="font-black"
+                className="line-clamp-3 font-black"
+                title={place.name}
                 style={{
                   fontSize: "var(--t-screen)",
                   letterSpacing: "-0.035em",
