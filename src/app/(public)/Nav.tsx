@@ -17,7 +17,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Heart, House, MapTrifold, UserCircle } from "@phosphor-icons/react";
+import { GlyphHeart, GlyphHome, GlyphMap, GlyphUser } from "@/shared/ui/glyphs";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Mark } from "@/shared/ui/Mark";
@@ -31,16 +31,16 @@ import { Mark } from "@/shared/ui/Mark";
  * 검색 유입은 /channels 로 그대로 들어오므로 SEO 는 잃지 않는다.
  */
 const ITEMS = [
-  { path: "/", icon: House, labelKey: "home" },
-  { path: "/map", icon: MapTrifold, labelKey: "map" },
-  { path: "/saved", icon: Heart, labelKey: "saved" },
+  { path: "/", icon: GlyphHome, labelKey: "home" },
+  { path: "/map", icon: GlyphMap, labelKey: "map" },
+  { path: "/saved", icon: GlyphHeart, labelKey: "saved" },
 ] as const;
 
 /**
  * 계정은 배열 밖에 따로 둔다 — 홈·지도·저장은 콘텐츠를 가르는 축이고, 이건 설정함이다.
  * 레일에서는 mt-auto 로 떨어져 서고, 탭바에서는 맨 오른쪽 칸을 받는다.
  */
-const ACCOUNT = { path: "/account", icon: UserCircle } as const;
+const ACCOUNT = { path: "/account", icon: GlyphUser } as const;
 
 function isActive(pathname: string, href: string) {
   const bare = stripLocalePrefix(pathname);

@@ -23,22 +23,20 @@ import {
   Coffee,
   ForkKnife,
   Globe,
-  Heart,
-  House,
   List,
   MagnifyingGlass,
   MapPin,
-  MapTrifold,
   Play,
   Playlist,
   SignOut,
   Tag,
   Trash,
-  UserCircle,
   X,
   type Icon as PhosphorIcon,
   type IconWeight,
 } from "@phosphor-icons/react";
+/* 홈·지도·하트·유저는 브랜드 글리프(라운드 키라인) — 탭독과 같은 손 */
+import { GlyphHeart, GlyphHome, GlyphMap, GlyphUser } from "@/shared/ui/glyphs";
 import { OutboundA } from "@/shared/ui/OutboundA";
 
 type IconProps = SVGProps<SVGSVGElement> & { weight?: IconWeight };
@@ -63,19 +61,19 @@ export const IconOut = ph(ArrowSquareOut);
 export const IconPin = ph(MapPin);
 export const IconClock = ph(Clock);
 export const IconPlay = ph(Play);
-export const IconMap = ph(MapTrifold);
+export const IconMap = ph(GlyphMap);
 export const IconClose = ph(X);
 export const IconMenu = ph(List);
-export const IconHome = ph(House);
+export const IconHome = ph(GlyphHome);
 export const IconTag = ph(Tag);
 export const IconChannel = ph(Playlist);
 export const IconGlobe = ph(Globe);
 export const IconMeal = ph(ForkKnife);
 export const IconCup = ph(Coffee);
 export const IconBed = ph(Bed);
-export const IconHeart = ph(Heart);
+export const IconHeart = ph(GlyphHeart);
 export const IconCheck = ph(Check);
-export const IconUser = ph(UserCircle);
+export const IconUser = ph(GlyphUser);
 export const IconSignOut = ph(SignOut);
 export const IconTrash = ph(Trash);
 

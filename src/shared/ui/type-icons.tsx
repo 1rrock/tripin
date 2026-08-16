@@ -8,20 +8,20 @@
  * 홈 그리드(10칸)는 무채 duotone, 카드에 하나만 붙는 라벨은 고유색.
  */
 
+import type { Icon } from "@phosphor-icons/react";
 import {
-  Bed,
-  Binoculars,
-  BowlFood,
-  CirclesThreePlus,
-  CoffeeBean,
-  Buildings,
-  MapPinSimple,
-  MapTrifold,
-  Playlist,
-  Storefront,
-  Wine,
-  type Icon,
-} from "@phosphor-icons/react";
+  GlyphBed,
+  GlyphCafe,
+  GlyphChannel,
+  GlyphLandmark,
+  GlyphMap,
+  GlyphMeal,
+  GlyphMore,
+  GlyphPin,
+  GlyphShop,
+  GlyphView,
+  GlyphWine,
+} from "@/shared/ui/glyphs";
 import type { PlaceType } from "@/shared/api/database.types";
 
 export function typeIcon(type: PlaceType | string | null | undefined): Icon {
@@ -30,15 +30,15 @@ export function typeIcon(type: PlaceType | string | null | undefined): Icon {
 }
 
 export const TYPE_ICON: Record<PlaceType, Icon> = {
-  restaurant: BowlFood,
-  cafe: CoffeeBean,
-  hotel: Bed,
-  attraction: Buildings,
-  bar: Wine,
-  shop: Storefront,
-  viewpoint: Binoculars,
-  other: MapPinSimple,
-  unknown: MapPinSimple,
+  restaurant: GlyphMeal,
+  cafe: GlyphCafe,
+  hotel: GlyphBed,
+  attraction: GlyphLandmark,
+  bar: GlyphWine,
+  shop: GlyphShop,
+  viewpoint: GlyphView,
+  other: GlyphPin,
+  unknown: GlyphPin,
 };
 
 /** 홈 그리드에 깔리는 종류 — 5열 × 이 7칸 + 도구 3칸 = 10 */
@@ -65,7 +65,7 @@ export const TYPE_COLOR: Record<PlaceType, { fg: string; softBg: string; solid: 
 };
 
 export const TOOL_ICON = {
-  region: MapTrifold,
-  channel: Playlist,
-  more: CirclesThreePlus,
+  region: GlyphMap,
+  channel: GlyphChannel,
+  more: GlyphMore,
 } as const;
