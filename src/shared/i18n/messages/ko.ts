@@ -153,9 +153,9 @@ export const ko = {
     stats: "{places}곳 · 도시 {cities}",
     blurb: "도시를 누르면 그 도시 지도에서 {label}만 볼 수 있습니다.",
     placesUnit: "{n}곳",
-    viewOnMap: "지도에서 보기",
     openMap: "지도 열기",
     channelMap: "채널 지도",
+    viewOnMap: "지도에서 보기",
     otherTypes: "다른 종류 보기",
     moreInCity: "+{n}곳 더 — 지도에서 모두 보기",
   },
@@ -205,11 +205,7 @@ export const ko = {
        홈·지도·상세에는 로그인 권유가 뜨지 않는다. */
     nav: "저장",
     title: "저장한 곳",
-    likedNav: "좋아요",
-    mapFilter: "저장한 곳",
-    viewOnMap: "지도에서 보기",
     addAria: "{name} 저장하기",
-    removeAria: "{name} 저장 해제",
     subscribe: "구독",
     subscribed: "구독중",
     subscribeAria: "{name} 채널 구독",
@@ -217,7 +213,6 @@ export const ko = {
     empty: "아직 저장한 곳이 없어요.",
     emptyHint: "지도나 채널에서 하트를 누르면 여기 모입니다.",
     emptyCta: "지도 열기",
-    countLabel: "{n}곳",
     /* 기기 넘김 안내 — 가치를 이미 받은 사람에게만 보인다 */
     localOnly: "이 기기에서만 볼 수 있어요",
     localOnlyHint: "로그인하면 다른 기기에서도 이어서 볼 수 있어요.",
@@ -230,13 +225,9 @@ export const ko = {
     lists: "그룹",
     listAdd: "그룹에 담기",
     listAddAria: "{name} 를 그룹에 담기",
-    listMove: "그룹 이동",
-    listRemoveHere: "이 그룹에서 빼기",
-    placeMenuAria: "{name} 더보기",
     listPickHint: "여러 그룹에 넣을 수 있어요. 다시 누르면 빠져요.",
-    listInCount: "담긴 그룹 {n}개",
     listSheetTitle: "어느 그룹에 담을까요",
-    listNew: "새 그룹",
+    listNew: "새 리스트 만들기",
     listNamePlaceholder: "예: 도쿄 3박4일",
     listCreate: "만들기",
     listCancel: "취소",
@@ -249,10 +240,7 @@ export const ko = {
     listEmpty: "아직 그룹이 없어요.",
     listEmptyHint: "여행별로 묶어두면 갈 때 꺼내 보기 좋아요.",
     listCount: "{n}곳",
-    listAll: "전체",
-    listUngrouped: "그룹 없음",
     listDone: "완료",
-    listPlacesEmpty: "이 그룹은 아직 비어 있어요.",
     /* 저장이 0개일 때 — 새 기기로 옮겨온 사람이 로그인을 찾을 수 있는 유일한 줄 */
     restore: "다른 기기에서 저장하셨나요?",
     restoreCta: "로그인해서 가져오기",
@@ -380,6 +368,8 @@ export const ko = {
     viewAll: "전체 핀 보기",
     detailAria: "{name} 상세",
     closeDetail: "상세 닫기",
+    backToMap: "지도로 돌아가기",
+    sheetHandle: "목록 높이 조절",
     openInMapApp: "지도 앱에서 열기",
   },
   notice: {
@@ -546,9 +536,9 @@ export type Messages = {
     stats: string;
     blurb: string;
     placesUnit: string;
-    viewOnMap: string;
     openMap: string;
     channelMap: string;
+    viewOnMap: string;
     otherTypes: string;
     moreInCity: string;
   };
@@ -594,11 +584,7 @@ export type Messages = {
   saved: {
     nav: string;
     title: string;
-    likedNav: string;
-    mapFilter: string;
-    viewOnMap: string;
     addAria: string;
-    removeAria: string;
     subscribe: string;
     subscribed: string;
     subscribeAria: string;
@@ -606,7 +592,6 @@ export type Messages = {
     empty: string;
     emptyHint: string;
     emptyCta: string;
-    countLabel: string;
     localOnly: string;
     localOnlyHint: string;
     connect: string;
@@ -616,11 +601,7 @@ export type Messages = {
     lists: string;
     listAdd: string;
     listAddAria: string;
-    listMove: string;
-    listRemoveHere: string;
-    placeMenuAria: string;
     listPickHint: string;
-    listInCount: string;
     listSheetTitle: string;
     listNew: string;
     listNamePlaceholder: string;
@@ -635,10 +616,7 @@ export type Messages = {
     listEmpty: string;
     listEmptyHint: string;
     listCount: string;
-    listAll: string;
-    listUngrouped: string;
     listDone: string;
-    listPlacesEmpty: string;
     restore: string;
     restoreCta: string;
   };
@@ -754,6 +732,8 @@ export type Messages = {
     viewAll: string;
     detailAria: string;
     closeDetail: string;
+    backToMap: string;
+    sheetHandle: string;
     openInMapApp: string;
   };
   notice: {

@@ -6,10 +6,8 @@
  * 로그인 UI 를 절대 띄우지 않는다. 누르면 그냥 저장된다 —
  * 익명 세션은 `ensureSession()` 이 뒤에서 만든다(PRODUCT.md 원칙 5 "게이트는 없다").
  *
- * 하트는 한 번에 저장된다. **켠 직후** 그룹 시트를 연다 — 지도에서 담는 사람이
- * "어디 묶지" 를 그 자리에서 고르게. 끄면 시트를 열지 않고 분류도 같이 지운다.
- *
- * 이미 저장된 곳의 그룹 이동은 행의 `⋯`(`PlaceMenu`)가 맡는다.
+ * 하트는 **리스트 시트**를 연다(네이버 지도). 미저장이면 먼저 저장한 뒤 연다.
+ * 저장 해제는 시트 안의 "저장 해제"로. `⋯` 메뉴는 두지 않는다.
  */
 
 import { useState } from "react";
@@ -45,16 +43,17 @@ export function SaveButton({
              안 막으면 하트를 누를 때 장소 상세가 같이 열린다. */
           e.stopPropagation();
           e.preventDefault();
-          const wasSaved = on;
-          void toggleSaved(placeId).then(() => {
-            if (!wasSaved) setPicking(true);
-          });
+          if (on) {
+            setPicking(true);
+            return;
+          }
+          void toggleSaved(placeId).then(() => setPicking(true));
         }}
         aria-pressed={on}
-        aria-label={t(on ? m.saved.removeAria : m.saved.addAria, { name: placeName })}
+        aria-label={t(on ? m.saved.listAddAria : m.saved.addAria, { name: placeName })}
         className={`grid size-9 shrink-0 cursor-pointer place-items-center transition-transform active:scale-90 ${className}`}
         style={{
-          borderRadius: "var(--r-frame)",
+          borderRadius: bare ? undefined : "999px",
           boxShadow: bare ? "none" : "inset 0 0 0 1px var(--hairline)",
           color: on ? "var(--wax)" : "var(--dim)",
         }}

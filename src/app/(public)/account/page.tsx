@@ -4,7 +4,6 @@ import { loadAccount } from "@/shared/api/account-server";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Frame } from "@/shared/ui/frame";
-import { Icon } from "@/shared/ui/icons";
 import { Thumb } from "@/shared/ui/Thumb";
 import { IdentityCard } from "./IdentityCard";
 import { SubscriptionList } from "./SubscriptionList";
@@ -41,21 +40,9 @@ export default async function AccountPage({
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-(--block) px-(--gutter) pt-4 lg:max-w-5xl lg:pt-8">
-      <header className="flex flex-col gap-2 pb-1">
-        <nav className="index flex items-center gap-1.5 lg:hidden" style={{ color: "var(--dim)" }}>
-          <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
-            {m.common.home}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <span style={{ color: "var(--paper)" }}>{m.account.title}</span>
-        </nav>
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-        >
-          {m.account.title}
-        </h1>
-      </header>
+      {/* 제목은 헤더가 든다(HeaderLead) — 브레드크럼도, 본문 h1 도 같은 말을 세 번 하던 자리였다.
+          sr-only 로 남기는 이유: 화면에 h1 이 하나도 없으면 스크린리더가 이 화면을 못 부른다. */}
+      <h1 className="sr-only">{m.account.title}</h1>
 
       <div className="flex flex-col gap-(--block) lg:grid lg:grid-cols-[minmax(0,1fr)_20rem] lg:items-start lg:gap-x-16">
         <div className="flex flex-col gap-(--block)">
@@ -66,7 +53,7 @@ export default async function AccountPage({
 
             {view.cuts.length > 0 ? (
               <Link
-                href={localePath("/saved/liked", locale)}
+                href={localePath("/map?saved=1", locale)}
                 className="flex gap-1.5 overflow-x-auto no-scrollbar lg:grid lg:grid-cols-4 lg:gap-2 lg:overflow-visible"
                 aria-label={t(m.account.savedLine, { n: view.savedCount })}
               >
@@ -80,7 +67,7 @@ export default async function AccountPage({
 
             <div className="flex flex-col gap-1 sm:flex-row sm:items-baseline sm:gap-3">
               <Link
-                href={localePath("/saved/liked", locale)}
+                href={localePath("/map?saved=1", locale)}
                 className="font-extrabold"
                 style={{ fontSize: "var(--t-title)" }}
               >
@@ -90,12 +77,9 @@ export default async function AccountPage({
                 className="tnum flex flex-wrap items-baseline gap-x-1.5"
                 style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
               >
+                {/* 저장한 곳 줄이 이미 지도로 간다 — "지도에서 보기" 를 옆에 또 두지 않는다 */}
                 <Link href={localePath("/saved", locale)} className="hover:underline">
                   {m.account.savedLists} {t(m.account.countLists, { n: view.listCount })}
-                </Link>
-                <span aria-hidden>·</span>
-                <Link href={localePath("/map?saved=1", locale)} className="hover:underline">
-                  {m.saved.viewOnMap}
                 </Link>
               </span>
             </div>

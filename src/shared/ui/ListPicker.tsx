@@ -1,20 +1,72 @@
 "use client";
 
 /**
- * "어느 그룹에 담을까요" — 체크박스 목록 + 새 그룹 만들기.
+ * 저장 그룹 고르기 — 네이버 지도 "리스트에 저장" 문법.
  *
- * 구글 지도의 목록 담기와 같은 문법이다. 한 장소가 여러 그룹에 들어가므로
- * 라디오가 아니라 **체크박스**다. 고르는 즉시 반영된다(확인 버튼이 없다).
+ * 한 장소가 여러 그룹에 들어가므로 체크(즉시 반영). 확인 버튼 없이 고르고 닫는다.
+ * body 포탈 + 높은 z — 장소 드로어/풀페이지 위에도 떠야 한다.
  *
- * body 로 포탈한다 — PlaceSheet 가 overflow/transform 을 갖고 있어
- * 그 안에서 fixed 를 그리면 잘리거나 탭바(z-50) 밑에 깔린다.
+ * 행은 `/saved` 목록과 **같은 조각**(SavedRow)을 쓴다 — 저장 목록에서 보던 행이
+ * 여기서도 그대로 나와야 "같은 것을 고르는 중" 으로 읽힌다.
+ *
+ * 맨 위는 **저장한 곳**이다. 하트가 담는 기본 그룹이라 그룹들과 같은 줄에 세운다.
+ * 여기서 체크를 풀면 저장 자체가 풀린다(그래서 따로 "저장 해제" 를 두지 않는다).
  */
 
 import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
+import { BookmarkSimple, Heart, Plus } from "@phosphor-icons/react";
+import type { ReactNode } from "react";
 import { Icon } from "@/shared/ui/icons";
+import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+
+/** 고른 표시 — 오른쪽 끝 동그란 체크. 켜지면 산호가 찬다. */
+function Check({ on }: { on: boolean }) {
+  return (
+    <span
+      aria-hidden
+      className="grid size-6 shrink-0 place-items-center rounded-full"
+      style={{
+        boxShadow: on ? "none" : "inset 0 0 0 1.5px var(--hairline)",
+        background: on ? "var(--wax)" : "transparent",
+        color: "#fff",
+      }}
+    >
+      {on ? <Icon.check className="size-3.5" weight="bold" /> : null}
+    </span>
+  );
+}
+
+function PickRow({
+  icon,
+  tone,
+  name,
+  on,
+  onClick,
+}: {
+  icon: ReactNode;
+  tone?: "plain" | "wax";
+  name: string;
+  on: boolean;
+  onClick: () => void;
+}) {
+  return (
+    <li className="border-b" style={{ borderColor: "var(--hairline)" }}>
+      <button
+        type="button"
+        onClick={onClick}
+        aria-pressed={on}
+        className={`roll w-full cursor-pointer ${ROW_BODY} pr-(--gutter)`}
+      >
+        <RowIcon tone={tone}>{icon}</RowIcon>
+        <RowText name={name} />
+        <Check on={on} />
+      </button>
+    </li>
+  );
+}
 
 export function ListPicker({
   placeId,
@@ -25,17 +77,17 @@ export function ListPicker({
   placeName: string;
   onClose: () => void;
 }) {
-  const { messages: m, t } = useLocale();
-  const { lists, listsOf, toggleInList, addList } = useSaved();
-  const [creating, setCreating] = useState(() => lists.length === 0);
+  const { messages: m } = useLocale();
+  const { lists, listsOf, toggleInList, addList, toggleSaved, isSaved } = useSaved();
+  const [creating, setCreating] = useState(false);
   const [mounted, setMounted] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
 
   const inList = listsOf(placeId);
+  const saved = isSaved(placeId);
 
   useEffect(() => {
     setMounted(true);
@@ -45,8 +97,6 @@ export function ListPicker({
     if (creating) inputRef.current?.focus();
   }, [creating]);
 
-  /* Escape 로 닫는다. onClose 는 매 렌더 새 정체성이라 ref 로 들고 이펙트는 안 묶는다
-     — PlaceSheet 과 같은 이유(부모 리렌더마다 리스너가 다시 붙는 것을 막는다). */
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
@@ -70,7 +120,6 @@ export function ListPicker({
     setError(null);
     const res = await addList(name);
     if (res.ok) {
-      /* 새로 만든 그룹에는 바로 담는다 — 만들자마자 또 체크하게 두지 않는다 */
       await toggleInList(res.id, placeId);
       setName("");
       setCreating(false);
@@ -84,7 +133,7 @@ export function ListPicker({
 
   return createPortal(
     <div
-      className="fixed inset-0 z-[60] flex items-end justify-center sm:items-center"
+      className="fixed inset-0 z-[80] flex items-end justify-center"
       role="dialog"
       aria-modal="true"
       aria-label={m.saved.listSheetTitle}
@@ -95,28 +144,45 @@ export function ListPicker({
         tabIndex={-1}
         onClick={onClose}
         className="absolute inset-0 cursor-default"
-        style={{ background: "color-mix(in srgb, var(--sheet) 55%, transparent)" }}
+        style={{ background: "rgb(0 0 0 / 0.28)" }}
       />
 
+      {/* 네이버처럼 거의 전면 높이 — max-h 로만 잡으면 리스트 적을 때 납작해진다 */}
       <div
-        ref={panelRef}
-        className="rise-in relative w-full max-w-md max-h-[76dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] sm:pb-4"
+        className="rise-in relative flex h-[min(92dvh,100%)] w-full max-w-lg flex-col"
         style={{
           background: "var(--sheet)",
           color: "var(--paper)",
-          borderRadius: "var(--r-control)",
-          boxShadow: "var(--lift)",
+          borderRadius: "16px 16px 0 0",
+          boxShadow: "0 -8px 32px rgba(0,0,0,0.12)",
         }}
       >
-        <div className="flex items-start gap-3">
+        {/* 핸들 */}
+        <div className="flex shrink-0 justify-center pt-2.5 pb-1" aria-hidden>
+          <span
+            className="block h-1 w-9 rounded-full"
+            style={{ background: "var(--hairline)" }}
+          />
+        </div>
+
+        {/* 장소 헤더 */}
+        <div className="flex shrink-0 items-center gap-3 px-4 pb-3">
+          <span
+            aria-hidden
+            className="grid size-11 shrink-0 place-items-center"
+            style={{
+              borderRadius: "var(--r-frame)",
+              background: "var(--hover)",
+              color: "var(--dim)",
+            }}
+          >
+            <Icon.pin className="size-5" />
+          </span>
           <div className="min-w-0 flex-1">
-            <h2 style={{ fontSize: "var(--t-body)", fontWeight: 800 }}>
-              {m.saved.listSheetTitle}
-            </h2>
-            <p className="mt-0.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+            <p className="truncate font-bold" style={{ fontSize: "var(--t-body)" }}>
               {placeName}
             </p>
-            <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+            <p className="mt-0.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
               {m.saved.listPickHint}
             </p>
           </div>
@@ -124,138 +190,140 @@ export function ListPicker({
             type="button"
             onClick={onClose}
             aria-label={m.saved.listDone}
-            className="grid size-8 shrink-0 cursor-pointer place-items-center"
-            style={{ borderRadius: "var(--r-frame)", boxShadow: "inset 0 0 0 1px var(--hairline)" }}
+            className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
+            style={{ color: "var(--dim)" }}
           >
-            <Icon.close className="size-4" />
+            <Icon.close className="size-[18px]" />
           </button>
         </div>
 
-        {lists.length === 0 && !creating ? (
-          <div className="mt-4">
-            <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.listEmpty}</p>
-            <p className="mt-0.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-              {m.saved.listEmptyHint}
-            </p>
-          </div>
-        ) : null}
-
-        <ul className="mt-3 flex flex-col">
-          {lists.map((l) => {
-            const on = inList.has(l.id);
-            return (
-              <li key={l.id}>
-                <button
-                  type="button"
-                  onClick={() => void toggleInList(l.id, placeId)}
-                  aria-pressed={on}
-                  className="flex w-full cursor-pointer items-center gap-3 border-b py-3 text-left"
-                  style={{ borderColor: "var(--hairline)" }}
-                >
-                  <span
-                    aria-hidden
-                    className="grid size-5 shrink-0 place-items-center"
-                    style={{
-                      borderRadius: "6px",
-                      background: on ? "var(--wax)" : "transparent",
-                      boxShadow: on ? "none" : "inset 0 0 0 1px var(--hairline)",
-                      color: "#fff",
-                    }}
-                  >
-                    {on ? <Icon.check className="size-3.5" weight="bold" /> : null}
-                  </span>
-                  <span className="min-w-0 flex-1 truncate" style={{ fontSize: "var(--t-body)" }}>
-                    {l.name}
-                  </span>
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-
-        {creating ? (
-          <div className="mt-3 flex flex-col gap-2">
-            <input
-              ref={inputRef}
-              value={name}
-              maxLength={40}
-              onChange={(e) => {
-                setName(e.target.value);
-                setError(null);
-              }}
-              onKeyDown={(e) => {
-                if (e.key === "Enter") void submit();
-              }}
-              placeholder={m.saved.listNamePlaceholder}
-              aria-label={m.saved.listNew}
-              className="h-11 w-full px-3 outline-none"
-              style={{
-                /* 16px 미만이면 iOS 가 입력할 때 화면을 확대한다 — PRODUCT.md 접근성 */
-                fontSize: "16px",
-                borderRadius: "var(--r-frame)",
-                background: "transparent",
-                color: "var(--paper)",
-                boxShadow: "inset 0 0 0 1px var(--hairline)",
+        <div
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain border-t pb-2"
+          style={{ borderColor: "var(--hairline)" }}
+        >
+          <ul className="flex flex-col">
+            {/* 저장한 곳 — 하트가 담는 기본 그룹. 그룹들과 같은 줄에 선다.
+                끄면 저장이 풀리고(그룹 담김도 같이 비워진다) 시트를 닫는다 —
+                "저장 안 할래" 는 여기서 끝나는 동작이다. */}
+            <PickRow
+              icon={<Heart className="size-5" weight="fill" />}
+              tone="wax"
+              name={m.saved.title}
+              on={saved}
+              onClick={() => {
+                if (saved) void toggleSaved(placeId).then(() => onClose());
+                else void toggleSaved(placeId);
               }}
             />
-            {error ? (
-              <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
-                {error}
-              </p>
-            ) : null}
-            <div className="flex gap-2">
-              <button
-                type="button"
-                disabled={!name.trim() || busy}
-                onClick={() => void submit()}
-                className="h-10 flex-1 cursor-pointer font-bold disabled:opacity-50"
-                style={{
-                  fontSize: "var(--t-body)",
-                  borderRadius: "var(--r-frame)",
-                  background: "var(--paper)",
-                  color: "var(--sheet)",
-                }}
-              >
-                {m.saved.listCreate}
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  setCreating(false);
-                  setName("");
+
+            {lists.map((l) => (
+              <PickRow
+                key={l.id}
+                icon={<BookmarkSimple className="size-5" weight="fill" />}
+                name={l.name}
+                on={inList.has(l.id)}
+                onClick={() => void toggleInList(l.id, placeId)}
+              />
+            ))}
+          </ul>
+
+          {/* 새 리스트 */}
+          {creating ? (
+            <div className="mx-(--gutter) my-3 rounded-xl p-3" style={{ background: "var(--hover)" }}>
+              <input
+                ref={inputRef}
+                value={name}
+                maxLength={40}
+                onChange={(e) => {
+                  setName(e.target.value);
                   setError(null);
                 }}
-                className="h-10 cursor-pointer px-4 font-semibold"
-                style={{
-                  fontSize: "var(--t-body)",
-                  borderRadius: "var(--r-frame)",
-                  boxShadow: "inset 0 0 0 1px var(--hairline)",
-                  color: "var(--dim)",
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") void submit();
                 }}
-              >
-                {m.saved.listCancel}
-              </button>
+                placeholder={m.saved.listNamePlaceholder}
+                aria-label={m.saved.listNew}
+                className="h-11 w-full rounded-lg bg-(--sheet) px-3 outline-none"
+                style={{
+                  fontSize: "16px",
+                  color: "var(--paper)",
+                  boxShadow: "inset 0 0 0 1px var(--hairline)",
+                }}
+              />
+              {error ? (
+                <p role="alert" className="mt-1.5 px-0.5" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
+                  {error}
+                </p>
+              ) : null}
+              <div className="mt-2 flex gap-2">
+                <button
+                  type="button"
+                  disabled={!name.trim() || busy}
+                  onClick={() => void submit()}
+                  className="h-10 flex-1 cursor-pointer rounded-lg font-bold disabled:opacity-40"
+                  style={{
+                    fontSize: "var(--t-body)",
+                    background: "var(--paper)",
+                    color: "var(--sheet)",
+                  }}
+                >
+                  {m.saved.listCreate}
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    setCreating(false);
+                    setName("");
+                    setError(null);
+                  }}
+                  className="h-10 cursor-pointer rounded-lg px-4 font-semibold"
+                  style={{
+                    fontSize: "var(--t-body)",
+                    color: "var(--dim)",
+                    boxShadow: "inset 0 0 0 1px var(--hairline)",
+                  }}
+                >
+                  {m.saved.listCancel}
+                </button>
+              </div>
             </div>
-          </div>
-        ) : (
+          ) : (
+            <button
+              type="button"
+              onClick={() => setCreating(true)}
+              className={`roll w-full cursor-pointer border-b ${ROW_BODY} pr-(--gutter)`}
+              style={{ borderColor: "var(--hairline)" }}
+            >
+              <RowIcon>
+                <Plus className="size-5" weight="bold" />
+              </RowIcon>
+              <RowText
+                name={m.saved.listNew}
+                meta={lists.length === 0 ? m.saved.listEmptyHint : undefined}
+              />
+            </button>
+          )}
+        </div>
+
+        {/* 하단 액션 — "저장 해제" 는 두지 않는다. 좋아요 행의 체크를 푸는 것이
+            같은 일이고, 같은 일에 버튼이 둘이면 한쪽만 고치는 날이 온다. */}
+        <div
+          className="shrink-0 border-t px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+          style={{ borderColor: "var(--hairline)" }}
+        >
           <button
             type="button"
-            onClick={() => setCreating(true)}
-            className="mt-3 flex h-11 w-full cursor-pointer items-center justify-center gap-1.5 font-bold"
+            onClick={onClose}
+            className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl font-bold"
             style={{
               fontSize: "var(--t-body)",
-              borderRadius: "var(--r-frame)",
-              boxShadow: "inset 0 0 0 1px var(--hairline)",
-              color: "var(--paper)",
+              background: "var(--paper)",
+              color: "var(--sheet)",
             }}
           >
-            + {m.saved.listNew}
+            {m.saved.listDone}
           </button>
-        )}
-
-        <p className="mt-3" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-          {t(m.saved.listInCount, { n: inList.size })}
-        </p>
+        </div>
       </div>
     </div>,
     document.body,

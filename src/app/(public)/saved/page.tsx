@@ -1,19 +1,23 @@
 import type { Metadata } from "next";
-import type { ReactNode } from "react";
 import Link from "next/link";
 import { Suspense } from "react";
 import { loadSavedView } from "@/shared/api/saved-server";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { Icon } from "@/shared/ui/icons";
-import { ConnectBanner } from "./ConnectBanner";
+import { AccountRow } from "./AccountRow";
+import { NewListButton } from "./NewListButton";
 import { SavedIndex } from "./SavedIndex";
 
 /**
- * 저장 첫 화면 — 시안 D.
+ * 저장 첫 화면 — 목록의 목록.
  *
- *   모바일·데스크톱 둘 다 엽서 인덱스(좋아요 컷 + 그룹 스택)
- *   상세는 `/saved/liked` · `/saved/[id]`
+ *   제목 하나와 행 목록. 브레드크럼·배너·프레임을 걷어냈다(구글 지도 "내 장소" 문법).
+ *   저장한 곳 · 그룹 · 새 리스트 · 계정 순. 어느 행을 눌러도 지도가 그 목록으로 열린다
+ *   (`/map?saved=1` · `/map?list=<id>`).
+ *
+ *   로그인 문구는 목록의 **마지막 행**이다 — 헤더에 붙이면 제목과 경쟁하고,
+ *   상자로 띄우면 저장한 것보다 로그인 권유가 먼저 보인다(AccountRow 주석).
  *
  * 색인하지 않는다 — 유저별 화면이라 크롤러에게 보일 것이 없다.
  */
@@ -30,121 +34,49 @@ export default async function SavedPage() {
   const m = getDictionary(locale);
   const view = await loadSavedView();
 
-  if (view.places.length === 0) {
-    return (
-      <>
-        <Header
-          locale={locale}
-          title={m.saved.title}
-          homeLabel={m.common.home}
-          extra={
-            !view.linked ? (
-              <p className="hidden lg:block" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-                {m.saved.restore}{" "}
-                <Link
-                  href={`${localePath("/login", locale)}?next=${encodeURIComponent(localePath("/saved", locale))}`}
-                  className="font-bold underline underline-offset-4"
-                  style={{ color: "var(--paper)" }}
-                >
-                  {m.saved.restoreCta}
-                </Link>
-              </p>
-            ) : null
-          }
-        />
-        <div className="flex flex-col items-start gap-3 py-8 lg:max-w-md lg:py-14">
-          <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
-          <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
-          <Link
-            href={localePath("/map", locale)}
-            className="mt-1 inline-flex h-10 items-center gap-1.5 px-4 font-bold lg:h-11"
-            style={{
-              fontSize: "var(--t-body)",
-              borderRadius: "var(--r-frame)",
-              background: "var(--paper)",
-              color: "var(--sheet)",
-            }}
-          >
-            <Icon.map className="size-4" />
-            {m.saved.emptyCta}
-          </Link>
-
-          {!view.linked ? (
-            <p className="mt-(--stack) lg:hidden" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-              {m.saved.restore}{" "}
-              <Link
-                href={`${localePath("/login", locale)}?next=${encodeURIComponent(localePath("/saved", locale))}`}
-                className="underline underline-offset-4"
-                style={{ color: "var(--paper)", fontWeight: 700 }}
-              >
-                {m.saved.restoreCta}
-              </Link>
-            </p>
-          ) : null}
-        </div>
-      </>
-    );
-  }
+  /* 저장도 그룹도 없을 때만 빈 화면이다. 저장 0 만 보고 갈라내면, 장소를 담기 전에
+     그룹부터 만든 사람(NewListButton 주석의 순서)이 방금 만든 그룹을 잃는다. */
+  const blank = view.places.length === 0 && view.lists.length === 0;
 
   return (
-    <>
-      <Header
-        locale={locale}
-        title={m.saved.title}
-        homeLabel={m.common.home}
-        extra={
-          <div className="hidden lg:block">
-            <Suspense>
-              <ConnectBanner linked={view.linked} />
-            </Suspense>
+    <div className="flex flex-col gap-4">
+      {/* 제목은 보이지 않는다 — 첫 행이 이미 "저장한 곳" 이라 같은 낱말이 두 번 선다.
+          지우지 않고 sr-only 로 두는 이유: 화면에 h1 이 하나도 없으면 스크린리더가
+          이 화면을 무엇이라 부를지 알 수 없다(탭바의 "저장" 은 항해 이름이지 제목이 아니다). */}
+      <h1 className="sr-only">{m.saved.title}</h1>
+
+      {blank ? (
+        <>
+          <div className="flex flex-col items-start gap-2 pb-2">
+            <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
+            <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
+            <Link
+              href={localePath("/map", locale)}
+              className="mt-2 inline-flex h-10 items-center gap-1.5 px-4 font-bold lg:h-11"
+              style={{
+                fontSize: "var(--t-body)",
+                borderRadius: "var(--r-frame)",
+                background: "var(--paper)",
+                color: "var(--sheet)",
+              }}
+            >
+              <Icon.map className="size-4" />
+              {m.saved.emptyCta}
+            </Link>
           </div>
-        }
-      />
-      <div className="lg:hidden">
-        <Suspense>
-          <ConnectBanner linked={view.linked} />
-        </Suspense>
-      </div>
-      <SavedIndex
-        lists={view.lists}
-        places={view.places}
-        membership={view.membership}
-        likedCount={view.places.length}
-        ungroupedCount={view.ungroupedCount}
-      />
-    </>
-  );
-}
 
-function Header({
-  locale,
-  title,
-  homeLabel,
-  extra,
-}: {
-  locale: Awaited<ReturnType<typeof getLocale>>;
-  title: string;
-  homeLabel: string;
-  extra?: ReactNode;
-}) {
-  return (
-    <header className="flex flex-col gap-2 pb-1">
-      <nav className="index flex items-center gap-1.5 lg:hidden" style={{ color: "var(--dim)" }}>
-        <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
-          {homeLabel}
-        </Link>
-        <Icon.chevron className="size-2.5" />
-        <span style={{ color: "var(--paper)" }}>{title}</span>
-      </nav>
-      <div className="flex flex-col gap-2 lg:flex-row lg:items-end lg:justify-between lg:gap-8">
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-        >
-          {title}
-        </h1>
-        {extra}
-      </div>
-    </header>
+          {/* 빈 화면에도 같은 두 행은 남는다 — 그룹을 먼저 만드는 길과,
+              다른 기기에 저장이 있는 사람이 그것을 되찾는 길. */}
+          <ul className="-mx-(--gutter) border-t" style={{ borderColor: "var(--hairline)" }}>
+            <NewListButton variant="row" hint={m.saved.listEmptyHint} />
+            <Suspense>
+              <AccountRow linked={view.linked} copy="restore" />
+            </Suspense>
+          </ul>
+        </>
+      ) : (
+        <SavedIndex lists={view.lists} likedCount={view.places.length} linked={view.linked} />
+      )}
+    </div>
   );
 }

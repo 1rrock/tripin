@@ -26,6 +26,8 @@ export function SearchBar() {
   const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
+  /* 지도(/map)에서는 헤더 자체가 없다 — globals.css 가 `.site-header` 를 감춘다.
+     여기서 다시 다룰 것이 없다(지도가 아직 비어 canvas 가 없는 화면에서는 헤더가 서야 한다). */
   const onHome = stripLocalePrefix(pathname) === "/";
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");

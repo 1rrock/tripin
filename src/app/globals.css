@@ -438,8 +438,28 @@ body {
   }
 }
 
-html:has(.canvas-root) footer {
+/* 지도 화면은 지면을 통째로 쓴다 — 푸터도, 헤더도 없다.
+   헤더를 걷어낸 이유: 제목("지도")과 돋보기가 지도 위에 한 단을 먹고 있었는데,
+   목록 시트가 이미 제 검색창을 들고 있어서 같은 일을 하는 줄이 둘이었다.
+   검색창은 지도 위 최상단으로 띄운다(.canvas-topbar) — 네이버·구글 지도 문법. */
+html:has(.canvas-root) footer,
+html:has(.canvas-root) .site-header {
   display: none;
+}
+
+/* 지도 위에 뜨는 검색창 — 지면(지도)의 최상단. 상태바 안전영역만큼 내려온다. */
+.canvas-topbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 25;
+  padding: calc(env(safe-area-inset-top, 0px) + 10px) var(--gutter) 0;
+  /* 바깥 여백으로 지도를 집을 수 있어야 한다 — 검색창 자신만 클릭을 받는다 */
+  pointer-events: none;
+}
+.canvas-topbar > * {
+  pointer-events: auto;
 }
 
 .canvas-page {
@@ -450,14 +470,154 @@ html:has(.canvas-root) footer {
   position: relative;
   height: 42dvh;
 }
-@media (max-width: 1023px) {
-  .canvas-root .canvas-map {
-    height: 46dvh;
-  }
-}
 .canvas-panel {
   min-width: 0;
 }
+
+/*
+  모바일 /map: 네이버 지도 문법.
+  · 지도가 헤더~탭바 사이를 전부 채운다
+  · 목록은 그 위 바텀시트(높이 --map-sheet-h). 끌어 접으면 지도가 다시 보인다
+  · 본문 스크롤은 시트 안에서만 — 문서 스크롤로 지도를 밀어내지 않는다
+*/
+@media (max-width: 1023px) {
+  html:has(.canvas-root) {
+    overflow: hidden;
+    height: 100%;
+  }
+  .canvas-root.canvas-page {
+    position: fixed;
+    /* 헤더가 없다 — 지도가 화면 맨 위부터. 아래는 탭바 h-14 + safe-area 만큼만 비운다 */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: calc(3.5rem + env(safe-area-inset-bottom, 0px));
+    z-index: 10;
+    display: block;
+    width: 100%;
+    max-width: 42rem; /* layout max-w-2xl */
+    margin-inline: auto;
+  }
+  .canvas-root .canvas-map {
+    position: absolute;
+    inset: 0;
+    height: auto;
+    min-height: 0;
+    z-index: 0;
+    background: var(--lightbox);
+  }
+  .canvas-root .canvas-panel {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 20;
+    height: var(--map-sheet-h, 52%);
+    max-height: 92%;
+    display: flex;
+    flex-direction: column;
+    background: var(--ground);
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.1);
+    overflow: hidden;
+  }
+  .canvas-root .canvas-panel-handle {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 1.25rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .canvas-root .canvas-panel-handle::after {
+    content: "";
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--hairline);
+  }
+  .canvas-root .canvas-panel-handle:active {
+    cursor: grabbing;
+  }
+  .canvas-root .canvas-panel-scroll {
+    flex: 1 1 auto;
+    min-height: 0;
+    overflow-x: hidden;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 장소 상세 드로어 — 지도 위 mid/full (네이버 장소 카드) */
+  .place-drawer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    border-radius: 16px 16px 0 0;
+    box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
+    overflow: hidden;
+    transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .place-drawer.is-dragging {
+    transition: none;
+  }
+  .place-drawer-handle {
+    flex: 0 0 auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 1.25rem;
+    cursor: grab;
+    touch-action: none;
+    user-select: none;
+  }
+  .place-drawer-handle::after {
+    content: "";
+    width: 2.25rem;
+    height: 0.25rem;
+    border-radius: 999px;
+    background: var(--hairline);
+  }
+  .place-drawer-handle:active {
+    cursor: grabbing;
+  }
+  /* 목록 시트 높이 스냅 전환 — 스크롤로 full 올라갈 때 부드럽게 */
+  .canvas-root .canvas-panel {
+    transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  /* /map: 상세 열리면 목록 시트 숨김 — 지도 + 상세만 */
+  .canvas-root.is-place-open .canvas-panel {
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+/* 장소 full 페이지 모달 등장 */
+@keyframes place-page-in {
+  from {
+    transform: translateY(12%);
+    opacity: 0.88;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+.place-page {
+  animation: place-page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+@media (prefers-reduced-motion: reduce) {
+  .place-page {
+    animation: none;
+  }
+}
+
 @media (min-width: 1024px) {
   html:has(.canvas-page) {
     overflow: hidden;
@@ -484,5 +644,11 @@ html:has(.canvas-root) footer {
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     overflow: auto;
+  }
+  .canvas-panel-handle {
+    display: none;
+  }
+  .place-drawer-handle {
+    display: none;
   }
 }

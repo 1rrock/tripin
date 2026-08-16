@@ -10,15 +10,23 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { Plus } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
+import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";
 
 export function NewListButton({
   className = "",
+  /**
+   * `row` 는 저장 인덱스 목록 안에 서는 꼴 — `<li>` 를 직접 낸다. 목록 바깥의
+   * 버튼으로 두면 "만들기" 가 목록과 다른 문법이 되어 한 번 더 찾아야 한다.
+   */
   variant = "button",
+  hint,
 }: {
   className?: string;
-  variant?: "button" | "slot";
+  variant?: "button" | "row";
+  hint?: string;
 }) {
   const { messages: m, href } = useLocale();
   const { addList } = useSaved();
@@ -45,47 +53,59 @@ export function NewListButton({
     }
     setName("");
     setOpen(false);
-    /* 만들자마자 그 그룹으로 들어간다 — 다음 할 일이 "여기에 담기" 라서 */
-    router.push(href(`/saved/${res.id}`));
+    /* 만들자마자 그 그룹으로 들어간다 — 다음 할 일이 "여기에 담기" 라서.
+       그룹의 본진은 지도다(SavedIndex 주석) — /saved/<id> 는 어차피 여기로 튄다. */
+    router.push(href(`/map?list=${res.id}`));
   }
 
   if (!open) {
-    if (variant === "slot") {
-      return (
-        <button
-          type="button"
-          onClick={() => setOpen(true)}
-          className={`flex aspect-video cursor-pointer items-center justify-center font-bold transition-opacity active:opacity-70 ${className}`}
-          style={{
-            fontSize: "var(--t-meta)",
-            borderRadius: "var(--r-frame)",
-            boxShadow: "inset 0 0 0 1px var(--hairline)",
-            color: "var(--dim)",
-          }}
-        >
-          + {m.saved.listNew}
-        </button>
-      );
-    }
-    return (
+    const button = (
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className={`flex h-10 cursor-pointer items-center justify-center gap-1.5 px-3 font-bold transition-transform active:scale-[0.98] ${className}`}
-        style={{
-          fontSize: "var(--t-meta)",
-          borderRadius: "var(--r-control)",
-          boxShadow: "inset 0 0 0 1px var(--hairline)",
-          color: "var(--paper)",
-        }}
+        className={
+          variant === "row"
+            ? `roll w-full cursor-pointer ${ROW_BODY} pr-(--gutter)`
+            : `flex h-9 cursor-pointer items-center justify-center gap-1.5 px-3 font-bold transition-transform active:scale-[0.98] ${className}`
+        }
+        style={
+          variant === "row"
+            ? undefined
+            : {
+                fontSize: "var(--t-meta)",
+                borderRadius: "var(--r-control)",
+                boxShadow: "inset 0 0 0 1px var(--hairline)",
+                color: "var(--paper)",
+              }
+        }
       >
-        + {m.saved.listNew}
+        {variant === "row" ? (
+          <>
+            <RowIcon>
+              <Plus className="size-5" weight="bold" />
+            </RowIcon>
+            <RowText name={m.saved.listNew} meta={hint} />
+          </>
+        ) : (
+          <>+ {m.saved.listNew}</>
+        )}
       </button>
+    );
+    return variant === "row" ? (
+      <li className="border-b" style={{ borderColor: "var(--hairline)" }}>
+        {button}
+      </li>
+    ) : (
+      button
     );
   }
 
-  return (
-    <div className={`flex flex-col gap-2 ${className}`}>
+  const form = (
+    <div
+      className={
+        variant === "row" ? "flex flex-col gap-2 px-(--gutter) py-3" : `flex flex-col gap-2 ${className}`
+      }
+    >
       <input
         ref={inputRef}
         value={name}
@@ -153,5 +173,13 @@ export function NewListButton({
         </button>
       </div>
     </div>
+  );
+
+  return variant === "row" ? (
+    <li className="border-b" style={{ borderColor: "var(--hairline)" }}>
+      {form}
+    </li>
+  ) : (
+    form
   );
 }

@@ -1,34 +1,32 @@
 "use client";
 
 /**
- * 핀 상세 — 지도에서 핀을 눌렀을 때 나오는 내용.
+ * 장소 상세.
  *
- * 훅(포커스 트랩·Escape 처리)을 쓰지만, 이 컴포넌트는 항상 이미 클라이언트
- * 컴포넌트(Explorer, CityExplorer) 안에서만 렌더된다 — 즉 서버→클라이언트
- * 경계를 이 파일이 새로 여는 게 아니라서 "use client" 가 안전하다.
+ * 모바일(네이버 문법):
+ *   · mid 드로어 — 지도 위 절반. 상호·미디어·요약·출처, **지도에서 열기는 맨 아래**
+ *   · full 페이지 모달 — 스크롤 내리면 페이지 전환처럼 전면. 맨 위 오버스크롤·아래로 당기기 → mid
+ *   · 뒤로가기: full→mid(history), mid→맵(onClose)
  *
- * 모바일은 화면 하단 고정 시트, 데스크톱은 지도 패널 안쪽 하단이다. 그래서 호출부는
- * 이 컴포넌트를 **지도를 감싼 relative 컨테이너 안**에 놓아야 한다(데스크톱 absolute 기준).
- *
- * 지도 위 말풍선(InfoWindow)을 쓰지 않는 이유: 여기 들어갈 것이 요약 불릿·출처 영상
- * 여러 개·아웃링크 두 개라 말풍선 폭에 안 들어가고, 구글이 그리는 요소라 이 월드의
- * 문법(각진 프레임·왁스 표시)을 입힐 수 없다.
- *
- * 시트는 밝은 면(--sheet)이다. 웜 페이퍼 월드에서 --paper 는 잉크이므로
- * 시트 배경에 쓰지 않는다. 데스크톱에서는 라이트박스(지도) 위에 놓인다.
+ * 데스크톱: 지도 안 absolute 카드.
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { createPortal } from "react-dom";
+import { AppBar, AppBarButton } from "@/shared/ui/AppBar";
 import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
-import { PlaceMenu } from "@/shared/ui/PlaceMenu";
 import { SaveButton } from "@/shared/ui/SaveButton";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
+
+export type PlaceDrawerSnap = "mid" | "full";
+
+export const PLACE_DRAWER_MID_PCT = 52;
 
 export interface SheetSource {
   creatorSlug: string;
@@ -42,13 +40,11 @@ export interface SheetSource {
 }
 
 export interface SheetPlace {
-  /** places.id — 하트(저장)가 이 값으로 저장한다 */
   id: string;
   name: string;
   nameLocal: string | null;
   typeLabel: string;
   address: string | null;
-  /** 로케일 + en_source 로 이미 판정된 표시 결과 — `shared/i18n/display.ts` 의 `displaySummary`. */
   summary: SummaryDisplay;
   mapUrl: string | null;
   sources: SheetSource[];
@@ -70,209 +66,478 @@ function youtubeUrl(videoId: string, sec: number | null): string {
 
 export function PlaceSheet({
   place,
-  index,
+  index: _index,
   onClose,
+  collapseToken = 0,
+  onSnapChange,
 }: {
   place: SheetPlace;
-  /** 지도 핀 번호 — 어느 핀을 눌렀는지 눈으로 잇는다 */
   index: number;
   onClose: () => void;
+  collapseToken?: number;
+  onSnapChange?: (snap: PlaceDrawerSnap) => void;
 }) {
+  void _index;
   const { messages: m, t } = useLocale();
   const { lists, listsOf } = useSaved();
   const hero = place.sources[0] ?? null;
   const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
-  const containerRef = useRef<HTMLDivElement>(null);
-  const closeBtnRef = useRef<HTMLButtonElement>(null);
 
-  /* 호출부가 onClose 로 인라인 화살표를 넘긴다 — 매 렌더마다 새 정체성이라
-     이걸 이펙트 의존성으로 쓰면 부모가 리렌더될 때마다(담기·복사 등) 이펙트가
-     다시 돌아 포커스를 빼앗는다. 최신 값은 ref 로 들고, 이펙트는 안 묶는다. */
+  const midScrollRef = useRef<HTMLDivElement>(null);
+  const fullScrollRef = useRef<HTMLDivElement>(null);
+  const closeBtnRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
     onCloseRef.current = onClose;
   });
 
-  /**
-   * 이 시트는 모바일에서만 모달이다.
-   * `lg` 이상에서는 지도 패널 **안쪽**에 absolute 로 앉고 좌측 장소 목록이 그대로
-   * 조작 가능하다. 그 상태에서 `aria-modal="true"` 는 "바깥은 전부 불활성"이라는
-   * 거짓말이고, Tab 트랩은 키보드 사용자를 시트 안에 가둬 Escape 로만 나가게 만든다.
-   */
-  const [isModal, setIsModal] = useState(false);
+  const [isMobile, setIsMobile] = useState(
+    () => typeof window !== "undefined" && window.matchMedia("(max-width: 1023.98px)").matches,
+  );
   useEffect(() => {
     const mq = window.matchMedia("(max-width: 1023.98px)");
-    const sync = () => setIsModal(mq.matches);
+    const sync = () => setIsMobile(mq.matches);
     sync();
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
 
-  /* 열릴 때 한 번만 — 마운트 이후 재실행되면 포커스를 빼앗는다 */
+  const [snap, setSnap] = useState<PlaceDrawerSnap>("mid");
+  const snapRef = useRef(snap);
+  snapRef.current = snap;
+  const expandedByHistory = useRef(false);
+  const lastCollapseToken = useRef(collapseToken);
+  const pullStartY = useRef<number | null>(null);
+  const pulling = useRef(false);
+
+  const setSnapBoth = useCallback(
+    (next: PlaceDrawerSnap) => {
+      setSnap(next);
+      onSnapChange?.(next);
+    },
+    [onSnapChange],
+  );
+
+  useEffect(() => {
+    setSnapBoth("mid");
+    expandedByHistory.current = false;
+    if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
+    if (fullScrollRef.current) fullScrollRef.current.scrollTop = 0;
+  }, [place.id, setSnapBoth]);
+
   useEffect(() => {
     closeBtnRef.current?.focus();
-  }, []);
+  }, [place.id, snap]);
 
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") {
-        onCloseRef.current();
+  const expandFull = useCallback(() => {
+    if (snapRef.current === "full") return;
+    window.history.pushState(
+      {
+        ...(typeof window.history.state === "object" && window.history.state
+          ? window.history.state
+          : {}),
+        __placeSheet: true,
+        __placeFull: true,
+      },
+      "",
+    );
+    expandedByHistory.current = true;
+    setSnapBoth("full");
+  }, [setSnapBoth]);
+
+  const collapseMid = useCallback(
+    (opts?: { fromPopstate?: boolean }) => {
+      if (snapRef.current === "mid") return;
+      if (!opts?.fromPopstate && expandedByHistory.current) {
+        expandedByHistory.current = false;
+        window.history.back();
         return;
       }
-      /* 트랩은 모달일 때만 — 데스크톱에서는 목록으로 Tab 해 나갈 수 있어야 한다 */
-      if (!isModal || e.key !== "Tab" || !containerRef.current) return;
-      const focusable = containerRef.current.querySelectorAll<HTMLElement>(
-        "a[href], button:not([disabled])",
-      );
-      if (focusable.length === 0) return;
-      const first = focusable[0]!;
-      const last = focusable[focusable.length - 1]!;
-      if (e.shiftKey && document.activeElement === first) {
-        e.preventDefault();
-        last.focus();
-      } else if (!e.shiftKey && document.activeElement === last) {
-        e.preventDefault();
-        first.focus();
+      expandedByHistory.current = false;
+      setSnapBoth("mid");
+      if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
+      if (fullScrollRef.current) fullScrollRef.current.scrollTop = 0;
+    },
+    [setSnapBoth],
+  );
+
+  useEffect(() => {
+    if (!isMobile) return;
+    const onPop = () => {
+      if (snapRef.current === "full") {
+        expandedByHistory.current = false;
+        setSnapBoth("mid");
+        if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
       }
     };
-    window.addEventListener("keydown", onKeyDown);
-    return () => window.removeEventListener("keydown", onKeyDown);
-  }, [isModal]);
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, [isMobile, setSnapBoth]);
 
-  return (
-    <div
-      ref={containerRef}
-      role="dialog"
-      aria-modal={isModal ? "true" : undefined}
-      aria-label={t(m.map.detailAria, { name: place.name })}
-      className="rise-in on-lightbox fixed inset-x-0 bottom-0 z-40 max-h-[78dvh] overflow-y-auto p-4 pb-[calc(env(safe-area-inset-bottom)+1rem)] lg:absolute lg:inset-y-4 lg:right-4 lg:left-auto lg:w-[min(460px,calc(100vw-520px))] lg:max-h-none lg:p-5"
-      style={{
-        background: "var(--sheet)",
-        color: "var(--paper)",
-        borderRadius: "var(--r-control)",
-        boxShadow: "var(--lift)",
-      }}
+  useEffect(() => {
+    if (collapseToken === lastCollapseToken.current) return;
+    lastCollapseToken.current = collapseToken;
+    if (snapRef.current === "full") collapseMid();
+    else onCloseRef.current();
+  }, [collapseToken, collapseMid]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      if (snapRef.current === "full") collapseMid();
+      else onCloseRef.current();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [collapseMid]);
+
+  useEffect(() => {
+    if (!isMobile || snap !== "full") return;
+    const prev = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = prev;
+    };
+  }, [isMobile, snap]);
+
+  /* mid: 스크롤 내리면 페이지 모달로 */
+  const onMidScroll = () => {
+    const el = midScrollRef.current;
+    if (!el || snapRef.current !== "mid") return;
+    if (el.scrollTop > 16) expandFull();
+  };
+
+  const onMidTouchStart = (e: React.TouchEvent) => {
+    pullStartY.current = e.touches[0]?.clientY ?? null;
+  };
+  const onMidTouchMove = (e: React.TouchEvent) => {
+    const y0 = pullStartY.current;
+    const y = e.touches[0]?.clientY;
+    if (y0 == null || y == null) return;
+    /* 위로 스와이프 → full */
+    if (y - y0 < -32) {
+      expandFull();
+      pullStartY.current = null;
+    }
+  };
+
+  /* full: 최상단에서 더 당기면 mid */
+  const onFullTouchStart = (e: React.TouchEvent) => {
+    const el = fullScrollRef.current;
+    pullStartY.current = e.touches[0]?.clientY ?? null;
+    pulling.current = Boolean(el && el.scrollTop <= 0);
+  };
+  const onFullTouchMove = (e: React.TouchEvent) => {
+    const el = fullScrollRef.current;
+    const y0 = pullStartY.current;
+    const y = e.touches[0]?.clientY;
+    if (!el || y0 == null || y == null) return;
+    if (el.scrollTop <= 0 && y - y0 > 48) {
+      collapseMid();
+      pullStartY.current = null;
+      pulling.current = false;
+    }
+  };
+  const onFullScroll = () => {
+    /* wheel 등: 최상단에서 더 이상 못 갈 때 내려가려는 제스처는 touch 로 처리.
+       일부 브라우저 overscroll — scrollTop 0 유지 시 wheel delta 로 접기 */
+  };
+  const onFullWheel = (e: React.WheelEvent) => {
+    const el = fullScrollRef.current;
+    if (!el) return;
+    if (el.scrollTop <= 0 && e.deltaY < 0) {
+      e.preventDefault();
+      collapseMid();
+    }
+  };
+
+  const onBackClick = () => {
+    if (snapRef.current === "full") collapseMid();
+    else onCloseRef.current();
+  };
+
+  const meta = (
+    <>
+      <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+        {place.typeLabel}
+        {place.nameLocal ? (
+          <>
+            {" · "}
+            <span lang="ja">{place.nameLocal}</span>
+          </>
+        ) : null}
+      </p>
+      {place.address ? (
+        <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+          {place.address}
+        </p>
+      ) : null}
+      {groups.length > 0 ? (
+        <p className="mt-1.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+          {groups.join(" · ")}
+        </p>
+      ) : null}
+    </>
+  );
+
+  const heroBlock = hero ? (
+    <OutboundA
+      href={youtubeUrl(hero.youtubeId, hero.timestampSec)}
+      title={hero.videoTitle}
+      className="mt-3 block"
     >
-      <div className="flex items-start gap-3">
-        <div className="min-w-0 flex-1">
-          <h2
-            className="font-black"
-            style={{
-              fontSize: "var(--t-screen)",
-              letterSpacing: "-0.035em",
-              lineHeight: 1.2,
-            }}
-          >
-            {place.name}
-          </h2>
-          <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-            {place.typeLabel}
-            {place.nameLocal ? (
-              <>
-                {" · "}
-                <span lang="ja">{place.nameLocal}</span>
-              </>
-            ) : null}
-          </p>
-          {place.address ? (
-            <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-              {place.address}
-            </p>
-          ) : null}
-          {groups.length > 0 ? (
-            <p className="mt-1.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-              {groups.join(" · ")}
-            </p>
-          ) : null}
-        </div>
+      <Frame className="block w-full">
+        <Thumb key={hero.youtubeId} youtubeId={hero.youtubeId} alt={hero.videoTitle} eager />
+      </Frame>
+      <span className="mt-2 block text-[13px] font-medium leading-snug">{hero.videoTitle}</span>
+    </OutboundA>
+  ) : null;
 
-        <SaveButton placeId={place.id} placeName={place.name} className="size-8" />
-        <PlaceMenu placeId={place.id} placeName={place.name} className="size-8" />
-
-        <button
-          ref={closeBtnRef}
-          type="button"
-          onClick={onClose}
-          aria-label={m.map.closeDetail}
-          className="grid size-8 shrink-0 cursor-pointer place-items-center"
-          style={{
-            borderRadius: "var(--r-frame)",
-            boxShadow: "inset 0 0 0 1px var(--hairline)",
-          }}
-        >
-          <Icon.close className="size-4" style={{ color: "var(--paper)" }} />
-        </button>
-      </div>
-
-      {hero ? (
+  const sourcesBlock = (
+    <div className="mt-5 flex flex-col gap-3">
+      {place.sources.map((s, i) => (
         <OutboundA
-          href={youtubeUrl(hero.youtubeId, hero.timestampSec)}
-          title={hero.videoTitle}
-          className="mt-4 block"
+          key={`${s.youtubeId}-${i}`}
+          href={youtubeUrl(s.youtubeId, s.timestampSec)}
+          title={s.videoTitle}
+          className="flex gap-3"
         >
-          <Frame className="block w-full">
-            <Thumb key={hero.youtubeId} youtubeId={hero.youtubeId} alt={hero.videoTitle} eager />
+          <Frame className="w-[120px] shrink-0">
+            <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
           </Frame>
-          <span className="mt-2 block text-[13px] font-medium leading-snug">
-            {hero.videoTitle}
+          <span className="min-w-0 flex-1">
+            <span className="flex items-center gap-2">
+              <Avatar
+                initials={s.initials}
+                accent={s.accentColor}
+                src={s.avatarUrl}
+                size={20}
+              />
+              <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
+            </span>
+            <span className="mt-1 block text-[13px] leading-snug font-medium">{s.videoTitle}</span>
+            <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)">
+              <Icon.play className="size-3.5" />
+              {s.timestampSec !== null
+                ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
+                : m.common.watchVideo}
+            </span>
           </span>
         </OutboundA>
-      ) : null}
-
-      <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
-
-      {place.mapUrl ? (
-        <OutboundA
-          href={place.mapUrl}
-          className="mt-4 flex h-11 w-full items-center justify-center gap-1.5 font-bold"
-          style={{
-            fontSize: "var(--t-body)",
-            borderRadius: "var(--r-frame)",
-            background: "var(--paper)",
-            color: "var(--sheet)",
-          }}
-        >
-          <Icon.out className="size-4" />
-          {m.map.openInMapApp}
-        </OutboundA>
-      ) : null}
-
-      {/* 출처 — 여러 채널이 같은 곳을 갔으면 전부 보여준다.
-          유튜브로 돌아가는 링크를 가리지 않는 것은 정책 요건이다(LEGAL.md 4.5-(3)) */}
-      <div className="mt-5 flex flex-col gap-3">
-        {place.sources.map((s, i) => (
-          <OutboundA
-            key={`${s.youtubeId}-${i}`}
-            href={youtubeUrl(s.youtubeId, s.timestampSec)}
-            title={s.videoTitle}
-            className="flex gap-3"
-          >
-            <Frame className="w-[120px] shrink-0">
-              <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
-            </Frame>
-            <span className="min-w-0 flex-1">
-              <span className="flex items-center gap-2">
-                <Avatar
-                  initials={s.initials}
-                  accent={s.accentColor}
-                  src={s.avatarUrl}
-                  size={20}
-                />
-                <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
-              </span>
-              <span className="mt-1 block text-[13px] leading-snug font-medium">
-                {s.videoTitle}
-              </span>
-              <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)">
-                <Icon.play className="size-3.5" />
-                {s.timestampSec !== null
-                  ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
-                  : m.common.watchVideo}
-              </span>
-            </span>
-          </OutboundA>
-        ))}
-      </div>
+      ))}
     </div>
+  );
+
+  const mapCta = place.mapUrl ? (
+    <OutboundA
+      href={place.mapUrl}
+      className="flex h-12 w-full items-center justify-center gap-1.5 font-bold"
+      style={{
+        fontSize: "var(--t-body)",
+        borderRadius: "var(--r-frame)",
+        background: "var(--paper)",
+        color: "var(--sheet)",
+      }}
+    >
+      <Icon.out className="size-4" />
+      {m.map.openInMapApp}
+    </OutboundA>
+  ) : null;
+
+  /* ── 데스크톱 ── */
+  if (!isMobile) {
+    return (
+      <div
+        role="dialog"
+        aria-label={t(m.map.detailAria, { name: place.name })}
+        className="rise-in on-lightbox absolute inset-y-4 right-4 left-auto z-40 flex w-[min(460px,calc(100vw-520px))] flex-col overflow-hidden"
+        style={{
+          background: "var(--sheet)",
+          color: "var(--paper)",
+          borderRadius: "var(--r-control)",
+          boxShadow: "var(--lift)",
+        }}
+      >
+        <div className="min-h-0 flex-1 overflow-y-auto p-5 pb-3">
+          <div className="flex items-start gap-2">
+            <div className="min-w-0 flex-1">
+              <h2
+                className="font-black"
+                style={{
+                  fontSize: "var(--t-screen)",
+                  letterSpacing: "-0.035em",
+                  lineHeight: 1.2,
+                }}
+              >
+                {place.name}
+              </h2>
+              <div className="mt-1.5">{meta}</div>
+            </div>
+            <div className="flex shrink-0 items-center gap-0.5">
+              <SaveButton placeId={place.id} placeName={place.name} bare />
+              <button
+                ref={closeBtnRef}
+                type="button"
+                onClick={onClose}
+                aria-label={m.map.closeDetail}
+                className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
+                style={{ color: "var(--dim)" }}
+              >
+                <Icon.close className="size-[18px]" style={{ color: "var(--paper)" }} />
+              </button>
+            </div>
+          </div>
+          {heroBlock}
+          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+          {sourcesBlock}
+        </div>
+        {mapCta ? (
+          <div className="shrink-0 border-t p-4" style={{ borderColor: "var(--hairline)" }}>
+            {mapCta}
+          </div>
+        ) : null}
+      </div>
+    );
+  }
+
+  /* ── 모바일 full: 페이지 전환형 전면 모달 ── */
+  const fullPage =
+    snap === "full" ? (
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(m.map.detailAria, { name: place.name })}
+        className="place-page rise-in on-lightbox fixed inset-0 z-[70] flex flex-col bg-(--sheet) text-(--paper)"
+      >
+        {/* 공용 머리말 — 지도·저장·마이의 상단 바와 같은 조각(AppBar) */}
+        <AppBar
+          className="shrink-0 border-b px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
+          style={{ borderColor: "var(--hairline)" }}
+          titleAs="h2"
+          title={place.name}
+          leading={
+            <button
+              ref={closeBtnRef}
+              type="button"
+              onClick={onBackClick}
+              aria-label={m.map.backToMap}
+              className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full transition-colors active:bg-(--hover)"
+              style={{ color: "var(--paper)" }}
+            >
+              <Icon.back className="size-5" />
+            </button>
+          }
+          actions={
+            <>
+              <SaveButton placeId={place.id} placeName={place.name} bare />
+              <AppBarButton label={m.map.closeDetail} onClick={onClose}>
+                <Icon.close className="size-[18px]" />
+              </AppBarButton>
+            </>
+          }
+        />
+
+        <div
+          ref={fullScrollRef}
+          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3"
+          onTouchStart={onFullTouchStart}
+          onTouchMove={onFullTouchMove}
+          onScroll={onFullScroll}
+          onWheel={onFullWheel}
+        >
+          <div className="mb-1">{meta}</div>
+          {heroBlock}
+          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+          {sourcesBlock}
+          {/* 하단 CTA 가 스크롤 끝에 오도록 여백 */}
+          <div className="h-24" />
+        </div>
+
+        {mapCta ? (
+          <div
+            className="shrink-0 border-t bg-(--sheet) px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
+            style={{ borderColor: "var(--hairline)" }}
+          >
+            {mapCta}
+          </div>
+        ) : null}
+      </div>
+    ) : null;
+
+  /* ── 모바일 mid 드로어 ── */
+  return (
+    <>
+      <div
+        role="dialog"
+        aria-modal="true"
+        aria-label={t(m.map.detailAria, { name: place.name })}
+        className="place-drawer on-lightbox"
+        style={{
+          height: `${PLACE_DRAWER_MID_PCT}%`,
+          background: "var(--sheet)",
+          color: "var(--paper)",
+          /* full 일 때도 지도 위 자리 유지(밑에서 포탈 모달이 덮음) */
+          visibility: snap === "full" ? "hidden" : "visible",
+          pointerEvents: snap === "full" ? "none" : "auto",
+        }}
+      >
+        <div className="place-drawer-handle" aria-hidden />
+
+        <div className="flex shrink-0 items-start gap-2 px-4 pb-1">
+          <div className="min-w-0 flex-1">
+            <h2
+              className="truncate font-black"
+              style={{
+                fontSize: "var(--t-screen)",
+                letterSpacing: "-0.035em",
+                lineHeight: 1.2,
+              }}
+            >
+              {place.name}
+            </h2>
+            <div className="mt-1">{meta}</div>
+          </div>
+          {/* 우측: 하트 · 닫기(예전 ⋯ 자리). ⋯ 메뉴는 하트가 그룹 시트를 열어서 불필요 */}
+          <div className="mt-0.5 flex shrink-0 items-center gap-0.5">
+            <SaveButton placeId={place.id} placeName={place.name} bare />
+            <button
+              ref={snap === "mid" ? closeBtnRef : undefined}
+              type="button"
+              onClick={onClose}
+              aria-label={m.map.closeDetail}
+              className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
+              style={{ color: "var(--dim)" }}
+            >
+              <Icon.close className="size-[18px]" style={{ color: "var(--paper)" }} />
+            </button>
+          </div>
+        </div>
+
+        <div
+          ref={midScrollRef}
+          className="place-drawer-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4"
+          onScroll={onMidScroll}
+          onTouchStart={onMidTouchStart}
+          onTouchMove={onMidTouchMove}
+        >
+          {heroBlock}
+          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+          {sourcesBlock}
+          {/* 스크롤 여유 — 당겨 올리면 full 로 넘어감 */}
+          <div className="h-16" />
+        </div>
+
+        {mapCta ? (
+          <div
+            className="shrink-0 border-t bg-(--sheet) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+            style={{ borderColor: "var(--hairline)" }}
+          >
+            {mapCta}
+          </div>
+        ) : null}
+      </div>
+
+      {fullPage ? createPortal(fullPage, document.body) : null}
+    </>
   );
 }

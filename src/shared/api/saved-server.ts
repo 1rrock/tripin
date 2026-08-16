@@ -51,8 +51,6 @@ export interface SavedView {
   lists: SavedListRow[];
   /** 장소 id → 담긴 그룹 id 들. 클라이언트로 넘기므로 Map 이 아니라 배열이다. */
   membership: Record<string, string[]>;
-  /** 어느 그룹에도 안 담긴 장소 수 */
-  ungroupedCount: number;
 }
 
 /**
@@ -101,7 +99,6 @@ async function _loadSavedView(): Promise<SavedView> {
     places: [],
     lists: [],
     membership: {},
-    ungroupedCount: 0,
   };
   if (!user) return EMPTY;
 
@@ -200,7 +197,5 @@ async function _loadSavedView(): Promise<SavedView> {
     count: countByList.get(l.id) ?? 0,
   }));
 
-  const ungroupedCount = rows.filter((r) => (membership[r.id]?.length ?? 0) === 0).length;
-
-  return { userId: user.id, linked, places: rows, lists, membership, ungroupedCount };
+  return { userId: user.id, linked, places: rows, lists, membership };
 }

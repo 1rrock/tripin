@@ -147,6 +147,7 @@ export function CanvasFilters({
   channelCounts,
   typeCounts,
   trailing,
+  variant = "sheet",
   onApply,
 }: {
   region: HomeRegionId | null;
@@ -163,6 +164,8 @@ export function CanvasFilters({
   /** 필터 줄 끝에 붙는 것 — 저장 칩이 여기 들어온다. 별도 줄로 띄우면
    *  규격이 어긋나 보이고 지도 세로 공간도 한 줄 더 먹는다. */
   trailing?: ReactNode;
+  /** sheet = 목록 시트 안(데스크톱). floating = 지도 위 검색창 아래(모바일). */
+  variant?: "sheet" | "floating";
   onApply: (next: {
     region: HomeRegionId | null;
     city: string | null;
@@ -227,8 +230,17 @@ export function CanvasFilters({
   });
 
   return (
-    <div ref={rootRef} className="relative px-4 pb-3">
-      <div className="flex flex-wrap gap-2">
+    /* floating = 지도 위에 뜬 줄(모바일). 칩이 두 줄로 접히면 지도를 그만큼 더 가리므로
+       감싸지 않고 옆으로 흐르게 둔다. 드롭다운은 이 상자 기준이라 넘침에 안 잘린다. */
+    <div ref={rootRef} className={variant === "floating" ? "relative pt-2" : "relative px-4 pb-3"}>
+      <div
+        className={
+          variant === "floating"
+            ? /* 칩은 줄지 않는다 — 줄어들면 "지역"이 "지…"가 된다. 넘치면 옆으로 흐른다 */
+              "no-scrollbar flex gap-2 overflow-x-auto [&>*]:shrink-0"
+            : "flex flex-wrap gap-2"
+        }
+      >
         <Trigger
           label={regionLabel}
           active={Boolean(region || city)}

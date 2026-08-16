@@ -1,138 +1,34 @@
-import type { Metadata } from "next";
-import Link from "next/link";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { loadSavedView } from "@/shared/api/saved-server";
-import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
-import { Icon } from "@/shared/ui/icons";
-import { PlaceRows } from "../PlaceRows";
-import { ListRowMenu } from "../ListRowMenu";
 
 /**
- * 그룹 상세 — 시안 D. 인덱스의 엽서를 누르면 여기로 온다.
+ * 저장 상세는 **지도**가 맡는다. 이 경로는 예전 링크를 그리로 넘기는 다리다.
  *
- * 데스크톱은 레이아웃의 사이드바가 그대로 남고 본문만 이 그룹으로 바뀐다.
- * 모바일은 `/saved` 인덱스에서 밀려 들어온 화면이라 뒤로 가는 길을 준다.
+ *   /saved/liked · /saved/ungrouped → /map?saved=1
+ *   /saved/<그룹 id>                → /map?list=<id>
  *
- * `liked` / `ungrouped` 는 예약어다. 그룹 id 는 uuid 라 이 두 낱말과 부딪히지 않는다.
+ * 왜 화면이 아니라 다리인가: 저장한 곳도 그룹도 결국 "어디에 있나" 를 보는 일이고
+ * 그 답은 지도에 있다. 목록만 있는 화면을 따로 두면 같은 것을 두 벌로 그리게 된다.
+ * 장소를 빼거나 그룹에 담는 일은 지도의 장소 카드(하트 → 그룹 시트)에서 한다.
  */
 export const dynamic = "force-dynamic";
 
-const LIKED = "liked";
-const UNGROUPED = "ungrouped";
+const SAVED_ALL = ["liked", "ungrouped"];
 
-async function resolve(listParam: string) {
-  const [locale, view] = await Promise.all([getLocale(), loadSavedView()]);
-  const m = getDictionary(locale);
-
-  if (listParam === LIKED) {
-    return { locale, m, view, title: m.saved.likedNav, kind: "liked" as const, list: null };
-  }
-  if (listParam === UNGROUPED) {
-    return {
-      locale,
-      m,
-      view,
-      title: m.saved.listUngrouped,
-      kind: "ungrouped" as const,
-      list: null,
-    };
-  }
-  const list = view.lists.find((l) => l.id === listParam) ?? null;
-  return { locale, m, view, title: list?.name ?? "", kind: "list" as const, list };
-}
-
-export async function generateMetadata({
+export default async function SavedListRedirect({
   params,
 }: {
   params: Promise<{ list: string }>;
-}): Promise<Metadata> {
+}) {
   const { list } = await params;
-  const { title, m } = await resolve(list);
-  return {
-    title: title || m.saved.title,
-    robots: { index: false, follow: false },
-  };
-}
+  const locale = await getLocale();
 
-export default async function SavedListPage({ params }: { params: Promise<{ list: string }> }) {
-  const { list: listParam } = await params;
-  const { locale, m, view, title, kind, list } = await resolve(listParam);
+  if (SAVED_ALL.includes(list)) redirect(localePath("/map?saved=1", locale));
 
   /* 없는 그룹이면 404. 남의 그룹 id 를 넣어도 RLS 가 안 주므로 여기로 온다. */
-  if (kind === "list" && !list) notFound();
+  const view = await loadSavedView();
+  if (!view.lists.some((l) => l.id === list)) notFound();
 
-  const rows =
-    kind === LIKED
-      ? view.places
-      : kind === UNGROUPED
-        ? view.places.filter((p) => (view.membership[p.id]?.length ?? 0) === 0)
-        : view.places.filter((p) => view.membership[p.id]?.includes(listParam));
-
-  return (
-    <>
-      <header className="flex flex-col gap-3 pb-1">
-        <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
-          <Link href={localePath("/", locale)} className="underline-offset-4 hover:underline">
-            {m.common.home}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <Link
-            href={localePath("/saved", locale)}
-            className="underline-offset-4 hover:underline"
-          >
-            {m.saved.title}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <span className="truncate" style={{ color: "var(--paper)" }}>
-            {title}
-          </span>
-        </nav>
-
-        <div className="flex flex-wrap items-center justify-between gap-3">
-          <h1
-            className="font-black"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-          >
-            {title}
-          </h1>
-          {/* 이름 바꾸기·삭제는 진짜 그룹에만. 좋아요·그룹 없음은 지울 수 있는 것이 아니다.
-              목록의 행 메뉴와 같은 컴포넌트를 쓴다 — 같은 일을 두 벌로 만들면
-              한쪽만 고치는 일이 반드시 생긴다. */}
-          {kind === "list" && list ? (
-            <ListRowMenu listId={list.id} name={list.name} isCurrent />
-          ) : null}
-        </div>
-
-        {/* 지도로 넘기는 다리. 지도는 /map 하나뿐이라 여기서 지도를 그리지 않고
-            필터를 켠 채로 보낸다 — Google Maps 가 로드당 과금이라 화면마다 지도를
-            두면 비용이 그대로 배가 된다. */}
-        {rows.length > 0 ? (
-          <Link
-            href={localePath(
-              kind === "list" ? `/map?list=${listParam}` : "/map?saved=1",
-              locale,
-            )}
-            className="inline-flex h-9 w-fit items-center gap-1.5 px-3.5 font-bold"
-            style={{
-              fontSize: "var(--t-meta)",
-              borderRadius: "var(--r-frame)",
-              background: "var(--halo)",
-              color: "var(--halo-ink)",
-            }}
-          >
-            <Icon.map className="size-4" />
-            {m.saved.viewOnMap}
-          </Link>
-        ) : null}
-      </header>
-
-      <PlaceRows
-        rows={rows}
-        listId={kind === "list" ? listParam : undefined}
-        ungroupedOnly={kind === UNGROUPED}
-        emptyText={kind === LIKED ? m.saved.empty : m.saved.listPlacesEmpty}
-      />
-    </>
-  );
+  redirect(localePath(`/map?list=${list}`, locale));
 }

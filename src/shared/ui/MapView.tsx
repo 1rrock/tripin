@@ -33,6 +33,12 @@ const TILES_TIMEOUT_MS = 8000;
 const CLUSTER_MAX_ZOOM = 16;
 /** 픽셀 반경 — 이 안에 든 핀이 한 덩어리가 된다. 마커 폭(30px)의 두 배 남짓. */
 const CLUSTER_RADIUS_PX = 64;
+/**
+ * 목록·핀 선택 시 최소 줌. 전역 지도처럼 멀리 보고 있을 때 pan 만 하면
+ * "어디가 고른 곳인지" 안 보이므로, 이 값까지 들어간다.
+ * 클러스터 maxZoom 보다 한 단계 높여 묶임도 같이 푼다.
+ */
+const FOCUS_MIN_ZOOM = 17;
 
 export interface MapPin {
   id: string;
@@ -51,6 +57,8 @@ interface MapViewProps {
   /** 하이라이트할 핀 id — 리스트 선택과 동기화. */
   activeId?: string | null;
   onPinClick?: (id: string) => void;
+  /** 핀이 아닌 지도 배경 클릭 — 상세 드로어를 내릴 때 쓴다. */
+  onMapClick?: () => void;
   className?: string;
   /** 핀 1개일 때 줌 (기본 15 — CONCEPT.md 4.3). */
   singlePinZoom?: number;
@@ -62,6 +70,21 @@ interface MapViewProps {
   cluster?: boolean;
   /** 가까이 가면 번호 대신 상호. 멀면 점. */
   nameWhenClose?: boolean;
+  /**
+   * 뷰포트 맞춤 여백 — 지도 위에 뜬 것들(검색 줄·바텀시트)이 먹는 자리.
+   *
+   * 숫자 하나면 사방 같은 값. **함수로 주면 맞출 때마다 다시 잰다** — 시트 높이는
+   * 사용자가 끌면 바뀌므로 렌더 시점에 박아 두면 곧 틀린 값이 된다.
+   * 없으면 사방 48px. 이게 없을 때 핀이 시트 밑에 깔려 "위아래가 잘려" 보였다.
+   */
+  fitPadding?: number | (() => google.maps.Padding);
+  /**
+   * 첫 화면을 여기로 — 현재 위치처럼 **핀과 무관하게** 정해지는 시작점.
+   *
+   * 딱 한 번만 듣는다. 이후 필터를 바꾸면 그 결과에 맞추는 게 맞다.
+   * null 이면 평소대로 전체 핀에 맞춘다(권한 거부·미지원도 여기로 떨어진다).
+   */
+  focusAt?: { lat: number; lng: number; zoom?: number } | null;
 }
 
 let optionsSet = false;
@@ -215,10 +238,13 @@ export function MapView({
   pins,
   activeId,
   onPinClick,
+  onMapClick,
   className,
   singlePinZoom = 15,
   cluster = false,
   nameWhenClose = false,
+  fitPadding = 48,
+  focusAt = null,
 }: MapViewProps) {
   const { messages: m } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -231,6 +257,18 @@ export function MapView({
   const namedRef = useRef(false);
   const pinsLiveRef = useRef(pins);
   pinsLiveRef.current = pins;
+  const onMapClickRef = useRef(onMapClick);
+  onMapClickRef.current = onMapClick;
+  /* 여백은 맞추는 순간에 읽는다 — 이펙트 의존성에 넣으면 시트를 끌 때마다 뷰포트가 튄다.
+     렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 실제로 읽는 곳은 SDK 로드
+     뒤의 콜백이라 이 이펙트가 먼저 돈 뒤다. */
+  const fitPaddingRef = useRef(fitPadding);
+  useEffect(() => {
+    fitPaddingRef.current = fitPadding;
+  });
+  /* 시작점은 한 번만 듣는다 — 위치가 늦게 와도 그때 한 번, 그 뒤로는 사용자 것이다 */
+  const focusedRef = useRef(false);
+  const fittedOnceRef = useRef(false);
   // 키 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생
   const [failed, setFailed] = useState(() => !publicEnv.googleMapsKey);
   const [loaded, setLoaded] = useState(false);
@@ -274,6 +312,10 @@ export function MapView({
              맵 스타일로 업로드하고 그 Map ID 를 주입해야만 나온다. 코드로는 못 푼다. */
         });
         mapRef.current = map;
+        // 배경 클릭(핀 아님) — 상세 드로어 접기. 핀 gmp-click 은 버블되지 않는다.
+        map.addListener("click", () => {
+          onMapClickRef.current?.();
+        });
         // 지도 객체 생성 ≠ 지도가 보임 — 타일이 실제로 그려진 시점에만 로딩을 해제한다.
         tilesListener = map.addListener("tilesloaded", () => {
           tilesListener?.remove();
@@ -383,10 +425,15 @@ export function MapView({
           } else if (pins.length > 1) {
             const bounds = new google.maps.LatLngBounds();
             for (const pin of pins) bounds.extend({ lat: pin.lat, lng: pin.lng });
-            map.fitBounds(bounds, 48);
+            const pad = fitPaddingRef.current;
+            map.fitBounds(bounds, typeof pad === "function" ? pad() : pad);
           }
         };
-        fitAll();
+        /* 시작점(현재 위치)이 첫 핀보다 먼저 잡혔으면 그 화면을 지킨다 — 맞춰 버리면
+           위치를 받자마자 다시 전 세계로 튕긴다. 두 번째부터(=필터를 바꾼 뒤)는
+           결과에 맞추는 것이 맞으므로 그대로 맞춘다. */
+        if (!(focusedRef.current && !fittedOnceRef.current)) fitAll();
+        fittedOnceRef.current = true;
         // 팬·줌 후 원래 화면으로 돌아올 길 — "전체 보기" 버튼이 재사용한다
         refitRef.current = fitAll;
       })
@@ -397,6 +444,16 @@ export function MapView({
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [pins, failed, cluster, nameWhenClose]);
+
+  /* 시작점 — 현재 위치처럼 늦게 오는 좌표. 지도가 서 있으면 그때 한 번 옮긴다.
+     핀 맞춤과 달리 사용자가 이후 어떻게 움직이든 다시 끼어들지 않는다. */
+  useEffect(() => {
+    const map = mapRef.current;
+    if (!map || !focusAt || focusedRef.current) return;
+    focusedRef.current = true;
+    map.setCenter({ lat: focusAt.lat, lng: focusAt.lng });
+    map.setZoom(focusAt.zoom ?? 11);
+  }, [focusAt, loaded]);
 
   // 가까이 가면 상호, 멀면 점 — 마커만 갈아끼우고 뷰포트는 그대로
   useEffect(() => {
@@ -431,15 +488,17 @@ export function MapView({
       m.replaceChildren(pinNode(pin, active, mode));
       m.zIndex = active ? 1000 : (pin.index ?? 0);
       if (!active) continue;
-      map.panTo({ lat: pin.lat, lng: pin.lng });
-      // 묶여 있으면 클러스터러가 map 을 떼어 둔 상태다. 리스트에서 고른 핀이
-      // 지도에 안 보이면 선택이 먹지 않은 것처럼 읽히므로, 풀릴 때까지 들어간다.
-      if (cluster && !m.map) {
-        const z = map.getZoom() ?? 0;
-        if (z <= CLUSTER_MAX_ZOOM) map.setZoom(CLUSTER_MAX_ZOOM + 1);
+      // 목록에서 골라도 "그 핀이 가깝게" 보여야 한다. pan 만 하면 전역 줌에
+      // 점이 그대로라 선택이 안 먹은 것처럼 보인다. 묶여 있으면 반드시 풀린다.
+      const z = map.getZoom() ?? 0;
+      const needZoom =
+        z < FOCUS_MIN_ZOOM || (cluster && !m.map && z <= CLUSTER_MAX_ZOOM);
+      if (needZoom) {
+        map.setZoom(Math.max(FOCUS_MIN_ZOOM, CLUSTER_MAX_ZOOM + 1));
       }
+      map.panTo({ lat: pin.lat, lng: pin.lng });
     }
-  }, [activeId, pins, cluster]);
+  }, [activeId, pins, cluster, nameWhenClose]);
 
   // 언마운트 시 클러스터러가 잡고 있는 지도 리스너를 놓아준다
   useEffect(

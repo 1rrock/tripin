@@ -73,7 +73,7 @@ export function SavedMapChips({
     <>
       {chip(
         "saved",
-        m.saved.mapFilter,
+        m.saved.title,
         savedCount,
         savedOnly && !listId,
         /* 그룹이 켜져 있으면 그룹을 풀고 전체 저장으로 — 토글 둘이 어긋난 상태

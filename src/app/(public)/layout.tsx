@@ -6,6 +6,7 @@ import { Mark } from "@/shared/ui/Mark";
 import { Wordmark } from "@/shared/ui/Wordmark";
 import { SavedProvider } from "@/shared/ui/SavedContext";
 import { AuthHashRescue } from "./AuthHashRescue";
+import { HeaderLead } from "./HeaderLead";
 import { DesktopRail, Nav, TabDock } from "./Nav";
 import { SearchBar } from "./SearchBar";
 
@@ -31,18 +32,12 @@ export default async function PublicLayout({ children }: { children: React.React
       <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 lg:max-w-none lg:pl-[88px]">
         <DesktopRail />
         <header
-          className="sticky top-0 z-30 flex items-center gap-3 border-b bg-(--ground)/95 px-(--gutter) pt-3 pb-2.5 backdrop-blur lg:hidden"
+          /* site-header — 지도 화면에서 통째로 감춘다(globals.css) */
+          className="site-header sticky top-0 z-30 flex items-center gap-3 border-b bg-(--ground)/95 px-(--gutter) pt-3 pb-2.5 backdrop-blur lg:hidden"
           style={{ borderColor: "var(--hairline)" }}
         >
-          <Link
-            href={home}
-            aria-label={m.brandAria}
-            className="flex shrink-0 items-center gap-2.5"
-            style={{ color: "var(--paper)" }}
-          >
-            <Mark className="size-7 shrink-0" />
-            <Wordmark />
-          </Link>
+          {/* 브랜드 자리 — 지도·저장·마이에서는 화면 제목이 대신 선다(HeaderLead) */}
+          <HeaderLead />
 
           {/* 검색은 브랜드와 내비 사이를 채우며 가운데 선다(유튜브 문법).
               헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다.
