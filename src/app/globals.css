@@ -689,6 +689,12 @@ html:has(.canvas-root) .site-header {
   .canvas-panel-handle {
     display: none;
   }
+  /* 손잡이가 사라진 자리를 여백이 대신 받는다 — 모바일에서는 손잡이(h-5)가 시트의
+     첫 줄을 천장에서 떼어 놓고 있었는데, 데스크톱에서는 그것이 없어 검색창(또는
+     목록 이름)이 카드 모서리에 딱 붙어 섰다. 안쪽 좌우 여백(16px)과 맞춘다. */
+  .canvas-panel-scroll {
+    padding-top: 12px;
+  }
   .place-drawer-handle {
     display: none;
   }
