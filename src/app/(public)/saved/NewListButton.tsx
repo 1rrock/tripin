@@ -1,14 +1,15 @@
 "use client";
 
 /**
- * 그룹 만들기 — 사이드바 하단(데스크톱)과 목록 헤더(모바일)에서 같이 쓴다.
+ * 그룹 만들기 — 머리의 버튼(데스크톱)과 목록의 행(모바일)이 같은 조각을 쓴다.
  *
  * 장소를 고르지 않고도 빈 그룹을 만들 수 있어야 한다. 여행 계획은 대개
  * "도쿄 3박4일" 이라는 이름이 먼저 서고 장소가 나중에 담긴다 —
  * `ListPicker` 안에서만 만들 수 있으면 그 순서를 못 따른다.
+ *
+ * 만들고 나서 화면을 옮기지 않는다 — 이유는 `submit()` 안에 적었다.
  */
 
-import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { Plus } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -28,9 +29,8 @@ export function NewListButton({
   variant?: "button" | "row";
   hint?: string;
 }) {
-  const { messages: m, href } = useLocale();
+  const { messages: m } = useLocale();
   const { addList } = useSaved();
-  const router = useRouter();
   const [open, setOpen] = useState(false);
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -53,9 +53,11 @@ export function NewListButton({
     }
     setName("");
     setOpen(false);
-    /* 만들자마자 그 그룹으로 들어간다 — 다음 할 일이 "여기에 담기" 라서.
-       그룹의 본진은 지도다(SavedIndex 주석) — /saved/<id> 는 어차피 여기로 튄다. */
-    router.push(href(`/map?list=${res.id}`));
+    /* 만든 자리에 그대로 남는다. 예전에는 곧장 `/map?list=<id>` 로 밀어 넣었는데,
+       빈 그룹으로 들어가 봐야 볼 것이 없고 방금 만든 그룹이 목록에서 어디 앉았는지도
+       못 본 채 화면이 갈린다. 여럿을 잇달아 만드는 사람에게는 매번 되돌아와야 하는
+       왕복이 된다. 목록은 컨텍스트가 갱신하니 새 그룹은 이 자리에서 바로 보인다 —
+       담으러 갈지는 누르는 사람이 정한다. */
   }
 
   if (!open) {
@@ -66,16 +68,17 @@ export function NewListButton({
         className={
           variant === "row"
             ? `roll w-full cursor-pointer ${ROW_BODY} pr-(--gutter)`
-            : `flex h-9 cursor-pointer items-center justify-center gap-1.5 px-3 font-bold transition-transform active:scale-[0.98] ${className}`
+            : `flex h-11 w-fit cursor-pointer items-center justify-center gap-1.5 px-4 font-bold transition-transform active:scale-[0.98] ${className}`
         }
         style={
           variant === "row"
             ? undefined
             : {
-                fontSize: "var(--t-meta)",
+                /* 화면의 주 행동이다 — 잉크 채움. 산호는 핀에만 쓴다(globals.css) */
+                fontSize: "var(--t-body)",
                 borderRadius: "var(--r-control)",
-                boxShadow: "inset 0 0 0 1px var(--hairline)",
-                color: "var(--paper)",
+                background: "var(--paper)",
+                color: "var(--sheet)",
               }
         }
       >
@@ -87,12 +90,15 @@ export function NewListButton({
             <RowText name={m.saved.listNew} meta={hint} />
           </>
         ) : (
-          <>+ {m.saved.listNew}</>
+          <>
+            <Plus className="size-4" weight="bold" />
+            {m.saved.listNew}
+          </>
         )}
       </button>
     );
     return variant === "row" ? (
-      <li className="border-b" style={{ borderColor: "var(--hairline)" }}>
+      <li className={`border-b ${className}`} style={{ borderColor: "var(--hairline)" }}>
         {button}
       </li>
     ) : (
@@ -103,7 +109,10 @@ export function NewListButton({
   const form = (
     <div
       className={
-        variant === "row" ? "flex flex-col gap-2 px-(--gutter) py-3" : `flex flex-col gap-2 ${className}`
+        variant === "row"
+          ? "flex flex-col gap-2 px-(--gutter) py-3"
+          : /* 버튼 자리에서 그대로 펼쳐진다 — 폭을 박지 않으면 입력칸이 글자 폭으로 쪼그라든다 */
+            `flex w-72 flex-col gap-2 ${className}`
       }
     >
       <input
@@ -176,7 +185,7 @@ export function NewListButton({
   );
 
   return variant === "row" ? (
-    <li className="border-b" style={{ borderColor: "var(--hairline)" }}>
+    <li className={`border-b ${className}`} style={{ borderColor: "var(--hairline)" }}>
       {form}
     </li>
   ) : (
