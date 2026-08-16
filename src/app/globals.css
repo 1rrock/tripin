@@ -345,6 +345,17 @@ body {
   padding-bottom: env(safe-area-inset-bottom);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
+  transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+/* 장소 상세가 full 로 자라면 탭바는 아래로 물러난다 — 드로어와 같은 커브 */
+html:has(.canvas-root.is-place-full) .tabbar {
+  transform: translateY(110%);
+  pointer-events: none;
+}
+@media (prefers-reduced-motion: reduce) {
+  .tabbar {
+    transition: none;
+  }
 }
 .tab {
   position: relative;
@@ -550,22 +561,50 @@ html:has(.canvas-root) .site-header {
     -webkit-overflow-scrolling: touch;
   }
 
-  /* 장소 상세 드로어 — 지도 위 mid/full (네이버 장소 카드) */
+  /* 장소 상세 드로어 — 같은 상자 하나가 mid(지도 위 절반) ↔ full(전면) 을
+     높이로 오간다. 화면이 갈리지 않아 올리고 내릴 때 자연스럽게 합체한다. */
   .place-drawer {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 30;
+    height: 52%; /* = PLACE_DRAWER_MID_PCT */
     display: flex;
     flex-direction: column;
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
     overflow: hidden;
-    transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition:
+      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      bottom 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      border-radius 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  .place-drawer.is-dragging {
-    transition: none;
+  /* full — 탭바 자리(3.5rem + safe-area)까지 내려 덮는다. 탭바는 함께 물러난다 */
+  .place-drawer[data-snap="full"] {
+    bottom: calc(-3.5rem - env(safe-area-inset-bottom, 0px));
+    height: calc(100% + 3.5rem + env(safe-area-inset-bottom, 0px));
+    border-radius: 0;
+  }
+  /* full 헤더(← ♥ ✕) — mid 에선 높이 0. 드로어 확장과 같은 커브로 펼쳐진다 */
+  .place-drawer-appbar {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    height: 0;
+    opacity: 0;
+    overflow: hidden;
+    padding-inline: 0.5rem;
+    transition:
+      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      padding 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.22s ease;
+  }
+  .place-drawer[data-snap="full"] .place-drawer-appbar {
+    height: calc(3.25rem + env(safe-area-inset-top, 0px));
+    padding-top: env(safe-area-inset-top, 0px);
+    opacity: 1;
   }
   .place-drawer-handle {
     flex: 0 0 auto;
@@ -576,6 +615,9 @@ html:has(.canvas-root) .site-header {
     cursor: grab;
     touch-action: none;
     user-select: none;
+    transition:
+      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
+      opacity 0.2s ease;
   }
   .place-drawer-handle::after {
     content: "";
@@ -587,6 +629,25 @@ html:has(.canvas-root) .site-header {
   .place-drawer-handle:active {
     cursor: grabbing;
   }
+  .place-drawer[data-snap="full"] .place-drawer-handle {
+    height: 0;
+    opacity: 0;
+  }
+  /* mid 제목 줄의 하트·닫기 — full 에선 헤더 버튼과 자리를 바꾼다(크로스페이드) */
+  .place-drawer-titletools {
+    transition: opacity 0.22s ease;
+  }
+  .place-drawer[data-snap="full"] .place-drawer-titletools {
+    opacity: 0;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .place-drawer,
+    .place-drawer-appbar,
+    .place-drawer-handle,
+    .place-drawer-titletools {
+      transition: none;
+    }
+  }
   /* 목록 시트 높이 스냅 전환 — 스크롤로 full 올라갈 때 부드럽게 */
   .canvas-root .canvas-panel {
     transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
@@ -595,26 +656,6 @@ html:has(.canvas-root) .site-header {
   .canvas-root.is-place-open .canvas-panel {
     visibility: hidden;
     pointer-events: none;
-  }
-}
-
-/* 장소 full 페이지 모달 등장 */
-@keyframes place-page-in {
-  from {
-    transform: translateY(12%);
-    opacity: 0.88;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
-.place-page {
-  animation: place-page-in 0.28s cubic-bezier(0.2, 0.8, 0.2, 1) both;
-}
-@media (prefers-reduced-motion: reduce) {
-  .place-page {
-    animation: none;
   }
 }
 

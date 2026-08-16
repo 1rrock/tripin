@@ -23,8 +23,9 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
 import { Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
+import { Icon } from "@/shared/ui/icons";
 import { MapView } from "@/shared/ui/MapView";
-import { PlaceSheet } from "@/shared/ui/PlaceSheet";
+import { PlaceSheet, type PlaceDrawerSnap } from "@/shared/ui/PlaceSheet";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import {
@@ -101,6 +102,8 @@ export function ExplorerCanvas({
   const rootRef = useRef<HTMLDivElement>(null);
   const listScrollRef = useRef<HTMLDivElement>(null);
   const [collapseToken, setCollapseToken] = useState(0);
+  /* 드로어 스냅 — full 이면 탭바를 물리고(is-place-full) 지도 컨트롤도 덮인다 */
+  const [placeSnap, setPlaceSnap] = useState<PlaceDrawerSnap>("mid");
   const { isSaved, listsOf, ready: savedReady, lists: savedLists } = useSaved();
   /** 첫 진입의 시작점 — 현재 위치. 못 받으면 null 이고 평소대로 전체 핀에 맞춘다. */
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
@@ -239,6 +242,8 @@ export function ExplorerCanvas({
 
   useEffect(() => {
     if (placeParam) setActiveId(placeParam);
+    /* 장소가 바뀌거나 닫히면 스냅은 mid 부터 — 탭바가 헛돌아 사라지지 않게 */
+    setPlaceSnap("mid");
   }, [placeParam]);
 
   /* push 로 연 상세만 history.state 에 표시 — 닫을 때 back, 공유 유입은 replace */
@@ -629,7 +634,9 @@ export function ExplorerCanvas({
       ref={rootRef}
       className={
         surface === "page"
-          ? `canvas-page canvas-root${detailOpen ? " is-place-open" : ""}`
+          ? `canvas-page canvas-root${detailOpen ? " is-place-open" : ""}${
+              detailOpen && placeSnap === "full" ? " is-place-full" : ""
+            }`
           : "canvas-page hidden lg:block"
       }
       style={
@@ -669,11 +676,36 @@ export function ExplorerCanvas({
           }}
         />
         {/* 지도 위 첫 줄 — /map 모바일에만. 헤더를 걷어낸 자리를 검색창과 필터가 받는다.
-            아래 시트에는 목록만 남는다 — 시트를 조금만 올려도 필터가 가려지던 자리였다. */}
-        {surface === "page" ? (
+            아래 시트에는 목록만 남는다 — 시트를 조금만 올려도 필터가 가려지던 자리였다.
+            상세가 열리면 검색·필터 대신 ←/✕ 만 남는다(네이버 장소 화면 문법). */}
+        {surface === "page" && !detailOpen ? (
           <div className="canvas-topbar lg:hidden">
             {searchField(true)}
             {filters("floating")}
+          </div>
+        ) : null}
+        {surface === "page" && detailOpen ? (
+          <div className="canvas-topbar lg:hidden">
+            <div className="flex items-center justify-between">
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label={m.map.backToMap}
+                className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
+                style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
+              >
+                <Icon.back className="size-5" />
+              </button>
+              <button
+                type="button"
+                onClick={closeDetail}
+                aria-label={m.map.closeDetail}
+                className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
+                style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
+              >
+                <Icon.close className="size-[18px]" />
+              </button>
+            </div>
           </div>
         ) : null}
 
@@ -693,6 +725,7 @@ export function ExplorerCanvas({
             }}
             onClose={closeDetail}
             collapseToken={collapseToken}
+            onSnapChange={setPlaceSnap}
           />
         ) : null}
       </div>

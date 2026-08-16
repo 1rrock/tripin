@@ -4,16 +4,16 @@
  * 장소 상세.
  *
  * 모바일(네이버 문법):
- *   · mid 드로어 — 지도 위 절반. 상호·미디어·요약·출처, **지도에서 열기는 맨 아래**
- *   · full 페이지 모달 — 스크롤 내리면 페이지 전환처럼 전면. 맨 위 오버스크롤·아래로 당기기 → mid
- *   · 뒤로가기: full→mid(history), mid→맵(onClose)
+ *   · 드로어 **하나**가 mid(지도 위 절반) ↔ full(전면) 을 높이로 오간다 —
+ *     화면이 갈리지 않고 같은 상자가 자라나 합체한다
+ *   · mid: 핸들 + 상호·메타 + 미디어. 위로 끌거나 스크롤 → full
+ *   · full: 상단에 ← ♥ ✕ 헤더가 펼쳐지고 탭바 자리까지 덮는 전면
+ *   · 뒤로가기: full→mid(history), mid→맵(onClose). full 의 ✕ 는 한 번에 닫는다
  *
  * 데스크톱: 지도 안 absolute 카드.
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
-import { AppBar, AppBarButton } from "@/shared/ui/AppBar";
 import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
@@ -83,8 +83,7 @@ export function PlaceSheet({
   const hero = place.sources[0] ?? null;
   const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
 
-  const midScrollRef = useRef<HTMLDivElement>(null);
-  const fullScrollRef = useRef<HTMLDivElement>(null);
+  const scrollRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -108,7 +107,6 @@ export function PlaceSheet({
   const expandedByHistory = useRef(false);
   const lastCollapseToken = useRef(collapseToken);
   const pullStartY = useRef<number | null>(null);
-  const pulling = useRef(false);
 
   const setSnapBoth = useCallback(
     (next: PlaceDrawerSnap) => {
@@ -121,8 +119,7 @@ export function PlaceSheet({
   useEffect(() => {
     setSnapBoth("mid");
     expandedByHistory.current = false;
-    if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
-    if (fullScrollRef.current) fullScrollRef.current.scrollTop = 0;
+    if (scrollRef.current) scrollRef.current.scrollTop = 0;
   }, [place.id, setSnapBoth]);
 
   useEffect(() => {
@@ -155,8 +152,7 @@ export function PlaceSheet({
       }
       expandedByHistory.current = false;
       setSnapBoth("mid");
-      if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
-      if (fullScrollRef.current) fullScrollRef.current.scrollTop = 0;
+      if (scrollRef.current) scrollRef.current.scrollTop = 0;
     },
     [setSnapBoth],
   );
@@ -167,12 +163,26 @@ export function PlaceSheet({
       if (snapRef.current === "full") {
         expandedByHistory.current = false;
         setSnapBoth("mid");
-        if (midScrollRef.current) midScrollRef.current.scrollTop = 0;
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
       }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
   }, [isMobile, setSnapBoth]);
+
+  /**
+   * full 의 ✕ — 히스토리로 쌓은 full 층을 먼저 걷어낸 뒤 닫는다.
+   * 안 걷으면 닫기가 mid 로 접히는 것처럼 보인다(뒤로 한 번이 full 층만 빼서).
+   */
+  const closeAll = useCallback(() => {
+    if (snapRef.current === "full" && expandedByHistory.current) {
+      expandedByHistory.current = false;
+      window.addEventListener("popstate", () => onCloseRef.current(), { once: true });
+      window.history.back();
+      return;
+    }
+    onCloseRef.current();
+  }, []);
 
   useEffect(() => {
     if (collapseToken === lastCollapseToken.current) return;
@@ -200,51 +210,37 @@ export function PlaceSheet({
     };
   }, [isMobile, snap]);
 
-  /* mid: 스크롤 내리면 페이지 모달로 */
-  const onMidScroll = () => {
-    const el = midScrollRef.current;
-    if (!el || snapRef.current !== "mid") return;
-    if (el.scrollTop > 16) expandFull();
+  /* 스크롤 상자는 하나 — mid 에서 스크롤·위로 끌기 → full, full 맨 위에서 당기면 → mid */
+  const onSheetScroll = () => {
+    const el = scrollRef.current;
+    if (!el) return;
+    if (snapRef.current === "mid" && el.scrollTop > 16) expandFull();
   };
-
-  const onMidTouchStart = (e: React.TouchEvent) => {
+  const onSheetTouchStart = (e: React.TouchEvent) => {
     pullStartY.current = e.touches[0]?.clientY ?? null;
   };
-  const onMidTouchMove = (e: React.TouchEvent) => {
-    const y0 = pullStartY.current;
-    const y = e.touches[0]?.clientY;
-    if (y0 == null || y == null) return;
-    /* 위로 스와이프 → full */
-    if (y - y0 < -32) {
-      expandFull();
-      pullStartY.current = null;
-    }
-  };
-
-  /* full: 최상단에서 더 당기면 mid */
-  const onFullTouchStart = (e: React.TouchEvent) => {
-    const el = fullScrollRef.current;
-    pullStartY.current = e.touches[0]?.clientY ?? null;
-    pulling.current = Boolean(el && el.scrollTop <= 0);
-  };
-  const onFullTouchMove = (e: React.TouchEvent) => {
-    const el = fullScrollRef.current;
+  const onSheetTouchMove = (e: React.TouchEvent) => {
+    const el = scrollRef.current;
     const y0 = pullStartY.current;
     const y = e.touches[0]?.clientY;
     if (!el || y0 == null || y == null) return;
+    if (snapRef.current === "mid") {
+      /* 위로 스와이프 → full */
+      if (y - y0 < -32) {
+        expandFull();
+        pullStartY.current = null;
+      }
+      return;
+    }
+    /* full: 최상단에서 더 당기면 mid */
     if (el.scrollTop <= 0 && y - y0 > 48) {
       collapseMid();
       pullStartY.current = null;
-      pulling.current = false;
     }
   };
-  const onFullScroll = () => {
-    /* wheel 등: 최상단에서 더 이상 못 갈 때 내려가려는 제스처는 touch 로 처리.
-       일부 브라우저 overscroll — scrollTop 0 유지 시 wheel delta 로 접기 */
-  };
-  const onFullWheel = (e: React.WheelEvent) => {
-    const el = fullScrollRef.current;
-    if (!el) return;
+  const onSheetWheel = (e: React.WheelEvent) => {
+    const el = scrollRef.current;
+    if (!el || snapRef.current !== "full") return;
     if (el.scrollTop <= 0 && e.deltaY < 0) {
       e.preventDefault();
       collapseMid();
@@ -400,144 +396,95 @@ export function PlaceSheet({
     );
   }
 
-  /* ── 모바일 full: 페이지 전환형 전면 모달 ── */
-  const fullPage =
-    snap === "full" ? (
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t(m.map.detailAria, { name: place.name })}
-        className="place-page rise-in on-lightbox fixed inset-0 z-[70] flex flex-col bg-(--sheet) text-(--paper)"
-      >
-        {/* 공용 머리말 — 지도·저장·마이의 상단 바와 같은 조각(AppBar) */}
-        <AppBar
-          className="shrink-0 border-b px-2 pt-[max(0.5rem,env(safe-area-inset-top))] pb-2"
-          style={{ borderColor: "var(--hairline)" }}
-          titleAs="h2"
-          title={place.name}
-          leading={
-            <button
-              ref={closeBtnRef}
-              type="button"
-              onClick={onBackClick}
-              aria-label={m.map.backToMap}
-              className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full transition-colors active:bg-(--hover)"
-              style={{ color: "var(--paper)" }}
-            >
-              <Icon.back className="size-5" />
-            </button>
-          }
-          actions={
-            <>
-              <SaveButton placeId={place.id} placeName={place.name} bare />
-              <AppBarButton label={m.map.closeDetail} onClick={onClose}>
-                <Icon.close className="size-[18px]" />
-              </AppBarButton>
-            </>
-          }
-        />
-
-        <div
-          ref={fullScrollRef}
-          className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 pt-3"
-          onTouchStart={onFullTouchStart}
-          onTouchMove={onFullTouchMove}
-          onScroll={onFullScroll}
-          onWheel={onFullWheel}
-        >
-          <div className="mb-1">{meta}</div>
-          {heroBlock}
-          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
-          {sourcesBlock}
-          {/* 하단 CTA 가 스크롤 끝에 오도록 여백 */}
-          <div className="h-24" />
-        </div>
-
-        {mapCta ? (
-          <div
-            className="shrink-0 border-t bg-(--sheet) px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
-            style={{ borderColor: "var(--hairline)" }}
-          >
-            {mapCta}
-          </div>
-        ) : null}
-      </div>
-    ) : null;
-
-  /* ── 모바일 mid 드로어 ── */
+  /* ── 모바일: 드로어 하나 — mid ↔ full 을 높이로 오가며 합체한다 ── */
+  const full = snap === "full";
   return (
-    <>
-      <div
-        role="dialog"
-        aria-modal="true"
-        aria-label={t(m.map.detailAria, { name: place.name })}
-        className="place-drawer on-lightbox"
-        style={{
-          height: `${PLACE_DRAWER_MID_PCT}%`,
-          background: "var(--sheet)",
-          color: "var(--paper)",
-          /* full 일 때도 지도 위 자리 유지(밑에서 포탈 모달이 덮음) */
-          visibility: snap === "full" ? "hidden" : "visible",
-          pointerEvents: snap === "full" ? "none" : "auto",
-        }}
-      >
-        <div className="place-drawer-handle" aria-hidden />
-
-        <div className="flex shrink-0 items-start gap-2 px-4 pb-1">
-          <div className="min-w-0 flex-1">
-            <h2
-              className="truncate font-black"
-              style={{
-                fontSize: "var(--t-screen)",
-                letterSpacing: "-0.035em",
-                lineHeight: 1.2,
-              }}
-            >
-              {place.name}
-            </h2>
-            <div className="mt-1">{meta}</div>
-          </div>
-          {/* 우측: 하트 · 닫기(예전 ⋯ 자리). ⋯ 메뉴는 하트가 그룹 시트를 열어서 불필요 */}
-          <div className="mt-0.5 flex shrink-0 items-center gap-0.5">
-            <SaveButton placeId={place.id} placeName={place.name} bare />
-            <button
-              ref={snap === "mid" ? closeBtnRef : undefined}
-              type="button"
-              onClick={onClose}
-              aria-label={m.map.closeDetail}
-              className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
-              style={{ color: "var(--dim)" }}
-            >
-              <Icon.close className="size-[18px]" style={{ color: "var(--paper)" }} />
-            </button>
-          </div>
-        </div>
-
-        <div
-          ref={midScrollRef}
-          className="place-drawer-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4"
-          onScroll={onMidScroll}
-          onTouchStart={onMidTouchStart}
-          onTouchMove={onMidTouchMove}
+    <div
+      role="dialog"
+      aria-modal="true"
+      aria-label={t(m.map.detailAria, { name: place.name })}
+      className="place-drawer on-lightbox"
+      data-snap={snap}
+      style={{ background: "var(--sheet)", color: "var(--paper)" }}
+    >
+      {/* full 헤더 — mid 에선 높이 0 으로 접혀 있다. 드로어가 자라며 함께 펼쳐진다 */}
+      <div className="place-drawer-appbar" inert={!full}>
+        <button
+          ref={full ? closeBtnRef : undefined}
+          type="button"
+          onClick={onBackClick}
+          aria-label={m.map.backToMap}
+          className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full transition-colors active:bg-(--hover)"
         >
-          {heroBlock}
-          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
-          {sourcesBlock}
-          {/* 스크롤 여유 — 당겨 올리면 full 로 넘어감 */}
-          <div className="h-16" />
-        </div>
-
-        {mapCta ? (
-          <div
-            className="shrink-0 border-t bg-(--sheet) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
-            style={{ borderColor: "var(--hairline)" }}
-          >
-            {mapCta}
-          </div>
-        ) : null}
+          <Icon.back className="size-5" />
+        </button>
+        <div className="min-w-0 flex-1" />
+        <SaveButton placeId={place.id} placeName={place.name} bare />
+        <button
+          type="button"
+          onClick={closeAll}
+          aria-label={m.map.closeDetail}
+          className="grid size-10 shrink-0 cursor-pointer place-items-center rounded-full transition-colors active:bg-(--hover)"
+        >
+          <Icon.close className="size-[18px]" />
+        </button>
       </div>
 
-      {fullPage ? createPortal(fullPage, document.body) : null}
-    </>
+      <div className="place-drawer-handle" aria-hidden />
+
+      <div className="flex shrink-0 items-start gap-2 px-4 pb-1">
+        <div className="min-w-0 flex-1">
+          <h2
+            className="truncate font-black"
+            style={{
+              fontSize: "var(--t-screen)",
+              letterSpacing: "-0.035em",
+              lineHeight: 1.2,
+            }}
+          >
+            {place.name}
+          </h2>
+          <div className="mt-1">{meta}</div>
+        </div>
+        {/* mid 의 하트·닫기 — full 로 자라면 헤더의 같은 버튼에 자리를 넘긴다 */}
+        <div className="place-drawer-titletools mt-0.5 flex shrink-0 items-center gap-0.5" inert={full}>
+          <SaveButton placeId={place.id} placeName={place.name} bare />
+          <button
+            ref={full ? undefined : closeBtnRef}
+            type="button"
+            onClick={onClose}
+            aria-label={m.map.closeDetail}
+            className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
+            style={{ color: "var(--dim)" }}
+          >
+            <Icon.close className="size-[18px]" style={{ color: "var(--paper)" }} />
+          </button>
+        </div>
+      </div>
+
+      <div
+        ref={scrollRef}
+        className="place-drawer-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4"
+        onScroll={onSheetScroll}
+        onTouchStart={onSheetTouchStart}
+        onTouchMove={onSheetTouchMove}
+        onWheel={onSheetWheel}
+      >
+        {heroBlock}
+        <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+        {sourcesBlock}
+        {/* 스크롤 여유 — 당겨 올리면 full 로 넘어감 */}
+        <div className="h-16" />
+      </div>
+
+      {mapCta ? (
+        <div
+          className="shrink-0 border-t bg-(--sheet) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+          style={{ borderColor: "var(--hairline)" }}
+        >
+          {mapCta}
+        </div>
+      ) : null}
+    </div>
   );
 }
