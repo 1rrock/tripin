@@ -21,6 +21,7 @@ import {
   GlyphShop,
   GlyphView,
   GlyphWine,
+  GlyphFish,
 } from "@/shared/ui/glyphs";
 import type { PlaceType } from "@/shared/api/database.types";
 
@@ -37,11 +38,12 @@ export const TYPE_ICON: Record<PlaceType, Icon> = {
   bar: GlyphWine,
   shop: GlyphShop,
   viewpoint: GlyphView,
+  fishing: GlyphFish,
   other: GlyphPin,
   unknown: GlyphPin,
 };
 
-/** 홈 그리드에 깔리는 종류 — 5열 × 이 7칸 + 도구 3칸 = 10 */
+/** 홈 그리드에 깔리는 종류. 도구 3칸과 같이 5열로 깔린다. */
 export const HOME_TYPES: PlaceType[] = [
   "restaurant",
   "cafe",
@@ -50,6 +52,7 @@ export const HOME_TYPES: PlaceType[] = [
   "bar",
   "shop",
   "viewpoint",
+  "fishing",
 ];
 
 export const TYPE_COLOR: Record<PlaceType, { fg: string; softBg: string; solid: string }> = {
@@ -60,6 +63,7 @@ export const TYPE_COLOR: Record<PlaceType, { fg: string; softBg: string; solid: 
   bar: { fg: "text-violet-700", softBg: "bg-violet-500/10", solid: "bg-violet-600" },
   shop: { fg: "text-yellow-700", softBg: "bg-yellow-500/10", solid: "bg-yellow-600" },
   viewpoint: { fg: "text-purple-700", softBg: "bg-purple-500/10", solid: "bg-purple-600" },
+  fishing: { fg: "text-cyan-700", softBg: "bg-cyan-500/10", solid: "bg-cyan-600" },
   other: { fg: "text-slate-500", softBg: "bg-slate-500/10", solid: "bg-slate-500" },
   unknown: { fg: "text-slate-500", softBg: "bg-slate-500/10", solid: "bg-slate-500" },
 };

@@ -157,6 +157,7 @@ export const en: Messages = {
     bar: "Bar",
     shop: "Shop",
     viewpoint: "Viewpoint",
+    fishing: "Fishing",
     other: "Other",
     unknown: "Uncategorized",
   },

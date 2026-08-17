@@ -165,6 +165,7 @@ export const ko = {
     bar: "바",
     shop: "상점",
     viewpoint: "뷰포인트",
+    fishing: "낚시",
     other: "기타",
     unknown: "미분류",
   },
@@ -548,6 +549,7 @@ export type Messages = {
     bar: string;
     shop: string;
     viewpoint: string;
+    fishing: string;
     other: string;
     unknown: string;
   };

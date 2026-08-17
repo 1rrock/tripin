@@ -9,6 +9,7 @@ export const PLACE_TYPE_LABELS: Record<PlaceType, string> = {
   bar: "바",
   shop: "상점",
   viewpoint: "뷰포인트",
+  fishing: "낚시",
   other: "기타",
   unknown: "미분류",
 };
@@ -19,6 +20,7 @@ export const FILTERABLE_TYPES: PlaceType[] = [
   "cafe",
   "attraction",
   "viewpoint",
+  "fishing",
   "hotel",
   "bar",
   "shop",

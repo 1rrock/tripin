@@ -50,6 +50,11 @@ const db = createClient(env.NEXT_PUBLIC_SUPABASE_URL, env.SUPABASE_SERVICE_ROLE_
   auth: { persistSession: false },
 });
 const KEY = env.GOOGLE_PLACES_API_KEY;
+const PLACES_HEADERS = {
+  "Content-Type": "application/json",
+  "X-Goog-Api-Key": KEY,
+  Referer: "https://eatripin.com",
+};
 
 const BANNED = ["진짜", "미쳤", "인생", "존맛", "대박", "JMT", "맛있", "맛없", "불친절", "별로"];
 
@@ -60,6 +65,7 @@ const TYPE_MAP = [
   [/lodging|hotel|resort|inn/i, "hotel"],
   [/supermarket|convenience|shopping|store|book_store|department/i, "shop"],
   [/tourist|museum|park|temple|shrine|zoo|aquarium|point_of_interest/i, "attraction"],
+  [/fishing|fish_farm|marina|campground/i, "fishing"],
 ];
 
 function mapPlaceType(types = [], primary) {
@@ -78,6 +84,7 @@ function typeLabel(t) {
       shop: "쇼핑·매장",
       attraction: "명소·관광",
       viewpoint: "전망",
+      fishing: "낚시장소",
       other: "기타",
       unknown: "장소",
     }[t] || "장소"
@@ -99,8 +106,7 @@ async function enrichPlace(name, cityName, lat, lng) {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {
     method: "POST",
     headers: {
-      "Content-Type": "application/json",
-      "X-Goog-Api-Key": KEY,
+      ...PLACES_HEADERS,
       "X-Goog-FieldMask":
         "places.id,places.displayName,places.formattedAddress,places.location,places.types,places.businessStatus,places.primaryType",
     },
@@ -202,7 +208,6 @@ async function main() {
       "id, name, name_local, slug, place_type, address, lat, lng, google_maps_url, google_place_id, source_note, summary, summary_bullets, map_status, is_published, city_id, cities(slug, name)",
     )
     .eq("map_status", "candidate")
-    .not("google_maps_url", "is", null)
     .not("lat", "is", null)
     .not("source_note", "is", null)
     .order("name");
@@ -256,7 +261,7 @@ async function main() {
           `https://places.googleapis.com/v1/places/${encodeURIComponent(p.google_place_id)}`,
           {
             headers: {
-              "X-Goog-Api-Key": KEY,
+              ...PLACES_HEADERS,
               "X-Goog-FieldMask":
                 "id,displayName,formattedAddress,types,businessStatus,primaryType,location",
             },

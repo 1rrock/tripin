@@ -14,6 +14,7 @@ export type PlaceType =
   | "bar"
   | "shop"
   | "viewpoint"
+  | "fishing"
   | "other"
   | "unknown";
 

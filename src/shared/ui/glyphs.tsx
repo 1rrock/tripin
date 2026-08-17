@@ -178,6 +178,15 @@ export const GlyphView = glyph("GlyphView", (w) => (
   </g>
 ));
 
+export const GlyphFish = glyph("GlyphFish", (w) => (
+  <g {...S(w)}>
+    <path d="M4.2 12.2c2.4-3.8 6.2-5.6 10.4-4.2 2.6.9 4.6 2.6 5.4 4.2-.8 1.6-2.8 3.3-5.4 4.2-4.2 1.4-8-.4-10.4-4.2Z" />
+    <path d="M4.2 12.2 2.6 9.4v5.6Z" />
+    <circle cx="15.4" cy="11.2" r="0.7" fill="currentColor" stroke="none" />
+    <path d="M11.2 8.6 12.6 5.8M11.2 15.8 12.6 18.6" />
+  </g>
+));
+
 export const GlyphChannel = glyph("GlyphChannel", (w) => (
   <g {...S(w)}>
     <path d="M4.6 6.8h14.8M4.6 11.6h8.2M4.6 16.4h6.2" />
