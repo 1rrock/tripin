@@ -2,6 +2,23 @@
  * PostgREST `.in()` 은 URL 길이 제한이 있다. uuid 수백 개를 한 번에 넣으면
  * 쿼리가 조용히 실패하고 허브가 빈 화면이 된다 (정육왕 414편에서 재현).
  */
+/** PostgREST 기본 한 페이지는 1000행. 전 테이블 스캔은 이걸로 이어 받는다. */
+export async function fetchAll<T>(
+  run: (from: number, to: number) => PromiseLike<{ data: T[] | null }>,
+  page = 1000,
+): Promise<T[]> {
+  const out: T[] = [];
+  let from = 0;
+  for (;;) {
+    const { data } = await run(from, from + page - 1);
+    if (!data?.length) break;
+    out.push(...data);
+    if (data.length < page) break;
+    from += page;
+  }
+  return out;
+}
+
 export async function chunkedIn<T>(
   run: (ids: string[]) => PromiseLike<{ data: T[] | null }>,
   ids: string[],
