@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { coordsFromMapsUrl } from "@/shared/lib/resolve-google-place";
@@ -104,27 +105,40 @@ export interface CityRow {
  * 캐시가 JSON 직렬화라 여기서 Map 을 만들면 안 된다 — 아래 `loadGraph` 가 맡는다.
  */
 const loadGraphRows = cachePublic(async () => {
-  const [{ data: cities }, { data: creators }, { data: videos }, { data: links }, { data: places }] =
-    await Promise.all([
-      supabase.from("cities").select("id, slug, name, name_en, country_code, lat, lng, default_zoom"),
-      supabase.from("creators").select("id, slug, display_name, initials, accent_color, avatar_url"),
-      supabase.from("videos").select("id, youtube_video_id, title, creator_id, published_at"),
-      supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
+  const [cities, creators, videos, links, places] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase
+        .from("cities")
+        .select("id, slug, name, name_en, country_code, lat, lng, default_zoom")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase
+        .from("creators")
+        .select("id, slug, display_name, initials, accent_color, avatar_url")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase
+        .from("videos")
+        .select("id, youtube_video_id, title, creator_id, published_at")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase.from("video_places").select("video_id, place_id, timestamp_sec").range(from, to),
+    ),
+    fetchAll((from, to) =>
       supabase
         .from("places")
         .select(
           "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
-        .eq("map_status", "confirmed"),
-    ]);
+        .eq("map_status", "confirmed")
+        .range(from, to),
+    ),
+  ]);
 
-  return {
-    cities: cities ?? [],
-    creators: creators ?? [],
-    videos: videos ?? [],
-    links: links ?? [],
-    places: places ?? [],
-  };
+  return { cities, creators, videos, links, places };
 }, ["cities:graph"]);
 
 /** 도시 → 확정 장소·채널을 잇는 공통 조회. 목록과 상세가 같은 판정을 쓰게 한다. */

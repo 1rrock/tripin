@@ -7,6 +7,7 @@
 
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -60,27 +61,34 @@ export interface TypeDetail {
 
 /** 목록·상세가 같은 캐시 항목을 나눠 쓴다 — 로케일 무관한 원본 행만. */
 const loadGraph = cachePublic(async () => {
-  const [{ data: cities }, { data: creators }, { data: videos }, { data: links }, { data: places }] =
-    await Promise.all([
-      supabase.from("cities").select("id, slug, name, name_en"),
-      supabase.from("creators").select("id, slug, display_name"),
-      supabase.from("videos").select("id, youtube_video_id, title, creator_id, published_at"),
-      supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
+  const [cities, creators, videos, links, places] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase.from("cities").select("id, slug, name, name_en").range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase.from("creators").select("id, slug, display_name").range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase
+        .from("videos")
+        .select("id, youtube_video_id, title, creator_id, published_at")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase.from("video_places").select("video_id, place_id, timestamp_sec").range(from, to),
+    ),
+    fetchAll((from, to) =>
       supabase
         .from("places")
         .select(
           "id, slug, name, name_local, place_type, city_id, lat, lng, address, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
-        .eq("map_status", "confirmed"),
-    ]);
+        .eq("map_status", "confirmed")
+        .range(from, to),
+    ),
+  ]);
 
-  return {
-    cities: cities ?? [],
-    creators: creators ?? [],
-    videos: videos ?? [],
-    links: links ?? [],
-    places: places ?? [],
-  };
+  return { cities, creators, videos, links, places };
 }, ["place-types:graph"]);
 
 /** 종류 목록 — 확정 장소가 있는 유형만, FILTERABLE 순. */

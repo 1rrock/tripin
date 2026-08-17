@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 
@@ -106,16 +107,26 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
 
-  const [{ data: cities }, { data: videos }, { data: links }, { data: places }] = await Promise.all([
-    supabase.from("cities").select("id, slug, name, name_en"),
-    supabase
-      .from("videos")
-      .select("id, youtube_video_id, title, published_at, creator_id")
-      .order("published_at", { ascending: false, nullsFirst: false }),
-    supabase.from("video_places").select("video_id, place_id, timestamp_sec"),
-    supabase
-      .from("places")
-      .select("id, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en"),
+  const [cities, videos, links, places] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase.from("cities").select("id, slug, name, name_en").range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase
+        .from("videos")
+        .select("id, youtube_video_id, title, published_at, creator_id")
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase.from("video_places").select("video_id, place_id, timestamp_sec").range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase
+        .from("places")
+        .select("id, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en")
+        .range(from, to),
+    ),
   ]);
 
   const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
