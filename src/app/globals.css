@@ -657,6 +657,20 @@ html:has(.canvas-root) .site-header {
     visibility: hidden;
     pointer-events: none;
   }
+  /* 상세가 전면으로 서면 지도 위 줄은 물러난다 — ←/✕ 는 드로어 제 머리(appbar)가 받는다.
+     상단 줄은 지도 상자 밖에 있어서 드로어보다 위에 쌓인다. 안 걷으면 전면 위에 뜬다. */
+  .canvas-root .canvas-topbar {
+    transition:
+      opacity 0.22s ease,
+      visibility 0s;
+  }
+  .canvas-root.is-place-full .canvas-topbar {
+    opacity: 0;
+    visibility: hidden;
+    transition:
+      opacity 0.22s ease,
+      visibility 0s 0.22s;
+  }
 }
 
 @media (min-width: 1024px) {

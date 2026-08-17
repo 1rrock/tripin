@@ -675,40 +675,6 @@ export function ExplorerCanvas({
             };
           }}
         />
-        {/* 지도 위 첫 줄 — /map 모바일에만. 헤더를 걷어낸 자리를 검색창과 필터가 받는다.
-            아래 시트에는 목록만 남는다 — 시트를 조금만 올려도 필터가 가려지던 자리였다.
-            상세가 열리면 검색·필터 대신 ←/✕ 만 남는다(네이버 장소 화면 문법). */}
-        {surface === "page" && !detailOpen ? (
-          <div className="canvas-topbar lg:hidden">
-            {searchField(true)}
-            {filters("floating")}
-          </div>
-        ) : null}
-        {surface === "page" && detailOpen ? (
-          <div className="canvas-topbar lg:hidden">
-            <div className="flex items-center justify-between">
-              <button
-                type="button"
-                onClick={closeDetail}
-                aria-label={m.map.backToMap}
-                className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
-                style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
-              >
-                <Icon.back className="size-5" />
-              </button>
-              <button
-                type="button"
-                onClick={closeDetail}
-                aria-label={m.map.closeDetail}
-                className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
-                style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
-              >
-                <Icon.close className="size-[18px]" />
-              </button>
-            </div>
-          </div>
-        ) : null}
-
         {/* 상세: 모바일 place-drawer / 데스크톱 지도 안 카드 — 모두 map relative 기준 */}
         {detailOpen && detailPlace ? (
           <PlaceSheet
@@ -729,6 +695,42 @@ export function ExplorerCanvas({
           />
         ) : null}
       </div>
+
+      {/* 지도 위 첫 줄 — /map 모바일에만. 헤더를 걷어낸 자리를 검색창과 필터가 받는다.
+          아래 시트에는 목록만 남는다 — 시트를 조금만 올려도 필터가 가려지던 자리였다.
+          상세가 열리면 검색·필터 대신 ←/✕ 만 남는다(네이버 장소 화면 문법).
+          지도 상자 밖에 세운다 — 안에 두면 `.canvas-map`(z:0)이 쌓임 맥락을 만들어
+          필터 드롭다운이 아무리 z 를 올려도 목록 시트(z:20) 밑에 깔린다. */}
+      {surface === "page" && !detailOpen ? (
+        <div className="canvas-topbar lg:hidden">
+          {searchField(true)}
+          {filters("floating")}
+        </div>
+      ) : null}
+      {surface === "page" && detailOpen ? (
+        <div className="canvas-topbar lg:hidden">
+          <div className="flex items-center justify-between">
+            <button
+              type="button"
+              onClick={closeDetail}
+              aria-label={m.map.backToMap}
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
+              style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
+            >
+              <Icon.back className="size-5" />
+            </button>
+            <button
+              type="button"
+              onClick={closeDetail}
+              aria-label={m.map.closeDetail}
+              className="grid size-10 cursor-pointer place-items-center rounded-full bg-(--sheet) text-(--paper)"
+              style={{ boxShadow: "0 4px 16px rgb(0 0 0 / 0.2)" }}
+            >
+              <Icon.close className="size-[18px]" />
+            </button>
+          </div>
+        </div>
+      ) : null}
 
       <section className="canvas-panel" aria-label={title}>
         <div
