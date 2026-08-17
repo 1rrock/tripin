@@ -60,8 +60,6 @@ export const en: Messages = {
     regionFilter: "Region",
     regionAll: "All regions",
     regionPick: "Choose a region",
-    filterApply: "Apply",
-    filterReset: "Reset",
     filterFind: "Search",
     typeAll: "All types",
     channelPick: "Choose a channel",

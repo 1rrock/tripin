@@ -24,8 +24,6 @@ function hit(hay: string, q: string) {
   return isChoseongQuery(needle) && choseong(hay).includes(needle);
 }
 
-export type RegionDraft = { region: HomeRegionId | null; city: string | null };
-
 export type CityOption = {
   slug: string;
   name: string;
@@ -65,19 +63,8 @@ function Trigger({
   );
 }
 
-function Panel({
-  title,
-  onReset,
-  onApply,
-  children,
-}: {
-  title: string;
-  onReset: () => void;
-  onApply: () => void;
-  children: React.ReactNode;
-}) {
-  const { messages: m } = useLocale();
-
+/** 고르는 순간 적용된다 — 확인 단추가 없다. 그래서 바닥 줄도 없다. */
+function Panel({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <div
       role="dialog"
@@ -86,25 +73,6 @@ function Panel({
       style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 0 0 1px var(--hairline)" }}
     >
       {children}
-      <div
-        className="flex items-center justify-end gap-2 border-t px-4 py-3"
-        style={{ borderColor: "var(--hairline)", background: "var(--hover)" }}
-      >
-        <button
-          type="button"
-          onClick={onReset}
-          className="index h-9 px-3 text-(--dim) underline-offset-4 hover:underline"
-        >
-          {m.home.filterReset}
-        </button>
-        <button
-          type="button"
-          onClick={onApply}
-          className="h-9 rounded-full bg-(--paper) px-4 text-[13px] font-semibold text-white"
-        >
-          {m.home.filterApply}
-        </button>
-      </div>
     </div>
   );
 }
@@ -177,9 +145,6 @@ export function CanvasFilters({
   const rootRef = useRef<HTMLDivElement>(null);
   const [open, setOpen] = useState<null | "region" | "type" | "channel">(null);
   const [find, setFind] = useState("");
-  const [draftR, setDraftR] = useState<RegionDraft>({ region, city });
-  const [draftT, setDraftT] = useState<PlaceType | null>(type);
-  const [draftC, setDraftC] = useState<string | null>(channel);
   const [pane, setPane] = useState<HomeRegionId | "all">(region ?? "all");
 
   useEffect(() => {
@@ -199,9 +164,6 @@ export function CanvasFilters({
 
   const openMenu = (id: "region" | "type" | "channel") => {
     setFind("");
-    setDraftR({ region, city });
-    setDraftT(type);
-    setDraftC(channel);
     setPane(region ?? "all");
     setOpen((cur) => (cur === id ? null : id));
   };
@@ -263,36 +225,23 @@ export function CanvasFilters({
       </div>
 
       {open === "region" ? (
-        <Panel
-          title={m.home.regionPick}
-          onReset={() => {
-            setDraftR({ region: null, city: null });
-            setPane("all");
-          }}
-          onApply={() => {
-            onApply({
-              region: draftR.city ? null : draftR.region,
-              city: draftR.city,
-              type,
-              channel,
-            });
-            setOpen(null);
-          }}
-        >
+        <Panel title={m.home.regionPick}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
-          <div className="grid max-h-[min(52vh,360px)] grid-cols-[7.5rem_1fr] overflow-hidden border-t border-(--hairline)">
-            <div className="overflow-auto border-r border-(--hairline) py-1">
+          {/* grid 가 아니라 flex 다 — grid 의 auto 행은 max-height 로 눌러도 제 내용만큼
+              키를 잡아서, 상자만 잘리고 안쪽 목록은 스크롤되지 않았다. flex 는 stretch 로
+              눌린 높이를 그대로 받아 min-h-0 과 함께 스크롤이 산다. */}
+          <div className="flex max-h-[min(52vh,360px)] overflow-hidden border-t border-(--hairline)">
+            <div className="w-30 min-h-0 shrink-0 overflow-y-auto overscroll-contain border-r border-(--hairline) py-1">
               <button
                 type="button"
                 onClick={() => {
                   setPane("all");
-                  setDraftR({ region: null, city: null });
                   onApply({ region: null, city: null, type, channel });
                 }}
                 className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
                 style={{
-                  background: pane === "all" && !draftR.city ? "var(--halo)" : undefined,
-                  color: pane === "all" && !draftR.city ? "var(--wax)" : "var(--paper)",
+                  background: pane === "all" && !city ? "var(--halo)" : undefined,
+                  color: pane === "all" && !city ? "var(--wax)" : "var(--paper)",
                 }}
               >
                 {m.home.regionAll}
@@ -303,7 +252,6 @@ export function CanvasFilters({
                   type="button"
                   onClick={() => {
                     setPane(g.id);
-                    setDraftR({ region: g.id, city: null });
                     onApply({ region: g.id, city: null, type, channel });
                   }}
                   className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
@@ -316,20 +264,20 @@ export function CanvasFilters({
                 </button>
               ))}
             </div>
-            <div className="overflow-auto py-1">
+            <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain py-1">
               {rightCities.map((c) => {
-                const on = draftR.city === c.slug;
+                const on = city === c.slug;
                 return (
                   <button
                     key={c.slug}
                     type="button"
                     onClick={() => {
-                      const next = {
+                      onApply({
                         region: pane === "all" ? null : pane,
                         city: on ? null : c.slug,
-                      };
-                      setDraftR(next);
-                      onApply({ ...next, type, channel });
+                        type,
+                        channel,
+                      });
                       setOpen(null);
                     }}
                     className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px]"
@@ -350,23 +298,19 @@ export function CanvasFilters({
       ) : null}
 
       {open === "type" ? (
-        <Panel
-          title={m.home.typePick}
-          onReset={() => setDraftT(null)}
-          onApply={() => {
-            onApply({ region, city, type: draftT, channel });
-            setOpen(null);
-          }}
-        >
+        <Panel title={m.home.typePick}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
-          <div className="max-h-[min(52vh,360px)] overflow-auto py-1">
+          <div className="max-h-[min(52vh,360px)] overflow-y-auto overscroll-contain py-1">
             <button
               type="button"
-              onClick={() => setDraftT(null)}
+              onClick={() => {
+                onApply({ region, city, type: null, channel });
+                setOpen(null);
+              }}
               className="flex w-full px-4 py-2.5 text-left text-[13px] font-semibold"
               style={{
-                background: draftT === null ? "var(--halo)" : undefined,
-                color: draftT === null ? "var(--wax)" : "var(--paper)",
+                background: type === null ? "var(--halo)" : undefined,
+                color: type === null ? "var(--wax)" : "var(--paper)",
               }}
             >
               {m.home.typeAll}
@@ -377,15 +321,13 @@ export function CanvasFilters({
               return !find.trim() || hit(m.placeTypes[key], find);
             }).map((key) => {
               const Glyph = typeIcon(key);
-              const on = draftT === key;
+              const on = type === key;
               return (
                 <button
                   key={key}
                   type="button"
                   onClick={() => {
-                    const next = on ? null : key;
-                    setDraftT(next);
-                    onApply({ region, city, type: next, channel });
+                    onApply({ region, city, type: on ? null : key, channel });
                     setOpen(null);
                   }}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px]"
@@ -406,37 +348,31 @@ export function CanvasFilters({
       ) : null}
 
       {open === "channel" ? (
-        <Panel
-          title={m.home.channelPick}
-          onReset={() => setDraftC(null)}
-          onApply={() => {
-            onApply({ region, city, type, channel: draftC });
-            setOpen(null);
-          }}
-        >
+        <Panel title={m.home.channelPick}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
-          <div className="max-h-[min(52vh,360px)] overflow-auto py-1">
+          <div className="max-h-[min(52vh,360px)] overflow-y-auto overscroll-contain py-1">
             <button
               type="button"
-              onClick={() => setDraftC(null)}
+              onClick={() => {
+                onApply({ region, city, type, channel: null });
+                setOpen(null);
+              }}
               className="flex w-full px-4 py-2.5 text-left text-[13px] font-semibold"
               style={{
-                background: draftC === null ? "var(--halo)" : undefined,
-                color: draftC === null ? "var(--wax)" : "var(--paper)",
+                background: channel === null ? "var(--halo)" : undefined,
+                color: channel === null ? "var(--wax)" : "var(--paper)",
               }}
             >
               {m.cityDetail.allChannels}
             </button>
             {visibleCreators.map((c) => {
-              const on = draftC === c.slug;
+              const on = channel === c.slug;
               return (
                 <button
                   key={c.slug}
                   type="button"
                   onClick={() => {
-                    const next = on ? null : c.slug;
-                    setDraftC(next);
-                    onApply({ region, city, type, channel: next });
+                    onApply({ region, city, type, channel: on ? null : c.slug });
                     setOpen(null);
                   }}
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left"

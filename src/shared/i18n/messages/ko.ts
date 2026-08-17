@@ -65,8 +65,6 @@ export const ko = {
     regionFilter: "지역",
     regionAll: "전체 지역",
     regionPick: "지역 고르기",
-    filterApply: "적용하기",
-    filterReset: "초기화",
     filterFind: "검색",
     typeAll: "전체 종류",
     channelPick: "채널 고르기",
@@ -455,8 +453,6 @@ export type Messages = {
     regionFilter: string;
     regionAll: string;
     regionPick: string;
-    filterApply: string;
-    filterReset: string;
     filterFind: string;
     typeAll: string;
     channelPick: string;
