@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { chunkedIn } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
@@ -84,27 +85,35 @@ const loadPiece = cachePublic(async function loadPiece(params: PageParams) {
   const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
 
   const videoIds = (videos ?? []).map((v) => v.id);
-  const { data: links } = videoIds.length
-    ? await supabase
-        .from("video_places")
-        .select("video_id, place_id, timestamp_sec")
-        .in("video_id", videoIds)
-    : { data: [] };
+  const links = videoIds.length
+    ? await chunkedIn(
+        (ids) =>
+          supabase
+            .from("video_places")
+            .select("video_id, place_id, timestamp_sec")
+            .in("video_id", ids),
+        videoIds,
+      )
+    : [];
 
-  const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
-  const { data: places } = placeIds.length
-    ? await supabase
-        .from("places")
-        .select(
-          "id, slug, name, name_local, place_type, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_place_id, google_maps_url, kakao_place_id, naver_place_id",
-        )
-        .in("id", placeIds)
-        .eq("city_id", city.id)
-        .order("created_at", { ascending: true })
-    : { data: [] };
+  const placeIds = [...new Set(links.map((l) => l.place_id))];
+  const places = placeIds.length
+    ? await chunkedIn(
+        (ids) =>
+          supabase
+            .from("places")
+            .select(
+              "id, slug, name, name_local, place_type, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_place_id, google_maps_url, kakao_place_id, naver_place_id",
+            )
+            .in("id", ids)
+            .eq("city_id", city.id)
+            .order("created_at", { ascending: true }),
+        placeIds,
+      )
+    : [];
 
-  const loadedPlaces: LoadedPlace[] = (places ?? []).map((p) => {
-    const link = (links ?? []).find((l) => l.place_id === p.id);
+  const loadedPlaces: LoadedPlace[] = places.map((p) => {
+    const link = links.find((l) => l.place_id === p.id);
     const video = link ? videoById.get(link.video_id) : undefined;
     return {
       id: p.id,

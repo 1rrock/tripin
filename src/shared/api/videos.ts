@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { chunkedIn } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 
 /**
@@ -115,21 +116,20 @@ export const loadCreatorVideos = cachePublic(async function loadCreatorVideos(
     .order("published_at", { ascending: false, nullsFirst: false });
   if (!videos || videos.length === 0) return { creator, videos: [] };
 
-  const { data: links } = await supabase
-    .from("video_places")
-    .select("video_id, place_id, timestamp_sec")
-    .in(
-      "video_id",
-      videos.map((v) => v.id),
-    );
+  const links = await chunkedIn(
+    (ids) =>
+      supabase.from("video_places").select("video_id, place_id, timestamp_sec").in("video_id", ids),
+    videos.map((v) => v.id),
+  );
 
-  const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
-  const { data: places } = placeIds.length
-    ? await supabase
-        .from("places")
-        .select("id, name, place_type, city_id, map_status")
-        .in("id", placeIds)
-    : { data: [] };
+  const placeIds = [...new Set(links.map((l) => l.place_id))];
+  const places = placeIds.length
+    ? await chunkedIn(
+        (ids) =>
+          supabase.from("places").select("id, name, place_type, city_id, map_status").in("id", ids),
+        placeIds,
+      )
+    : [];
 
   const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
   const { data: cities } = cityIds.length

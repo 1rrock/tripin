@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { chunkedIn } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
@@ -85,22 +86,27 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
   const videoById = new Map(videoList.map((v) => [v.id, v]));
   const videoIds = videoList.map((v) => v.id);
 
-  const { data: links } = await supabase
-    .from("video_places")
-    .select("video_id, place_id, timestamp_sec")
-    .in("video_id", videoIds);
-  const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
+  const links = await chunkedIn(
+    (ids) =>
+      supabase.from("video_places").select("video_id, place_id, timestamp_sec").in("video_id", ids),
+    videoIds,
+  );
+  const placeIds = [...new Set(links.map((l) => l.place_id))];
   if (placeIds.length === 0) return null;
 
-  const { data: places } = await supabase
-    .from("places")
-    .select(
-      "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
-    )
-    .in("id", placeIds)
-    .eq("map_status", "confirmed");
+  const places = await chunkedIn(
+    (ids) =>
+      supabase
+        .from("places")
+        .select(
+          "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+        )
+        .in("id", ids)
+        .eq("map_status", "confirmed"),
+    placeIds,
+  );
 
-  const confirmed = (places ?? []).filter(
+  const confirmed = places.filter(
     (p) => p.lat !== null && p.lng !== null,
   );
   if (confirmed.length === 0) return null;
