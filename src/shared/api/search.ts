@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { fetchAll } from "@/shared/api/chunked-in";
 import { loadCityIndex } from "@/shared/api/cities";
 import { loadHomeFeed } from "@/shared/api/home";
 import { loadTypeIndex } from "@/shared/api/place-types";
@@ -43,14 +44,17 @@ export interface SearchDocRaw {
 const BULLET_CAP = 120;
 
 export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => {
-  const [cities, feed, types, { data: placeRows }] = await Promise.all([
+  const [cities, feed, types, placeRows] = await Promise.all([
     loadCityIndex(),
     loadHomeFeed(),
     loadTypeIndex(),
-    supabase
-      .from("places")
-      .select("name, name_en, city_id, summary_bullets, summary_bullets_en, map_status")
-      .eq("map_status", "confirmed"),
+    fetchAll((from, to) =>
+      supabase
+        .from("places")
+        .select("name, name_en, city_id, summary_bullets, summary_bullets_en, map_status")
+        .eq("map_status", "confirmed")
+        .range(from, to),
+    ),
   ]);
 
   const ko = getDictionary("ko");
