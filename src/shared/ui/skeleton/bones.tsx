@@ -126,25 +126,31 @@ export function BoneCrumb({ last = "5rem" }: { last?: string }) {
  *
  * `role="status"` 를 `<main>` 에 얹지 않는다 — landmark 역할을 덮어써서
  * 스크린리더의 "본문으로 건너뛰기"가 사라진다. 상태는 안쪽 sr-only 가 말한다.
+ *
+ * `as="div"` 는 **레이아웃이 이미 `<main>` 을 들고 있을 때**만 쓴다(`/saved`).
+ * `loading.tsx` 는 그 레이아웃 안에서 그려지므로 여기서 또 `<main>` 을 내면
+ * landmark 가 둘이 되어 스크린리더가 본문을 두 번 센다.
  */
 export function BoneRoot({
+  as: Tag = "main",
   label,
   className,
   style,
   children,
 }: {
+  as?: "main" | "div";
   label: string;
   className?: string;
   style?: CSSProperties;
   children: ReactNode;
 }) {
   return (
-    <main aria-busy="true" className={className} style={style}>
+    <Tag aria-busy="true" className={className} style={style}>
       <span role="status" className="sr-only">
         {label}
       </span>
       {children}
-    </main>
+    </Tag>
   );
 }
 

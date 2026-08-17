@@ -16,3 +16,6 @@ export { VideoSkeleton } from "./skeleton/VideoSkeleton";
 export { TypeDetailSkeleton } from "./skeleton/TypeDetailSkeleton";
 export { ChannelsSkeleton } from "./skeleton/ChannelsSkeleton";
 export { ProseSkeleton } from "./skeleton/ProseSkeleton";
+export { SavedSkeleton } from "./skeleton/SavedSkeleton";
+export { AccountSkeleton } from "./skeleton/AccountSkeleton";
+export { LoginSkeleton } from "./skeleton/LoginSkeleton";
