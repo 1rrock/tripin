@@ -7,13 +7,14 @@
  *
  * 모바일 문법(네이버 지도형):
  *   · 지도 전면 + 목록 바텀시트
- *   · 목록/핀 선택 → 장소 드로어 mid(지도 위 절반) — Image #1
- *   · 드로어 스크롤 → full — Image #2. 핸들·지도 클릭·뒤로 → mid
+ *   · 목록/핀 선택 → 장소 드로어 mid. 탭바는 바로 숨긴다
+ *   · 접힌 동안 본문 스크롤은 잠근다. 위로 밀어 전면이 된 뒤에만 스크롤
+ *   · 아래로 내리면 peek 로 작아지고, 더 당기면 닫힌다
  *   · mid 에서 닫기/뒤로 → 맵+목록
  *   · 상세 URL `?place=` push — 엣지 스와이프·뒤로가기가 히스토리를 탄다
  */
 
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlassIcon as MagnifyingGlass, XIcon as X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
@@ -98,10 +99,31 @@ export function ExplorerCanvas({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetPct, setSheetPct] = useState(SHEET_MID);
   const sheetPctRef = useRef(sheetPct);
-  /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은 드래그
-     콜백과 MapView 의 fitPadding(맞추는 순간 호출)이라 전부 커밋 뒤다. */
-  useEffect(() => {
-    sheetPctRef.current = sheetPct;
+  const dragRef = useRef<{ startY: number; startPct: number } | null>(null);
+  const pendingPlaceMark = useRef(false);
+  const rootRef = useRef<HTMLDivElement>(null);
+  const listScrollRef = useRef<HTMLDivElement>(null);
+  const [collapseToken, setCollapseToken] = useState(0);
+  /* 드로어 스냅 — full 이면 탭바를 물리고(is-place-full) 지도 컨트롤도 덮인다 */
+  const [placeSnap, setPlaceSnap] = useState<PlaceDrawerSnap>("mid");
+
+  /* 시트 높이는 CSS 변수로만 그린다. 드래그 중 setState 하면 HomeCanvas 전체가
+     프레임마다 다시 그려져(지도·썸네일 48장) 모바일 크롬이 멈춘다.
+     커밋된 스냅만 state 에 남기고, 드래그 중 값은 DOM 에 직접 쓴다. */
+  const writeSheetPct = useCallback((pct: number) => {
+    sheetPctRef.current = pct;
+    if (surface === "page") {
+      rootRef.current?.style.setProperty("--map-sheet-h", String(pct));
+    }
+  }, [surface]);
+  const commitSheetPct = useCallback((pct: number) => {
+    writeSheetPct(pct);
+    setSheetPct(pct);
+  }, [writeSheetPct]);
+  useLayoutEffect(() => {
+    if (!dragRef.current) sheetPctRef.current = sheetPct;
+    if (surface !== "page") return;
+    rootRef.current?.style.setProperty("--map-sheet-h", String(sheetPctRef.current));
   });
   /* 데스크톱 여부는 리스너로 한 번만 갱신한다 — 드래그·스크롤 핸들러가 초당
      수십 번 matchMedia 객체를 새로 만들며 GC 를 조르지 않게. */
@@ -115,13 +137,6 @@ export function ExplorerCanvas({
     mq.addEventListener("change", sync);
     return () => mq.removeEventListener("change", sync);
   }, []);
-  const dragRef = useRef<{ startY: number; startPct: number } | null>(null);
-  const pendingPlaceMark = useRef(false);
-  const rootRef = useRef<HTMLDivElement>(null);
-  const listScrollRef = useRef<HTMLDivElement>(null);
-  const [collapseToken, setCollapseToken] = useState(0);
-  /* 드로어 스냅 — full 이면 탭바를 물리고(is-place-full) 지도 컨트롤도 덮인다 */
-  const [placeSnap, setPlaceSnap] = useState<PlaceDrawerSnap>("mid");
   const { isSaved, listsOf, ready: savedReady, lists: savedLists } = useSaved();
   /** 첫 진입의 시작점 — 현재 위치. 못 받으면 null 이고 평소대로 전체 핀에 맞춘다. */
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
@@ -275,6 +290,20 @@ export function ExplorerCanvas({
     null;
   const detailOpen = Boolean(detailPlace);
 
+  /* 탭바는 html 클래스 한 번으로 물린다 — :has() 는 문서 전체 스타일 재계산. */
+  useEffect(() => {
+    if (surface !== "page") return;
+    document.documentElement.classList.toggle("is-place-open", detailOpen);
+    document.documentElement.classList.toggle(
+      "is-place-full",
+      detailOpen && placeSnap === "full",
+    );
+    return () => {
+      document.documentElement.classList.remove("is-place-open");
+      document.documentElement.classList.remove("is-place-full");
+    };
+  }, [surface, detailOpen, placeSnap]);
+
   /* 장소가 바뀌거나 닫히면 스냅은 mid 부터 — 탭바가 헛돌아 사라지지 않게.
      이펙트가 아니라 렌더 중에 되돌린다: 미루면 새 장소가 이전 스냅으로 한 프레임
      그려진다(react-hooks/set-state-in-effect). */
@@ -372,14 +401,16 @@ export function ExplorerCanvas({
         bestDist = d;
       }
     }
-    setSheetPct(best);
-  }, []);
+    commitSheetPct(best);
+  }, [commitSheetPct]);
 
-  /* 바텀시트 핸들 드래그 — 스냅 포인트로 붙인다 */
+  /* 바텀시트 핸들 드래그 — 스냅 포인트로 붙인다.
+     움직이는 동안은 DOM 변수만 고친다. transition 은 is-sheet-dragging 으로 끈다. */
   const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
     if (desktopRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = { startY: e.clientY, startPct: sheetPctRef.current };
+    rootRef.current?.classList.add("is-sheet-dragging");
   }, []);
 
   const onHandlePointerMove = useCallback((e: React.PointerEvent) => {
@@ -390,26 +421,55 @@ export function ExplorerCanvas({
     if (h <= 0) return;
     const dy = drag.startY - e.clientY; /* 위로 끌면 시트 커짐 */
     const next = Math.min(SHEET_FULL, Math.max(SHEET_PEEK, drag.startPct + (dy / h) * 100));
-    setSheetPct(next);
-  }, []);
+    writeSheetPct(next);
+  }, [writeSheetPct]);
 
   const onHandlePointerUp = useCallback(() => {
     if (!dragRef.current) return;
     dragRef.current = null;
+    rootRef.current?.classList.remove("is-sheet-dragging");
     snapListSheet(sheetPctRef.current);
   }, [snapListSheet]);
 
+  /* 전면 스냅 애니가 끝난 뒤에만 목록 스크롤을 연다. 접힌 동안 scrollTop 은 0. */
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || surface !== "page") return;
+    if (sheetPct < SHEET_FULL - 2) {
+      root.classList.remove("is-sheet-scrollable");
+      if (listScrollRef.current) listScrollRef.current.scrollTop = 0;
+      return;
+    }
+    const panel = root.querySelector(".canvas-panel");
+    if (!(panel instanceof HTMLElement)) return;
+    let done = false;
+    const enable = () => {
+      if (done) return;
+      done = true;
+      root.classList.add("is-sheet-scrollable");
+    };
+    const onEnd = (e: Event) => {
+      if (e instanceof TransitionEvent && e.propertyName !== "transform") return;
+      enable();
+    };
+    panel.addEventListener("transitionend", onEnd);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const fallback = window.setTimeout(enable, reduce ? 0 : 320);
+    return () => {
+      panel.removeEventListener("transitionend", onEnd);
+      window.clearTimeout(fallback);
+    };
+  }, [sheetPct, surface]);
+
   /**
-   * 목록 스크롤 → 드로어 자동 확장(Image #1 → #2).
-   * 맨 위에서 더 당기면 mid/peek 로 접힘.
+   * 목록 스크롤 — 접힌 동안은 잠근다. 위로 밀기는 onListTouchMove 가 전면으로 올린다.
    */
   const onListScroll = useCallback(() => {
     if (desktopRef.current) return;
     const el = listScrollRef.current;
     if (!el) return;
-    const { scrollTop } = el;
-    if (scrollTop > 24 && sheetPctRef.current < SHEET_FULL - 2) {
-      setSheetPct(SHEET_FULL);
+    if (sheetPctRef.current < SHEET_FULL - 2) {
+      el.scrollTop = 0;
     }
   }, []);
 
@@ -425,19 +485,25 @@ export function ExplorerCanvas({
       const y = e.touches[0]?.clientY;
       if (!el || y0 == null || y == null) return;
       const dy = y - y0;
-      /* 손가락 위로 → 시트 확장 */
-      if (dy < -40 && sheetPctRef.current < SHEET_FULL - 2) {
-        setSheetPct(SHEET_FULL);
-        listTouchY.current = null;
+      if (sheetPctRef.current < SHEET_FULL - 2) {
+        if (dy < -40) {
+          commitSheetPct(SHEET_FULL);
+          listTouchY.current = null;
+        } else if (dy > 48 && sheetPctRef.current > SHEET_PEEK + 2) {
+          commitSheetPct(
+            sheetPctRef.current > SHEET_MID + 2 ? SHEET_MID : SHEET_PEEK,
+          );
+          listTouchY.current = null;
+        }
         return;
       }
-      /* 맨 위에서 아래로 당김 → mid */
-      if (el.scrollTop <= 0 && dy > 48 && sheetPctRef.current > SHEET_MID + 2) {
-        setSheetPct(SHEET_MID);
+      /* 전면 맨 위에서 아래로 당김 → mid */
+      if (el.scrollTop <= 0 && dy > 48) {
+        commitSheetPct(SHEET_MID);
         listTouchY.current = null;
       }
     },
-    [],
+    [commitSheetPct],
   );
 
   const detailIndex = detailPlace
@@ -678,11 +744,6 @@ export function ExplorerCanvas({
             }`
           : "canvas-page hidden lg:block"
       }
-      style={
-        surface === "page"
-          ? ({ ["--map-sheet-h" as string]: `${sheetPct}%` } as React.CSSProperties)
-          : undefined
-      }
     >
       <div className="canvas-map">
         <MapView
@@ -771,6 +832,7 @@ export function ExplorerCanvas({
         </div>
       ) : null}
 
+      <div className="canvas-sheet-clip">
       <section className="canvas-panel" aria-label={title}>
         <div
           className="canvas-panel-handle"
@@ -791,6 +853,15 @@ export function ExplorerCanvas({
           onScroll={onListScroll}
           onTouchStart={onListTouchStart}
           onTouchMove={onListTouchMove}
+          onWheel={(e) => {
+            if (desktopRef.current) return;
+            if (sheetPctRef.current >= SHEET_FULL - 2) return;
+            e.preventDefault();
+            if (e.deltaY > 0) commitSheetPct(SHEET_FULL);
+            else if (e.deltaY < 0 && sheetPctRef.current > SHEET_PEEK + 2) {
+              commitSheetPct(sheetPctRef.current > SHEET_MID + 2 ? SHEET_MID : SHEET_PEEK);
+            }
+          }}
         >
           <h1 className="sr-only">{title}</h1>
           {lead !== "home" ? (
@@ -916,6 +987,7 @@ export function ExplorerCanvas({
           )}
         </div>
       </section>
+      </div>
     </div>
   );
 }

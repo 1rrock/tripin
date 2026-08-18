@@ -4,11 +4,11 @@
  * 장소 상세.
  *
  * 모바일(네이버 문법):
- *   · 드로어 **하나**가 mid(지도 위 절반) ↔ full(전면) 을 높이로 오간다 —
- *     화면이 갈리지 않고 같은 상자가 자라나 합체한다
- *   · mid: 핸들 + 상호·메타 + 미디어. 위로 끌거나 스크롤 → full
- *   · full: 상단에 ← ♥ ✕ 헤더가 펼쳐지고 탭바 자리까지 덮는 전면
- *   · 뒤로가기: full→mid(history), mid→맵(onClose). full 의 ✕ 는 한 번에 닫는다
+ *   · 드로어 **하나**가 peek ↔ mid ↔ full 을 오간다. 전환은 FLIP(transform)
+ *   · peek: 핸들 + 상호만. 아래로 더 당기면 닫힘
+ *   · mid: 핸들 + 상호·메타 + CTA. 위로 밀면 full, 아래로 내리면 peek
+ *   · full: 상단 ← ♥ ✕. 본문 스크롤은 전면 애니 뒤에만 연다
+ *   · 뒤로가기: full→mid(history), mid/peek→맵(onClose). full 의 ✕ 는 한 번에 닫는다
  *
  * 데스크톱: 지도 안 absolute 카드.
  */
@@ -24,8 +24,9 @@ import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 
-export type PlaceDrawerSnap = "mid" | "full";
+export type PlaceDrawerSnap = "peek" | "mid" | "full";
 
+export const PLACE_DRAWER_PEEK_PCT = 26;
 export const PLACE_DRAWER_MID_PCT = 52;
 
 export interface SheetSource {
@@ -84,7 +85,9 @@ export function PlaceSheet({
   const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
 
   const scrollRef = useRef<HTMLDivElement>(null);
+  const drawerRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
+  const flipCleanupRef = useRef<(() => void) | null>(null);
   const onCloseRef = useRef(onClose);
   const onSnapChangeRef = useRef(onSnapChange);
   useEffect(() => {
@@ -104,6 +107,7 @@ export function PlaceSheet({
   }, []);
 
   const [snap, setSnap] = useState<PlaceDrawerSnap>("mid");
+  const [scrollReady, setScrollReady] = useState(false);
   const snapRef = useRef(snap);
   /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은 전부
      사용자 이벤트 콜백이라 커밋 뒤다. 위 onCloseRef 와 같은 계약. */
@@ -122,6 +126,74 @@ export function PlaceSheet({
     [onSnapChange],
   );
 
+  /* peek↔mid↔full — 레이아웃은 한 번에 확정하고, 시각만 translateY 로 잇는다.
+     height 를 CSS 로 보간하면 드로어·앱바·탭바가 매 프레임 레이아웃된다.
+     본문 스크롤은 full 애니가 끝난 뒤에만 연다. */
+  const flipSnap = useCallback(
+    (next: PlaceDrawerSnap) => {
+      if (snapRef.current === next) return;
+      snapRef.current = next;
+      if (next !== "full") {
+        setScrollReady(false);
+        if (scrollRef.current) scrollRef.current.scrollTop = 0;
+      }
+      const el = drawerRef.current;
+      const reduce =
+        typeof window !== "undefined" &&
+        window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      flipCleanupRef.current?.();
+      flipCleanupRef.current = null;
+      const finish = () => {
+        if (next === "full") setScrollReady(true);
+      };
+      if (!el || reduce) {
+        setSnapBoth(next);
+        finish();
+        return;
+      }
+      const first = el.getBoundingClientRect();
+      el.dataset.snap = next;
+      const last = el.getBoundingClientRect();
+      const dy = first.top - last.top;
+      setSnapBoth(next);
+      if (Math.abs(dy) < 1) {
+        finish();
+        return;
+      }
+      el.style.transition = "none";
+      el.style.transform = `translate3d(0, ${dy}px, 0)`;
+      el.style.willChange = "transform";
+      let cancelled = false;
+      const raf1 = requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          if (cancelled) return;
+          el.style.transition = "transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1)";
+          el.style.transform = "translate3d(0, 0, 0)";
+        });
+      });
+      const done = (e?: TransitionEvent) => {
+        if (e && e.propertyName !== "transform") return;
+        el.style.transition = "";
+        el.style.transform = "";
+        el.style.willChange = "";
+        el.removeEventListener("transitionend", done);
+        if (flipCleanupRef.current === cleanup) flipCleanupRef.current = null;
+        finish();
+      };
+      const cleanup = () => {
+        cancelled = true;
+        cancelAnimationFrame(raf1);
+        el.removeEventListener("transitionend", done);
+        el.style.transition = "";
+        el.style.transform = "";
+        el.style.willChange = "";
+      };
+      el.addEventListener("transitionend", done);
+      flipCleanupRef.current = cleanup;
+    },
+    [setSnapBoth],
+  );
+
   /* 장소가 바뀌면 렌더 중에 mid 로 되돌린다 — 이펙트로 미루면 새 장소가 이전
      스냅 높이로 한 프레임 그려진다. 부모 알림·스크롤 리셋은 커밋 뒤 일이라
      아래 이펙트에 남는다(react-hooks/set-state-in-effect). */
@@ -129,8 +201,11 @@ export function PlaceSheet({
   if (prevPlaceId !== place.id) {
     setPrevPlaceId(place.id);
     setSnap("mid");
+    setScrollReady(false);
   }
   useEffect(() => {
+    flipCleanupRef.current?.();
+    flipCleanupRef.current = null;
     onSnapChangeRef.current?.("mid");
     expandedByHistory.current = false;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
@@ -153,8 +228,8 @@ export function PlaceSheet({
       "",
     );
     expandedByHistory.current = true;
-    setSnapBoth("full");
-  }, [setSnapBoth]);
+    flipSnap("full");
+  }, [flipSnap]);
 
   const collapseMid = useCallback(
     (opts?: { fromPopstate?: boolean }) => {
@@ -165,24 +240,44 @@ export function PlaceSheet({
         return;
       }
       expandedByHistory.current = false;
-      setSnapBoth("mid");
-      if (scrollRef.current) scrollRef.current.scrollTop = 0;
+      flipSnap("mid");
     },
-    [setSnapBoth],
+    [flipSnap],
   );
+
+  const collapsePeek = useCallback(() => {
+    if (snapRef.current === "peek") return;
+    if (snapRef.current === "full" && expandedByHistory.current) {
+      expandedByHistory.current = false;
+      window.history.back();
+      return;
+    }
+    flipSnap("peek");
+  }, [flipSnap]);
+
+  const stepLarger = useCallback(() => {
+    if (snapRef.current === "peek") flipSnap("mid");
+    else expandFull();
+  }, [flipSnap, expandFull]);
+
+  const stepSmaller = useCallback(() => {
+    if (snapRef.current === "full") collapseMid();
+    else if (snapRef.current === "mid") collapsePeek();
+    else onCloseRef.current();
+  }, [collapseMid, collapsePeek]);
 
   useEffect(() => {
     if (!isMobile) return;
     const onPop = () => {
       if (snapRef.current === "full") {
         expandedByHistory.current = false;
-        setSnapBoth("mid");
+        flipSnap("mid");
         if (scrollRef.current) scrollRef.current.scrollTop = 0;
       }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, [isMobile, setSnapBoth]);
+  }, [isMobile, flipSnap]);
 
   /**
    * full 의 ✕ — 히스토리로 쌓은 full 층을 먼저 걷어낸 뒤 닫는다.
@@ -224,11 +319,13 @@ export function PlaceSheet({
     };
   }, [isMobile, snap]);
 
-  /* 스크롤 상자는 하나 — mid 에서 스크롤·위로 끌기 → full, full 맨 위에서 당기면 → mid */
+  /* 접힌 동안은 본문을 스크롤하지 않는다. 위로 밀면 한 단 커지고, 전면이 된 뒤에만 스크롤. */
   const onSheetScroll = () => {
     const el = scrollRef.current;
     if (!el) return;
-    if (snapRef.current === "mid" && el.scrollTop > 16) expandFull();
+    if (snapRef.current !== "full") {
+      el.scrollTop = 0;
+    }
   };
   const onSheetTouchStart = (e: React.TouchEvent) => {
     pullStartY.current = e.touches[0]?.clientY ?? null;
@@ -238,33 +335,57 @@ export function PlaceSheet({
     const y0 = pullStartY.current;
     const y = e.touches[0]?.clientY;
     if (!el || y0 == null || y == null) return;
-    if (snapRef.current === "mid") {
-      /* 위로 스와이프 → full */
-      if (y - y0 < -32) {
-        expandFull();
+    const dy = y - y0;
+    if (snapRef.current !== "full") {
+      if (dy < -32) {
+        stepLarger();
+        pullStartY.current = null;
+      } else if (dy > 48) {
+        stepSmaller();
         pullStartY.current = null;
       }
       return;
     }
-    /* full: 최상단에서 더 당기면 mid */
-    if (el.scrollTop <= 0 && y - y0 > 48) {
+    if (el.scrollTop <= 0 && dy > 48) {
       collapseMid();
       pullStartY.current = null;
     }
   };
   const onSheetWheel = (e: React.WheelEvent) => {
     const el = scrollRef.current;
-    if (!el || snapRef.current !== "full") return;
+    if (!el) return;
+    if (snapRef.current !== "full") {
+      e.preventDefault();
+      if (e.deltaY > 0) stepLarger();
+      else if (e.deltaY < 0) stepSmaller();
+      return;
+    }
     if (el.scrollTop <= 0 && e.deltaY < 0) {
       e.preventDefault();
       collapseMid();
     }
   };
 
+  const handleStartY = useRef<number | null>(null);
+  const onHandlePointerDown = (e: React.PointerEvent) => {
+    e.currentTarget.setPointerCapture(e.pointerId);
+    handleStartY.current = e.clientY;
+  };
+  const onHandlePointerUp = (e: React.PointerEvent) => {
+    const y0 = handleStartY.current;
+    handleStartY.current = null;
+    if (y0 == null) return;
+    const dy = e.clientY - y0;
+    if (dy < -32) stepLarger();
+    else if (dy > 48) stepSmaller();
+  };
+
   const onBackClick = () => {
     if (snapRef.current === "full") collapseMid();
     else onCloseRef.current();
   };
+
+  useEffect(() => () => flipCleanupRef.current?.(), []);
 
   const meta = (
     <>
@@ -418,10 +539,11 @@ export function PlaceSheet({
   const full = snap === "full";
   return (
     <div
+      ref={drawerRef}
       role="dialog"
       aria-modal="true"
       aria-label={t(m.map.detailAria, { name: place.name })}
-      className="place-drawer on-lightbox"
+      className={`place-drawer on-lightbox${scrollReady ? " is-scroll-ready" : ""}`}
       data-snap={snap}
       style={{ background: "var(--sheet)", color: "var(--paper)" }}
     >
@@ -448,7 +570,13 @@ export function PlaceSheet({
         </button>
       </div>
 
-      <div className="place-drawer-handle" aria-hidden />
+      <div
+        className="place-drawer-handle"
+        aria-hidden
+        onPointerDown={onHandlePointerDown}
+        onPointerUp={onHandlePointerUp}
+        onPointerCancel={onHandlePointerUp}
+      />
 
       <div className="flex shrink-0 items-start gap-2 px-4 pb-1">
         <div className="min-w-0 flex-1">
@@ -482,7 +610,7 @@ export function PlaceSheet({
 
       <div
         ref={scrollRef}
-        className="place-drawer-scroll min-h-0 flex-1 overflow-y-auto overscroll-contain px-4"
+        className="place-drawer-scroll min-h-0 flex-1 px-4"
         onScroll={onSheetScroll}
         onTouchStart={onSheetTouchStart}
         onTouchMove={onSheetTouchMove}
@@ -497,7 +625,7 @@ export function PlaceSheet({
 
       {mapCta ? (
         <div
-          className="shrink-0 border-t bg-(--sheet) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
+          className="place-drawer-dock shrink-0 border-t bg-(--sheet) px-4 pt-2.5 pb-[calc(0.5rem+env(safe-area-inset-bottom))]"
           style={{ borderColor: "var(--hairline)" }}
         >
           {mapCta}

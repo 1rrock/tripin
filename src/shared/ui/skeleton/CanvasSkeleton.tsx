@@ -74,6 +74,7 @@ export function MapSkeleton({ label }: { label: string }) {
       <div className="canvas-page canvas-root">
         <BoneMap />
 
+        <div className="canvas-sheet-clip">
         <section className="canvas-panel">
           {/* 검색 알약 h-10 */}
           <div className="px-4 pt-4 pb-3">
@@ -121,6 +122,7 @@ export function MapSkeleton({ label }: { label: string }) {
             ))}
           </ul>
         </section>
+        </div>
       </div>
     </BoneRoot>
   );

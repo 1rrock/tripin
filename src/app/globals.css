@@ -347,8 +347,8 @@ body {
   -webkit-backdrop-filter: blur(12px);
   transition: transform 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
-/* 장소 상세가 full 로 자라면 탭바는 아래로 물러난다 — 드로어와 같은 커브 */
-html:has(.canvas-root.is-place-full) .tabbar {
+/* 장소 상세가 열리면(peek/mid/full) 탭바는 아래로 물러난다 */
+html.is-place-open .tabbar {
   transform: translateY(110%);
   pointer-events: none;
 }
@@ -494,7 +494,7 @@ html:has(.canvas-root) .site-header {
 /*
   모바일 /map: 네이버 지도 문법.
   · 지도가 헤더~탭바 사이를 전부 채운다
-  · 목록은 그 위 바텀시트(높이 --map-sheet-h). 끌어 접으면 지도가 다시 보인다
+  · 목록은 그 위 바텀시트(--map-sheet-h 비율, transform 으로만 오간다). 끌어 접으면 지도가 다시 보인다
   · 본문 스크롤은 시트 안에서만 — 문서 스크롤로 지도를 밀어내지 않는다
 */
 @media (max-width: 1023px) {
@@ -515,6 +515,10 @@ html:has(.canvas-root) .site-header {
     max-width: 42rem; /* layout max-w-2xl */
     margin-inline: auto;
   }
+  /* 상세가 열리면 탭바 자리까지 캔버스가 내려간다 — 아래에 빈 띠가 남지 않게 */
+  .canvas-root.is-place-open {
+    bottom: 0;
+  }
   .canvas-root .canvas-map {
     position: absolute;
     inset: 0;
@@ -523,14 +527,37 @@ html:has(.canvas-root) .site-header {
     z-index: 0;
     background: var(--lightbox);
   }
+  /* 목록 시트가 아래로 밀릴 때 탭바 위로 새지 않게 자른다.
+     canvas-root 자체에 overflow:hidden 을 걸면 장소 드로어가 탭바를
+     덮지 못한다(드로어 full 은 root 밖으로 내려간다). */
+  .canvas-sheet-clip {
+    display: block;
+    position: absolute;
+    inset: 0;
+    z-index: 20;
+    overflow: hidden;
+    pointer-events: none;
+  }
+  .canvas-sheet-clip .canvas-panel {
+    pointer-events: auto;
+  }
   .canvas-root .canvas-panel {
     position: absolute;
     left: 0;
     right: 0;
     bottom: 0;
     z-index: 20;
-    height: var(--map-sheet-h, 52%);
+    /* 상자는 항상 최대 스냅(88%). 보이는 양은 translateY 로만 줄인다 —
+       height 는 매 프레임 레이아웃이라 모바일 크롬에서 손가락을 못 따라간다.
+       --map-sheet-h / --map-sheet-full 은 단위 없는 숫자(52, 88). */
+    --map-sheet-full: 88;
+    height: calc(var(--map-sheet-full) * 1%);
     max-height: 92%;
+    transform: translate3d(
+      0,
+      calc((1 - var(--map-sheet-h, 52) / var(--map-sheet-full)) * 100%),
+      0
+    );
     display: flex;
     flex-direction: column;
     background: var(--ground);
@@ -562,13 +589,21 @@ html:has(.canvas-root) .site-header {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
+    overflow-y: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
     -webkit-overflow-scrolling: touch;
   }
+  /* 전면 스냅 애니가 끝난 뒤에만 목록을 스크롤한다 */
+  .canvas-root.is-sheet-scrollable .canvas-panel-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
 
-  /* 장소 상세 드로어 — 같은 상자 하나가 mid(지도 위 절반) ↔ full(전면) 을
-     높이로 오간다. 화면이 갈리지 않아 올리고 내릴 때 자연스럽게 합체한다. */
+  /* 장소 상세 드로어 — mid 는 높이 52%(하단 CTA 가 그 안에 보인다).
+     스냅 전환은 height 트랜지션이 아니라 JS FLIP(transform) 이 담당한다.
+     height 를 보간하면 레이아웃+지도 합성이 한 프레임에 겹친다. */
   .place-drawer {
     position: absolute;
     left: 0;
@@ -581,18 +616,32 @@ html:has(.canvas-root) .site-header {
     border-radius: 16px 16px 0 0;
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
     overflow: hidden;
-    transition:
-      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-      bottom 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-      border-radius 0.32s cubic-bezier(0.2, 0.8, 0.2, 1);
   }
-  /* full — 탭바 자리(3.5rem + safe-area)까지 내려 덮는다. 탭바는 함께 물러난다 */
+  .place-drawer[data-snap="peek"] {
+    height: 26%; /* = PLACE_DRAWER_PEEK_PCT */
+  }
+  /* full — 캔버스가 이미 탭바 자리까지 내려왔으므로 상자만 100% */
   .place-drawer[data-snap="full"] {
-    bottom: calc(-3.5rem - env(safe-area-inset-bottom, 0px));
-    height: calc(100% + 3.5rem + env(safe-area-inset-bottom, 0px));
+    bottom: 0;
+    height: 100%;
     border-radius: 0;
   }
-  /* full 헤더(← ♥ ✕) — mid 에선 높이 0. 드로어 확장과 같은 커브로 펼쳐진다 */
+  .place-drawer-scroll {
+    overflow-x: hidden;
+    overflow-y: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .place-drawer.is-scroll-ready .place-drawer-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
+  }
+  .place-drawer[data-snap="peek"] .place-drawer-dock {
+    display: none;
+  }
+  /* full 헤더(← ♥ ✕) — 높이는 스냅 때 한 번만 바뀌고, 보이는 건 opacity */
   .place-drawer-appbar {
     flex: 0 0 auto;
     display: flex;
@@ -602,15 +651,14 @@ html:has(.canvas-root) .site-header {
     opacity: 0;
     overflow: hidden;
     padding-inline: 0.5rem;
-    transition:
-      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-      padding 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-      opacity 0.22s ease;
+    pointer-events: none;
+    transition: opacity 0.22s ease;
   }
   .place-drawer[data-snap="full"] .place-drawer-appbar {
     height: calc(3.25rem + env(safe-area-inset-top, 0px));
     padding-top: env(safe-area-inset-top, 0px);
     opacity: 1;
+    pointer-events: auto;
   }
   .place-drawer-handle {
     flex: 0 0 auto;
@@ -621,9 +669,7 @@ html:has(.canvas-root) .site-header {
     cursor: grab;
     touch-action: none;
     user-select: none;
-    transition:
-      height 0.32s cubic-bezier(0.2, 0.8, 0.2, 1),
-      opacity 0.2s ease;
+    transition: opacity 0.2s ease;
   }
   .place-drawer-handle::after {
     content: "";
@@ -638,6 +684,7 @@ html:has(.canvas-root) .site-header {
   .place-drawer[data-snap="full"] .place-drawer-handle {
     height: 0;
     opacity: 0;
+    pointer-events: none;
   }
   /* mid 제목 줄의 하트·닫기 — full 에선 헤더 버튼과 자리를 바꾼다(크로스페이드) */
   .place-drawer-titletools {
@@ -650,13 +697,18 @@ html:has(.canvas-root) .site-header {
     .place-drawer,
     .place-drawer-appbar,
     .place-drawer-handle,
-    .place-drawer-titletools {
+    .place-drawer-titletools,
+    .canvas-root .canvas-panel {
       transition: none;
     }
   }
-  /* 목록 시트 높이 스냅 전환 — 스크롤로 full 올라갈 때 부드럽게 */
+  /* 목록 시트 스냅 전환 — 드래그 중에는 끈다(손가락을 따라가게) */
   .canvas-root .canvas-panel {
-    transition: height 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+    transition: transform 0.28s cubic-bezier(0.2, 0.8, 0.2, 1);
+  }
+  .canvas-root.is-sheet-dragging .canvas-panel {
+    transition: none;
+    will-change: transform;
   }
   /* /map: 상세 열리면 목록 시트 숨김 — 지도 + 상세만 */
   .canvas-root.is-place-open .canvas-panel {
@@ -705,6 +757,9 @@ html:has(.canvas-root) .site-header {
     border-radius: 16px;
     box-shadow: 0 8px 32px rgba(0, 0, 0, 0.12);
     overflow: auto;
+  }
+  .canvas-sheet-clip {
+    display: contents;
   }
   .canvas-panel-handle {
     display: none;
