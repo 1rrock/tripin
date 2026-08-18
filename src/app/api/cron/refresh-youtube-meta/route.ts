@@ -31,6 +31,10 @@ import { serverEnv } from "@/shared/config/env";
  *   GET /api/cron/refresh-youtube-meta            갱신 + 사라진 영상 보고
  *   GET /api/cron/refresh-youtube-meta?purge=1    + 사라진 영상 삭제
  *   헤더: Authorization: Bearer $CRON_SECRET
+ *
+ * vercel.json 스케줄은 매일 03:00 UTC. 월 1회면 31일인 달마다 30일 한도를
+ * 넘긴다(1/1 03:05 갱신 → 2/1 03:00 은 30일 23시간). STALE_DAYS=25 여유는
+ * 크론이 그보다 자주 돌 때만 여유다. 쿼터는 하루 ~3 unit (10,000 한도).
  */
 
 export const dynamic = "force-dynamic";
