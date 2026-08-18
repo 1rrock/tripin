@@ -442,47 +442,31 @@ export function ExplorerCanvas({
     snapListSheet(sheetPctRef.current);
   }, [snapListSheet]);
 
-  /* 전면 스냅 애니가 끝난 뒤에만 목록 스크롤을 연다. 접힌 동안 scrollTop 은 0. */
   useEffect(() => {
     const root = rootRef.current;
     if (!root || surface !== "page") return;
-    if (sheetPct < SHEET_FULL - 2) {
-      root.classList.remove("is-sheet-scrollable");
-      if (listScrollRef.current) listScrollRef.current.scrollTop = 0;
-      return;
-    }
-    const panel = root.querySelector(".canvas-panel");
-    if (!(panel instanceof HTMLElement)) return;
-    let done = false;
-    const enable = () => {
-      if (done) return;
-      done = true;
-      root.classList.add("is-sheet-scrollable");
-    };
-    const onEnd = (e: Event) => {
-      if (e instanceof TransitionEvent && e.propertyName !== "transform") return;
-      enable();
-    };
-    panel.addEventListener("transitionend", onEnd);
-    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    const fallback = window.setTimeout(enable, reduce ? 0 : 320);
-    return () => {
-      panel.removeEventListener("transitionend", onEnd);
-      window.clearTimeout(fallback);
-    };
+    root.classList.toggle("is-sheet-full", sheetPct >= SHEET_FULL - 2);
+    root.classList.toggle("is-sheet-peek", sheetPct <= SHEET_PEEK + 2);
   }, [sheetPct, surface]);
 
+  useEffect(() => {
+    const root = rootRef.current;
+    if (!root || surface !== "page") return;
+    root.classList.toggle("is-place-raised", detailOpen && placeSnap !== "peek");
+  }, [detailOpen, placeSnap, surface]);
+
   /**
-   * 목록 스크롤 — 접힌 동안은 잠근다. 위로 밀기는 onListTouchMove 가 전면으로 올린다.
+   * mid 에서 목록을 내리면 전면으로 키운 뒤 스크롤한다.
+   * peek 만 잠근다 — 상세에서 돌아오면 mid 라 스크롤이 되어야 한다.
    */
   const onListScroll = useCallback(() => {
     if (desktopRef.current) return;
     const el = listScrollRef.current;
     if (!el) return;
-    if (sheetPctRef.current < SHEET_FULL - 2) {
-      el.scrollTop = 0;
+    if (sheetPctRef.current > SHEET_PEEK + 2 && sheetPctRef.current < SHEET_FULL - 2) {
+      if (el.scrollTop > 24) commitSheetPct(SHEET_FULL);
     }
-  }, []);
+  }, [commitSheetPct]);
 
   const listTouchY = useRef<number | null>(null);
   const onListTouchStart = useCallback((e: React.TouchEvent) => {
@@ -759,6 +743,7 @@ export function ExplorerCanvas({
       <div className="canvas-map">
         <MapView
           className="absolute inset-0 h-full w-full"
+          flush
           pins={pins}
           activeId={activeId}
           onPinClick={onPinClick}
@@ -821,7 +806,7 @@ export function ExplorerCanvas({
           {filters("floating")}
         </div>
       ) : null}
-      {surface === "page" && detailOpen ? (
+      {surface === "page" && detailOpen && placeSnap === "peek" ? (
         <div className="canvas-topbar lg:hidden">
           <div className="flex items-center justify-between">
             <button

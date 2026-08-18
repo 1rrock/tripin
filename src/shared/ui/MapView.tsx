@@ -62,6 +62,8 @@ interface MapViewProps {
   /** 핀이 아닌 지도 배경 클릭 — 상세 드로어를 내릴 때 쓴다. */
   onMapClick?: () => void;
   className?: string;
+  /** 전면 지도 — 라운드·액자선을 빼 모서리에 빈 칸이 안 남게. */
+  flush?: boolean;
   /** 핀 1개일 때 줌 (기본 15 — CONCEPT.md 4.3). */
   singlePinZoom?: number;
   /**
@@ -253,6 +255,7 @@ export function MapView({
   onPinClick,
   onMapClick,
   className,
+  flush = false,
   singlePinZoom = 15,
   cluster = false,
   nameWhenClose = false,
@@ -550,8 +553,8 @@ export function MapView({
    */
   const frame: React.CSSProperties = {
     background: "var(--lightbox)",
-    boxShadow: "inset 0 0 0 1px var(--hairline)",
-    borderRadius: "var(--r-control)",
+    boxShadow: flush ? "none" : "inset 0 0 0 1px var(--hairline)",
+    borderRadius: flush ? 0 : "var(--r-control)",
   };
 
   if (failed) {

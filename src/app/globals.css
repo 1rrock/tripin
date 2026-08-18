@@ -459,6 +459,8 @@ html.is-place-open .tabbar {
    헤더를 걷어낸 이유: 제목("지도")과 돋보기가 지도 위에 한 단을 먹고 있었는데,
    목록 시트가 이미 제 검색창을 들고 있어서 같은 일을 하는 줄이 둘이었다.
    검색창은 지도 위 최상단으로 띄운다(.canvas-topbar) — 네이버·구글 지도 문법. */
+html.is-map footer,
+html.is-map .site-header,
 html:has(.canvas-root) footer,
 html:has(.canvas-root) .site-header {
   display: none;
@@ -498,6 +500,7 @@ html:has(.canvas-root) .site-header {
   · 본문 스크롤은 시트 안에서만 — 문서 스크롤로 지도를 밀어내지 않는다
 */
 @media (max-width: 1023px) {
+  html.is-map,
   html:has(.canvas-root) {
     overflow: hidden;
     height: 100%;
@@ -526,6 +529,7 @@ html:has(.canvas-root) .site-header {
     min-height: 0;
     z-index: 0;
     background: var(--lightbox);
+    border-radius: 0;
   }
   /* 목록 시트가 아래로 밀릴 때 탭바 위로 새지 않게 자른다.
      canvas-root 자체에 overflow:hidden 을 걸면 장소 드로어가 탭바를
@@ -589,16 +593,16 @@ html:has(.canvas-root) .site-header {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: hidden;
-    overscroll-behavior: none;
-    touch-action: none;
-    -webkit-overflow-scrolling: touch;
-  }
-  /* 전면 스냅 애니가 끝난 뒤에만 목록을 스크롤한다 */
-  .canvas-root.is-sheet-scrollable .canvas-panel-scroll {
     overflow-y: auto;
     overscroll-behavior: contain;
     touch-action: pan-y;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* peek 만 잠근다 — mid 에서 스크롤이 막히면 상세에서 돌아온 뒤 목록이 멈춘다 */
+  .canvas-root.is-sheet-peek .canvas-panel-scroll {
+    overflow-y: hidden;
+    overscroll-behavior: none;
+    touch-action: none;
   }
 
   /* 장소 상세 드로어 — mid 는 높이 52%(하단 CTA 가 그 안에 보인다).
@@ -740,9 +744,12 @@ html:has(.canvas-root) .site-header {
       opacity 0.22s ease,
       visibility 0s;
   }
-  .canvas-root.is-place-full .canvas-topbar {
+  .canvas-root.is-place-full .canvas-topbar,
+  .canvas-root.is-sheet-full .canvas-topbar,
+  .canvas-root.is-place-raised .canvas-topbar {
     opacity: 0;
     visibility: hidden;
+    pointer-events: none;
     transition:
       opacity 0.22s ease,
       visibility 0s 0.22s;

@@ -10,6 +10,7 @@ import { HeaderLead } from "./HeaderLead";
 import { LocaleSwitch } from "./LocaleSwitch";
 import { DesktopRail, Nav, TabDock } from "./Nav";
 import { SearchBar } from "./SearchBar";
+import { MapRouteChrome } from "./MapRouteChrome";
 
 /**
  * 유저 화면 공통 골격 — 흰 종이, 핀 하나만 산호.
@@ -27,6 +28,7 @@ export default async function PublicLayout({ children }: { children: React.React
       {/* 저장 상태는 화면 전체가 공유한다. 세션 쿠키가 없으면 이 프로바이더는
           네트워크를 타지 않는다 — 비로그인 방문자에게 비용이 붙지 않는다. */}
       <SavedProvider>
+      <MapRouteChrome />
       <AuthHashRescue />
       {/* 모바일은 하단 탭바(Nav)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
           않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터 */}
