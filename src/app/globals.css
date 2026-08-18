@@ -593,16 +593,16 @@ html:has(.canvas-root) .site-header {
     flex: 1 1 auto;
     min-height: 0;
     overflow-x: hidden;
-    overflow-y: auto;
-    overscroll-behavior: contain;
-    touch-action: pan-y;
-    -webkit-overflow-scrolling: touch;
-  }
-  /* peek 만 잠근다 — mid 에서 스크롤이 막히면 상세에서 돌아온 뒤 목록이 멈춘다 */
-  .canvas-root.is-sheet-peek .canvas-panel-scroll {
     overflow-y: hidden;
     overscroll-behavior: none;
     touch-action: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  /* 전면으로 올린 뒤에만 목록 스크롤 */
+  .canvas-root.is-sheet-scrollable .canvas-panel-scroll {
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    touch-action: pan-y;
   }
 
   /* 장소 상세 드로어 — mid 는 높이 52%(하단 CTA 가 그 안에 보인다).

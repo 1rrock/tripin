@@ -9,8 +9,9 @@
  *   · 지도 전면 + 목록 바텀시트
  *   · 목록/핀 선택 → 즉시 mid 로딩 카드 + 핀으로 이동. Next 라우터는 안 탄다
  *   · peek(제목+종류) / mid(중간) / full(전면). 한 제스처에 한 단만
- *   · peek 에서 더 내리면 닫힘. 접힌 동안 본문 스크롤은 잠근다
- *   · 상세 URL `?place=` push — 엣지 스와이프·뒤로가기가 히스토리를 탄다
+ *   · 목록도 전면으로 올린 뒤에만 스크롤. 상세에서 돌아와도 시트 높이는 유지
+ *   · 지도 클릭·핸들로 목록을 내린다
+ *   · 상세 URL 은 history.pushState — 엣지 스와이프·뒤로가기가 히스토리를 탄다
  */
 
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from "react";
@@ -398,9 +399,12 @@ export function ExplorerCanvas({
   );
 
   const onMapBackgroundClick = useCallback(() => {
-    if (!detailOpen) return;
-    setCollapseToken((n) => n + 1);
-  }, [detailOpen]);
+    if (detailOpen) {
+      setCollapseToken((n) => n + 1);
+      return;
+    }
+    if (sheetPctRef.current > SHEET_MID + 2) commitSheetPct(SHEET_MID);
+  }, [detailOpen, commitSheetPct]);
 
   const snapListSheet = useCallback((pct: number) => {
     let best: number = SHEET_SNAPS[0];
@@ -442,12 +446,49 @@ export function ExplorerCanvas({
     snapListSheet(sheetPctRef.current);
   }, [snapListSheet]);
 
+  const sheetWasFullRef = useRef(false);
   useEffect(() => {
     const root = rootRef.current;
     if (!root || surface !== "page") return;
-    root.classList.toggle("is-sheet-full", sheetPct >= SHEET_FULL - 2);
+    const full = sheetPct >= SHEET_FULL - 2;
+    root.classList.toggle("is-sheet-full", full);
     root.classList.toggle("is-sheet-peek", sheetPct <= SHEET_PEEK + 2);
-  }, [sheetPct, surface]);
+    if (!full) {
+      sheetWasFullRef.current = false;
+      root.classList.remove("is-sheet-scrollable");
+      if (listScrollRef.current) listScrollRef.current.scrollTop = 0;
+      return;
+    }
+    if (detailOpen) return;
+    const alreadyFull = sheetWasFullRef.current;
+    sheetWasFullRef.current = true;
+    if (alreadyFull) {
+      root.classList.add("is-sheet-scrollable");
+      return;
+    }
+    const panel = root.querySelector(".canvas-panel");
+    if (!(panel instanceof HTMLElement)) {
+      root.classList.add("is-sheet-scrollable");
+      return;
+    }
+    let done = false;
+    const enable = () => {
+      if (done) return;
+      done = true;
+      root.classList.add("is-sheet-scrollable");
+    };
+    const onEnd = (e: Event) => {
+      if (e instanceof TransitionEvent && e.propertyName !== "transform") return;
+      enable();
+    };
+    panel.addEventListener("transitionend", onEnd);
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const fallback = window.setTimeout(enable, reduce ? 0 : 320);
+    return () => {
+      panel.removeEventListener("transitionend", onEnd);
+      window.clearTimeout(fallback);
+    };
+  }, [sheetPct, surface, detailOpen]);
 
   useEffect(() => {
     const root = rootRef.current;
@@ -455,18 +496,12 @@ export function ExplorerCanvas({
     root.classList.toggle("is-place-raised", detailOpen && placeSnap !== "peek");
   }, [detailOpen, placeSnap, surface]);
 
-  /**
-   * mid 에서 목록을 내리면 전면으로 키운 뒤 스크롤한다.
-   * peek 만 잠근다 — 상세에서 돌아오면 mid 라 스크롤이 되어야 한다.
-   */
   const onListScroll = useCallback(() => {
     if (desktopRef.current) return;
     const el = listScrollRef.current;
     if (!el) return;
-    if (sheetPctRef.current > SHEET_PEEK + 2 && sheetPctRef.current < SHEET_FULL - 2) {
-      if (el.scrollTop > 24) commitSheetPct(SHEET_FULL);
-    }
-  }, [commitSheetPct]);
+    if (sheetPctRef.current < SHEET_FULL - 2) el.scrollTop = 0;
+  }, []);
 
   const listTouchY = useRef<number | null>(null);
   const onListTouchStart = useCallback((e: React.TouchEvent) => {
