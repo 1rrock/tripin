@@ -527,6 +527,11 @@ export function MapView({
         map.setZoom(Math.max(FOCUS_MIN_ZOOM, CLUSTER_MAX_ZOOM + 1));
       }
       map.panTo({ lat: pin.lat, lng: pin.lng });
+      /* 바텀시트가 먹는 만큼 핀을 위로 올린다 — 안 그러면 카드 뒤에 숨는다 */
+      const pad = fitPaddingRef.current;
+      const bottom =
+        typeof pad === "function" ? (pad().bottom ?? 0) : typeof pad === "number" ? pad : 0;
+      if (bottom > 64) map.panBy(0, Math.round(bottom / 2) - 24);
     }
   }, [activeId, pins, cluster, nameWhenClose]);
 

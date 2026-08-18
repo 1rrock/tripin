@@ -7,10 +7,9 @@
  *
  * 모바일 문법(네이버 지도형):
  *   · 지도 전면 + 목록 바텀시트
- *   · 목록/핀 선택 → 장소 드로어 mid. 탭바는 바로 숨긴다
- *   · 접힌 동안 본문 스크롤은 잠근다. 위로 밀어 전면이 된 뒤에만 스크롤
- *   · 아래로 내리면 peek 로 작아지고, 더 당기면 닫힌다
- *   · mid 에서 닫기/뒤로 → 맵+목록
+ *   · 목록/핀 선택 → 즉시 mid 로딩 카드 + 핀으로 이동. Next 라우터는 안 탄다
+ *   · peek(제목+종류) / mid(중간) / full(전면). 한 제스처에 한 단만
+ *   · peek 에서 더 내리면 닫힘. 접힌 동안 본문 스크롤은 잠근다
  *   · 상세 URL `?place=` push — 엣지 스와이프·뒤로가기가 히스토리를 탄다
  */
 
@@ -100,12 +99,16 @@ export function ExplorerCanvas({
   const [sheetPct, setSheetPct] = useState(SHEET_MID);
   const sheetPctRef = useRef(sheetPct);
   const dragRef = useRef<{ startY: number; startPct: number } | null>(null);
-  const pendingPlaceMark = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
   const listScrollRef = useRef<HTMLDivElement>(null);
   const [collapseToken, setCollapseToken] = useState(0);
   /* 드로어 스냅 — full 이면 탭바를 물리고(is-place-full) 지도 컨트롤도 덮인다 */
   const [placeSnap, setPlaceSnap] = useState<PlaceDrawerSnap>("mid");
+  /* 상세 id 는 로컬이 진실. router.push(?place=) 는 /map loading.tsx 가
+     페이지를 2~3초 스켈레톤으로 갈아엎어 아무 반응이 없는 것처럼 보인다.
+     URL 은 history.pushState 로만 맞춰 뒤로가기는 살린다. */
+  const [localPlace, setLocalPlace] = useState<string | null>(placeParam);
+  const placePushedRef = useRef(false);
 
   /* 시트 높이는 CSS 변수로만 그린다. 드래그 중 setState 하면 HomeCanvas 전체가
      프레임마다 다시 그려져(지도·썸네일 48장) 모바일 크롬이 멈춘다.
@@ -284,9 +287,8 @@ export function ExplorerCanvas({
     [filtered, locale],
   );
 
-  /** 필터 밖 장소 id 가 URL 에 있어도 상세는 연다(공유 링크) */
   const detailPlace =
-    (placeParam ? (filtered.find((p) => p.id === placeParam) ?? places.find((p) => p.id === placeParam)) : null) ??
+    (localPlace ? (filtered.find((p) => p.id === localPlace) ?? places.find((p) => p.id === localPlace)) : null) ??
     null;
   const detailOpen = Boolean(detailPlace);
 
@@ -304,23 +306,22 @@ export function ExplorerCanvas({
     };
   }, [surface, detailOpen, placeSnap]);
 
-  /* 장소가 바뀌거나 닫히면 스냅은 mid 부터 — 탭바가 헛돌아 사라지지 않게.
-     이펙트가 아니라 렌더 중에 되돌린다: 미루면 새 장소가 이전 스냅으로 한 프레임
-     그려진다(react-hooks/set-state-in-effect). */
-  const [prevPlaceParam, setPrevPlaceParam] = useState(placeParam);
-  if (prevPlaceParam !== placeParam) {
-    setPrevPlaceParam(placeParam);
-    if (placeParam) setActiveId(placeParam);
+  const [prevLocalPlace, setPrevLocalPlace] = useState(localPlace);
+  if (prevLocalPlace !== localPlace) {
+    setPrevLocalPlace(localPlace);
+    if (localPlace) setActiveId(localPlace);
     setPlaceSnap("mid");
   }
 
-  /* push 로 연 상세만 history.state 에 표시 — 닫을 때 back, 공유 유입은 replace */
   useEffect(() => {
-    if (!placeParam || !pendingPlaceMark.current) return;
-    pendingPlaceMark.current = false;
-    const st = window.history.state;
-    window.history.replaceState({ ...(st && typeof st === "object" ? st : {}), __placeSheet: true }, "");
-  }, [placeParam]);
+    const onPop = () => {
+      const p = new URLSearchParams(window.location.search).get("place");
+      setLocalPlace(p);
+      if (!p) placePushedRef.current = false;
+    };
+    window.addEventListener("popstate", onPop);
+    return () => window.removeEventListener("popstate", onPop);
+  }, []);
 
   const buildUrl = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
@@ -333,42 +334,52 @@ export function ExplorerCanvas({
   );
 
   const closeDetail = useCallback(() => {
-    if (!placeParam) return;
-    const st = window.history.state;
-    if (st && typeof st === "object" && (st as { __placeSheet?: boolean }).__placeSheet) {
-      router.back();
+    const url = buildUrl((p) => {
+      p.delete("place");
+    });
+    if (placePushedRef.current) {
+      placePushedRef.current = false;
+      window.history.back();
       return;
     }
-    router.replace(
-      buildUrl((p) => {
-        p.delete("place");
-      }),
-      { scroll: false },
+    setLocalPlace(null);
+    const st = window.history.state;
+    window.history.replaceState(
+      { ...(st && typeof st === "object" ? st : {}) },
+      "",
+      url,
     );
-  }, [placeParam, router, buildUrl]);
+  }, [buildUrl]);
 
   /**
-   * 핀·목록 공통 — 장소 드로어 mid 로 연다(`?place=` push).
-   * 같은 장소 재선택: 핀이면 닫기, 목록이면 포커스 유지.
+   * 핀·목록 공통 — 드로어를 즉시 mid 로 연다. Next 라우터는 타지 않는다.
    */
   const openDetail = useCallback(
     (id: string, opts?: { toggleClose?: boolean }) => {
       setActiveId(id);
-      if (placeParam === id) {
+      if (localPlace === id) {
         if (opts?.toggleClose) closeDetail();
         return;
       }
       const url = buildUrl((p) => {
         p.set("place", id);
       });
-      if (placeParam) {
-        router.replace(url, { scroll: false });
+      const st = {
+        ...(typeof window.history.state === "object" && window.history.state
+          ? window.history.state
+          : {}),
+        __placeSheet: true,
+      };
+      if (localPlace) {
+        window.history.replaceState(st, "", url);
       } else {
-        pendingPlaceMark.current = true;
-        router.push(url, { scroll: false });
+        window.history.pushState(st, "", url);
+        placePushedRef.current = true;
       }
+      setLocalPlace(id);
+      setPlaceSnap("mid");
     },
-    [placeParam, closeDetail, buildUrl, router],
+    [localPlace, closeDetail, buildUrl],
   );
 
   const onPinClick = useCallback(
@@ -378,7 +389,7 @@ export function ExplorerCanvas({
     [openDetail],
   );
 
-  /** 목록 행 → 지도 포커스 + 장소 드로어 mid (네이버처럼) */
+  /** 목록 행 → 지도 포커스 + 장소 드로어 mid */
   const onRowClick = useCallback(
     (id: string) => {
       openDetail(id);
@@ -767,10 +778,13 @@ export function ExplorerCanvas({
               return { top: 48, right: 48, bottom: 48, left: 520 };
             }
             const h = rootRef.current?.getBoundingClientRect().height ?? 0;
+            const drawer = rootRef.current?.querySelector(".place-drawer");
+            const drawerH =
+              drawer instanceof HTMLElement ? drawer.getBoundingClientRect().height : 0;
             return {
               top: 128,
               right: 24,
-              bottom: Math.round((h * sheetPctRef.current) / 100) + 16,
+              bottom: Math.round((detailOpen && drawerH > 0 ? drawerH : (h * sheetPctRef.current) / 100) + 16),
               left: 24,
             };
           }}

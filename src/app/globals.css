@@ -617,8 +617,25 @@ html:has(.canvas-root) .site-header {
     box-shadow: 0 -8px 32px rgba(0, 0, 0, 0.12);
     overflow: hidden;
   }
+  /* peek — 제목+종류만 붙는 짧은 카드 */
   .place-drawer[data-snap="peek"] {
-    height: 26%; /* = PLACE_DRAWER_PEEK_PCT */
+    height: auto;
+  }
+  .place-drawer[data-snap="peek"] .place-drawer-dock {
+    display: none;
+  }
+  .place-drawer[data-snap="peek"] .place-drawer-midhead,
+  .place-drawer[data-snap="peek"] .place-drawer-scroll,
+  .place-drawer[data-snap="peek"] .place-drawer-midboot {
+    display: none;
+  }
+  .place-drawer.is-booting .place-drawer-midhead,
+  .place-drawer.is-booting .place-drawer-scroll {
+    display: none;
+  }
+  .place-drawer[data-snap="mid"] .place-drawer-peekcard,
+  .place-drawer[data-snap="full"] .place-drawer-peekcard {
+    display: none;
   }
   /* full — 캔버스가 이미 탭바 자리까지 내려왔으므로 상자만 100% */
   .place-drawer[data-snap="full"] {
@@ -638,8 +655,9 @@ html:has(.canvas-root) .site-header {
     overscroll-behavior: contain;
     touch-action: pan-y;
   }
-  .place-drawer[data-snap="peek"] .place-drawer-dock {
-    display: none;
+  .place-drawer.is-booting .place-drawer-dock {
+    opacity: 0.4;
+    pointer-events: none;
   }
   /* full 헤더(← ♥ ✕) — 높이는 스냅 때 한 번만 바뀌고, 보이는 건 opacity */
   .place-drawer-appbar {

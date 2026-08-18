@@ -5,10 +5,11 @@
  *
  * 모바일(네이버 문법):
  *   · 드로어 **하나**가 peek ↔ mid ↔ full 을 오간다. 전환은 FLIP(transform)
- *   · peek: 핸들 + 상호만. 아래로 더 당기면 닫힘
- *   · mid: 핸들 + 상호·메타 + CTA. 위로 밀면 full, 아래로 내리면 peek
- *   · full: 상단 ← ♥ ✕. 본문 스크롤은 전면 애니 뒤에만 연다
- *   · 뒤로가기: full→mid(history), mid/peek→맵(onClose). full 의 ✕ 는 한 번에 닫는다
+ *   · peek(내림): 제목 + 종류만. 더 내리면 닫힘
+ *   · mid(중간, 선택 시): 절반 + 로딩 후 본문. 본문 스크롤은 잠김
+ *   · full(전면): 애니 뒤에만 스크롤
+ *   · 한 제스처에 한 단만 — peek에서 올리면 mid, mid에서 올리면 full
+ *   · 뒤로: full→mid, mid/peek→맵
  *
  * 데스크톱: 지도 안 absolute 카드.
  */
@@ -108,6 +109,8 @@ export function PlaceSheet({
 
   const [snap, setSnap] = useState<PlaceDrawerSnap>("mid");
   const [scrollReady, setScrollReady] = useState(false);
+  const [booting, setBooting] = useState(true);
+  const gestureLockRef = useRef(false);
   const snapRef = useRef(snap);
   /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은 전부
      사용자 이벤트 콜백이라 커밋 뒤다. 위 onCloseRef 와 같은 계약. */
@@ -202,6 +205,7 @@ export function PlaceSheet({
     setPrevPlaceId(place.id);
     setSnap("mid");
     setScrollReady(false);
+    setBooting(true);
   }
   useEffect(() => {
     flipCleanupRef.current?.();
@@ -209,6 +213,11 @@ export function PlaceSheet({
     onSnapChangeRef.current?.("mid");
     expandedByHistory.current = false;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
+  }, [place.id]);
+  useEffect(() => {
+    const reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+    const t = window.setTimeout(() => setBooting(false), reduce ? 0 : 240);
+    return () => window.clearTimeout(t);
   }, [place.id]);
 
   useEffect(() => {
@@ -329,24 +338,28 @@ export function PlaceSheet({
   };
   const onSheetTouchStart = (e: React.TouchEvent) => {
     pullStartY.current = e.touches[0]?.clientY ?? null;
+    gestureLockRef.current = false;
   };
   const onSheetTouchMove = (e: React.TouchEvent) => {
     const el = scrollRef.current;
     const y0 = pullStartY.current;
     const y = e.touches[0]?.clientY;
-    if (!el || y0 == null || y == null) return;
+    if (!el || y0 == null || y == null || gestureLockRef.current) return;
     const dy = y - y0;
     if (snapRef.current !== "full") {
       if (dy < -32) {
+        gestureLockRef.current = true;
         stepLarger();
         pullStartY.current = null;
       } else if (dy > 48) {
+        gestureLockRef.current = true;
         stepSmaller();
         pullStartY.current = null;
       }
       return;
     }
     if (el.scrollTop <= 0 && dy > 48) {
+      gestureLockRef.current = true;
       collapseMid();
       pullStartY.current = null;
     }
@@ -370,14 +383,20 @@ export function PlaceSheet({
   const onHandlePointerDown = (e: React.PointerEvent) => {
     e.currentTarget.setPointerCapture(e.pointerId);
     handleStartY.current = e.clientY;
+    gestureLockRef.current = false;
   };
   const onHandlePointerUp = (e: React.PointerEvent) => {
     const y0 = handleStartY.current;
     handleStartY.current = null;
-    if (y0 == null) return;
+    if (y0 == null || gestureLockRef.current) return;
     const dy = e.clientY - y0;
-    if (dy < -32) stepLarger();
-    else if (dy > 48) stepSmaller();
+    if (dy < -32) {
+      gestureLockRef.current = true;
+      stepLarger();
+    } else if (dy > 48) {
+      gestureLockRef.current = true;
+      stepSmaller();
+    }
   };
 
   const onBackClick = () => {
@@ -535,7 +554,8 @@ export function PlaceSheet({
     );
   }
 
-  /* ── 모바일: 드로어 하나 — mid ↔ full 을 높이로 오가며 합체한다 ── */
+  /* ── 모바일: peek(하단 카드) ↔ mid ↔ full ── */
+  const peek = snap === "peek";
   const full = snap === "full";
   return (
     <div
@@ -543,7 +563,7 @@ export function PlaceSheet({
       role="dialog"
       aria-modal="true"
       aria-label={t(m.map.detailAria, { name: place.name })}
-      className={`place-drawer on-lightbox${scrollReady ? " is-scroll-ready" : ""}`}
+      className={`place-drawer on-lightbox${scrollReady ? " is-scroll-ready" : ""}${booting ? " is-booting" : ""}`}
       data-snap={snap}
       style={{ background: "var(--sheet)", color: "var(--paper)" }}
     >
@@ -578,7 +598,58 @@ export function PlaceSheet({
         onPointerCancel={onHandlePointerUp}
       />
 
-      <div className="flex shrink-0 items-start gap-2 px-4 pb-1">
+      {/* peek — 제목 + 종류만. 컷·CTA 는 중간(mid) 부터. */}
+      <div
+        className="place-drawer-peekcard px-4 pb-3"
+        onTouchStart={onSheetTouchStart}
+        onTouchMove={onSheetTouchMove}
+      >
+        <div className="flex items-start gap-2">
+          <div className="min-w-0 flex-1">
+            <h2
+              className="line-clamp-2 font-black"
+              title={place.name}
+              style={{
+                fontSize: "var(--t-title)",
+                letterSpacing: "-0.03em",
+                lineHeight: 1.25,
+              }}
+            >
+              {place.name}
+            </h2>
+            <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+              {place.typeLabel}
+            </p>
+          </div>
+          <button
+            ref={peek ? closeBtnRef : undefined}
+            type="button"
+            onClick={onClose}
+            aria-label={m.map.closeDetail}
+            className="grid size-9 shrink-0 cursor-pointer place-items-center rounded-full active:bg-(--hover)"
+            style={{ color: "var(--dim)" }}
+          >
+            <Icon.close className="size-[18px]" style={{ color: "var(--paper)" }} />
+          </button>
+        </div>
+      </div>
+
+      {booting && !peek ? (
+        <div className="place-drawer-midboot px-4 pb-6">
+          <span className="block pt-1">
+            <span className="bone-line" style={{ width: "72%" }} />
+          </span>
+          <span className="mt-2 block">
+            <span className="bone-line" style={{ width: "38%" }} />
+          </span>
+          <span
+            className="bone mt-4 block"
+            style={{ width: "100%", height: 160, borderRadius: "var(--r-frame)" }}
+          />
+        </div>
+      ) : null}
+
+      <div className="place-drawer-midhead flex shrink-0 items-start gap-2 px-4 pb-1">
         <div className="min-w-0 flex-1">
           <h2
             className="truncate font-black"
@@ -596,7 +667,7 @@ export function PlaceSheet({
         <div className="place-drawer-titletools mt-0.5 flex shrink-0 items-center gap-0.5" inert={full}>
           <SaveButton placeId={place.id} placeName={place.name} bare />
           <button
-            ref={full ? undefined : closeBtnRef}
+            ref={full || peek ? undefined : closeBtnRef}
             type="button"
             onClick={onClose}
             aria-label={m.map.closeDetail}
