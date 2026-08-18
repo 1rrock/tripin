@@ -5,6 +5,7 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
 import { channelAvatar } from "@/shared/lib/youtube";
+import { AvatarPhoto } from "@/shared/ui/AvatarPhoto";
 
 export function Frame({
   waxed = false,
@@ -47,16 +48,7 @@ export function Avatar({
       }}
     >
       {src ? (
-        // eslint-disable-next-line @next/next/no-img-element -- yt3 CDN 원본
-        <img
-          src={channelAvatar(src, size * 2)}
-          alt={alt}
-          width={size}
-          height={size}
-          loading="lazy"
-          decoding="async"
-          className="size-full object-cover"
-        />
+        <AvatarPhoto src={channelAvatar(src, size * 2)} alt={alt} size={size} fallback={initials} />
       ) : (
         initials
       )}

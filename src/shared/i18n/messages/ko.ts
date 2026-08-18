@@ -17,7 +17,8 @@ export const ko = {
     /** 헤드라인에서 산호로 찍는 구절 — 핀과 같은 역할 */
     titleHot: "맛집",
     titleLine2: "",
-    blurb: "",
+    /** 히어로 부제 — 처음 온 사람에게 핵심 고리(영상 → 상호 → 지도)를 한 문장으로 */
+    blurb: "여행 유튜브에서 본 그 가게, 확인된 상호명으로 찾아 지도 앱으로 바로 가세요.",
     /** 지면 카드 검색 알약 */
     fieldSearch: "채널·도시·가게 이름으로",
     fieldSearchMob: "채널·도시·가게",
@@ -177,6 +178,10 @@ export const ko = {
     placeholder: "채널 · 영상 · 지역 · 종류 · 장소",
     hint: "채널·영상·지역·종류·장소를 한 번에 찾습니다. 초성도 됩니다 — ㄷㅋ 로 도쿄, ㅅㅍㄹ 로 삿포로.",
     empty: "“{q}” 에 맞는 것이 없어요.",
+    /** 빈 결과 아래 한 줄 — 짧은 단어나 다른 언어 표기를 권한다 */
+    emptyHint: "더 짧은 단어로 써보거나, 한글·영문 표기를 바꿔보세요.",
+    /** 위 힌트로도 못 찾았을 사람이 막히지 않게 지도로 보내는 출구 */
+    emptyCta: "지도에서 직접 찾아보기",
     /** 질의에 가장 잘 맞는 하나 — 대개 지도나 채널이다 */
     top: "대표 결과",
     more: "{n}개 더 보기",
@@ -190,6 +195,8 @@ export const ko = {
   },
   common: {
     openMap: "지도 열기",
+    /** 외부 링크의 보조기기 안내 — 새 탭 전환을 미리 알린다(WCAG G200) */
+    opensNewTab: "새 탭에서 열림",
     watchVideo: "영상 보기",
     watchAt: "영상 {ts}",
     home: "홈",
@@ -560,6 +567,8 @@ export type Messages = {
     placeholder: string;
     hint: string;
     empty: string;
+    emptyHint: string;
+    emptyCta: string;
     top: string;
     more: string;
     kinds: {
@@ -572,6 +581,7 @@ export type Messages = {
   };
   common: {
     openMap: string;
+    opensNewTab: string;
     watchVideo: string;
     watchAt: string;
     home: string;

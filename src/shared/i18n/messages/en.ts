@@ -17,7 +17,7 @@ export const en: Messages = {
     title: "Food spots from travel YouTube",
     titleHot: "Food spots",
     titleLine2: "",
-    blurb: "",
+    blurb: "That spot from a travel video — find its confirmed name, then jump straight to your map app.",
     fieldSearch: "Channel, city, or place name",
     fieldSearchMob: "Channel, city, place",
     stats: "{places} places · {cities} cities · {creators} channels",
@@ -168,6 +168,8 @@ export const en: Messages = {
     placeholder: "Channels · videos · places · types",
     hint: "Search channels, videos, cities, types, and places all at once.",
     empty: "Nothing matches “{q}”.",
+    emptyHint: "Try a shorter word, or switch between Korean and English spelling.",
+    emptyCta: "Browse the map instead",
     top: "Top result",
     more: "{n} more",
     kinds: {
@@ -180,6 +182,7 @@ export const en: Messages = {
   },
   common: {
     openMap: "Open map",
+    opensNewTab: "Opens in a new tab",
     watchVideo: "Watch",
     watchAt: "Watch {ts}",
     home: "Home",

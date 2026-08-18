@@ -15,6 +15,7 @@
 import { revalidatePath } from "next/cache";
 import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { requireAdmin } from "@/shared/lib/require-admin";
 import type { ActionResult } from "../_lib/action-result";
 
 
@@ -29,6 +30,7 @@ function afterWrite() {
  * 이미 사람이 확인했다는 뜻이라, 별도로 "승인" 버튼을 또 누르게 하면 손이 두 번 간다.
  */
 export async function savePlaceTranslation(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const placeId = String(form.get("placeId") ?? "").trim();
   if (!placeId) return { error: "잘못된 요청입니다" };
 
@@ -64,6 +66,7 @@ export async function savePlaceTranslation(_: ActionResult, form: FormData): Pro
  * 번역할 내용 자체가 없는(en_source=null) 장소는 승인할 게 없으므로 호출자(화면)가 막는다.
  */
 export async function approvePlaceTranslation(placeId: string): Promise<ActionResult> {
+  await requireAdmin();
   const db = getSupabaseAdmin();
   const { data: place } = await db
     .from("places")
@@ -91,6 +94,7 @@ export async function saveCityIntroTranslation(
   _: ActionResult,
   form: FormData,
 ): Promise<ActionResult> {
+  await requireAdmin();
   const creatorId = String(form.get("creatorId") ?? "").trim();
   const cityId = String(form.get("cityId") ?? "").trim();
   if (!creatorId || !cityId) return { error: "잘못된 요청입니다" };

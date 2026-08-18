@@ -20,7 +20,6 @@ export const FILTERABLE_TYPES: PlaceType[] = [
   "cafe",
   "attraction",
   "viewpoint",
-  "fishing",
   "hotel",
   "bar",
   "shop",

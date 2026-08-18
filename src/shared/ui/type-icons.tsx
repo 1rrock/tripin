@@ -52,7 +52,6 @@ export const HOME_TYPES: PlaceType[] = [
   "bar",
   "shop",
   "viewpoint",
-  "fishing",
 ];
 
 export const TYPE_COLOR: Record<PlaceType, { fg: string; softBg: string; solid: string }> = {

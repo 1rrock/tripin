@@ -391,6 +391,12 @@ html:has(.canvas-root.is-place-full) .tabbar {
     transition-duration: 1ms;
     animation: none;
   }
+  /* 애니메이션만 끄면 시머 그라데이션이 정지 줄무늬로 남는다 — 면으로 되돌린다 */
+  .bone,
+  .bone-line,
+  .bone-ava {
+    background-image: none;
+  }
 }
 
 /* ── 데스크톱 맵 캔버스 ──────────────────────────────────────────

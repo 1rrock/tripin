@@ -16,7 +16,7 @@
  *    같은 줄에 서는 칩이라 하나라도 어긋나면 줄이 깨져 보인다(실제로 겪음).
  */
 
-import { Heart } from "@phosphor-icons/react";
+import { HeartIcon as Heart } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
 

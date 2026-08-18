@@ -10,6 +10,7 @@
 
 import { track } from "@vercel/analytics";
 import type { CSSProperties, ReactNode } from "react";
+import { useLocale } from "@/shared/i18n/LocaleContext";
 import { outboundKind } from "@/shared/lib/track-outbound";
 
 export function OutboundA({
@@ -25,6 +26,7 @@ export function OutboundA({
   style?: CSSProperties;
   title?: string;
 }) {
+  const { messages: m } = useLocale();
   const kind = outboundKind(href);
   return (
     <a
@@ -41,6 +43,9 @@ export function OutboundA({
       }}
     >
       {children}
+      {/* 새 탭으로 나간다는 사실을 보조기기에도 남긴다(WCAG G200). 아이콘은
+          호출부마다 이미 있거나 문맥이 말한다 — 여기서는 소리만 보탠다. */}
+      <span className="sr-only"> ({m.common.opensNewTab})</span>
     </a>
   );
 }

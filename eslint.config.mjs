@@ -12,6 +12,8 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // 스크래치 스크립트 — git 도 무시한다(.gitignore). 린트 대상이 아니다.
+    "tmp/**",
   ]),
 ]);
 

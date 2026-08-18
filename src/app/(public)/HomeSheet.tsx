@@ -9,7 +9,7 @@
  */
 
 import Link from "next/link";
-import { MagnifyingGlass, MapPin } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon as MagnifyingGlass, MapPinIcon as MapPin } from "@phosphor-icons/react";
 import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -116,9 +116,15 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
         <h1 className="text-[32px] leading-[1.08] font-black tracking-[-0.048em] lg:text-[52px]">
           <Hot text={m.home.title} hot={m.home.titleHot} />
         </h1>
+        {m.home.blurb ? (
+          <p className="mt-3 max-w-[34rem] text-[15px] leading-relaxed text-(--dim) lg:text-base">
+            {m.home.blurb}
+          </p>
+        ) : null}
 
         <button
           type="button"
+          id="home-hero-search"
           onClick={openSearch}
           aria-label={m.home.searchAria}
           className="mt-5 flex h-[52px] w-full items-center gap-2.5 rounded-full bg-white pr-2 pl-4 text-left lg:mt-7 lg:h-14 lg:pr-2 lg:pl-5"

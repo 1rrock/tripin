@@ -13,7 +13,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
-import { DotsThreeVertical } from "@phosphor-icons/react";
+import { DotsThreeVerticalIcon as DotsThreeVertical } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
 

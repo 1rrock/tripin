@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { requireAdmin } from "@/shared/lib/require-admin";
 
 import type { ActionResult } from "../_lib/action-result";
 
@@ -10,6 +11,7 @@ import type { ActionResult } from "../_lib/action-result";
  * 지워도 유저가 또 찾으면 다시 쌓이므로, 지우는 것 자체가 안전한 리셋이다.
  */
 export async function dismissSearchMiss(query: string): Promise<ActionResult> {
+  await requireAdmin();
   const { error } = await getSupabaseAdmin().from("search_misses").delete().eq("query", query);
   if (error) return { error: error.message };
   revalidatePath("/admin/search-misses");

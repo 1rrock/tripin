@@ -18,7 +18,7 @@
  */
 
 import { Suspense } from "react";
-import { BookmarkSimple, Heart } from "@phosphor-icons/react";
+import { BookmarkSimpleIcon as BookmarkSimple, HeartIcon as Heart } from "@phosphor-icons/react";
 import type { SavedListRow } from "@/shared/api/saved-server";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";

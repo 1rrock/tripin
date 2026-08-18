@@ -134,7 +134,9 @@ export default async function CityPage({
           ),
         ]}
       />
-      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:hidden">
+      {/* 브레드크럼은 데스크톱에도 세운다 — 검색 유입이 위로 올라갈 길.
+          제목·통계는 모바일 전용(데스크톱 h1 은 CityExplorer 가 그린다). */}
+      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:pb-0">
         <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
           <Link
             href={localePath("/", locale)}
@@ -154,13 +156,13 @@ export default async function CityPage({
         </nav>
 
         <h1
-          className="font-black"
+          className="font-black lg:hidden"
           style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
         >
           {t(m.cityDetail.creatorsTitle, { city: cityLabel })}
         </h1>
 
-        <p className="index tnum" style={{ color: "var(--dim)" }}>
+        <p className="index tnum lg:hidden" style={{ color: "var(--dim)" }}>
           {t(m.cityDetail.stats, {
             creators: data.creators.length,
             places: data.places.length,

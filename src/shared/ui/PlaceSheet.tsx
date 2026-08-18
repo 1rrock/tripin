@@ -86,8 +86,10 @@ export function PlaceSheet({
   const scrollRef = useRef<HTMLDivElement>(null);
   const closeBtnRef = useRef<HTMLButtonElement>(null);
   const onCloseRef = useRef(onClose);
+  const onSnapChangeRef = useRef(onSnapChange);
   useEffect(() => {
     onCloseRef.current = onClose;
+    onSnapChangeRef.current = onSnapChange;
   });
 
   const [isMobile, setIsMobile] = useState(
@@ -103,7 +105,11 @@ export function PlaceSheet({
 
   const [snap, setSnap] = useState<PlaceDrawerSnap>("mid");
   const snapRef = useRef(snap);
-  snapRef.current = snap;
+  /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은 전부
+     사용자 이벤트 콜백이라 커밋 뒤다. 위 onCloseRef 와 같은 계약. */
+  useEffect(() => {
+    snapRef.current = snap;
+  });
   const expandedByHistory = useRef(false);
   const lastCollapseToken = useRef(collapseToken);
   const pullStartY = useRef<number | null>(null);
@@ -116,11 +122,19 @@ export function PlaceSheet({
     [onSnapChange],
   );
 
+  /* 장소가 바뀌면 렌더 중에 mid 로 되돌린다 — 이펙트로 미루면 새 장소가 이전
+     스냅 높이로 한 프레임 그려진다. 부모 알림·스크롤 리셋은 커밋 뒤 일이라
+     아래 이펙트에 남는다(react-hooks/set-state-in-effect). */
+  const [prevPlaceId, setPrevPlaceId] = useState(place.id);
+  if (prevPlaceId !== place.id) {
+    setPrevPlaceId(place.id);
+    setSnap("mid");
+  }
   useEffect(() => {
-    setSnapBoth("mid");
+    onSnapChangeRef.current?.("mid");
     expandedByHistory.current = false;
     if (scrollRef.current) scrollRef.current.scrollTop = 0;
-  }, [place.id, setSnapBoth]);
+  }, [place.id]);
 
   useEffect(() => {
     closeBtnRef.current?.focus();

@@ -14,6 +14,7 @@ import { purgePublicData } from "@/shared/api/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { resolveGoogleCoords } from "@/shared/lib/resolve-google-place";
+import { requireAdmin } from "@/shared/lib/require-admin";
 import type { ActionResult } from "../_lib/action-result";
 
 
@@ -63,6 +64,7 @@ function parseYoutubeId(raw: string): string | null {
 // ── 크리에이터 ─────────────────────────────────────────
 
 export async function createCreator(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const parsed = z
     .object({
       slug: slugSchema,
@@ -102,6 +104,7 @@ export async function createCreator(_: ActionResult, form: FormData): Promise<Ac
 // ── 도시 ───────────────────────────────────────────────
 
 export async function createCity(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const coords = parseLatLng(String(form.get("latlng") ?? ""));
   const parsed = z
     .object({
@@ -138,6 +141,7 @@ export async function createCity(_: ActionResult, form: FormData): Promise<Actio
 // ── 영상 ───────────────────────────────────────────────
 
 export async function createVideo(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const creatorId = String(form.get("creatorId") ?? "");
   const url = String(form.get("url") ?? "");
   const title = String(form.get("title") ?? "").trim();
@@ -169,6 +173,7 @@ async function recountStats(): Promise<void> {
 // ── 장소 ───────────────────────────────────────────────
 
 export async function createPlace(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const parsed = z
     .object({
       creatorId: z.string().min(1, "크리에이터를 선택하세요"),
@@ -296,6 +301,7 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
 
 /** 기존 장소 수정 — 후보(candidate)를 검수해 확정으로 올리는 핵심 경로. */
 export async function updatePlace(_: ActionResult, form: FormData): Promise<ActionResult> {
+  await requireAdmin();
   const parsed = z
     .object({
       placeId: z.string().min(1, "잘못된 요청"),

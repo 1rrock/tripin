@@ -11,6 +11,7 @@ import { revalidatePath } from "next/cache";
 import { purgePublicData } from "@/shared/api/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { requireAdmin } from "@/shared/lib/require-admin";
 
 export interface SaveResult {
   ok?: string;
@@ -18,6 +19,7 @@ export interface SaveResult {
 }
 
 export async function savePlaceSummary(_: SaveResult, form: FormData): Promise<SaveResult> {
+  await requireAdmin();
   const parsed = z
     .object({ placeId: z.string().min(1, "잘못된 요청") })
     .safeParse({ placeId: form.get("placeId") });
@@ -92,6 +94,7 @@ export async function checkTranscriptOverlap(
   youtubeVideoId: string,
   bullets: string[],
 ): Promise<TranscriptCheck> {
+  await requireAdmin();
   try {
     const res = await fetch("https://www.youtube.com/youtubei/v1/player?prettyPrint=false", {
       method: "POST",

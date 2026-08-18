@@ -36,6 +36,19 @@ export function SearchBar() {
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
 
+  /* 홈 모바일의 헤더 돋보기 — 히어로 검색 알약이 **보이는 동안만** 숨긴다.
+     전에는 홈에서 무조건 숨겼는데, 피드를 내려간 사람은 검색으로 돌아올 길이
+     없었다(핵심 행동이 검색인데). 알약이 뷰포트를 벗어나면 헤더가 이어받는다. */
+  const [heroVisible, setHeroVisible] = useState(true);
+  useEffect(() => {
+    if (!onHome) return;
+    const el = document.getElementById("home-hero-search");
+    if (!el) return; // 알약이 없으면 기존대로 숨긴 채 둔다
+    const io = new IntersectionObserver(([e]) => setHeroVisible(e.isIntersecting));
+    io.observe(el);
+    return () => io.disconnect();
+  }, [onHome]);
+
   const close = useCallback(() => {
     setOpen(false);
     setQuery("");
@@ -217,7 +230,7 @@ export function SearchBar() {
         /* -mr-2 는 max-md 로 못 박는다 — md 의 mx-auto 와 같은 속성을 다투게 두면
            어느 쪽이 이기는지가 Tailwind 유틸 출력 순서에 달리고, 그러면 데스크톱
            가운데 정렬이 조용히 깨질 수 있다 */
-        className={`ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 max-md:-mr-2 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]${onHome ? " max-md:hidden" : ""}`}
+        className={`ml-auto flex min-h-10 min-w-10 shrink-0 cursor-pointer items-center justify-center gap-2.5 rounded-(--r-control) p-2 text-paper transition-[background-color,box-shadow] duration-150 max-md:-mr-2 active:bg-(--hover) md:mx-auto md:w-full md:max-w-xl md:shrink md:justify-start md:bg-(--sheet) md:px-3.5 md:py-2.5 md:text-dim md:shadow-[inset_0_0_0_1px_var(--hairline)] md:hover:shadow-[inset_0_0_0_1px_var(--edge)]${onHome && heroVisible ? " max-md:hidden" : ""}`}
       >
         {/* 탭바 아이콘과 같은 22px. -mr-2 는 **광학 정렬**이다 — 타깃(40px)은 손가락
             때문에 아이콘보다 큰데, 그 상자의 오른쪽을 거터에 맞추면 아이콘 자체는
@@ -325,12 +338,24 @@ export function SearchBar() {
                   {m.search.hint}
                 </p>
               ) : !results.top ? (
-                <p
-                  className="px-4 py-8 text-center"
-                  style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}
-                >
-                  {t(m.search.empty, { q: query.trim() })}
-                </p>
+                <div className="px-4 py-8 text-center">
+                  <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
+                    {t(m.search.empty, { q: query.trim() })}
+                  </p>
+                  <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+                    {m.search.emptyHint}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      router.push(href("/map"));
+                    }}
+                    className="index mt-3 cursor-pointer text-(--wax) underline-offset-4 hover:underline"
+                  >
+                    {m.search.emptyCta}
+                  </button>
+                </div>
               ) : (
                 <>
                   <GroupHead label={m.search.top} wax />

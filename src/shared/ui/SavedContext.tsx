@@ -99,7 +99,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [snap.places],
+    [snap.places, snap.membership],
   );
 
   const toggleSubscribedCb = useCallback(

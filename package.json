@@ -14,7 +14,6 @@
     "check:closed": "node scripts/check-closed.mjs"
   },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.116.0",
     "@googlemaps/js-api-loader": "^2.1.1",
     "@googlemaps/markerclusterer": "^2.6.2",
     "@phosphor-icons/react": "^2.1.10",
@@ -22,12 +21,12 @@
     "@supabase/supabase-js": "^2.112.0",
     "@vercel/analytics": "^2.0.1",
     "next": "16.2.12",
-    "openai": "^7.4.0",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "zod": "^4.4.3"
   },
   "devDependencies": {
+    "openai": "^7.4.0",
     "@tailwindcss/postcss": "^4",
     "@types/google.maps": "^3.65.4",
     "@types/node": "^20",

@@ -180,7 +180,9 @@ function withParam(path: string, key: string, value: string): string {
 }
 
 function hashProbePage(origin: string, next: string): NextResponse {
-  const safe = JSON.stringify(`${origin}${next}`);
+  // JSON.stringify 는 `</script>` 를 이스케이프하지 않는다 — 인라인 <script> 안에
+  // 그대로 박히면 그 지점에서 스크립트가 끊긴다(json-ld.tsx 와 동일 패턴).
+  const safe = JSON.stringify(`${origin}${next}`).replace(/</g, "\\u003c");
   const html = `<!doctype html><meta charset="utf-8"><title>…</title>
 <script>
 (function () {

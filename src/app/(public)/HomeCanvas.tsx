@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
-import { MagnifyingGlass, X } from "@phosphor-icons/react";
+import { MagnifyingGlassIcon as MagnifyingGlass, XIcon as X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
 import type { CityRow, HomeMapPlace } from "@/shared/api/cities";
 import type { PlaceType } from "@/shared/api/database.types";
@@ -50,6 +50,8 @@ export type CanvasLead = "home" | "region" | "channel" | "type";
 const SHEET_PEEK = 30;
 const SHEET_MID = 52;
 const SHEET_FULL = 88;
+/** 목록 시트가 한 번에 그리는 행 수 — 나머지는 스크롤 꼬리(ListMore)가 이어 연다 */
+const LIST_CHUNK = 48;
 const SHEET_SNAPS = [SHEET_PEEK, SHEET_MID, SHEET_FULL] as const;
 
 export function HomeCanvas(props: {
@@ -96,7 +98,23 @@ export function ExplorerCanvas({
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetPct, setSheetPct] = useState(SHEET_MID);
   const sheetPctRef = useRef(sheetPct);
-  sheetPctRef.current = sheetPct;
+  /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은 드래그
+     콜백과 MapView 의 fitPadding(맞추는 순간 호출)이라 전부 커밋 뒤다. */
+  useEffect(() => {
+    sheetPctRef.current = sheetPct;
+  });
+  /* 데스크톱 여부는 리스너로 한 번만 갱신한다 — 드래그·스크롤 핸들러가 초당
+     수십 번 matchMedia 객체를 새로 만들며 GC 를 조르지 않게. */
+  const desktopRef = useRef(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(min-width: 1024px)");
+    const sync = () => {
+      desktopRef.current = mq.matches;
+    };
+    sync();
+    mq.addEventListener("change", sync);
+    return () => mq.removeEventListener("change", sync);
+  }, []);
   const dragRef = useRef<{ startY: number; startPct: number } | null>(null);
   const pendingPlaceMark = useRef(false);
   const rootRef = useRef<HTMLDivElement>(null);
@@ -154,6 +172,23 @@ export function ExplorerCanvas({
   );
 
   const inboundKey = `${city ?? ""}|${region ?? ""}|${channel ?? ""}|${type ?? ""}|${q}|${savedOnly ? "1" : "0"}|${listId ?? ""}`;
+
+  /* 목록은 48개씩 끊어 그린다 — 필터 없는 /map 은 장소 전부가 목록인데,
+     1000행짜리 <ul> 은 첫 커밋에서 DOM 만으로 모바일을 누른다. 핀·지도는
+     여전히 전체를 받는다(filtered) — 잘리는 건 시트의 행 뿐이다. */
+  const [listCap, setListCap] = useState(LIST_CHUNK);
+  const [prevListKey, setPrevListKey] = useState(inboundKey);
+  if (prevListKey !== inboundKey) {
+    /* 필터가 바뀌면 캡도 처음부터 — 렌더 중 조정(react-hooks/set-state-in-effect) */
+    setPrevListKey(inboundKey);
+    setListCap(LIST_CHUNK);
+  }
+  /* 지도 핀으로 고른 행이 캡 밖이면 그 행까지 연다 — 목록 스크롤 동기화가 깨지지 않게 */
+  const activeIdx = activeId ? filtered.findIndex((p) => p.id === activeId) : -1;
+  if (activeIdx >= listCap) {
+    setListCap(Math.ceil((activeIdx + 1) / LIST_CHUNK) * LIST_CHUNK);
+  }
+  const listRows = filtered.length > listCap ? filtered.slice(0, listCap) : filtered;
   const inboundSeen = useRef<string | null>(null);
   useEffect(() => {
     if ((savedOnly || listId) && !savedReady) return;
@@ -240,11 +275,15 @@ export function ExplorerCanvas({
     null;
   const detailOpen = Boolean(detailPlace);
 
-  useEffect(() => {
+  /* 장소가 바뀌거나 닫히면 스냅은 mid 부터 — 탭바가 헛돌아 사라지지 않게.
+     이펙트가 아니라 렌더 중에 되돌린다: 미루면 새 장소가 이전 스냅으로 한 프레임
+     그려진다(react-hooks/set-state-in-effect). */
+  const [prevPlaceParam, setPrevPlaceParam] = useState(placeParam);
+  if (prevPlaceParam !== placeParam) {
+    setPrevPlaceParam(placeParam);
     if (placeParam) setActiveId(placeParam);
-    /* 장소가 바뀌거나 닫히면 스냅은 mid 부터 — 탭바가 헛돌아 사라지지 않게 */
     setPlaceSnap("mid");
-  }, [placeParam]);
+  }
 
   /* push 로 연 상세만 history.state 에 표시 — 닫을 때 back, 공유 유입은 replace */
   useEffect(() => {
@@ -338,7 +377,7 @@ export function ExplorerCanvas({
 
   /* 바텀시트 핸들 드래그 — 스냅 포인트로 붙인다 */
   const onHandlePointerDown = useCallback((e: React.PointerEvent) => {
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    if (desktopRef.current) return;
     e.currentTarget.setPointerCapture(e.pointerId);
     dragRef.current = { startY: e.clientY, startPct: sheetPctRef.current };
   }, []);
@@ -365,7 +404,7 @@ export function ExplorerCanvas({
    * 맨 위에서 더 당기면 mid/peek 로 접힘.
    */
   const onListScroll = useCallback(() => {
-    if (window.matchMedia("(min-width: 1024px)").matches) return;
+    if (desktopRef.current) return;
     const el = listScrollRef.current;
     if (!el) return;
     const { scrollTop } = el;
@@ -380,7 +419,7 @@ export function ExplorerCanvas({
   }, []);
   const onListTouchMove = useCallback(
     (e: React.TouchEvent) => {
-      if (window.matchMedia("(min-width: 1024px)").matches) return;
+      if (desktopRef.current) return;
       const el = listScrollRef.current;
       const y0 = listTouchY.current;
       const y = e.touches[0]?.clientY;
@@ -809,10 +848,33 @@ export function ExplorerCanvas({
           </div>
 
           {filtered.length === 0 ? (
-            <EmptyState message={m.home.empty} />
+            <EmptyState message={m.home.empty}>
+              {/* 막다른 화면 금지(EmptyState.tsx 주석) — 위 헤더의 지우기 버튼은
+                  빈 상태에서 눈에 안 들어온다. 같은 동작을 본문에 다시 세운다. */}
+              {hasFilter ? (
+                <button
+                  type="button"
+                  className="index cursor-pointer text-(--wax) underline-offset-4 hover:underline"
+                  onClick={() => {
+                    setActiveId(null);
+                    replace({
+                      city: null,
+                      channel: null,
+                      type: null,
+                      q: "",
+                      region: null,
+                      saved: false,
+                      list: null,
+                    });
+                  }}
+                >
+                  {m.cityDetail.clearFilters}
+                </button>
+              ) : null}
+            </EmptyState>
           ) : (
             <ul className="px-4 pb-6">
-              {filtered.map((p, i) => {
+              {listRows.map((p, i) => {
                 const on = p.id === activeId;
                 return (
                   <li key={p.id} className={i > 0 ? "mt-5" : ""}>
@@ -843,10 +905,45 @@ export function ExplorerCanvas({
                   </li>
                 );
               })}
+              {filtered.length > listCap ? (
+                <ListMore
+                  key={listCap}
+                  label={m.home.loadMore}
+                  onMore={() => setListCap((c) => c + LIST_CHUNK)}
+                />
+              ) : null}
             </ul>
           )}
         </div>
       </section>
     </div>
+  );
+}
+
+/** 목록 꼬리 — 화면에 들어오면 다음 묶음을 연다. IO 가 없거나 못 미더운 환경을
+ *  위해 같은 동작의 버튼을 겸한다. key={listCap} 로 묶음마다 새로 관찰한다. */
+function ListMore({ label, onMore }: { label: string; onMore: () => void }) {
+  const ref = useRef<HTMLLIElement>(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el || typeof IntersectionObserver === "undefined") return;
+    const io = new IntersectionObserver(([e]) => {
+      if (e.isIntersecting) onMore();
+    });
+    io.observe(el);
+    return () => io.disconnect();
+    /* onMore 는 setState 래퍼라 안정적이다 — 렌더마다 재관찰하지 않는다 */
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  return (
+    <li ref={ref} className="mt-5">
+      <button
+        type="button"
+        onClick={onMore}
+        className="index w-full cursor-pointer py-3 text-center text-(--dim)"
+      >
+        {label}
+      </button>
+    </li>
   );
 }

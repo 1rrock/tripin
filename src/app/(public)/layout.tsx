@@ -7,6 +7,7 @@ import { Wordmark } from "@/shared/ui/Wordmark";
 import { SavedProvider } from "@/shared/ui/SavedContext";
 import { AuthHashRescue } from "./AuthHashRescue";
 import { HeaderLead } from "./HeaderLead";
+import { LocaleSwitch } from "./LocaleSwitch";
 import { DesktopRail, Nav, TabDock } from "./Nav";
 import { SearchBar } from "./SearchBar";
 
@@ -41,7 +42,8 @@ export default async function PublicLayout({ children }: { children: React.React
 
           {/* 검색은 브랜드와 내비 사이를 채우며 가운데 선다(유튜브 문법).
               헤더 폭이 1152px 인데 좌우 요소가 650px 밖에 안 써서 가운데가 비어 있었다.
-              언어는 proxy 가 Accept-Language 로 첫 진입 시 정한다 — KO/EN 토글 UI 없음. */}
+              언어는 proxy 가 Accept-Language 로 첫 진입 시 정한다 — 되돌리는 길은
+              푸터의 LocaleSwitch. */}
           <SearchBar />
 
           {/* 내비를 감싸는 div 를 두지 않는다 — 모바일에서 그 안이 통째로 비는데
@@ -103,6 +105,7 @@ export default async function PublicLayout({ children }: { children: React.React
                   {it.label}
                 </Link>
               ))}
+              <LocaleSwitch />
             </nav>
           </div>
 

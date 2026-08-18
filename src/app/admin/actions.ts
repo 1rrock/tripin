@@ -13,6 +13,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { purgePublicData } from "@/shared/api/cache";
+import { requireAdmin } from "@/shared/lib/require-admin";
 import type { ActionResult } from "./_lib/action-result";
 
 
@@ -30,6 +31,7 @@ interface RecountRow {
 }
 
 export async function recountStats(): Promise<ActionResult> {
+  await requireAdmin();
   // `database.types.ts` 는 테이블만 생성돼 있어 함수 시그니처가 없다 — 반환형만 좁혀 쓴다
   const { data, error } = await (
     getSupabaseAdmin().rpc as unknown as (fn: string) => Promise<{
@@ -64,6 +66,7 @@ export async function setPiecePublished(
   cityId: string,
   publish: boolean,
 ): Promise<ActionResult> {
+  await requireAdmin();
   const db = getSupabaseAdmin();
 
   const { data: videos } = await db.from("videos").select("id").eq("creator_id", creatorId);
@@ -108,6 +111,7 @@ export async function setPiecePublished(
  * `video_places` 는 FK ON DELETE CASCADE 로 같이 정리된다.
  */
 export async function deletePlaceById(placeId: string): Promise<ActionResult> {
+  await requireAdmin();
   const db = getSupabaseAdmin();
   const { data: place } = await db.from("places").select("name").eq("id", placeId).single();
   const { error } = await db.from("places").delete().eq("id", placeId);
@@ -127,6 +131,7 @@ export async function togglePlacePublished(
   placeId: string,
   publish: boolean,
 ): Promise<ActionResult> {
+  await requireAdmin();
   const db = getSupabaseAdmin();
   const { data: place } = await db
     .from("places")

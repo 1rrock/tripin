@@ -9,8 +9,21 @@
  * 입력할 필요가 없게 하는 용도 (scripts/ingest/backfill-coords.mjs 와 동일 로직).
  */
 
+/**
+ * 정규식 `.test()` 는 부분 문자열 매치라 `https://attacker.com/?x=maps.app.goo.gl` 같은
+ * URL 도 통과시킨다 — 서버가 그 주소로 fetch 하는 이 파일 특성상 SSRF 로 이어진다.
+ * `new URL()` 로 파싱해 호스트명 자체를 정확히 비교한다.
+ */
 export function isGoogleShareLink(url: string): boolean {
-  return /maps\.app\.goo\.gl|goo\.gl\/maps/.test(url);
+  let parsed: URL;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return false;
+  }
+  const host = parsed.hostname.toLowerCase();
+  if (host === "maps.app.goo.gl") return true;
+  return host === "goo.gl" && parsed.pathname.startsWith("/maps");
 }
 
 /** 이미 펼쳐진 구글 지도 URL 에서 좌표만 읽는다. 네트워크 없음. */

@@ -66,6 +66,11 @@ export async function POST(request: NextRequest) {
   response.cookies.set(ADMIN_COOKIE, await createToken(secret), {
     httpOnly: true,
     sameSite: "lax",
+    // 프로덕션은 항상 https 라 무조건 true 로 둬도 되지만, 로컬 개발은 `next dev` 를
+    // LAN IP(예: 192.168.x.x)로 열어 다른 기기에서 접속하는 경우가 있다 — 그런 오리진은
+    // "potentially trustworthy" 가 아니라서 Secure 쿠키가 저장되지 않는다(로그인 후
+    // 바로 튕겨나가는 증상). http://localhost 자체는 최신 브라우저가 예외로 봐주지만,
+    // 모든 개발 접속 경로를 보장할 수 없어 프로덕션에서만 켠다.
     secure: process.env.NODE_ENV === "production",
     path: "/",
     maxAge: TOKEN_TTL_SEC,

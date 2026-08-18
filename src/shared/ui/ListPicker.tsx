@@ -13,14 +13,17 @@
  * 여기서 체크를 풀면 저장 자체가 풀린다(그래서 따로 "저장 해제" 를 두지 않는다).
  */
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
-import { BookmarkSimple, Heart, Plus } from "@phosphor-icons/react";
+import { BookmarkSimpleIcon as BookmarkSimple, HeartIcon as Heart, PlusIcon as Plus } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
 import { Icon } from "@/shared/ui/icons";
 import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+
+/** mounted 스토어 구독 — 값이 변하지 않으므로 아무것도 하지 않는다. */
+const subscribeNever = () => () => {};
 
 /** 고른 표시 — 오른쪽 끝 동그란 체크. 켜지면 산호가 찬다. */
 function Check({ on }: { on: boolean }) {
@@ -80,7 +83,13 @@ export function ListPicker({
   const { messages: m } = useLocale();
   const { lists, listsOf, toggleInList, addList, toggleSaved, isSaved } = useSaved();
   const [creating, setCreating] = useState(false);
-  const [mounted, setMounted] = useState(false);
+  /* body 포탈은 클라이언트에만 있다 — SSR 은 false, 하이드레이션 뒤 true.
+     mount 이펙트에서 setState 하는 대신 스토어로 읽는다(react-hooks/set-state-in-effect). */
+  const mounted = useSyncExternalStore(
+    subscribeNever,
+    () => true,
+    () => false,
+  );
   const [name, setName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -88,10 +97,6 @@ export function ListPicker({
 
   const inList = listsOf(placeId);
   const saved = isSaved(placeId);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   useEffect(() => {
     if (creating) inputRef.current?.focus();

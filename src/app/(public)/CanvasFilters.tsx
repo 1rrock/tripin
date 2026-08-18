@@ -6,7 +6,7 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CaretDown, MagnifyingGlass } from "@phosphor-icons/react";
+import { CaretDownIcon as CaretDown, MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -39,14 +39,17 @@ function Trigger({
   active,
   open,
   onClick,
+  buttonRef,
 }: {
   label: string;
   active: boolean;
   open: boolean;
   onClick: () => void;
+  buttonRef: React.Ref<HTMLButtonElement>;
 }) {
   return (
     <button
+      ref={buttonRef}
       type="button"
       aria-expanded={open}
       onClick={onClick}
@@ -63,13 +66,69 @@ function Trigger({
   );
 }
 
-/** 고르는 순간 적용된다 — 확인 단추가 없다. 그래서 바닥 줄도 없다. */
-function Panel({ title, children }: { title: string; children: React.ReactNode }) {
+function focusable(panel: HTMLElement) {
+  return Array.from(
+    panel.querySelectorAll<HTMLElement>("button:not(:disabled), input:not(:disabled), [href]"),
+  );
+}
+
+/** 고르는 순간 적용된다 — 확인 단추가 없다. 그래서 바닥 줄도 없다.
+ *  role="dialog" 이니 포커스도 다이얼로그처럼 움직인다: 열리면 안으로 들어가고,
+ *  Tab 은 패널을 못 벗어나고, 닫히면 연 트리거로 돌아간다. */
+function Panel({
+  title,
+  children,
+  triggerRef,
+}: {
+  title: string;
+  children: React.ReactNode;
+  triggerRef: React.RefObject<HTMLButtonElement | null>;
+}) {
+  const panelRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const panel = panelRef.current;
+    if (!panel) return;
+    // 언마운트 시점의 클린업에서 쓸 값 — 그때의 triggerRef.current 를 보장할 수
+    // 없으니 이펙트가 열릴 때의 트리거를 붙잡아 둔다.
+    const trigger = triggerRef.current;
+    /* 입력창 자동 포커스는 데스크톱만 — 모바일(floating)에서는 열자마자
+       키보드가 올라와 방금 연 목록을 도로 가린다. 터치에는 포커스 링이
+       필요 없고, 외장 키보드 사용자는 Tab 한 번이면 입력창에 닿는다. */
+    const desktop = window.matchMedia("(min-width: 1024px)").matches;
+    const find = desktop ? panel.querySelector<HTMLInputElement>("input") : null;
+    (find ?? (desktop ? focusable(panel)[0] : null))?.focus();
+
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key !== "Tab") return;
+      const items = focusable(panel);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
+    panel.addEventListener("keydown", onKeyDown);
+    return () => {
+      panel.removeEventListener("keydown", onKeyDown);
+      // 언마운트되는 경로 전부(Esc, 바깥 클릭, 항목 선택)가 여기로 모인다 —
+      // 트리거로 되돌리는 코드를 세 곳에 흩어두지 않아도 된다.
+      trigger?.focus();
+    };
+  }, [triggerRef]);
+
   return (
     <div
+      ref={panelRef}
       role="dialog"
+      aria-modal="true"
       aria-label={title}
-      className="absolute top-[calc(100%+8px)] right-0 left-0 z-30 overflow-hidden rounded-2xl bg-white"
+      className="absolute top-[calc(100%+8px)] right-0 left-0 z-30 overflow-hidden rounded-2xl bg-(--sheet)"
       style={{ boxShadow: "0 12px 40px rgba(0,0,0,0.14), 0 0 0 1px var(--hairline)" }}
     >
       {children}
@@ -96,7 +155,8 @@ function Find({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder={placeholder}
-        className="w-full bg-transparent text-[13px] outline-none placeholder:text-(--dim)"
+        /* 16px 미만이면 iOS 가 포커스 때 화면을 확대한다 (PRODUCT.md 접근성) */
+        className="w-full bg-transparent text-[16px] outline-none placeholder:text-(--dim)"
       />
     </label>
   );
@@ -146,6 +206,9 @@ export function CanvasFilters({
   const [open, setOpen] = useState<null | "region" | "type" | "channel">(null);
   const [find, setFind] = useState("");
   const [pane, setPane] = useState<HomeRegionId | "all">(region ?? "all");
+  const regionTriggerRef = useRef<HTMLButtonElement>(null);
+  const typeTriggerRef = useRef<HTMLButtonElement>(null);
+  const channelTriggerRef = useRef<HTMLButtonElement>(null);
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
@@ -208,24 +271,27 @@ export function CanvasFilters({
           active={Boolean(region || city)}
           open={open === "region"}
           onClick={() => openMenu("region")}
+          buttonRef={regionTriggerRef}
         />
         <Trigger
           label={typeLabel}
           active={Boolean(type)}
           open={open === "type"}
           onClick={() => openMenu("type")}
+          buttonRef={typeTriggerRef}
         />
         <Trigger
           label={channelLabel}
           active={Boolean(channel)}
           open={open === "channel"}
           onClick={() => openMenu("channel")}
+          buttonRef={channelTriggerRef}
         />
         {trailing}
       </div>
 
       {open === "region" ? (
-        <Panel title={m.home.regionPick}>
+        <Panel title={m.home.regionPick} triggerRef={regionTriggerRef}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
           {/* grid 가 아니라 flex 다 — grid 의 auto 행은 max-height 로 눌러도 제 내용만큼
               키를 잡아서, 상자만 잘리고 안쪽 목록은 스크롤되지 않았다. flex 는 stretch 로
@@ -298,7 +364,7 @@ export function CanvasFilters({
       ) : null}
 
       {open === "type" ? (
-        <Panel title={m.home.typePick}>
+        <Panel title={m.home.typePick} triggerRef={typeTriggerRef}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
           <div className="max-h-[min(52vh,360px)] overflow-y-auto overscroll-contain py-1">
             <button
@@ -348,7 +414,7 @@ export function CanvasFilters({
       ) : null}
 
       {open === "channel" ? (
-        <Panel title={m.home.channelPick}>
+        <Panel title={m.home.channelPick} triggerRef={channelTriggerRef}>
           <Find value={find} onChange={setFind} placeholder={m.home.filterFind} />
           <div className="max-h-[min(52vh,360px)] overflow-y-auto overscroll-contain py-1">
             <button

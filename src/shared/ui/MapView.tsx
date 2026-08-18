@@ -15,7 +15,9 @@
 
 import { useEffect, useRef, useState } from "react";
 import { importLibrary, setOptions } from "@googlemaps/js-api-loader";
-import { MarkerClusterer, SuperClusterAlgorithm, type Cluster } from "@googlemaps/markerclusterer";
+/* 값은 동적 import — 클러스터를 안 쓰는 화면(도시 상세 등)이 supercluster 까지
+   번들에 지는 것을 막는다(~12KB gzip). 타입만 정적으로 남긴다. */
+import type { Cluster, MarkerClusterer } from "@googlemaps/markerclusterer";
 import { isProduction, publicEnv } from "@/shared/config/env";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { Messages } from "@/shared/i18n/messages/ko";
@@ -267,9 +269,13 @@ export function MapView({
   const pinsSigRef = useRef<string>("");
   const namedRef = useRef(false);
   const pinsLiveRef = useRef(pins);
-  pinsLiveRef.current = pins;
   const onMapClickRef = useRef(onMapClick);
-  onMapClickRef.current = onMapClick;
+  /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 읽는 곳은 전부 지도
+     이벤트 콜백이라 이 이펙트가 먼저 돈 뒤다. 아래 fitPaddingRef 와 같은 계약. */
+  useEffect(() => {
+    pinsLiveRef.current = pins;
+    onMapClickRef.current = onMapClick;
+  });
   /* 여백은 맞추는 순간에 읽는다 — 이펙트 의존성에 넣으면 시트를 끌 때마다 뷰포트가 튄다.
      렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 실제로 읽는 곳은 SDK 로드
      뒤의 콜백이라 이 이펙트가 먼저 돈 뒤다. */
@@ -363,8 +369,12 @@ export function MapView({
     if (failed) return;
     let cancelled = false;
     const { maps, marker } = loadSdk();
-    Promise.all([maps, marker])
-      .then(([, { AdvancedMarkerElement }]) => {
+    Promise.all([
+      maps,
+      marker,
+      cluster ? import("@googlemaps/markerclusterer") : Promise.resolve(null),
+    ])
+      .then(([, { AdvancedMarkerElement }, clusterMod]) => {
         const map = mapRef.current;
         if (cancelled || !map) return;
 
@@ -408,7 +418,8 @@ export function MapView({
           made.push(m);
         }
 
-        if (cluster && made.length > 0) {
+        if (cluster && made.length > 0 && clusterMod) {
+          const { MarkerClusterer, SuperClusterAlgorithm } = clusterMod;
           clustererRef.current = new MarkerClusterer({
             map,
             markers: made,
@@ -487,11 +498,19 @@ export function MapView({
   }, [nameWhenClose, loaded, activeId]);
 
   // activeId 하이라이트 — 마커 콘텐츠만 교체 (재생성/뷰포트 리셋 없음)
+  const prevActiveRef = useRef<string | null>(null);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
     const mode = nameWhenClose ? (namedRef.current ? "name" : "dot") : "index";
+    /* 전 핀을 다시 그리지 않는다 — 활성이 바뀌어 보이는 게 달라지는 마커는
+       이전 활성과 새 활성 둘뿐이다. 나머지는 생성 시(active=false)와 zoom_changed
+       paint 가 이미 맞는 콘텐츠를 들고 있다. 수백 핀 × DOM 재구성이 탭마다
+       돌던 것을 2개로 줄인다. */
+    const prev = prevActiveRef.current;
+    prevActiveRef.current = activeId ?? null;
     for (const pin of pins) {
+      if (pin.id !== activeId && pin.id !== prev) continue;
       const m = markersRef.current.get(pin.id);
       if (!m) continue;
       const active = pin.id === activeId;
@@ -596,6 +615,7 @@ export function MapView({
         <button
           type="button"
           aria-label={m.map.viewAll}
+          title={m.map.viewAll}
           onClick={() => refitRef.current?.()}
           className="absolute bottom-3 left-3 grid size-10 cursor-pointer place-items-center"
           style={{

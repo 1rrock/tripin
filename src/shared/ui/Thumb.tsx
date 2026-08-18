@@ -13,7 +13,7 @@
  *    비율이 다른 프레임에 넣으면 그 순간 '변형'이 되므로 프레임 비율을 바꾸지 말 것.
  */
 
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import { thumbHq, thumbMax } from "@/shared/lib/youtube";
 
 function markReady(el: HTMLImageElement | null, done: () => void) {
@@ -33,11 +33,14 @@ export function Thumb({
 }) {
   const [src, setSrc] = useState(() => thumbMax(youtubeId));
   const [ready, setReady] = useState(false);
-
-  useEffect(() => {
+  /* 영상이 바뀌면 렌더 중에 되돌린다 — 이펙트로 미루면 한 프레임 전 영상의
+     썸네일이 새 alt 로 그려진다(react.dev/learn/you-might-not-need-an-effect). */
+  const [prevId, setPrevId] = useState(youtubeId);
+  if (prevId !== youtubeId) {
+    setPrevId(youtubeId);
     setSrc(thumbMax(youtubeId));
     setReady(false);
-  }, [youtubeId]);
+  }
 
   return (
     <>
@@ -51,6 +54,7 @@ export function Thumb({
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : "auto"}
         decoding="async"
+        referrerPolicy="no-referrer"
         style={ready ? undefined : { opacity: 0 }}
         ref={(el) => markReady(el, () => setReady(true))}
         onLoad={() => setReady(true)}

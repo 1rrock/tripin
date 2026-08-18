@@ -14,6 +14,7 @@
 import { revalidatePath } from "next/cache";
 import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { requireAdmin } from "@/shared/lib/require-admin";
 
 import type { ActionResult } from "../_lib/action-result";
 
@@ -26,6 +27,7 @@ import type { ActionResult } from "../_lib/action-result";
  *   video    — 그 영상에 걸린 장소 전부
  */
 export async function blindTarget(id: string): Promise<ActionResult> {
+  await requireAdmin();
   const db = getSupabaseAdmin();
   const { data: req } = await db
     .from("takedown_requests")
@@ -105,6 +107,7 @@ export async function closeRequest(
   id: string,
   status: "resolved" | "rejected",
 ): Promise<ActionResult> {
+  await requireAdmin();
   const { error } = await getSupabaseAdmin()
     .from("takedown_requests")
     .update({ status, resolved_at: new Date().toISOString() })

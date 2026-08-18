@@ -11,7 +11,7 @@
  */
 
 import { useEffect, useRef, useState } from "react";
-import { Plus } from "@phosphor-icons/react";
+import { PlusIcon as Plus } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";

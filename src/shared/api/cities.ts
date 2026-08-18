@@ -152,8 +152,10 @@ async function loadGraph() {
   return { cities, links, placeById, videoById, creatorById };
 }
 
-/** 지역 목록 — 확정 장소가 하나라도 있는 도시만. */
-export async function loadCityIndex(): Promise<CityRow[]> {
+/** 지역 목록 — 확정 장소가 하나라도 있는 도시만.
+ *  행(loadGraphRows)만이 아니라 **파생 결과**도 캐시한다 — 그래프 순회와
+ *  Map 구성이 요청마다 다시 돌면 TTFB 에 수십 ms 씩 얹힌다. */
+export const loadCityIndex = cachePublic(async function loadCityIndex(): Promise<CityRow[]> {
   const { cities, links, placeById, videoById, creatorById } = await loadGraph();
 
   const byCity = new Map<
@@ -212,10 +214,13 @@ export async function loadCityIndex(): Promise<CityRow[]> {
     })
     .filter((r): r is CityRow => r !== null && r.placeCount >= MIN_CONFIRMED_PINS)
     .sort((a, b) => b.placeCount - a.placeCount);
-}
+}, ["cities:index"]);
 
-/** 도시 하나 — 지도에 올릴 장소 전부와 그 출처 채널·영상. */
-export async function loadCityDetail(citySlug: string): Promise<CityDetail | null> {
+/** 도시 하나 — 지도에 올릴 장소 전부와 그 출처 채널·영상.
+ *  인자(citySlug)는 unstable_cache 가 키에 자동 포함한다 — 도시별 항목. */
+export const loadCityDetail = cachePublic(async function loadCityDetail(
+  citySlug: string,
+): Promise<CityDetail | null> {
   const { cities, links, placeById, videoById, creatorById } = await loadGraph();
   const city = cities.find((c) => c.slug === citySlug);
   if (!city) return null;
@@ -310,7 +315,7 @@ export async function loadCityDetail(citySlug: string): Promise<CityDetail | nul
     places,
     creators: [...creatorCount.values()].sort((a, b) => b.placeCount - a.placeCount),
   };
-}
+}, ["cities:detail"]);
 
 /**
  * 홈 캔버스용 핀 — 도시 지도와 같은 확정 장소.
@@ -342,7 +347,11 @@ function placeCoords(p: { lat: number | null; lng: number | null; google_maps_ur
   return coordsFromMapsUrl(p.google_maps_url);
 }
 
-export async function loadHomeMap(locale: Locale): Promise<HomeMapPlace[]> {
+/** locale 은 인자라서 캐시 키에 들어간다 — ko/en 이 항목을 나눠 가진다.
+ *  (헤더를 캐시 안에서 읽는 것과 달리 첫 요청의 로케일이 굳는 문제가 없다) */
+export const loadHomeMap = cachePublic(async function loadHomeMap(
+  locale: Locale,
+): Promise<HomeMapPlace[]> {
   const { cities, links, placeById, videoById, creatorById } = await loadGraph();
   const publishedCities = new Set((await loadCityIndex()).map((c) => c.slug));
   const cityById = new Map(cities.map((c) => [c.id, c]));
@@ -432,4 +441,4 @@ export async function loadHomeMap(locale: Locale): Promise<HomeMapPlace[]> {
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, "ko"));
-}
+}, ["cities:home-map"]);

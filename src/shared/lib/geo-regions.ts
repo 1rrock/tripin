@@ -61,6 +61,7 @@ const BY_COUNTRY: Record<string, GeoRegionId> = {
   GR: "europe",
   CZ: "europe",
   HU: "europe",
+  TR: "europe",
   PL: "europe",
   SE: "europe",
   NO: "europe",

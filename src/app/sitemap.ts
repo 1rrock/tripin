@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { fetchAll } from "@/shared/api/chunked-in";
 import { supabase } from "@/shared/api/supabase";
 import { publicEnv } from "@/shared/config/env";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
@@ -52,15 +53,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry(base, "/takedown", { lastModified: now, changeFrequency: "monthly", priority: 0.3 }),
   ];
 
-  const [{ data: creators }, { data: cities }, { data: places }] = await Promise.all([
-    supabase.from("creators").select("id, slug, updated_at"),
-    supabase.from("cities").select("id, slug"),
-    supabase
-      .from("places")
-      .select("id, city_id, place_type")
-      .eq("map_status", "confirmed"),
+  /* 전 테이블 조회는 전부 fetchAll — PostgREST 는 1000행에서 자르고, 잘린
+     사이트맵은 그 너머의 장소·조각을 검색엔진에서 조용히 지운다(d49e695 와 동일 계열). */
+  const [creators, cities, places] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase.from("creators").select("id, slug, updated_at").range(from, to),
+    ),
+    fetchAll((from, to) => supabase.from("cities").select("id, slug").range(from, to)),
+    fetchAll((from, to) =>
+      supabase
+        .from("places")
+        .select("id, city_id, place_type")
+        .eq("map_status", "confirmed")
+        .range(from, to),
+    ),
   ]);
-  if (!creators?.length || !cities?.length || !places?.length) return home;
+  if (!creators.length || !cities.length || !places.length) return home;
 
   // 종류 상세 — 확정 장소가 있는 유형
   const typesWithPlaces = [
@@ -80,15 +88,22 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const cityIdBySlug = new Map(cities.map((c) => [c.id, c.slug]));
   const cityByPlace = new Map(places.map((p) => [p.id, p.city_id]));
 
-  const [{ data: videos }, { data: links }] = await Promise.all([
-    supabase.from("videos").select("id, creator_id"),
-    supabase.from("video_places").select("video_id, place_id").in("place_id", [...cityByPlace.keys()]),
+  /* video_places 는 .in(place_id 수백 개) 대신 통째로 받는다 — URL 길이 제한으로
+     조용히 실패하던 패턴(chunked-in.ts 주석)이고, 아래 루프가 cityByPlace 로
+     어차피 확정 장소만 걸러낸다. */
+  const [videos, links] = await Promise.all([
+    fetchAll((from, to) =>
+      supabase.from("videos").select("id, creator_id").range(from, to),
+    ),
+    fetchAll((from, to) =>
+      supabase.from("video_places").select("video_id, place_id").range(from, to),
+    ),
   ]);
-  const creatorByVideo = new Map((videos ?? []).map((v) => [v.id, v.creator_id]));
+  const creatorByVideo = new Map(videos.map((v) => [v.id, v.creator_id]));
 
   // 크리에이터 → 도시 → 확정 장소 집합. 같은 장소가 여러 영상에 나와도 한 번만 센다
   const byCreator = new Map<string, Map<string, Set<string>>>();
-  for (const link of links ?? []) {
+  for (const link of links) {
     const creatorId = creatorByVideo.get(link.video_id);
     const cityId = cityByPlace.get(link.place_id);
     if (!creatorId || !cityId) continue;

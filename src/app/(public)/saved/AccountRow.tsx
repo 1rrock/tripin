@@ -11,7 +11,7 @@
  * 공급자 선택은 /login 에서 한다. 여기서 구글을 바로 쏘지 않는다.
  */
 
-import { UserCircle } from "@phosphor-icons/react";
+import { UserCircleIcon as UserCircle } from "@phosphor-icons/react";
 import { usePathname, useSearchParams } from "next/navigation";
 import { authErrorText } from "@/shared/api/auth-error";
 import { usePersistedAuthError } from "@/shared/api/use-auth-error";
