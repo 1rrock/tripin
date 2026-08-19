@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Analytics } from "@vercel/analytics/next";
 import { Archivo } from "next/font/google";
 import localFont from "next/font/local";
 import { publicEnv } from "@/shared/config/env";
@@ -7,6 +6,7 @@ import { getLocale } from "@/shared/i18n/locale";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { siteOrigin } from "@/shared/seo/page-meta";
 import { JsonLd, organizationNode, websiteNode } from "@/shared/seo/json-ld";
+import { SiteAnalytics } from "./SiteAnalytics";
 import "./globals.css";
 
 /**
@@ -81,6 +81,18 @@ export async function generateMetadata(): Promise<Metadata> {
         "max-image-preview": "large",
       },
     },
+    /**
+     * 검색엔진 소유 확인.
+     *
+     * 구글은 메타태그, 네이버는 **HTML 파일** 방식이다
+     * (`public/naver88f2840638e5031156f4301748d9fce5.html`).
+     * 방식이 갈린 건 취향이 아니라 각 콘솔에서 발급받은 그대로라서다.
+     *
+     * ⚠️ 네이버 파일은 `proxy.ts` matcher 의 `.*\..*` (점 포함 경로 제외) 덕에
+     *    로케일 rewrite 를 타지 않고 public 에서 그대로 나간다. matcher 를 손볼 때
+     *    이 경로가 200 으로 살아있는지 같이 확인할 것 — 죽으면 네이버가 조용히
+     *    사이트 등록을 해제한다.
+     */
     verification: {
       google: "lkxLO-HERLGf1WGk8DEGktQW_kCeCwXphuEsfj8NGog",
     },
@@ -119,7 +131,7 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           }}
         />
         {children}
-        <Analytics />
+        <SiteAnalytics />
       </body>
     </html>
   );
