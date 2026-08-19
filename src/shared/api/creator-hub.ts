@@ -99,7 +99,7 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .in("id", ids)
         .eq("map_status", "confirmed"),
@@ -177,6 +177,7 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
           naverPlaceId: p.naver_place_id,
           lat: p.lat,
           lng: p.lng,
+          countryCode: p.country_code,
         })?.url ?? null,
       citySlug: city.slug,
       cityName: city.name,

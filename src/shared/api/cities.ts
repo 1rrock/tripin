@@ -131,7 +131,7 @@ const loadGraphRows = cachePublic(async () => {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .eq("map_status", "confirmed")
         .range(from, to),
@@ -278,6 +278,7 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
             naverPlaceId: p.naver_place_id,
             lat: p.lat,
             lng: p.lng,
+            countryCode: p.country_code,
           })?.url ?? null,
         // 같은 장소를 여러 영상이 가리키면 이른 시각이 먼저 — 목록 순서가 매번 흔들리지 않게
         sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
@@ -531,6 +532,7 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
           naverPlaceId: p.naver_place_id,
           lat: coords.lat,
           lng: coords.lng,
+          countryCode: p.country_code,
         })?.url ?? null,
       citySlug: city.slug,
       cityName: city.name,

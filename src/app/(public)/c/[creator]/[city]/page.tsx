@@ -58,6 +58,8 @@ interface LoadedPlace {
   googleMapsUrl: string | null;
   kakaoPlaceId: string | null;
   naverPlaceId: string | null;
+  /** 지도 앱 링크 순서용 — 이 조각은 도시 하나로 고정이라 city.country_code 를 그대로 쓴다. */
+  countryCode: string | null;
   summary: string | null;
   summaryBullets: string[];
   priceHint: string | null;
@@ -129,6 +131,7 @@ const loadPiece = cachePublic(async function loadPiece(params: PageParams) {
       googleMapsUrl: p.google_maps_url,
       kakaoPlaceId: p.kakao_place_id,
       naverPlaceId: p.naver_place_id,
+      countryCode: city.country_code,
       summary: p.summary,
       summaryBullets: p.summary_bullets,
       priceHint: p.price_hint,
@@ -377,6 +380,7 @@ export default async function CreatorCityPage({
     googleMapsUrl: p.googleMapsUrl,
     kakaoPlaceId: p.kakaoPlaceId,
     naverPlaceId: p.naverPlaceId,
+    countryCode: p.countryCode,
     summary: displaySummary(p, locale),
     videoTitle: p.videoTitle,
     youtubeVideoId: p.youtubeVideoId,

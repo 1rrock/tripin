@@ -53,6 +53,8 @@ export interface PublicPlace {
   googleMapsUrl: string | null;
   kakaoPlaceId: string | null;
   naverPlaceId: string | null;
+  /** 지도 앱 링크 순서(네이버 우선 vs 구글 우선)를 가른다 — shared/lib/map-links.ts */
+  countryCode: string | null;
   summary: SummaryDisplay;
   videoTitle: string | null;
   youtubeVideoId: string | null;
@@ -95,7 +97,7 @@ function youtubeUrl(videoId: string, timestampSec: number | null): string {
   return `https://www.youtube.com/watch?v=${videoId}${timestampSec ? `&t=${timestampSec}s` : ""}`;
 }
 
-/** 지도 앱 열기 — 확보된 ID 우선(구글→카카오→네이버), 없으면 좌표 폴백. */
+/** 지도 앱 열기 — 한국은 네이버→카카오→구글, 그 외는 구글→카카오→네이버, 없으면 좌표 폴백. */
 function mapsUrl(place: PublicPlace): string | null {
   return (
     primaryMapLink({
@@ -105,6 +107,7 @@ function mapsUrl(place: PublicPlace): string | null {
       naverPlaceId: place.naverPlaceId,
       lat: place.lat,
       lng: place.lng,
+      countryCode: place.countryCode,
     })?.url ?? null
   );
 }
