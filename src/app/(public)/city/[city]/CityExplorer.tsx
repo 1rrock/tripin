@@ -110,6 +110,24 @@ export function CityExplorer({
     syncQuery(type, next);
   };
 
+  const applyChannelFromDrawer = useCallback(
+    (slug: string) => {
+      if (slug === channel) return;
+      setChannel(slug);
+      const params = new URLSearchParams(window.location.search);
+      params.set("channel", slug);
+      const qs = params.toString();
+      const url = qs ? `${pathname}?${qs}` : pathname;
+      const st = window.history.state;
+      window.history.replaceState(
+        { ...(st && typeof st === "object" ? st : {}) },
+        "",
+        url,
+      );
+    },
+    [channel, pathname],
+  );
+
   const shown = useMemo(
     () =>
       places.filter((p) => {
@@ -198,6 +216,7 @@ export function CityExplorer({
               sources: sourcesFor(activePlace),
             }}
             onClose={() => setSheetOpen(false)}
+            onSelectChannel={applyChannelFromDrawer}
           />
         ) : null}
       </div>

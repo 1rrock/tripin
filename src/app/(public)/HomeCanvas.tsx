@@ -83,7 +83,6 @@ export function ExplorerCanvas({
   const sp = useSearchParams();
 
   const city = sp.get("city");
-  const channel = sp.get("channel");
   const regionRaw = sp.get("region");
   const region = isHomeRegionId(regionRaw) ? regionRaw : null;
   const typeRaw = sp.get("type");
@@ -109,7 +108,19 @@ export function ExplorerCanvas({
      페이지를 2~3초 스켈레톤으로 갈아엎어 아무 반응이 없는 것처럼 보인다.
      URL 은 history.pushState 로만 맞춰 뒤로가기는 살린다. */
   const [localPlace, setLocalPlace] = useState<string | null>(placeParam);
+  /* 드로어가 켠 채널은 sticky. popstate 는 place/스냅만 되돌리고,
+     채널은 칩을 지울 때까지 로컬이 진실이다. router.replace 는 loading.tsx 를 연다. */
+  const [localChannel, setLocalChannel] = useState<string | null>(sp.get("channel"));
+  const channel = localChannel;
   const placePushedRef = useRef(false);
+  const localPlaceRef = useRef(localPlace);
+  const localChannelRef = useRef(localChannel);
+  /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은
+     popstate·드로어 콜백이라 커밋 뒤다. PlaceSheet onCloseRef 와 같은 계약. */
+  useEffect(() => {
+    localPlaceRef.current = localPlace;
+    localChannelRef.current = localChannel;
+  });
 
   /* 시트 높이는 CSS 변수로만 그린다. 드래그 중 setState 하면 HomeCanvas 전체가
      프레임마다 다시 그려져(지도·썸네일 48장) 모바일 크롬이 멈춘다.
@@ -179,6 +190,7 @@ export function ExplorerCanvas({
       /* 그룹이 있으면 saved 는 자명하므로 URL 에 둘 다 싣지 않는다 */
       if (ls) params.set("list", ls);
       else if (sv) params.set("saved", "1");
+      setLocalChannel(ch ?? null);
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
@@ -209,43 +221,6 @@ export function ExplorerCanvas({
   }
   const listRows = filtered.length > listCap ? filtered.slice(0, listCap) : filtered;
   const inboundSeen = useRef<string | null>(null);
-  useEffect(() => {
-    if ((savedOnly || listId) && !savedReady) return;
-    if (inboundSeen.current === inboundKey) return;
-    inboundSeen.current = inboundKey;
-    if (q.trim()) return;
-    if (filtered.length > 0) return;
-    const next = reconcileMapFilter(places, axes, [], saved);
-    if (
-      next.city === city &&
-      next.region === region &&
-      next.channel === channel &&
-      next.type === type
-    ) {
-      return;
-    }
-    replace({
-      city: next.city,
-      region: next.region,
-      channel: next.channel,
-      type: next.type,
-    });
-  }, [
-    inboundKey,
-    filtered.length,
-    places,
-    axes,
-    saved,
-    city,
-    region,
-    channel,
-    type,
-    q,
-    replace,
-    savedOnly,
-    listId,
-    savedReady,
-  ]);
 
   /**
    * 첫 진입은 **내 자리**에서 시작한다.
@@ -293,6 +268,49 @@ export function ExplorerCanvas({
     null;
   const detailOpen = Boolean(detailPlace);
 
+  useEffect(() => {
+    if ((savedOnly || listId) && !savedReady) return;
+    if (detailOpen) return;
+    if (inboundSeen.current === inboundKey) return;
+    inboundSeen.current = inboundKey;
+    if (q.trim()) return;
+    if (filtered.length > 0) return;
+    const next = reconcileMapFilter(places, axes, [], saved);
+    if (
+      next.city === city &&
+      next.region === region &&
+      next.channel === channel &&
+      next.type === type
+    ) {
+      return;
+    }
+    /* 빈 교집합을 URL 과 로컬 채널에 같이 맞춘다. replace() 가 setLocalChannel
+       을 쓰므로 이펙트 안 setState 경고가 난다 — 의도된 한 번의 보정이다. */
+    // eslint-disable-next-line react-hooks/set-state-in-effect -- inbound empty-filter reconcile
+    replace({
+      city: next.city,
+      region: next.region,
+      channel: next.channel,
+      type: next.type,
+    });
+  }, [
+    inboundKey,
+    filtered.length,
+    places,
+    axes,
+    saved,
+    city,
+    region,
+    channel,
+    type,
+    q,
+    replace,
+    savedOnly,
+    listId,
+    savedReady,
+    detailOpen,
+  ]);
+
   /* 탭바는 html 클래스 한 번으로 물린다 — :has() 는 문서 전체 스타일 재계산. */
   useEffect(() => {
     if (surface !== "page") return;
@@ -316,22 +334,59 @@ export function ExplorerCanvas({
 
   useEffect(() => {
     const onPop = () => {
-      const p = new URLSearchParams(window.location.search).get("place");
+      /* 지도를 떠나는 back 은 덮지 않는다. 언마운트보다 popstate 가 먼저라
+         도착지 쿼리에 channel 을 붙이고 URL 을 /map 으로 되돌리는 사고가 난다. */
+      if (window.location.pathname !== pathname) return;
+      const params = new URLSearchParams(window.location.search);
+      const p = params.get("place");
       setLocalPlace(p);
+      localPlaceRef.current = p;
       if (!p) placePushedRef.current = false;
+      const want = localChannelRef.current;
+      if (want && params.get("channel") !== want) {
+        params.set("channel", want);
+        const qs = params.toString();
+        const url = qs ? `${pathname}?${qs}` : pathname;
+        const st = window.history.state;
+        window.history.replaceState(
+          { ...(st && typeof st === "object" ? st : {}) },
+          "",
+          url,
+        );
+      }
     };
     window.addEventListener("popstate", onPop);
     return () => window.removeEventListener("popstate", onPop);
-  }, []);
+  }, [pathname]);
 
   const buildUrl = useCallback(
     (mutate: (params: URLSearchParams) => void) => {
-      const params = new URLSearchParams(sp.toString());
+      const params = new URLSearchParams(window.location.search);
       mutate(params);
       const qs = params.toString();
       return qs ? `${pathname}?${qs}` : pathname;
     },
-    [sp, pathname],
+    [pathname],
+  );
+
+  const applyChannelFromDrawer = useCallback(
+    (slug: string) => {
+      if (slug === localChannelRef.current) return;
+      setLocalChannel(slug);
+      localChannelRef.current = slug;
+      const url = buildUrl((p) => {
+        p.set("channel", slug);
+        const place = localPlaceRef.current;
+        if (place) p.set("place", place);
+      });
+      const st = window.history.state;
+      window.history.replaceState(
+        { ...(st && typeof st === "object" ? st : {}) },
+        "",
+        url,
+      );
+    },
+    [buildUrl],
   );
 
   const closeDetail = useCallback(() => {
@@ -826,6 +881,7 @@ export function ExplorerCanvas({
             onClose={closeDetail}
             collapseToken={collapseToken}
             onSnapChange={setPlaceSnap}
+            onSelectChannel={applyChannelFromDrawer}
           />
         ) : null}
       </div>

@@ -15,6 +15,7 @@
  */
 
 import { useCallback, useEffect, useRef, useState } from "react";
+import Link from "next/link";
 import { Avatar, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
@@ -62,25 +63,23 @@ function fmt(sec: number | null): string {
     : `${m}:${String(s).padStart(2, "0")}`;
 }
 
-function youtubeUrl(videoId: string, sec: number | null): string {
-  return `https://www.youtube.com/watch?v=${videoId}${sec !== null ? `&t=${Math.floor(sec)}s` : ""}`;
-}
-
 export function PlaceSheet({
   place,
   index: _index,
   onClose,
   collapseToken = 0,
   onSnapChange,
+  onSelectChannel,
 }: {
   place: SheetPlace;
   index: number;
   onClose: () => void;
   collapseToken?: number;
   onSnapChange?: (snap: PlaceDrawerSnap) => void;
+  onSelectChannel?: (creatorSlug: string) => void;
 }) {
   void _index;
-  const { messages: m, t } = useLocale();
+  const { messages: m, t, href } = useLocale();
   const { lists, listsOf } = useSaved();
   const hero = place.sources[0] ?? null;
   const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
@@ -431,8 +430,8 @@ export function PlaceSheet({
   );
 
   const heroBlock = hero ? (
-    <OutboundA
-      href={youtubeUrl(hero.youtubeId, hero.timestampSec)}
+    <Link
+      href={href(`/c/${hero.creatorSlug}/v/${hero.youtubeId}`)}
       title={hero.videoTitle}
       className="mt-3 block"
     >
@@ -440,41 +439,60 @@ export function PlaceSheet({
         <Thumb key={hero.youtubeId} youtubeId={hero.youtubeId} alt={hero.videoTitle} eager />
       </Frame>
       <span className="mt-2 block text-[13px] font-medium leading-snug">{hero.videoTitle}</span>
-    </OutboundA>
+    </Link>
   ) : null;
 
   const sourcesBlock = (
     <div className="mt-5 flex flex-col gap-3">
-      {place.sources.map((s, i) => (
-        <OutboundA
-          key={`${s.youtubeId}-${i}`}
-          href={youtubeUrl(s.youtubeId, s.timestampSec)}
-          title={s.videoTitle}
-          className="flex gap-3"
-        >
-          <Frame className="w-[120px] shrink-0">
-            <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
-          </Frame>
-          <span className="min-w-0 flex-1">
-            <span className="flex items-center gap-2">
-              <Avatar
-                initials={s.initials}
-                accent={s.accentColor}
-                src={s.avatarUrl}
-                size={20}
-              />
-              <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
+      {place.sources.map((s, i) => {
+        const videoHref = href(`/c/${s.creatorSlug}/v/${s.youtubeId}`);
+        const channelInner = (
+          <>
+            <Avatar
+              initials={s.initials}
+              accent={s.accentColor}
+              src={s.avatarUrl}
+              size={20}
+            />
+            <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
+          </>
+        );
+        return (
+          <div key={`${s.youtubeId}-${i}`} className="flex gap-3">
+            <Link href={videoHref} title={s.videoTitle} className="w-[120px] shrink-0">
+              <Frame>
+                <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
+              </Frame>
+            </Link>
+            <span className="min-w-0 flex-1">
+              {onSelectChannel ? (
+                <button
+                  type="button"
+                  aria-label={s.creatorName}
+                  onClick={() => onSelectChannel(s.creatorSlug)}
+                  className="flex min-h-11 max-w-full cursor-pointer items-center gap-2 py-1 text-left hover:underline"
+                >
+                  {channelInner}
+                </button>
+              ) : (
+                <span className="flex items-center gap-2">{channelInner}</span>
+              )}
+              <Link href={videoHref} className="mt-1 block text-[13px] leading-snug font-medium">
+                {s.videoTitle}
+              </Link>
+              <Link
+                href={videoHref}
+                className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)"
+              >
+                <Icon.play className="size-3.5" />
+                {s.timestampSec !== null
+                  ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
+                  : m.common.watchVideo}
+              </Link>
             </span>
-            <span className="mt-1 block text-[13px] leading-snug font-medium">{s.videoTitle}</span>
-            <span className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)">
-              <Icon.play className="size-3.5" />
-              {s.timestampSec !== null
-                ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
-                : m.common.watchVideo}
-            </span>
-          </span>
-        </OutboundA>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 
