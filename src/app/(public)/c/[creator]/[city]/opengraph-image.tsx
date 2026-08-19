@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import { chunkedIn } from "@/shared/api/chunked-in";
 
 /**
  * 조각(채널×도시) 공유 카드 — "{크리에이터}의 {도시}" + "간 곳 {n}곳".
@@ -63,23 +64,27 @@ const loadPieceSummary = cachePublic(async function loadPieceSummary(
     return { creatorName: creator.display_name, cityName: city.name, count: 0 };
   }
 
-  const { data: links } = await supabase
-    .from("video_places")
-    .select("place_id")
-    .in("video_id", videoIds);
-  const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
+  const links = await chunkedIn(
+    (ids) => supabase.from("video_places").select("place_id").in("video_id", ids),
+    videoIds,
+  );
+  const placeIds = [...new Set(links.map((l) => l.place_id))];
   if (placeIds.length === 0) {
     return { creatorName: creator.display_name, cityName: city.name, count: 0 };
   }
 
-  const { data: places } = await supabase
-    .from("places")
-    .select("id")
-    .in("id", placeIds)
-    .eq("city_id", city.id)
-    .eq("map_status", "confirmed");
+  const places = await chunkedIn(
+    (ids) =>
+      supabase
+        .from("places")
+        .select("id")
+        .in("id", ids)
+        .eq("city_id", city.id)
+        .eq("map_status", "confirmed"),
+    placeIds,
+  );
 
-  return { creatorName: creator.display_name, cityName: city.name, count: (places ?? []).length };
+  return { creatorName: creator.display_name, cityName: city.name, count: places.length };
 }, ["piece:og-summary"]);
 
 export default async function PieceOpengraphImage({

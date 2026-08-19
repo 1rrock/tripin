@@ -5,8 +5,13 @@
  *   · 여기는 **서비스 롤**로 읽는다. 비공개·후보까지 보여야 검수가 된다
  *   · 공개 화면은 캐시된 통계를 읽지만, 어드민은 항상 **실제 값을 다시 센다**.
  *     캐시가 틀어졌는지 자체가 어드민이 봐야 할 정보이기 때문이다
+ *
+ * ⚠️ `places`/`video_places`/`videos` 처럼 1000행을 넘길 수 있는 전 테이블 스캔은
+ *    `fetchAll` 로 감싼다 — PostgREST 가 1000행에서 조용히 잘라 그 너머 장소가
+ *    "(출처 영상 없음)" 으로 보이는 문제가 있었다.
  */
 
+import { fetchAll } from "@/shared/api/chunked-in";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import type { AdminCityIntroRow, AdminPiece, AdminPlaceRow, AdminTranslationRow } from "./shared";
 import { hasSummary } from "./shared";
@@ -22,33 +27,49 @@ export { hasSummary, isVagueAddress, PLACE_TYPE_LABEL } from "./shared";
  */
 export async function loadAdminPlaces(): Promise<AdminPlaceRow[]> {
   const db = getSupabaseAdmin();
-  const [{ data: places }, { data: cities }, { data: links }, { data: videos }, { data: creators }] =
-    await Promise.all([
+  const [places, { data: cities }, links, videos, { data: creators }] = await Promise.all([
+    fetchAll((from, to) =>
       db
         .from("places")
         .select(
           "id, slug, name, name_local, place_type, map_status, is_published, lat, lng, address, google_maps_url, google_place_id, source_note, summary, summary_bullets, price_hint, city_id",
         )
-        .order("name"),
-      db.from("cities").select("id, slug, name"),
-      db.from("video_places").select("video_id, place_id, timestamp_sec"),
-      db.from("videos").select("id, youtube_video_id, title, published_at, creator_id"),
-      db.from("creators").select("id, slug, display_name"),
-    ]);
+        .order("name")
+        .range(from, to),
+    ),
+    db.from("cities").select("id, slug, name"),
+    // video_places 는 id 컬럼이 없는 복합키(video_id, place_id) 테이블이라 둘 다로 정렬한다
+    fetchAll((from, to) =>
+      db
+        .from("video_places")
+        .select("video_id, place_id, timestamp_sec")
+        .order("video_id")
+        .order("place_id")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      db
+        .from("videos")
+        .select("id, youtube_video_id, title, published_at, creator_id")
+        .order("id")
+        .range(from, to),
+    ),
+    db.from("creators").select("id, slug, display_name"),
+  ]);
 
   const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
-  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
+  const videoById = new Map(videos.map((v) => [v.id, v]));
   const creatorById = new Map((creators ?? []).map((c) => [c.id, c]));
 
   // 장소 → 링크들. 한 장소가 여러 영상에 걸릴 수 있어 가장 이른 영상을 대표로 쓴다
   const linksByPlace = new Map<string, { videoId: string; timestampSec: number | null }[]>();
-  for (const l of links ?? []) {
+  for (const l of links) {
     const arr = linksByPlace.get(l.place_id) ?? [];
     arr.push({ videoId: l.video_id, timestampSec: l.timestamp_sec });
     linksByPlace.set(l.place_id, arr);
   }
 
-  return (places ?? []).map((p) => {
+  return places.map((p) => {
     const city = cityById.get(p.city_id);
     const mine = (linksByPlace.get(p.id) ?? [])
       .map((l) => ({ ...l, video: videoById.get(l.videoId) }))
@@ -194,32 +215,44 @@ export async function loadAdminPieces(
  */
 export async function loadAdminTranslations(): Promise<AdminTranslationRow[]> {
   const db = getSupabaseAdmin();
-  const [{ data: places }, { data: cities }, { data: links }, { data: videos }, { data: creators }] =
-    await Promise.all([
+  const [places, { data: cities }, links, videos, { data: creators }] = await Promise.all([
+    fetchAll((from, to) =>
       db
         .from("places")
         .select(
           "id, slug, name, name_local, city_id, summary, summary_bullets, address, price_hint, summary_en, summary_bullets_en, address_en, price_hint_en, en_source, en_translated_at",
         )
-        .order("updated_at", { ascending: false }),
-      db.from("cities").select("id, slug, name"),
-      db.from("video_places").select("video_id, place_id"),
-      db.from("videos").select("id, creator_id, published_at"),
-      db.from("creators").select("id, slug, display_name"),
-    ]);
+        .order("updated_at", { ascending: false })
+        .range(from, to),
+    ),
+    db.from("cities").select("id, slug, name"),
+    // video_places 는 id 컬럼이 없는 복합키(video_id, place_id) 테이블이라 둘 다로 정렬한다
+    fetchAll((from, to) =>
+      db
+        .from("video_places")
+        .select("video_id, place_id")
+        .order("video_id")
+        .order("place_id")
+        .range(from, to),
+    ),
+    fetchAll((from, to) =>
+      db.from("videos").select("id, creator_id, published_at").order("id").range(from, to),
+    ),
+    db.from("creators").select("id, slug, display_name"),
+  ]);
 
   const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
-  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
+  const videoById = new Map(videos.map((v) => [v.id, v]));
   const creatorById = new Map((creators ?? []).map((c) => [c.id, c]));
 
   const linksByPlace = new Map<string, string[]>();
-  for (const l of links ?? []) {
+  for (const l of links) {
     const arr = linksByPlace.get(l.place_id) ?? [];
     arr.push(l.video_id);
     linksByPlace.set(l.place_id, arr);
   }
 
-  return (places ?? [])
+  return places
     .filter(
       (p) =>
         p.en_source ||

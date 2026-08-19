@@ -14,6 +14,7 @@
 import { revalidatePath } from "next/cache";
 import { purgePublicData } from "@/shared/api/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { chunkedIn } from "@/shared/api/chunked-in";
 import { requireAdmin } from "@/shared/lib/require-admin";
 
 import type { ActionResult } from "../_lib/action-result";
@@ -57,17 +58,22 @@ export async function blindTarget(id: string): Promise<ActionResult> {
     const { data: videos } = await db.from("videos").select("id").eq("creator_id", req.target_id);
     const videoIds = (videos ?? []).map((v) => v.id);
     if (videoIds.length > 0) {
-      const { data: links } = await db
-        .from("video_places")
-        .select("place_id")
-        .in("video_id", videoIds);
-      const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
+      // 채널 하나의 영상이 수백 개일 수 있어 .in() URL 길이 제한에 걸릴 수 있다 — chunkedIn 으로 나눠 받는다
+      const links = await chunkedIn(
+        (ids) => db.from("video_places").select("place_id").in("video_id", ids),
+        videoIds,
+      );
+      const placeIds = [...new Set(links.map((l) => l.place_id))];
       if (placeIds.length > 0) {
-        const { count } = await db
-          .from("places")
-          .update({ is_published: false, updated_at: now }, { count: "exact" })
-          .in("id", placeIds);
-        touched = count ?? 0;
+        // placeIds 도 같은 이유로 청크 단위 업데이트
+        touched = 0;
+        for (let i = 0; i < placeIds.length; i += 80) {
+          const { count } = await db
+            .from("places")
+            .update({ is_published: false, updated_at: now }, { count: "exact" })
+            .in("id", placeIds.slice(i, i + 80));
+          touched += count ?? 0;
+        }
       }
     }
   } else if (req.target_type === "video") {

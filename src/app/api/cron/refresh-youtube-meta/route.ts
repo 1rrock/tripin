@@ -1,5 +1,6 @@
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { purgePublicData } from "@/shared/api/cache";
+import { fetchAll, chunkedIn } from "@/shared/api/chunked-in";
 import { serverEnv } from "@/shared/config/env";
 
 /**
@@ -121,15 +122,29 @@ async function run(request: Request) {
   };
 
   // ── 영상 ────────────────────────────────────────────────────────
-  const { data: staleVideos, error: vErr } = await db
-    .from("videos")
-    .select("id, youtube_video_id")
-    .lt("api_fetched_at", cutoff);
-  if (vErr) return Response.json({ error: vErr.message }, { status: 500 });
+  // PostgREST 는 1000행에서 조용히 자른다 — 영상 1160편 규모에서 오래 밀린 배치는
+  // 1000편 너머가 안 갱신된 채 남는다. 30일 정책을 지키자고 만든 배치가 그 함정에
+  // 빠지면 본말전도라 fetchAll 로 이어 받는다.
+  // fetchAll 은 에러를 삼키고 빈 배열을 준다 — 여기서 잡아 두지 않으면 DB 가 죽어도
+  // `checked: 0` 으로 성공한 척 끝난다. 페이지마다 에러를 걷어 올린다.
+  let vErr: { message: string } | null = null;
+  const staleVideos = await fetchAll<{ id: string; youtube_video_id: string }>(
+    async (from, to) => {
+      const res = await db
+        .from("videos")
+        .select("id, youtube_video_id")
+        .lt("api_fetched_at", cutoff)
+        .order("id")
+        .range(from, to);
+      if (res.error) vErr = res.error;
+      return res;
+    },
+  );
+  if (vErr) return Response.json({ error: (vErr as { message: string }).message }, { status: 500 });
 
-  report.videos.checked = staleVideos?.length ?? 0;
+  report.videos.checked = staleVideos.length;
 
-  for (const batch of chunk(staleVideos ?? [], ID_BATCH)) {
+  for (const batch of chunk(staleVideos, ID_BATCH)) {
     const ids = batch.map((v) => v.youtube_video_id).join(",");
     const data = await fetchJson<{ items?: YouTubeVideoItem[] }>(
       `${API}/videos?part=snippet,contentDetails&id=${encodeURIComponent(ids)}&key=${key}`,
@@ -158,27 +173,27 @@ async function run(request: Request) {
   }
 
   // 사라진 영상이 지워지면 출처를 잃는 장소 — 삭제 전에 먼저 알려 준다.
+  // 아래 .in() 들은 전부 chunkedIn 을 거친다 — missing/goneIds/affected 가
+  // 한 번에 수백 개를 넘기면 URL 길이 제한으로 조용히 빈 결과를 준다(chunked-in.ts).
   if (report.videos.missing.length > 0) {
-    const { data: gone } = await db
-      .from("videos")
-      .select("id")
-      .in("youtube_video_id", report.videos.missing);
-    const goneIds = (gone ?? []).map((v) => v.id);
+    const gone = await chunkedIn(
+      (ids) => db.from("videos").select("id").in("youtube_video_id", ids),
+      report.videos.missing,
+    );
+    const goneIds = gone.map((v) => v.id);
     if (goneIds.length > 0) {
-      const { data: goneLinks } = await db
-        .from("video_places")
-        .select("place_id")
-        .in("video_id", goneIds);
-      const affected = [...new Set((goneLinks ?? []).map((l) => l.place_id))];
+      const goneLinks = await chunkedIn(
+        (ids) => db.from("video_places").select("place_id").in("video_id", ids),
+        goneIds,
+      );
+      const affected = [...new Set(goneLinks.map((l) => l.place_id))];
       if (affected.length > 0) {
-        const { data: survivingLinks } = await db
-          .from("video_places")
-          .select("place_id, video_id")
-          .in("place_id", affected);
+        const survivingLinks = await chunkedIn(
+          (ids) => db.from("video_places").select("place_id, video_id").in("place_id", ids),
+          affected,
+        );
         const stillSourced = new Set(
-          (survivingLinks ?? [])
-            .filter((l) => !goneIds.includes(l.video_id))
-            .map((l) => l.place_id),
+          survivingLinks.filter((l) => !goneIds.includes(l.video_id)).map((l) => l.place_id),
         );
         report.orphanedPlaces = affected.filter((p) => !stillSourced.has(p));
       }
@@ -186,8 +201,10 @@ async function run(request: Request) {
       if (purge) {
         // video_places 는 on delete cascade — 출처 링크만 사라지고 places 는 남는다.
         // 출처가 0개가 된 장소는 위 orphanedPlaces 에 있으니 어드민이 따로 처리한다.
-        const { error } = await db.from("videos").delete().in("id", goneIds);
-        if (error) return Response.json({ error: error.message, report }, { status: 500 });
+        for (const batch of chunk(goneIds, 80)) {
+          const { error } = await db.from("videos").delete().in("id", batch);
+          if (error) return Response.json({ error: error.message, report }, { status: 500 });
+        }
         report.videos.purged = goneIds.length;
       }
     }
