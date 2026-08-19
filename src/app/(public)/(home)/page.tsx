@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { preload } from "react-dom";
 import { loadHomeFeed } from "@/shared/api/home";
 import { loadCityIndex } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
@@ -30,8 +29,6 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
-  /* 히어로 지면은 첫 페인트에 보여야 한다 — 클라이언트 번들 뒤에 가면 LCP 가 밀린다 */
-  preload("/hero/field-map.webp", { as: "image", fetchPriority: "high" });
   const locale = await getLocale();
   const m = getDictionary(locale);
   const [{ videos, creators, pieces }, cities] = await Promise.all([

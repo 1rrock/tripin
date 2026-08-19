@@ -1,5 +1,3 @@
-"use client";
-
 /**
  * 인기 목적지.
  * 홈에서 누르면 `/map?city=` 로 가서 그 도시 필터가 켜진 지도를 본다.
@@ -9,20 +7,26 @@
 import Link from "next/link";
 import { Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
-import { useLocale } from "@/shared/i18n/LocaleContext";
+import { t } from "@/shared/i18n/get-dictionary";
+import { localePath } from "@/shared/i18n/paths";
 import { displayCityName } from "@/shared/i18n/display";
+import type { Locale } from "@/shared/i18n/config";
+import type { Messages } from "@/shared/i18n/messages/ko";
 import type { CityRow } from "@/shared/api/cities";
 
 function CityCard({
   city,
   i,
   wide = false,
+  locale,
+  messages: m,
 }: {
   city: CityRow;
   i: number;
   wide?: boolean;
+  locale: Locale;
+  messages: Messages;
 }) {
-  const { messages: m, href, t, locale } = useLocale();
   const cut = city.recentVideos[0];
   const name = displayCityName(city, locale);
   const meta = t(m.cityIndex.placesChannels, {
@@ -32,7 +36,7 @@ function CityCard({
 
   return (
     <Link
-      href={href(`/map?city=${city.slug}`)}
+      href={localePath(`/map?city=${city.slug}`, locale)}
       prefetch={false}
       aria-label={`${name} ${meta}`}
       className="block transition-transform active:scale-95"
@@ -48,8 +52,15 @@ function CityCard({
   );
 }
 
-export function DestinationRail({ cities }: { cities: CityRow[] }) {
-  const { messages: m, href } = useLocale();
+export function DestinationRail({
+  cities,
+  locale,
+  messages: m,
+}: {
+  cities: CityRow[];
+  locale: Locale;
+  messages: Messages;
+}) {
   if (cities.length === 0) return null;
 
   return (
@@ -59,7 +70,7 @@ export function DestinationRail({ cities }: { cities: CityRow[] }) {
           {m.home.popular}
         </h2>
         <Link
-          href={href("/map")}
+          href={localePath("/map", locale)}
           prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
@@ -69,7 +80,7 @@ export function DestinationRail({ cities }: { cities: CityRow[] }) {
       <ul className="no-scrollbar mt-3 flex gap-2.5 overflow-x-auto px-(--gutter) pb-1">
         {cities.map((c, i) => (
           <li key={c.slug} className="w-[132px] shrink-0">
-            <CityCard city={c} i={i} />
+            <CityCard city={c} i={i} locale={locale} messages={m} />
           </li>
         ))}
       </ul>
@@ -77,8 +88,15 @@ export function DestinationRail({ cities }: { cities: CityRow[] }) {
   );
 }
 
-export function DestinationGrid({ cities }: { cities: CityRow[] }) {
-  const { messages: m, href } = useLocale();
+export function DestinationGrid({
+  cities,
+  locale,
+  messages: m,
+}: {
+  cities: CityRow[];
+  locale: Locale;
+  messages: Messages;
+}) {
   if (cities.length === 0) return null;
 
   return (
@@ -88,7 +106,7 @@ export function DestinationGrid({ cities }: { cities: CityRow[] }) {
           {m.home.popular}
         </h2>
         <Link
-          href={href("/map")}
+          href={localePath("/map", locale)}
           prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
@@ -98,7 +116,7 @@ export function DestinationGrid({ cities }: { cities: CityRow[] }) {
       <ul className="mt-5 grid grid-cols-4 gap-x-4 gap-y-8">
         {cities.map((c, i) => (
           <li key={c.slug} className="min-w-0">
-            <CityCard city={c} i={i} wide />
+            <CityCard city={c} i={i} wide locale={locale} messages={m} />
           </li>
         ))}
       </ul>

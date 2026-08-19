@@ -1,20 +1,26 @@
-"use client";
-
 /**
  * 홈 본문 섹션 — 도시 다음으로 깔리는 세 덩어리.
  * 최근 영상 · 채널 롤 · 조각(채널×도시).
- * 각각 다른 단위라 탭으로 갈아끼우지 않는다.
+ * 서버 컴포넌트. 썸네일은 HTML 에 바로 실려 LCP 가 JS 를 기다리지 않는다.
  */
 
 import Link from "next/link";
 import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
-import { useLocale } from "@/shared/i18n/LocaleContext";
+import type { Locale } from "@/shared/i18n/config";
+import type { Messages } from "@/shared/i18n/messages/ko";
+import { t } from "@/shared/i18n/get-dictionary";
+import { localePath } from "@/shared/i18n/paths";
 import { displayCityName } from "@/shared/i18n/display";
 import { Frame, Avatar, Index } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
 const VIDEOS = 8;
 const PIECES = 8;
+
+type LocaleProps = {
+  locale: Locale;
+  messages: Messages;
+};
 
 function Head({
   id,
@@ -43,8 +49,12 @@ function Head({
   );
 }
 
-export function VideoFeed({ videos }: { videos: FeedVideo[] }) {
-  const { messages: m, href, locale } = useLocale();
+export function VideoFeed({
+  videos,
+  locale,
+  messages: m,
+}: { videos: FeedVideo[] } & LocaleProps) {
+  const href = (path: string) => localePath(path, locale);
   const list = videos.slice(0, VIDEOS);
   if (list.length === 0) return null;
 
@@ -82,8 +92,12 @@ export function VideoFeed({ videos }: { videos: FeedVideo[] }) {
   );
 }
 
-export function ChannelFeed({ creators }: { creators: FeedCreator[] }) {
-  const { messages: m, href, t, locale } = useLocale();
+export function ChannelFeed({
+  creators,
+  locale,
+  messages: m,
+}: { creators: FeedCreator[] } & LocaleProps) {
+  const href = (path: string) => localePath(path, locale);
   if (creators.length === 0) return null;
 
   return (
@@ -143,8 +157,12 @@ export function ChannelFeed({ creators }: { creators: FeedCreator[] }) {
   );
 }
 
-export function PieceFeed({ pieces }: { pieces: FeedPiece[] }) {
-  const { messages: m, href, t, locale } = useLocale();
+export function PieceFeed({
+  pieces,
+  locale,
+  messages: m,
+}: { pieces: FeedPiece[] } & LocaleProps) {
+  const href = (path: string) => localePath(path, locale);
   const list = pieces.slice(0, PIECES);
   if (list.length === 0) return null;
 
