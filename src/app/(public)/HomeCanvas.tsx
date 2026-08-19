@@ -87,25 +87,46 @@ export function ExplorerCanvas({
   const pathname = usePathname() ?? "/";
   const sp = useSearchParams();
   /* /map 은 장소 전체를 HTML 에 안 싣는다. 앞 몇 줄은 SSR 로 남겨 LCP
-     썸네일이 문서에 있게 하고, 나머지는 마운트 뒤 JSON 으로 받는다. */
+     썸네일이 문서에 있게 하고, 나머지는 마운트 뒤 JSON 으로 받는다.
+     지도 SDK·/api/map/index 는 LCP 뒤에 연다 — 타일·929KB JSON 이
+     첫 mq 썸네일과 대역폭을 다투고, 타일이 LCP 를 빼앗았다. */
   const [fetchedPlaces, setFetchedPlaces] = useState<MapCanvasPlace[] | null>(
     surface === "page" ? null : places,
   );
+  const [mapEnabled, setMapEnabled] = useState(surface !== "page");
   const livePlaces = fetchedPlaces ?? places;
   const placesReady = surface !== "page" || fetchedPlaces !== null;
   useEffect(() => {
     if (surface !== "page") return;
     let alive = true;
-    fetch("/api/map/index")
-      .then((res) => (res.ok ? res.json() : { places: [] }))
-      .then((data: { places?: MapCanvasPlace[] }) => {
-        if (alive) setFetchedPlaces(data.places ?? []);
-      })
-      .catch(() => {
-        if (alive) setFetchedPlaces([]);
-      });
+    const enableMap = () => {
+      if (alive) setMapEnabled(true);
+    };
+    const loadIndex = () => {
+      fetch("/api/map/index")
+        .then((res) => (res.ok ? res.json() : { places: [] }))
+        .then((data: { places?: MapCanvasPlace[] }) => {
+          if (alive) setFetchedPlaces(data.places ?? []);
+        })
+        .catch(() => {
+          if (alive) setFetchedPlaces([]);
+        });
+    };
+    const startHeavy = () => {
+      loadIndex();
+      enableMap();
+    };
+    const idle =
+      typeof requestIdleCallback === "function"
+        ? requestIdleCallback(startHeavy, { timeout: 1800 })
+        : window.setTimeout(startHeavy, 1200);
     return () => {
       alive = false;
+      if (typeof requestIdleCallback === "function") {
+        cancelIdleCallback(idle as number);
+      } else {
+        window.clearTimeout(idle as number);
+      }
     };
   }, [surface]);
 
@@ -866,6 +887,7 @@ export function ExplorerCanvas({
       }
     >
       <div className="canvas-map">
+        {mapEnabled ? (
         <MapView
           className="absolute inset-0 h-full w-full"
           flush
@@ -899,6 +921,7 @@ export function ExplorerCanvas({
             };
           }}
         />
+        ) : null}
         {/* 상세: 모바일 place-drawer / 데스크톱 지도 안 카드 — 모두 map relative 기준 */}
         {detailOpen && detailPlace ? (
           <PlaceSheet
