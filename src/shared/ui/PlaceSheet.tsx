@@ -63,6 +63,13 @@ function fmt(sec: number | null): string {
     : `${m}:${String(s).padStart(2, "0")}`;
 }
 
+/** 상세를 받기 전에 목록이 이미 아는 것 — 대표 컷은 뼈 대신 진짜를 깐다.
+ *  제목은 없다. 인덱스에서 뺐다(cities.ts MapCanvasPlace 주석) — 상세가 오면 채워진다. */
+export interface SheetHeroHint {
+  creatorSlug: string;
+  youtubeId: string;
+}
+
 export function PlaceSheet({
   place,
   index: _index,
@@ -70,6 +77,8 @@ export function PlaceSheet({
   collapseToken = 0,
   onSnapChange,
   onSelectChannel,
+  loading = false,
+  heroHint = null,
 }: {
   place: SheetPlace;
   index: number;
@@ -77,6 +86,9 @@ export function PlaceSheet({
   collapseToken?: number;
   onSnapChange?: (snap: PlaceDrawerSnap) => void;
   onSelectChannel?: (creatorSlug: string) => void;
+  /** 요약·출처를 아직 못 받았다 — 본문 자리에 뼈를 세운다 */
+  loading?: boolean;
+  heroHint?: SheetHeroHint | null;
 }) {
   void _index;
   const { messages: m, t, href } = useLocale();
@@ -420,6 +432,10 @@ export function PlaceSheet({
         <p className="mt-1" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
           {place.address}
         </p>
+      ) : loading ? (
+        <p className="mt-1" style={{ fontSize: "var(--t-meta)" }}>
+          <span className="bone-line inline-block w-[62%] align-middle" />
+        </p>
       ) : null}
       {groups.length > 0 ? (
         <p className="mt-1.5 truncate" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
@@ -429,24 +445,72 @@ export function PlaceSheet({
     </>
   );
 
-  const heroBlock = hero ? (
+  const heroShown: { creatorSlug: string; youtubeId: string; videoTitle?: string } | null =
+    hero ?? (loading ? heroHint : null);
+  const heroBlock = heroShown ? (
     <Link
-      href={href(`/c/${hero.creatorSlug}/v/${hero.youtubeId}`)}
-      title={hero.videoTitle}
+      href={href(`/c/${heroShown.creatorSlug}/v/${heroShown.youtubeId}`)}
+      title={heroShown.videoTitle ?? place.name}
       className="mt-3 block"
     >
       <Frame className="block w-full">
         <Thumb
-          key={hero.youtubeId}
-          youtubeId={hero.youtubeId}
-          alt={hero.videoTitle}
+          key={heroShown.youtubeId}
+          youtubeId={heroShown.youtubeId}
+          alt={heroShown.videoTitle ?? place.name}
           eager
           variant="hero"
         />
       </Frame>
-      <span className="mt-2 block text-[13px] font-medium leading-snug">{hero.videoTitle}</span>
+      <span className="mt-2 block text-[13px] font-medium leading-snug">
+        {heroShown.videoTitle ?? <span className="bone-line inline-block w-[70%] align-middle" />}
+      </span>
     </Link>
+  ) : loading ? (
+    <span className="mt-3 block" aria-hidden>
+      <span className="frame block w-full">
+        <span className="bone" />
+      </span>
+      <span className="mt-2 block text-[13px] leading-snug">
+        <span className="bone-line inline-block w-[70%] align-middle" />
+      </span>
+    </span>
   ) : null;
+
+  /** 요약·출처 자리 — 본문이 오기 전 같은 높이를 잡아 두어 도착해도 안 튄다 */
+  const bodyBones = (
+    <div aria-hidden>
+      <div className="mt-4 flex flex-col gap-2">
+        {["94%", "82%", "60%"].map((w, i) => (
+          <span key={i} className="block" style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}>
+            <span className="bone-line inline-block align-middle" style={{ width: w }} />
+          </span>
+        ))}
+      </div>
+      <div className="mt-5 flex flex-col gap-3">
+        {[0, 1].map((i) => (
+          <div key={i} className="flex gap-3">
+            <span className="w-[120px] shrink-0">
+              <span className="frame block w-full">
+                <span className="bone" />
+              </span>
+            </span>
+            <span className="min-w-0 flex-1 pt-1">
+              <span className="block">
+                <span className="bone-line inline-block w-[46%] align-middle" />
+              </span>
+              <span className="mt-2 block">
+                <span className="bone-line inline-block w-[88%] align-middle" />
+              </span>
+              <span className="mt-2 block">
+                <span className="bone-line inline-block w-[34%] align-middle" />
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
 
   const sourcesBlock = (
     <div className="mt-5 flex flex-col gap-3">
@@ -502,7 +566,13 @@ export function PlaceSheet({
     </div>
   );
 
-  const mapCta = place.mapUrl ? (
+  const mapCta = loading && !place.mapUrl ? (
+    <span
+      aria-hidden
+      className="bone-line block w-full"
+      style={{ height: 48, borderRadius: "var(--r-frame)" }}
+    />
+  ) : place.mapUrl ? (
     <OutboundA
       href={place.mapUrl}
       className="flex h-12 w-full items-center justify-center gap-1.5 font-bold"
@@ -524,6 +594,7 @@ export function PlaceSheet({
       <div
         role="dialog"
         aria-label={t(m.map.detailAria, { name: place.name })}
+        aria-busy={loading || undefined}
         className="rise-in on-lightbox absolute inset-y-4 right-4 left-auto z-40 flex w-[min(460px,calc(100vw-520px))] flex-col overflow-hidden"
         style={{
           background: "var(--sheet)",
@@ -566,8 +637,14 @@ export function PlaceSheet({
             </div>
           </div>
           {heroBlock}
-          <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
-          {sourcesBlock}
+          {loading ? (
+            bodyBones
+          ) : (
+            <>
+              <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+              {sourcesBlock}
+            </>
+          )}
         </div>
         {mapCta ? (
           <div className="shrink-0 border-t p-4" style={{ borderColor: "var(--hairline)" }}>
@@ -587,6 +664,7 @@ export function PlaceSheet({
       role="dialog"
       aria-modal="true"
       aria-label={t(m.map.detailAria, { name: place.name })}
+      aria-busy={loading || undefined}
       className={`place-drawer on-lightbox${scrollReady ? " is-scroll-ready" : ""}${booting ? " is-booting" : ""}`}
       data-snap={snap}
       style={{ background: "var(--sheet)", color: "var(--paper)" }}
@@ -712,8 +790,14 @@ export function PlaceSheet({
         onWheel={onSheetWheel}
       >
         {heroBlock}
-        <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
-        {sourcesBlock}
+        {loading ? (
+          bodyBones
+        ) : (
+          <>
+            <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+            {sourcesBlock}
+          </>
+        )}
         {/* 스크롤 여유 — 당겨 올리면 full 로 넘어감 */}
         <div className="h-16" />
       </div>

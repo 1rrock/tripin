@@ -28,6 +28,7 @@ import { Icon } from "@/shared/ui/icons";
 import dynamic from "next/dynamic";
 import { PlaceSheet, type PlaceDrawerSnap } from "@/shared/ui/PlaceSheet";
 import { EmptyState } from "@/shared/ui/EmptyState";
+import { Bone, BoneFrame } from "@/shared/ui/skeleton/bones";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import {
   HOME_REGION_ORDER,
@@ -88,45 +89,30 @@ export function ExplorerCanvas({
   const sp = useSearchParams();
   /* /map 은 장소 전체를 HTML 에 안 싣는다. 앞 몇 줄은 SSR 로 남겨 LCP
      썸네일이 문서에 있게 하고, 나머지는 마운트 뒤 JSON 으로 받는다.
-     지도 SDK·/api/map/index 는 LCP 뒤에 연다 — 타일·929KB JSON 이
-     첫 mq 썸네일과 대역폭을 다투고, 타일이 LCP 를 빼앗았다. */
+
+     ⚠️ 예전엔 이걸 requestIdleCallback(timeout 1800) 뒤로 미뤘다. Lighthouse
+     점수는 좋아졌는데 실제로는 진입 후 1~2초 동안 지도도 목록도 없는 흰
+     화면이 떴다. 지금은 마운트 즉시 받는다 — 단 priority:"low" 로 내려
+     preload 한 LCP 썸네일이 대역폭을 먼저 가져간다.
+     지도를 뒤로 미루는 일은 MapView 한 곳에서만 한다(거기 rAF+타이머). */
   const [fetchedPlaces, setFetchedPlaces] = useState<MapCanvasPlace[] | null>(
     surface === "page" ? null : places,
   );
-  const [mapEnabled, setMapEnabled] = useState(surface !== "page");
   const livePlaces = fetchedPlaces ?? places;
   const placesReady = surface !== "page" || fetchedPlaces !== null;
   useEffect(() => {
     if (surface !== "page") return;
     let alive = true;
-    const enableMap = () => {
-      if (alive) setMapEnabled(true);
-    };
-    const loadIndex = () => {
-      fetch("/api/map/index")
-        .then((res) => (res.ok ? res.json() : { places: [] }))
-        .then((data: { places?: MapCanvasPlace[] }) => {
-          if (alive) setFetchedPlaces(data.places ?? []);
-        })
-        .catch(() => {
-          if (alive) setFetchedPlaces([]);
-        });
-    };
-    const startHeavy = () => {
-      loadIndex();
-      enableMap();
-    };
-    const idle =
-      typeof requestIdleCallback === "function"
-        ? requestIdleCallback(startHeavy, { timeout: 1800 })
-        : window.setTimeout(startHeavy, 1200);
+    fetch("/api/map/index", { priority: "low" } as RequestInit)
+      .then((res) => (res.ok ? res.json() : { places: [] }))
+      .then((data: { places?: MapCanvasPlace[] }) => {
+        if (alive) setFetchedPlaces(data.places ?? []);
+      })
+      .catch(() => {
+        if (alive) setFetchedPlaces([]);
+      });
     return () => {
       alive = false;
-      if (typeof requestIdleCallback === "function") {
-        cancelIdleCallback(idle as number);
-      } else {
-        window.clearTimeout(idle as number);
-      }
     };
   }, [surface]);
 
@@ -157,11 +143,16 @@ export function ExplorerCanvas({
      URL 은 history.pushState 로만 맞춰 뒤로가기는 살린다. */
   const [localPlace, setLocalPlace] = useState<string | null>(placeParam);
   const [placeDetail, setPlaceDetail] = useState<MapPlaceDetail | null>(null);
+  /* 어느 장소의 상세를 **받아봤는지**. null 하나로는 "아직 로딩" 과 "없더라(404)"
+     를 구분 못 해 뼈가 영영 안 걷힌다. */
+  const [detailSettledFor, setDetailSettledFor] = useState<string | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(localPlace);
   if (detailFor !== localPlace) {
     setDetailFor(localPlace);
     setPlaceDetail(null);
+    setDetailSettledFor(null);
   }
+  const detailLoading = Boolean(localPlace) && detailSettledFor !== localPlace;
   /* 드로어가 켠 채널은 sticky. popstate 는 place/스냅만 되돌리고,
      채널은 칩을 지울 때까지 로컬이 진실이다. router.replace 는 loading.tsx 를 연다. */
   const [localChannel, setLocalChannel] = useState<string | null>(sp.get("channel"));
@@ -173,19 +164,23 @@ export function ExplorerCanvas({
      popstate·드로어 콜백이라 커밋 뒤다. PlaceSheet onCloseRef 와 같은 계약. */
   useEffect(() => {
     if (!localPlace) return;
+    const id = localPlace;
     let alive = true;
-    fetch(`/api/map/place/${localPlace}`)
+    const settle = (row: MapPlaceDetail | null) => {
+      if (!alive) return;
+      setPlaceDetail(row);
+      setDetailSettledFor(id);
+    };
+    /* `?l=` — 라우트 응답이 CDN 에 s-maxage 로 앉는데, proxy 헤더는 캐시 키에
+       안 들어간다. 로케일을 URL 로 갈라야 KO 요약이 EN 에 안 나간다. */
+    fetch(`/api/map/place/${id}?l=${locale}`, { priority: "high" } as RequestInit)
       .then((res) => (res.ok ? res.json() : null))
-      .then((row: MapPlaceDetail | null) => {
-        if (alive) setPlaceDetail(row);
-      })
-      .catch(() => {
-        if (alive) setPlaceDetail(null);
-      });
+      .then((row: MapPlaceDetail | null) => settle(row))
+      .catch(() => settle(null));
     return () => {
       alive = false;
     };
-  }, [localPlace]);
+  }, [localPlace, locale]);
 
   useEffect(() => {
     localPlaceRef.current = localPlace;
@@ -887,7 +882,6 @@ export function ExplorerCanvas({
       }
     >
       <div className="canvas-map">
-        {mapEnabled ? (
         <MapView
           className="absolute inset-0 h-full w-full"
           flush
@@ -921,7 +915,6 @@ export function ExplorerCanvas({
             };
           }}
         />
-        ) : null}
         {/* 상세: 모바일 place-drawer / 데스크톱 지도 안 카드 — 모두 map relative 기준 */}
         {detailOpen && detailPlace ? (
           <PlaceSheet
@@ -936,6 +929,15 @@ export function ExplorerCanvas({
               mapUrl: placeDetail?.mapUrl ?? null,
               sources: sourcesFor(),
             }}
+            loading={detailLoading}
+            heroHint={
+              detailPlace.youtubeId && detailPlace.sources[0]
+                ? {
+                    creatorSlug: detailPlace.sources[0].creatorSlug,
+                    youtubeId: detailPlace.youtubeId,
+                  }
+                : null
+            }
             onClose={closeDetail}
             collapseToken={collapseToken}
             onSnapChange={setPlaceSnap}
@@ -1068,7 +1070,25 @@ export function ExplorerCanvas({
             ) : null}
           </div>
 
-          {!placesReady && livePlaces.length === 0 ? null : filtered.length === 0 ? (
+          {!placesReady && livePlaces.length === 0 ? (
+            /* 인덱스가 오기 전 — 필터를 달고 들어오면 SSR 씨앗이 비어 있다.
+               여기서 null 을 두면 목록 자리가 통째로 흰 화면이 된다. */
+            <ul className="px-4 pb-6" aria-busy="true">
+              {[0, 1, 2, 3].map((i) => (
+                <li key={i} className={i > 0 ? "mt-5" : ""}>
+                  <span className="inline-block w-full overflow-hidden text-left">
+                    <BoneFrame className="block w-full" />
+                    <span className="mt-2.5 block text-[15px] font-semibold tracking-[-0.01em]">
+                      <Bone w="60%" />
+                    </span>
+                    <span className="mt-0.5 block text-[13px]">
+                      <Bone w="45%" />
+                    </span>
+                  </span>
+                </li>
+              ))}
+            </ul>
+          ) : filtered.length === 0 ? (
             <EmptyState message={m.home.empty}>
               {/* 막다른 화면 금지(EmptyState.tsx 주석) — 위 헤더의 지우기 버튼은
                   빈 상태에서 눈에 안 들어온다. 같은 동작을 본문에 다시 세운다. */}
@@ -1109,7 +1129,7 @@ export function ExplorerCanvas({
                         {p.youtubeId ? (
                           <Thumb
                             youtubeId={p.youtubeId}
-                            alt={p.youtubeTitle ?? displayPlaceName(p, locale)}
+                            alt={displayPlaceName(p, locale)}
                             eager={i === 0}
                           />
                         ) : null}
