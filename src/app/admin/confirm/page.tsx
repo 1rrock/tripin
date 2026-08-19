@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { fetchAll } from "@/shared/api/chunked-in";
 import { ConfirmClient, type City, type Creator, type Video } from "./ConfirmClient";
 
 export const metadata: Metadata = { title: "손입력 — Eatripin 어드민" };
@@ -15,17 +16,24 @@ export const dynamic = "force-dynamic";
  */
 export default async function ConfirmPage() {
   const db = getSupabaseAdmin();
-  const [{ data: creators }, { data: cities }, { data: videos }] = await Promise.all([
+  // videos 는 1160행이라 PostgREST 기본 1000행 절단에 걸린다 — fetchAll 로 이어 받는다.
+  const [{ data: creators }, { data: cities }, videos] = await Promise.all([
     db.from("creators").select("id, slug, display_name").order("display_name"),
     db.from("cities").select("id, slug, name, country_code").order("name"),
-    db.from("videos").select("id, title, creator_id").order("created_at", { ascending: false }),
+    fetchAll<Video>((from, to) =>
+      db
+        .from("videos")
+        .select("id, title, creator_id")
+        .order("created_at", { ascending: false })
+        .range(from, to),
+    ),
   ]);
 
   return (
     <ConfirmClient
       creators={(creators ?? []) as Creator[]}
       cities={(cities ?? []) as City[]}
-      videos={(videos ?? []) as Video[]}
+      videos={videos}
     />
   );
 }

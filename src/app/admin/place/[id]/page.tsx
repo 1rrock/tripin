@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { fetchAll } from "@/shared/api/chunked-in";
 import { PlaceEditForm } from "../../_ui/PlaceEditForm";
 import { SummaryEditor } from "./SummaryEditor";
 
@@ -47,11 +48,15 @@ async function loadEditorData(placeId: string) {
     : { data: null };
 
   // 미작성 큐: 전체 장소 중 요약(불릿/문단 모두) 없는 곳 — "저장 후 다음" 대상
-  const { data: all } = await db
-    .from("places")
-    .select("id, summary, summary_bullets")
-    .order("created_at", { ascending: true });
-  const places = all ?? [];
+  // places 는 1857행이라 PostgREST 기본 1000행 절단에 걸린다 — fetchAll 로 이어 받는다.
+  const places = await fetchAll<{ id: string; summary: string | null; summary_bullets: string[] }>(
+    (from, to) =>
+      db
+        .from("places")
+        .select("id, summary, summary_bullets")
+        .order("created_at", { ascending: true })
+        .range(from, to),
+  );
   const done = places.filter(hasSummary).length;
   const missing = places.filter((p) => !hasSummary(p) && p.id !== placeId);
   const nextId = missing[0]?.id ?? null;

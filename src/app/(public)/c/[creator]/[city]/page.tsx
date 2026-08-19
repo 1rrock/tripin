@@ -171,12 +171,12 @@ async function loadOtherCities(
   currentCityId: string,
 ): Promise<RelatedCityRow[]> {
   if (placeIds.length === 0) return [];
-  const { data: allPlaces } = await supabase
-    .from("places")
-    .select("id, city_id, map_status")
-    .in("id", placeIds);
+  const allPlaces = await chunkedIn(
+    (ids) => supabase.from("places").select("id, city_id, map_status").in("id", ids),
+    placeIds,
+  );
   const countByCity = new Map<string, number>();
-  for (const p of allPlaces ?? []) {
+  for (const p of allPlaces) {
     if (p.map_status !== "confirmed" || p.city_id === currentCityId) continue;
     countByCity.set(p.city_id, (countByCity.get(p.city_id) ?? 0) + 1);
   }
@@ -208,20 +208,20 @@ async function loadOtherCreators(
   const cityPlaceIds = (cityPlaces ?? []).map((p) => p.id);
   if (cityPlaceIds.length === 0) return [];
 
-  const { data: cityLinks } = await supabase
-    .from("video_places")
-    .select("video_id, place_id")
-    .in("place_id", cityPlaceIds);
-  const cityVideoIds = [...new Set((cityLinks ?? []).map((l) => l.video_id))];
+  const cityLinks = await chunkedIn(
+    (ids) => supabase.from("video_places").select("video_id, place_id").in("place_id", ids),
+    cityPlaceIds,
+  );
+  const cityVideoIds = [...new Set(cityLinks.map((l) => l.video_id))];
   if (cityVideoIds.length === 0) return [];
 
-  const { data: cityVideos } = await supabase
-    .from("videos")
-    .select("id, creator_id")
-    .in("id", cityVideoIds);
-  const creatorByVideo = new Map((cityVideos ?? []).map((v) => [v.id, v.creator_id]));
+  const cityVideos = await chunkedIn(
+    (ids) => supabase.from("videos").select("id, creator_id").in("id", ids),
+    cityVideoIds,
+  );
+  const creatorByVideo = new Map(cityVideos.map((v) => [v.id, v.creator_id]));
   const placesByCreator = new Map<string, Set<string>>();
-  for (const link of cityLinks ?? []) {
+  for (const link of cityLinks) {
     const creatorId = creatorByVideo.get(link.video_id);
     if (!creatorId || creatorId === currentCreatorId) continue;
     if (!placesByCreator.has(creatorId)) placesByCreator.set(creatorId, new Set());

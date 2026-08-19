@@ -13,6 +13,7 @@
 import { revalidatePath } from "next/cache";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { purgePublicData } from "@/shared/api/cache";
+import { chunkedIn } from "@/shared/api/chunked-in";
 import { requireAdmin } from "@/shared/lib/require-admin";
 import type { ActionResult } from "./_lib/action-result";
 
@@ -73,17 +74,24 @@ export async function setPiecePublished(
   const videoIds = (videos ?? []).map((v) => v.id);
   if (videoIds.length === 0) return { error: "이 채널에 등록된 영상이 없습니다" };
 
-  const { data: links } = await db.from("video_places").select("place_id").in("video_id", videoIds);
-  const placeIds = [...new Set((links ?? []).map((l) => l.place_id))];
+  // 채널 하나의 영상이 수백 개일 수 있어 .in() URL 길이 제한에 걸릴 수 있다 — chunkedIn 으로 나눠 받는다
+  const links = await chunkedIn(
+    (ids) => db.from("video_places").select("place_id").in("video_id", ids),
+    videoIds,
+  );
+  const placeIds = [...new Set(links.map((l) => l.place_id))];
   if (placeIds.length === 0) return { error: "이 조각에 장소가 없습니다" };
 
-  const { error: placeError } = await db
-    .from("places")
-    .update({ is_published: publish, updated_at: new Date().toISOString() })
-    .in("id", placeIds)
-    .eq("city_id", cityId)
-    .eq("map_status", "confirmed");
-  if (placeError) return { error: placeError.message };
+  // placeIds 도 같은 이유로 청크 단위 업데이트 — 한 번의 .in() 에 다 넣지 않는다
+  for (let i = 0; i < placeIds.length; i += 80) {
+    const { error: placeError } = await db
+      .from("places")
+      .update({ is_published: publish, updated_at: new Date().toISOString() })
+      .in("id", placeIds.slice(i, i + 80))
+      .eq("city_id", cityId)
+      .eq("map_status", "confirmed");
+    if (placeError) return { error: placeError.message };
+  }
 
   const { error: pieceError } = await db.from("creator_cities").upsert({
     creator_id: creatorId,
