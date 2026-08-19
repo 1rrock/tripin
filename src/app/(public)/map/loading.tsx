@@ -1,21 +1,14 @@
-import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { getLocale } from "@/shared/i18n/locale";
+import { ko } from "@/shared/i18n/messages/ko";
+import { MapSkeleton } from "@/shared/ui/Skeleton";
 
 /**
- * 클라이언트 이동용 즉시 크롬. 클릭 직후 홈이 1~2초 얼어 보이지 않게 한다.
- * 카드 뼈는 넣지 않는다 — 하드 내비게이션에서 그게 LCP 가 됐었다.
+ * 동기 — getLocale 을 기다리면 헤더+빈 화면이 스켈레톤보다 먼저 선다.
+ * (라벨은 sr-only 라 로케일이 틀려도 화면에는 안 보인다)
+ *
+ * 뼈를 다시 넣는다. 빈 크롬만 두면 /map 진입이 "아무것도 안 뜨는 흰 화면"이었다.
+ * `.bone` 은 background-color + 그라디언트 애니라 LCP 후보가 아니다 —
+ * LCP 후보는 url() 배경·<img>·텍스트 블록이고 여기엔 셋 다 없다.
  */
-export default async function Loading() {
-  const locale = await getLocale();
-  const m = getDictionary(locale);
-  return (
-    <main>
-      <div className="canvas-page canvas-root" aria-busy="true" aria-label={m.common.loading}>
-        <div className="canvas-map" />
-        <div className="canvas-sheet-clip">
-          <section className="canvas-panel" />
-        </div>
-      </div>
-    </main>
-  );
+export default function Loading() {
+  return <MapSkeleton label={ko.common.loading} />;
 }
