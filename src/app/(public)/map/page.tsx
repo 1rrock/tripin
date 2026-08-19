@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
-import { loadCityIndex, loadHomeMap, toMapCanvasPlace } from "@/shared/api/cities";
+import { loadCityIndex } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta } from "@/shared/seo/page-meta";
@@ -25,12 +25,10 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function MapPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ creators: feedCreators }, cities, rawPlaces] = await Promise.all([
+  const [{ creators: feedCreators }, cities] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
-    loadHomeMap(locale),
   ]);
-  const places = rawPlaces.map(toMapCanvasPlace);
   const creators = feedCreators.map((c) => ({
     ...c,
     bio: null,
@@ -39,27 +37,12 @@ export default async function MapPage() {
     recentVideos: [],
     cities: [],
   }));
-
-  if (places.length === 0) {
-    return (
-      <main className="px-(--gutter) pt-4">
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-display)", letterSpacing: "-0.045em", lineHeight: 1.12 }}
-        >
-          {m.home.comingTitle}
-        </h1>
-        <p className="mt-4 max-w-[46ch]" style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-          {m.home.comingBody}
-        </p>
-      </main>
-    );
-  }
+  const mapCities = cities.map((c) => ({ ...c, recentVideos: [] }));
 
   return (
     <main>
       <h1 className="sr-only">{m.home.srHeading}</h1>
-      <HomeCanvas places={places} cities={cities} creators={creators} />
+      <HomeCanvas places={[]} cities={mapCities} creators={creators} />
     </main>
   );
 }

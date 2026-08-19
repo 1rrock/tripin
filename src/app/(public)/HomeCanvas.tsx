@@ -86,6 +86,27 @@ export function ExplorerCanvas({
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const sp = useSearchParams();
+  /* /map 은 장소 목록을 HTML 에 안 싣는다. 마운트 뒤 JSON 으로 받는다. */
+  const [fetchedPlaces, setFetchedPlaces] = useState<MapCanvasPlace[] | null>(
+    surface === "page" ? null : places,
+  );
+  const livePlaces = fetchedPlaces ?? places;
+  const placesReady = surface !== "page" || fetchedPlaces !== null;
+  useEffect(() => {
+    if (surface !== "page") return;
+    let alive = true;
+    fetch("/api/map/index")
+      .then((res) => (res.ok ? res.json() : { places: [] }))
+      .then((data: { places?: MapCanvasPlace[] }) => {
+        if (alive) setFetchedPlaces(data.places ?? []);
+      })
+      .catch(() => {
+        if (alive) setFetchedPlaces([]);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [surface]);
 
   const city = sp.get("city");
   const regionRaw = sp.get("region");
@@ -225,8 +246,8 @@ export function ExplorerCanvas({
   );
 
   const filtered = useMemo(
-    () => places.filter((p) => placeMatchesMapFilter(p, axes, saved)),
-    [places, axes, saved],
+    () => livePlaces.filter((p) => placeMatchesMapFilter(p, axes, saved)),
+    [livePlaces, axes, saved],
   );
 
   const inboundKey = `${city ?? ""}|${region ?? ""}|${channel ?? ""}|${type ?? ""}|${q}|${savedOnly ? "1" : "0"}|${listId ?? ""}`;
@@ -291,18 +312,19 @@ export function ExplorerCanvas({
   );
 
   const detailPlace =
-    (localPlace ? (filtered.find((p) => p.id === localPlace) ?? places.find((p) => p.id === localPlace)) : null) ??
+    (localPlace ? (filtered.find((p) => p.id === localPlace) ?? livePlaces.find((p) => p.id === localPlace)) : null) ??
     null;
   const detailOpen = Boolean(detailPlace);
 
   useEffect(() => {
     if ((savedOnly || listId) && !savedReady) return;
     if (detailOpen) return;
+    if (!placesReady) return;
     if (inboundSeen.current === inboundKey) return;
     inboundSeen.current = inboundKey;
     if (q.trim()) return;
     if (filtered.length > 0) return;
-    const next = reconcileMapFilter(places, axes, [], saved);
+    const next = reconcileMapFilter(livePlaces, axes, [], saved);
     if (
       next.city === city &&
       next.region === region &&
@@ -323,7 +345,8 @@ export function ExplorerCanvas({
   }, [
     inboundKey,
     filtered.length,
-    places,
+    livePlaces,
+    placesReady,
     axes,
     saved,
     city,
@@ -706,17 +729,17 @@ export function ExplorerCanvas({
   const typeCounts = useMemo(() => {
     const facet = { ...axes, type: null };
     const map = new Map<PlaceType, number>();
-    for (const p of places) {
+    for (const p of livePlaces) {
       if (!placeMatchesMapFilter(p, facet, saved)) continue;
       map.set(p.placeType, (map.get(p.placeType) ?? 0) + 1);
     }
     return map;
-  }, [places, axes, saved]);
+  }, [livePlaces, axes, saved]);
 
   const channelCounts = useMemo(() => {
     const facet = { ...axes, channel: null };
     const map = new Map<string, number>();
-    for (const p of places) {
+    for (const p of livePlaces) {
       if (!placeMatchesMapFilter(p, facet, saved)) continue;
       const seen = new Set<string>();
       for (const s of p.sources) {
@@ -726,12 +749,12 @@ export function ExplorerCanvas({
       }
     }
     return map;
-  }, [places, axes, saved]);
+  }, [livePlaces, axes, saved]);
 
   const channelOptions = creators;
 
   const modalCities = useMemo(() => {
-    const pool = places.filter((p) =>
+    const pool = livePlaces.filter((p) =>
       placeMatchesMapFilter(p, { ...axes, city: null, region: null }, saved),
     );
     const byCity = new Map<
@@ -765,7 +788,7 @@ export function ExplorerCanvas({
       items.sort((a, b) => b.placeCount - a.placeCount);
       return [{ id, items }];
     });
-  }, [places, cities, axes, saved]);
+  }, [livePlaces, cities, axes, saved]);
 
   /**
    * 필터 줄 — 검색창과 같은 이유로 자리가 둘이다(모바일은 지도 위, 데스크톱은 시트 안).
@@ -794,7 +817,7 @@ export function ExplorerCanvas({
           onChange={(next) => {
             setActiveId(null);
             const proposed = { ...axes, savedOnly: next.saved, listId: next.list };
-            const reconciled = reconcileMapFilter(places, proposed, [], saved);
+            const reconciled = reconcileMapFilter(livePlaces, proposed, [], saved);
             replace({
               saved: next.saved,
               list: next.list,
@@ -818,7 +841,7 @@ export function ExplorerCanvas({
           listId,
         };
         const keep = keepAxesForApply(axes, proposed);
-        const reconciled = reconcileMapFilter(places, proposed, keep, saved);
+        const reconciled = reconcileMapFilter(livePlaces, proposed, keep, saved);
         replace({
           region: reconciled.region,
           city: reconciled.city,
