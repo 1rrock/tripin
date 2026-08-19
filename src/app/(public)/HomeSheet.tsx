@@ -64,7 +64,7 @@ export async function HomeSheet({
  *
  * 모바일에서 `<img>` 지면은 쓰지 않는다. 412×345 로 뷰포트를 채워 LCP 가 되고,
  * fetchpriority=high 인데도 클라이언트 트리 뒤에 있어 로드 지연이 수 초였다.
- * 그라디언트만으로 지면을 만들고, 사진은 lg 이상에서만 깐다.
+ * 대신 `.hero-field` 의 CSS 배경으로 깐다 — 모바일은 440px 흑백 13KB 판.
  */
 async function FieldHero({ cities }: { cities: CityRow[] }) {
   const locale = await getLocale();
@@ -79,7 +79,7 @@ async function FieldHero({ cities }: { cities: CityRow[] }) {
           className="absolute inset-0 lg:hidden"
           style={{
             background:
-              "linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.88) 13%, rgba(255,255,255,0.8) 46%, rgba(255,255,255,0.62) 74%, rgba(255,255,255,0.85) 93%, #fff 100%)",
+              "linear-gradient(180deg, #fff 0%, rgba(255,255,255,0.9) 12%, rgba(255,255,255,0.74) 44%, rgba(255,255,255,0.48) 76%, rgba(255,255,255,0.78) 93%, #fff 100%)",
           }}
         />
         <span

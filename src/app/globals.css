@@ -184,15 +184,20 @@ body {
   .bone-ava::after { animation: none; }
 }
 
-/* 홈 히어로 지면 — lg 이상에서만 사진을 깐다.
-   모바일 `<img>` 는 뷰포트를 채워 LCP 가 됐고, display:none 이어도 받는다. */
+/* 홈 히어로 지면.
+   모바일 `<img>` 는 뷰포트를 채워 LCP 가 됐고, display:none 이어도 받는다 —
+   그래서 사진이 아니라 CSS 배경이다. 스타일시트가 렌더 블로킹이라 첫 파싱에
+   같이 잡히고, 모바일 판은 440px·흑백·13KB 라 LCP 가 돼도 FCP 와 붙는다. */
+.hero-field {
+  background-image: url("/hero/field-map-sm.webp");
+  background-size: cover;
+  background-position: center;
+  filter: grayscale(1) contrast(0.85);
+  opacity: 0.5;
+}
 @media (min-width: 1024px) {
   .hero-field {
     background-image: url("/hero/field-map.webp");
-    background-size: cover;
-    background-position: center;
-    filter: grayscale(1) contrast(0.85);
-    opacity: 0.5;
   }
 }
 
