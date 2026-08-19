@@ -81,7 +81,7 @@ const loadGraph = cachePublic(async () => {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, lat, lng, address, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, place_type, city_id, country_code, lat, lng, address, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .eq("map_status", "confirmed")
         .range(from, to),
@@ -230,6 +230,7 @@ export async function loadTypeDetail(type: PlaceType): Promise<TypeDetail | null
       naverPlaceId: p.naver_place_id,
       lat: p.lat,
       lng: p.lng,
+      countryCode: p.country_code,
     });
     const row: TypePlace = {
       id: p.id,

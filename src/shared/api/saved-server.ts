@@ -130,7 +130,7 @@ async function _loadSavedView(): Promise<SavedView> {
     supabase
       .from("places")
       .select(
-        "id, slug, name, name_local, name_en, place_type, city_id, google_maps_url, google_place_id, kakao_place_id, naver_place_id, lat, lng",
+        "id, slug, name, name_local, name_en, place_type, city_id, country_code, google_maps_url, google_place_id, kakao_place_id, naver_place_id, lat, lng",
       )
       .in("id", ids)
       .eq("is_published", true),
@@ -172,6 +172,7 @@ async function _loadSavedView(): Promise<SavedView> {
           naverPlaceId: p.naver_place_id,
           lat: p.lat,
           lng: p.lng,
+          countryCode: p.country_code,
         })?.url ?? null,
       savedAt: s.saved_at,
       youtubeId: cuts.get(p.id)?.youtubeId ?? null,
