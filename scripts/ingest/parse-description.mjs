@@ -54,9 +54,30 @@ if (!creatorSlug || !citySlug || videoIds.length === 0) {
 
 /** 장소를 가리키는 구글 공유링크. 이것만 장소로 친다 (인스타·예약사이트 등은 제외).
  *  쿼리(?g_st=ic 등)가 붙은 줄도 인정하고, 저장 시에는 쿼리를 떼 둔다. */
-const MAP_LINK = /^https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+(?:\?[^\s]*)?$/;
+const GOOGLE_LINK = /^https:\/\/(?:maps\.app\.goo\.gl|goo\.gl\/maps)\/\w+(?:\?[^\s]*)?$/;
+
+/** 네이버 장소 링크. 한국 가게는 더보기란에 네이버만 적는 크리에이터가 많다.
+ *  이걸 안 보던 시절엔 그런 가게가 통째로 누락됐다 (`칠흑 가양등촌점`). */
+const NAVER_LINK =
+  /^https:\/\/(?:m\.place|pcmap\.place|place|map)\.naver\.com\/[^\s]+$/;
+/** naver.me 단축 링크는 숫자 ID 를 알 수 없어 장소로 치지 않는다 — 사람이 /admin 에서 넣는다. */
+
+const isMapLink = (line) => GOOGLE_LINK.test(line) || NAVER_LINK.test(line);
 const stripMapQuery = (url) => url.replace(/\?.*$/, "");
 const ANY_URL = /^https?:\/\//;
+
+/** 네이버 링크 → 숫자 장소 ID. 앱 쪽 `shared/lib/place-link-id.ts` 와 같은 규칙. */
+function naverPlaceIdOf(url) {
+  try {
+    const u = new URL(url);
+    if (!u.hostname.toLowerCase().endsWith("naver.com")) return null;
+    const q = u.searchParams.get("place") ?? u.searchParams.get("id");
+    if (q && /^\d+$/.test(q)) return q;
+    return u.pathname.match(/\/[a-zA-Z]+\/(\d+)(?:\/|$)/)?.[1] ?? null;
+  } catch {
+    return null;
+  }
+}
 
 /**
  * 상호명으로 쓰면 안 되는 줄 — 채널 공통 문구·안내.
@@ -64,6 +85,19 @@ const ANY_URL = /^https?:\/\//;
  */
 const NOISE =
   /봐주셔서|좋아요|구독|해상도|사용\s*카메라|안녕하세요|instagram|인스타|예약\s*사이트|문의|이메일|비즈니스|협찬|광고|^[#＃]|^[-=*_·\s]*$|^こんにちは|お仕事|^\*?\s*가게\s*정보|^(?:영업\s*시간|주소|전화|예약|휴무|정기\s*휴무)\s*[:：]|^\d{1,2}:\d{2}\s*[~～\-–]\s*\d{1,2}:\d{2}/i;
+
+/**
+ * 상호가 아니라 **설명 문장**인 줄. 링크 위에 감상평을 적어 두는 크리에이터가 있는데,
+ * 그 문장이 그대로 상호로 들어가 카드 제목이 된 적이 있다:
+ *   "조금은 더 맛집을 알려드리고자 영상 만들어봤어요."
+ *   "중심지에 있어 전체적으로 크지 않은 그라나다에서 이동이 편리합니다"
+ *
+ * 종결어미는 **10자 이상일 때만** 본다 — 짧은 상호가 우연히 걸리는 걸 막는다
+ * ("스시야마다" 처럼 `다` 로 끝나는 상호가 실제로 있다).
+ * 저장된 상호 1857개에 돌려 오탐 0건을 확인했다.
+ */
+const PROSE =
+  /[.!?]$|^.{10,}(?:요|어요|세요|습니다|입니다|합니다|했어요|봤어요|했지만|드릴게요|드려요|가시면|하지만)$|알려드리|기대해주세요|영상\s*만들|저희에겐|여행\s*가시면/;
 
 /**
  * 상호명 앞에 붙는 것들을 떼어낸다.
@@ -80,7 +114,19 @@ const stripBullet = (s) =>
     .trim();
 
 /** 타임라인 줄에서 초 단위 시각. "15:00📍EJ보쿠조" / "00:34 바쿠마츠 카레" */
+/**
+ * 줄에서 언급 타임스탬프를 뽑는다.
+ *
+ * ⚠️ 영업시간을 타임스탬프로 집지 않는다. "11:30 ~ 21:00" 같은 줄에서 앞 시각을
+ *    가져가는 바람에 1분짜리 영상에 `16:30` 이 붙은 장소가 실제로 있었다
+ *    (유저가 누르면 영상 끝을 넘어가 아무 데도 안 간다).
+ *    범위 표기(`~`,`-`)나 영업/오픈 문구가 있는 줄은 통째로 버린다.
+ */
+const HOURS_LINE =
+  /\d{1,2}:\d{2}\s*[~～\-–—]\s*\d{1,2}:\d{2}|영업\s*시간|오픈|라스트\s*오더|브레이크\s*타임|휴무/i;
+
 const timeOf = (line) => {
+  if (!line || HOURS_LINE.test(line)) return null;
   const m = /(?:^|\s)(\d{1,2}):(\d{2})(?::(\d{2}))?/.exec(line);
   if (!m) return null;
   return m[3] ? +m[1] * 3600 + +m[2] * 60 + +m[3] : +m[1] * 60 + +m[2];
@@ -152,7 +198,7 @@ for (const it of items) {
 
   for (let i = 0; i < lines.length; i++) {
     const line = lines[i];
-    if (!MAP_LINK.test(line)) continue;
+    if (!isMapLink(line)) continue;
     const mapUrl = stripMapQuery(line);
     if (boilerplate.has(mapUrl) || seen.has(mapUrl)) continue;
     seen.add(mapUrl);
@@ -170,7 +216,7 @@ for (const it of items) {
         address = address ?? addr[1].trim();
         continue;
       }
-      if (NOISE.test(c)) continue;
+      if (NOISE.test(c) || PROSE.test(c)) continue;
       name = stripBullet(c);
       nameLine = j;
       break;
@@ -187,7 +233,15 @@ for (const it of items) {
     }
 
     // 타임스탬프: 이름 줄 자체 또는 그 근처에 있으면 쓴다
-    const ts = timeOf(lines[nameLine]) ?? (nameLine > 0 ? timeOf(lines[nameLine - 1]) : null);
+    // 영상 길이를 넘는 값은 타임스탬프가 아니다 — 무엇을 잘못 집었든 버린다(2차 방어).
+    const rawTs = timeOf(lines[nameLine]) ?? (nameLine > 0 ? timeOf(lines[nameLine - 1]) : null);
+    const videoLen = durationSec(it.contentDetails?.duration);
+    const ts = rawTs !== null && videoLen && rawTs > videoLen ? null : rawTs;
+
+    // 네이버 링크면 숫자 ID 만 담는다 — 좌표는 `backfill-naver.mjs` 가 채운다.
+    // 구글 공유링크는 예전대로 `backfill-coords.mjs` 담당.
+    const naverPlaceId = naverPlaceIdOf(mapUrl);
+    if (NAVER_LINK.test(mapUrl) && !naverPlaceId) continue; // ID 를 못 뽑는 네이버 링크는 장소로 안 친다
 
     found.push({
       youtubeVideoId: vid,
@@ -199,12 +253,14 @@ for (const it of items) {
       lat: null,
       lng: null,
       address,
-      googleMapsUrl: mapUrl, // backfill-coords 가 좌표로 바꾼다
+      googleMapsUrl: naverPlaceId ? null : mapUrl, // backfill-coords 가 좌표로 바꾼다
       kakaoPlaceId: null,
-      naverPlaceId: null,
+      naverPlaceId,
       timestampSec: ts,
       mentionNote: null,
-      sourceNote: `영상 더보기란에 크리에이터가 직접 표기한 상호 + 구글 공유링크 (${vid})`,
+      sourceNote: `영상 더보기란에 크리에이터가 직접 표기한 상호 + ${
+        naverPlaceId ? "네이버 지도 링크" : "구글 공유링크"
+      } (${vid})`,
     });
   }
 
