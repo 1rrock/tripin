@@ -297,7 +297,10 @@ export function MapView({
   // "전체 핀 보기" — 마지막 핀 세트의 뷰포트 맞춤을 다시 실행한다
   const refitRef = useRef<(() => void) | null>(null);
 
-  // 지도 생성 (재시도 전까지 1회). 두 프레임 뒤에 시작해 목록·검색이 먼저 페인트된다.
+  /* 지도 생성 (재시도 전까지 1회). 두 프레임 뒤에 시작해 목록·검색이 먼저 페인트된다.
+     숨은 탭에서는 rAF 가 아예 안 돌아 "지도 불러오는 중" 에서 멈춘다. 그렇다고
+     타이머로 밀어붙이면 더 나쁘다 — 숨은 탭은 타일도 안 그려서 tilesloaded 가
+     안 오고, 8초 뒤 "불러오지 못했어요" 가 뜬다. 보일 때까지 기다렸다 시작한다. */
   useEffect(() => {
     if (!publicEnv.googleMapsKey) return;
     const usingDemoMapId = publicEnv.googleMapsId === "DEMO_MAP_ID";
@@ -312,7 +315,10 @@ export function MapView({
     let timer: ReturnType<typeof setTimeout> | undefined;
     let tilesListener: google.maps.MapsEventListener | undefined;
     let raf = 0;
+    let started = false;
     const start = () => {
+    if (started) return;
+    started = true;
     const { maps } = loadSdk();
     maps
       .then(({ Map }) => {
@@ -344,20 +350,43 @@ export function MapView({
           if (timer) clearTimeout(timer);
           if (!cancelled) setLoaded(true);
         });
-        timer = setTimeout(() => {
-          if (!cancelled) setFailed(true);
-        }, TILES_TIMEOUT_MS);
+        /* 타일이 안 그려지는 이유가 "탭이 숨어서" 일 수 있다 — 앱을 잠깐 나갔다
+           오면 실패 화면이 떠 있는 일이 없도록, 숨은 동안은 시계를 다시 감는다. */
+        const armTimeout = () => {
+          timer = setTimeout(() => {
+            if (cancelled) return;
+            if (document.visibilityState === "hidden") {
+              armTimeout();
+              return;
+            }
+            setFailed(true);
+          }, TILES_TIMEOUT_MS);
+        };
+        armTimeout();
       })
       .catch(() => {
         if (!cancelled) setFailed(true);
       });
     };
-    raf = requestAnimationFrame(() => {
-      raf = requestAnimationFrame(start);
-    });
+    const onVisible = () => {
+      if (document.visibilityState === "hidden") return;
+      document.removeEventListener("visibilitychange", onVisible);
+      schedule();
+    };
+    function schedule() {
+      if (document.visibilityState === "hidden") {
+        document.addEventListener("visibilitychange", onVisible);
+        return;
+      }
+      raf = requestAnimationFrame(() => {
+        raf = requestAnimationFrame(start);
+      });
+    }
+    schedule();
     return () => {
       cancelled = true;
       cancelAnimationFrame(raf);
+      document.removeEventListener("visibilitychange", onVisible);
       if (timer) clearTimeout(timer);
       tilesListener?.remove();
     };
