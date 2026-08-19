@@ -365,6 +365,15 @@ export type MapCanvasPlace = {
   searchText: string;
 };
 
+/** `/map` HTML 에 남기는 목록 앞줄. LCP 썸네일이 문서에서 바로 보이게 한다.
+ *  나머지는 `/api/map/index`. 전체가 다시 오면 이 앞줄과 같은 정렬이라 안 바뀐다. */
+export const MAP_CANVAS_SEED = 6;
+
+export async function loadMapCanvasSeed(locale: Locale): Promise<MapCanvasPlace[]> {
+  const all = await loadHomeMap(locale);
+  return all.slice(0, MAP_CANVAS_SEED).map(toMapCanvasPlace);
+}
+
 export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
   const names = [...new Set(p.sources.map((s) => s.creatorName))];
   return {

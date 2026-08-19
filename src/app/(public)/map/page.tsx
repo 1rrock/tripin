@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
+import { preconnect, preload } from "react-dom";
 import { loadHomeFeed } from "@/shared/api/home";
-import { loadCityIndex } from "@/shared/api/cities";
+import { loadCityIndex, loadMapCanvasSeed } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
+import { thumbSmall } from "@/shared/lib/youtube";
 import { publicMeta } from "@/shared/seo/page-meta";
 import { HomeCanvas } from "../HomeCanvas";
 
@@ -22,12 +24,33 @@ export async function generateMetadata(): Promise<Metadata> {
   });
 }
 
-export default async function MapPage() {
+function firstQuery(v: string | string[] | undefined): string | null {
+  if (typeof v === "string") return v;
+  if (Array.isArray(v) && typeof v[0] === "string") return v[0];
+  return null;
+}
+
+export default async function MapPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string | string[] | undefined>>;
+}) {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ creators: feedCreators }, cities] = await Promise.all([
+  const sp = await searchParams;
+  const inboundFilter = Boolean(
+    firstQuery(sp.city) ||
+      firstQuery(sp.region) ||
+      firstQuery(sp.channel) ||
+      firstQuery(sp.type) ||
+      firstQuery(sp.q) ||
+      firstQuery(sp.saved) ||
+      firstQuery(sp.list),
+  );
+  const [{ creators: feedCreators }, cities, seedPlaces] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
+    inboundFilter ? Promise.resolve([]) : loadMapCanvasSeed(locale),
   ]);
   const creators = feedCreators.map((c) => ({
     ...c,
@@ -38,11 +61,16 @@ export default async function MapPage() {
     cities: [],
   }));
   const mapCities = cities.map((c) => ({ ...c, recentVideos: [] }));
+  const lcpYoutubeId = seedPlaces.find((p) => p.youtubeId)?.youtubeId ?? null;
+  if (lcpYoutubeId) {
+    preconnect("https://i.ytimg.com");
+    preload(thumbSmall(lcpYoutubeId), { as: "image", fetchPriority: "high" });
+  }
 
   return (
     <main>
       <h1 className="sr-only">{m.home.srHeading}</h1>
-      <HomeCanvas places={[]} cities={mapCities} creators={creators} />
+      <HomeCanvas places={seedPlaces} cities={mapCities} creators={creators} />
     </main>
   );
 }

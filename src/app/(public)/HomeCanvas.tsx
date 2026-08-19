@@ -86,7 +86,8 @@ export function ExplorerCanvas({
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const sp = useSearchParams();
-  /* /map 은 장소 목록을 HTML 에 안 싣는다. 마운트 뒤 JSON 으로 받는다. */
+  /* /map 은 장소 전체를 HTML 에 안 싣는다. 앞 몇 줄은 SSR 로 남겨 LCP
+     썸네일이 문서에 있게 하고, 나머지는 마운트 뒤 JSON 으로 받는다. */
   const [fetchedPlaces, setFetchedPlaces] = useState<MapCanvasPlace[] | null>(
     surface === "page" ? null : places,
   );
@@ -1015,10 +1016,12 @@ export function ExplorerCanvas({
             {/* 머리말이 이미 개수를 들고 있으면 같은 숫자를 두 번 쓰지 않는다 */}
             {savedLead ? (
               <span aria-hidden />
-            ) : (
+            ) : placesReady || livePlaces.length > 0 ? (
               <p className="index tnum" style={{ color: "var(--dim)" }}>
                 {t(m.cityDetail.placesAll, { n: filtered.length })}
               </p>
+            ) : (
+              <span aria-hidden />
             )}
             {hasFilter ? (
               <button
@@ -1042,7 +1045,7 @@ export function ExplorerCanvas({
             ) : null}
           </div>
 
-          {filtered.length === 0 ? (
+          {!placesReady && livePlaces.length === 0 ? null : filtered.length === 0 ? (
             <EmptyState message={m.home.empty}>
               {/* 막다른 화면 금지(EmptyState.tsx 주석) — 위 헤더의 지우기 버튼은
                   빈 상태에서 눈에 안 들어온다. 같은 동작을 본문에 다시 세운다. */}
@@ -1084,7 +1087,7 @@ export function ExplorerCanvas({
                           <Thumb
                             youtubeId={p.youtubeId}
                             alt={p.youtubeTitle ?? displayPlaceName(p, locale)}
-                            eager={i < 2}
+                            eager={i === 0}
                           />
                         ) : null}
                       </Frame>
