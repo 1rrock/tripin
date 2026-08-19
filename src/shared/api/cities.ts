@@ -320,10 +320,13 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
 /**
  * 홈 캔버스용 핀 — 도시 지도와 같은 확정 장소.
  * 좌표가 비어 있으면 구글 지도 링크에서 읽고, 그래도 없으면 올린다.
+ *
+ * 이 타입은 이제 파일 밖으로 안 나간다. `loadMapCanvasIndex`(목록·핀)와
+ * `loadMapPlace`(드로어) 두 캐시의 재료일 뿐이다. 여기 필드를 늘리면 그 두
+ * 캐시 항목이 같이 무거워지고, 드로어 첫 열기가 그만큼 늦어진다.
  */
 export interface HomeMapPlace {
   id: string;
-  slug: string;
   name: string;
   nameLocal: string | null;
   placeType: PlaceType;
@@ -337,19 +340,20 @@ export interface HomeMapPlace {
   countryCode: string;
   summary: SummaryDisplay;
   sources: PlaceSource[];
-  searchText: string;
   youtubeId: string | null;
-  youtubeTitle: string | null;
 }
 
 /**
  * `/map` 첫 페인트용 — 상세(요약·출처 영상)는 드로어를 열 때 따로 받는다.
  * 1665곳 전체를 HomeMapPlace 로 실으면 HTML 이 460KB 를 넘고 Lighthouse 가
  * FullPageScreenshot 에서 타임아웃 난다.
+ *
+ * 여기 없는 것들은 일부러 없다. 캔버스가 안 읽는 `slug`, 그리고 컷의 alt 로만
+ * 쓰이던 `youtubeTitle` 을 빼서 인덱스가 gzip 213KB → 129KB 로 줄었다.
+ * 늘리기 전에 1665를 곱해 보고, 정말 목록·핀·필터에 필요한지 따져라.
  */
 export type MapCanvasPlace = {
   id: string;
-  slug: string;
   name: string;
   nameLocal: string | null;
   placeType: PlaceType;
@@ -360,7 +364,6 @@ export type MapCanvasPlace = {
   cityNameEn: string | null;
   countryCode: string;
   youtubeId: string | null;
-  youtubeTitle: string | null;
   sources: { creatorSlug: string }[];
   searchText: string;
 };
@@ -369,16 +372,31 @@ export type MapCanvasPlace = {
  *  나머지는 `/api/map/index`. 전체가 다시 오면 이 앞줄과 같은 정렬이라 안 바뀐다. */
 export const MAP_CANVAS_SEED = 6;
 
-export async function loadMapCanvasSeed(locale: Locale): Promise<MapCanvasPlace[]> {
-  const all = await loadHomeMap(locale);
-  return all.slice(0, MAP_CANVAS_SEED).map(toMapCanvasPlace);
+/**
+ * `/map` 캔버스 인덱스 — 1665곳의 핀·이름·검색어. `/api/map/index` 가 그대로 준다.
+ *
+ * 로케일 인자가 없다. `toMapCanvasPlace` 가 남기는 필드는 전부 원본이고
+ * (`cityName` 과 `cityNameEn` 을 둘 다 싣는다) 정렬도 `localeCompare("ko")` 로
+ * 고정이라, ko/en 이 같은 결과를 본다. 캐시 항목도 하나, CDN 캐시도 하나다.
+ *
+ * `loadHomeMap` 을 매 요청 다시 매핑하지 않는다 — 1665개 searchText 를
+ * 새로 이어 붙이는 비용이 인덱스 응답마다 그대로 나갔다.
+ */
+export const loadMapCanvasIndex = cachePublic(async function loadMapCanvasIndex(): Promise<
+  MapCanvasPlace[]
+> {
+  return (await loadHomeMap("ko")).map(toMapCanvasPlace);
+}, ["map:canvas-index"]);
+
+/** `/map` HTML 이 쓰는 앞줄 — 무거운 `loadHomeMap` 대신 위 인덱스만 읽는다 */
+export async function loadMapCanvasSeed(): Promise<MapCanvasPlace[]> {
+  return (await loadMapCanvasIndex()).slice(0, MAP_CANVAS_SEED);
 }
 
 export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
   const names = [...new Set(p.sources.map((s) => s.creatorName))];
   return {
     id: p.id,
-    slug: p.slug,
     name: p.name,
     nameLocal: p.nameLocal,
     placeType: p.placeType,
@@ -389,7 +407,6 @@ export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
     cityNameEn: p.cityNameEn,
     countryCode: p.countryCode,
     youtubeId: p.youtubeId,
-    youtubeTitle: p.youtubeTitle,
     sources: [...new Set(p.sources.map((s) => s.creatorSlug))].map((creatorSlug) => ({
       creatorSlug,
     })),
@@ -407,16 +424,39 @@ export type MapPlaceDetail = {
   sources: PlaceSource[];
 };
 
-export async function loadMapPlace(id: string, locale: Locale): Promise<MapPlaceDetail | null> {
+/**
+ * 드로어가 읽는 상세를 id 로 찾아 쓰는 한 덩이. `loadMapCanvasIndex` 와 같은 꼴이다.
+ *
+ * ⚠️ **캐시된 함수를 캐시된 함수 안에서 부르면 안쪽은 캐시를 안 탄다.**
+ *    Next 가 바깥이 miss 인 동안 안쪽 `unstable_cache` 를 그냥 실행해 버린다.
+ *    그래서 `loadMapPlace` 를 `cachePublic` 으로 감쌌더니 처음 여는 장소마다
+ *    `loadHomeMap → loadGraph` 가 통째로 다시 돌아 **1.6초** 가 나왔다
+ *    (loadGraph 800ms + loadCityIndex 800ms, 실측).
+ *
+ *    그래서 `loadMapPlace` 는 캐시하지 않는다. 캐시는 이 인덱스 하나뿐이고,
+ *    라우트가 **맨 바깥에서** 부르므로 진짜 캐시 히트가 난다. 같은 이유로
+ *    `/api/map/index` 가 8ms 다.
+ */
+const loadMapDetailIndex = cachePublic(async function loadMapDetailIndex(
+  locale: Locale,
+): Promise<Record<string, MapPlaceDetail>> {
   const all = await loadHomeMap(locale);
-  const p = all.find((row) => row.id === id);
-  if (!p) return null;
-  return {
-    address: p.address,
-    summary: p.summary,
-    mapUrl: p.mapUrl,
-    sources: p.sources,
-  };
+  const out: Record<string, MapPlaceDetail> = {};
+  for (const p of all) {
+    out[p.id] = {
+      address: p.address,
+      summary: p.summary,
+      mapUrl: p.mapUrl,
+      sources: p.sources,
+    };
+  }
+  return out;
+}, ["map:detail-index"]);
+
+/** 캐시하지 마라 — 위 주석의 이유로, 감싸는 순간 인덱스가 캐시를 못 탄다. */
+export async function loadMapPlace(id: string, locale: Locale): Promise<MapPlaceDetail | null> {
+  const index = await loadMapDetailIndex(locale);
+  return index[id] ?? null;
 }
 
 function placeCoords(p: { lat: number | null; lng: number | null; google_maps_url: string | null }) {
@@ -475,22 +515,8 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
       },
       locale,
     );
-    const searchText = [
-      p.name,
-      p.name_local,
-      city.name,
-      city.name_en,
-      p.place_type,
-      p.address,
-      ...(p.summary_bullets ?? []),
-      ...sources.map((s) => `${s.creatorName} ${s.creatorSlug} ${s.videoTitle}`),
-    ]
-      .filter(Boolean)
-      .join(" ")
-      .toLowerCase();
     out.push({
       id: p.id,
-      slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
       placeType: p.place_type,
@@ -512,9 +538,7 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
       countryCode: city.country_code,
       summary,
       sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
-      searchText,
       youtubeId: sources[0]?.youtubeId ?? null,
-      youtubeTitle: sources[0]?.videoTitle ?? null,
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, "ko"));

@@ -50,7 +50,7 @@ export default async function MapPage({
   const [{ creators: feedCreators }, cities, seedPlaces] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
-    inboundFilter ? Promise.resolve([]) : loadMapCanvasSeed(locale),
+    inboundFilter ? Promise.resolve([]) : loadMapCanvasSeed(),
   ]);
   const creators = feedCreators.map((c) => ({
     ...c,
