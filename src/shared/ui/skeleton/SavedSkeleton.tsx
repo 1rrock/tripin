@@ -23,13 +23,17 @@ const NAME_W = ["6.5rem", "4.5rem", "8rem", "5.5rem"];
 
 function Row({
   name,
-  /** 대개 "3곳" 같은 개수. 계정 행만 한 문장이라 훨씬 길다 */
+  /**
+   * 대개 "3곳" 같은 개수. 계정 행만 한 문장이라 훨씬 길다.
+   * `null` 이면 아래 줄이 없다 — 그러면 행 높이를 글이 아니라 아이콘(40)이 잡아
+   * 두 줄짜리 행보다 4px 낮다. "새 리스트" 행이 그렇다.
+   */
   meta = "3.25rem",
   className = "",
   menu = false,
 }: {
   name: string;
-  meta?: string;
+  meta?: string | null;
   /** 격자에서의 자리(열 넓이·세로 구분선) — 실화면 `SavedRow` 의 같은 이름 그대로 */
   className?: string;
   /** 그룹 행에만 붙는 ⋮ (`ListRowMenu` 의 `size-7` 버튼) */
@@ -46,9 +50,11 @@ function Row({
           <span style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>
             <Bone w={name} />
           </span>
-          <span style={{ fontSize: "var(--t-meta)" }}>
-            <Bone w={meta} />
-          </span>
+          {meta ? (
+            <span style={{ fontSize: "var(--t-meta)" }}>
+              <Bone w={meta} />
+            </span>
+          ) : null}
         </span>
       </span>
       <div className="flex shrink-0 items-center pr-2">{menu ? <BoneDot size={28} /> : null}</div>
@@ -69,13 +75,15 @@ export function SavedSkeleton({ label }: { label: string }) {
           >
             <Bone w="4rem" />
           </h1>
+          {/* "1곳 · 그룹 4개" — 개수마다 길이가 달라진다. 흔한 자릿수를 재서 넣었다(92.7px) */}
           <p className="mt-1.5 hidden lg:block" style={{ fontSize: "var(--t-body)" }}>
-            <Bone w="9rem" />
+            <Bone w="6rem" />
           </p>
         </div>
-        {/* 새 리스트 버튼 — `h-11 w-fit px-4`, 라운드는 --r-control */}
+        {/* 새 리스트 버튼 — `h-11 w-fit px-4`, 라운드는 --r-control.
+            글이 고정이라 폭도 고정이다: "새 리스트 만들기" = 159.6px(실측) */}
         <div className="hidden shrink-0 lg:block">
-          <BoneBlock w="7.5rem" h={44} radius="var(--r-control)" />
+          <BoneBlock w="10rem" h={44} radius="var(--r-control)" />
         </div>
       </div>
 
@@ -96,8 +104,10 @@ export function SavedSkeleton({ label }: { label: string }) {
         ))}
 
         {/* 새 리스트 행 — 모바일에만. `NewListButton variant="row"` 은 ⋮ 가 없고
-            오른쪽 여백이 --gutter 지만, 뼈에서는 안쪽 배치가 같아 Row 로 충분하다. */}
-        <Row name="6rem" className="lg:hidden" />
+            오른쪽 여백이 --gutter 지만, 뼈에서는 안쪽 배치가 같아 Row 로 충분하다.
+            **개수 줄은 없다** — 그룹이 하나라도 있으면 실화면도 이름 한 줄뿐이라
+            행이 4px 낮다. 두 줄로 그리면 아래 계정 행이 그만큼 내려앉는다. */}
+        <Row name="6rem" meta={null} className="lg:hidden" />
 
         {/* 계정 행 — 아래 줄이 개수가 아니라 한 문장이다("로그인하면 다른 기기에서도…") */}
         <Row name="4rem" meta="17rem" className="lg:col-span-2" />
