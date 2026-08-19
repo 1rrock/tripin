@@ -40,7 +40,6 @@ function Head({
       </h2>
       <Link
         href={moreHref}
-        prefetch={moreHref.includes("/map") ? false : undefined}
         className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
       >
         {moreLabel}

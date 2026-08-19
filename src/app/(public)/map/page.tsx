@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { preconnect, preload } from "react-dom";
 import { loadHomeFeed } from "@/shared/api/home";
 import { loadCityIndex, loadMapCanvasSeed } from "@/shared/api/cities";
-import type { Locale } from "@/shared/i18n/config";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { thumbSmall } from "@/shared/lib/youtube";
@@ -14,21 +13,8 @@ import { HomeCanvas } from "../HomeCanvas";
  * 데스크톱은 맵 위 플로팅 시트, 모바일은 지도 + 목록.
  */
 
-async function hintMapLcpImage(locale: Locale) {
-  const seed = await loadMapCanvasSeed(locale);
-  const id = seed.find((p) => p.youtubeId)?.youtubeId;
-  if (id) {
-    preconnect("https://i.ytimg.com");
-    preload(thumbSmall(id), { as: "image", fetchPriority: "high" });
-  }
-  return seed;
-}
-
 export async function generateMetadata(): Promise<Metadata> {
   const locale = await getLocale();
-  /* 헤드 플러시에 preload 가 먼저 들어가게 — 본문 RSC 뒤에 붙으면 Slow-4G 에서
-     이미지가 3초 넘게 안 시작한다. */
-  await hintMapLcpImage(locale);
   const m = getDictionary(locale);
   return publicMeta({
     locale,
@@ -75,6 +61,11 @@ export default async function MapPage({
     cities: [],
   }));
   const mapCities = cities.map((c) => ({ ...c, recentVideos: [] }));
+  const lcpYoutubeId = seedPlaces.find((p) => p.youtubeId)?.youtubeId ?? null;
+  if (lcpYoutubeId) {
+    preconnect("https://i.ytimg.com");
+    preload(thumbSmall(lcpYoutubeId), { as: "image", fetchPriority: "high" });
+  }
   return (
     <main>
       <h1 className="sr-only">{m.home.srHeading}</h1>

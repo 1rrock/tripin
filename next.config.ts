@@ -6,6 +6,12 @@ const nextConfig: NextConfig = {
   experimental: {
     /* phosphor 는 수백 아이콘 재수출 패키지 — 쓰는 것만 골라 담게 한다 */
     optimizePackageImports: ["@phosphor-icons/react"],
+    /* 공개 라우트가 전부 dynamic(getLocale)이라 기본 staleTime=0 이면
+       prefetch 가 즉시 폐기되고, 탭마다 서버 RSC 를 다시 기다려 1~2초 멈춘다. */
+    staleTimes: {
+      dynamic: 30,
+      static: 180,
+    },
   },
   async headers() {
     return [

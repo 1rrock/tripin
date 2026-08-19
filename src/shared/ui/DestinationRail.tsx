@@ -71,7 +71,6 @@ export function DestinationRail({
         </h2>
         <Link
           href={localePath("/map", locale)}
-          prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
           {m.home.allRegions}
@@ -107,7 +106,6 @@ export function DestinationGrid({
         </h2>
         <Link
           href={localePath("/map", locale)}
-          prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
           {m.home.allRegions}

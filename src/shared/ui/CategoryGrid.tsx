@@ -29,7 +29,7 @@ function Tile({
   return (
     <Link
       href={href}
-      prefetch={href.includes("/map") ? false : undefined}
+      prefetch={/\/map\?/.test(href) ? false : undefined}
       className="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
     >
       <span

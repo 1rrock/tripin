@@ -87,7 +87,6 @@ export function Nav() {
           <Link
             key={it.path}
             href={it.href}
-            prefetch={it.path === "/map" ? false : undefined}
             aria-current={on ? "page" : undefined}
             className="nav-item index flex items-center gap-1.5 px-2.5 py-2"
           >
@@ -123,7 +122,6 @@ export function DesktopRail() {
           <Link
             key={it.path}
             href={it.href}
-            prefetch={it.path === "/map" ? false : undefined}
             aria-label={it.label}
             aria-current={on ? "page" : undefined}
             className="desktop-rail-btn"
@@ -188,7 +186,6 @@ export function TabDock() {
             <Link
               key={it.path}
               href={it.href}
-              prefetch={it.path === "/map" ? false : undefined}
               aria-current={on ? "page" : undefined}
               className="tab relative z-[1]"
             >
