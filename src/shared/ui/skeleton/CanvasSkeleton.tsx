@@ -15,7 +15,6 @@
 import {
   Bone,
   BoneAct,
-  BoneBlock,
   BoneChip,
   BoneCrumb,
   BoneDot,
@@ -68,60 +67,141 @@ function BoneSummary() {
    /map — HomeCanvas (surface="page", lead="home")
    ──────────────────────────────────────────────────────────────── */
 
+/**
+ * 검색 알약 — `HomeCanvas` 의 `searchField(floating)` 을 그대로 베낀다.
+ * 상자는 진짜로 그리고 아이콘·글자 자리에만 뼈를 넣는다. 상자가 단색·그림자라
+ * LCP 후보가 아니고(후보는 url() 배경·<img>·텍스트 블록), 본화면이 오면
+ * 알약은 그 자리에 그대로 있고 안쪽만 채워진다.
+ *
+ * floating = 지도 위(모바일). sheet = 시트 안(데스크톱). 바탕색이 다르다.
+ */
+function BoneSearchPill({ floating = false }: { floating?: boolean }) {
+  return (
+    <div className="relative flex h-11 w-full items-center lg:h-10">
+      <span
+        className="relative flex h-full min-w-0 flex-1 items-center rounded-xl pr-3 pl-9"
+        style={{
+          background: floating ? "var(--sheet)" : "var(--hover)",
+          boxShadow: floating ? "0 4px 16px rgb(0 0 0 / 0.14)" : undefined,
+        }}
+      >
+        {/* 돋보기 자리 — h-4 w-4, left-3 세로 가운데.
+            `.bone-ava` 가 position:relative 라 클래스로 absolute 를 덧대면
+            특이도가 같아 순서 싸움이 난다. 감싸는 span 에 자리를 준다. */}
+        <span className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2">
+          <BoneDot size={16} radius="4px" />
+        </span>
+        <span className="truncate text-base">
+          <Bone w="6.5rem" />
+        </span>
+      </span>
+    </div>
+  );
+}
+
+/** 필터 알약 — `CanvasFilters` 의 `Trigger`. h-9 · rounded-full · px-3.5 · 13px */
+function BoneFilterTrigger({ w }: { w: string }) {
+  return (
+    <span
+      className="flex h-9 min-w-0 items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold tracking-[-0.02em]"
+      style={{ background: "var(--ground)", boxShadow: "inset 0 0 0 1px var(--hairline)" }}
+    >
+      <span className="truncate">
+        <Bone w={w} />
+      </span>
+      <BoneDot size={14} radius="3px" className="shrink-0" />
+    </span>
+  );
+}
+
+/**
+ * 필터 세 개 — 지역 · 카테고리 · 채널. 저장 칩은 저장한 곳이 있어야 서므로 뼈에 없다.
+ * 글자 폭은 실화면을 재서 넣었다(칩 68.4 / 90.7 / 68.4px − 알약 고정분 46px).
+ */
+const FILTER_WIDTHS = ["1.4rem", "2.8rem", "1.4rem"];
+
+/**
+ * `/map` 뼈대.
+ *
+ * 🔴 모바일과 데스크톱이 **다른 자리**에 검색·필터를 세운다. 실화면과 같아야 한다:
+ *   모바일 — 지도 위 `.canvas-topbar` (헤더가 없는 화면이라 그 자리를 받는다)
+ *   ≥1024  — 왼쪽 400px 패널 안. `.canvas-topbar` 는 `lg:hidden`
+ * 예전 뼈는 모바일에서도 검색·필터를 시트 안에 뒀다. 본화면이 오는 순간
+ * 검색창이 시트에서 지도 위로 튀어 올라갔다.
+ */
 export function MapSkeleton({ label }: { label: string }) {
   return (
     <BoneRoot label={label}>
       <div className="canvas-page canvas-root">
         <BoneMap />
 
-        <div className="canvas-sheet-clip">
-        <section className="canvas-panel">
-          {/* 검색 알약 h-10 */}
-          <div className="px-4 pt-4 pb-3">
-            <div className="relative flex h-10 w-full items-center">
-              <BoneBlock h={40} radius="var(--r-frame)" className="min-w-0 flex-1" />
-            </div>
-          </div>
-
-          {/* CanvasFilters — 지역·종류·채널 트리거 3개 (h-9 알약) */}
-          <div className="relative px-4 pb-3">
-            <div className="flex flex-wrap gap-2">
-              {["5.5rem", "4.5rem", "5rem"].map((w, i) => (
-                <BoneBlock key={i} w={w} h={36} />
+        {/* 지도 위 첫 줄 — 모바일 전용. HomeCanvas 의 같은 상자를 그대로 */}
+        <div className="canvas-topbar lg:hidden">
+          <BoneSearchPill floating />
+          <div className="relative pt-2">
+            {/* 칩은 접히지 않는다 — 넘치면 옆으로 흐른다(실화면 floating 과 같다) */}
+            <div className="no-scrollbar flex gap-2 overflow-x-auto [&>*]:shrink-0">
+              {FILTER_WIDTHS.map((w, i) => (
+                <BoneFilterTrigger key={i} w={w} />
               ))}
             </div>
           </div>
+        </div>
 
-          {/* 개수 줄 */}
-          <div className="flex items-center justify-between gap-3 px-4 pb-2">
-            <p className="index tnum">
-              <Bone w="4.5rem" />
-            </p>
-          </div>
+        <div className="canvas-sheet-clip">
+          <section className="canvas-panel">
+            {/* 손잡이 — 모바일에서 시트 첫 줄을 천장에서 떼어 놓는 h-5.
+                데스크톱은 CSS 가 display:none 으로 지우고 여백이 대신 받는다.
+                빼면 그 아래 모든 줄이 20px 씩 올라가 앉는다. */}
+            <div className="canvas-panel-handle" />
 
-          {/* 결과 카드 — 컷 + 이름 + 종류·도시 */}
-          <ul className="px-4 pb-6">
-            {times(6).map((i) => (
-              <li key={i} className={i > 0 ? "mt-5" : ""}>
-                {/* 실화면은 `<button>` 이라 li 가 버튼보다 6px 크다 — 버튼은 안쪽
-                    baseline 을 내놓지 않아 아래 모서리가 baseline 이 되고, 그 밑으로
-                    부모 strut 의 descender 가 붙는다. block div 로 두면 카드마다
-                    6px 씩 짧아져 목록 끝에서 36px 어긋난다.
-                    `inline-block + overflow-hidden` 이 같은 baseline 을 만든다
-                    (버튼을 그대로 쓰면 로딩 중에 포커스 잡히는 빈 버튼이 6개 생긴다) */}
-                <span className="inline-block w-full overflow-hidden text-left">
-                  <BoneFrame className="block w-full" />
-                  <span className="mt-2.5 block text-[15px] font-semibold tracking-[-0.01em]">
-                    <Bone w="60%" />
-                  </span>
-                  <span className="mt-0.5 block text-[13px]">
-                    <Bone w="45%" />
-                  </span>
-                </span>
-              </li>
-            ))}
-          </ul>
-        </section>
+            {/* 실화면과 같은 스크롤 상자 — 데스크톱 padding-top:12px 이 여기 걸린다 */}
+            <div className="canvas-panel-scroll">
+              {/* 검색·필터는 데스크톱에서만 시트 안에 선다 */}
+              <div className="hidden px-4 pt-1 pb-3 lg:block">
+                <BoneSearchPill />
+              </div>
+              <div className="hidden lg:block">
+                <div className="relative px-4 pb-3">
+                  <div className="flex flex-wrap gap-2">
+                    {FILTER_WIDTHS.map((w, i) => (
+                      <BoneFilterTrigger key={i} w={w} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              {/* 개수 줄 — 오른쪽 "필터 지우기" 는 필터가 있어야 서므로 뼈에 없다 */}
+              <div className="flex items-center justify-between gap-3 px-4 pb-2">
+                <p className="index tnum">
+                  <Bone w="4.5rem" />
+                </p>
+              </div>
+
+              {/* 결과 카드 — 컷 + 이름 + 종류·도시 */}
+              <ul className="px-4 pb-6">
+                {times(6).map((i) => (
+                  <li key={i} className={i > 0 ? "mt-5" : ""}>
+                    {/* 실화면은 `<button>` 이라 li 가 버튼보다 6px 크다 — 버튼은 안쪽
+                        baseline 을 내놓지 않아 아래 모서리가 baseline 이 되고, 그 밑으로
+                        부모 strut 의 descender 가 붙는다. block div 로 두면 카드마다
+                        6px 씩 짧아져 목록 끝에서 36px 어긋난다.
+                        `inline-block + overflow-hidden` 이 같은 baseline 을 만든다
+                        (버튼을 그대로 쓰면 로딩 중에 포커스 잡히는 빈 버튼이 6개 생긴다) */}
+                    <span className="inline-block w-full overflow-hidden text-left">
+                      <BoneFrame className="block w-full" />
+                      <span className="mt-2.5 block text-[15px] font-semibold tracking-[-0.01em]">
+                        <Bone w="60%" />
+                      </span>
+                      <span className="mt-0.5 block text-[13px]">
+                        <Bone w="45%" />
+                      </span>
+                    </span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          </section>
         </div>
       </div>
     </BoneRoot>
