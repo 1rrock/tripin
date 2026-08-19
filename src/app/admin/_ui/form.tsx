@@ -64,17 +64,24 @@ export function formatTs(sec: number): string {
 }
 
 /**
- * ★ 확정 잠금 — 좌표(또는 구글 공유 링크) + 근거가 채워져야 확정 라디오가 열린다.
+ * ★ 확정 잠금 — 좌표(또는 지도 링크) + 근거가 채워져야 확정 라디오가 열린다.
  *
  * 서버(`actions.ts`)가 최종 검증하지만 화면에서도 막는다. 이게 이 프로젝트 유일한
  * 구조적 리스크(동명이점 오확정, LEGAL.md 4.6)를 막는 장치라 양쪽에 둔다.
+ *
+ * naverPlace·kakaoPlace 도 인정한다 — 네이버 링크는 서버가 좌표를 자동 해석하므로
+ * (resolve-naver-place.ts) 화면에서 미리 막을 이유가 없다. 최종 판단은 항상 서버가 한다.
  *
  * 입력을 uncontrolled 로 두고 폼 onChange 에서 DOM 값을 읽는 이유 —
  * effect 에서 setState 로 되돌리는 패턴(react-hooks/set-state-in-effect)을 피하기 위함.
  */
 export function readConfirmLock(form: HTMLFormElement): boolean {
   const get = (n: string) => (form.elements.namedItem(n) as HTMLInputElement | null)?.value ?? "";
-  const hasPlace = get("latlng").trim().length > 0 || get("googleMaps").trim().length > 0;
+  const hasPlace =
+    get("latlng").trim().length > 0 ||
+    get("googleMaps").trim().length > 0 ||
+    get("naverPlace").trim().length > 0 ||
+    get("kakaoPlace").trim().length > 0;
   return hasPlace && get("sourceNote").trim().length > 0;
 }
 
@@ -96,7 +103,7 @@ export function StatusRadios({
           defaultChecked={confirmedDefault}
         />
         <span className={canConfirm ? "text-neutral-900" : "text-neutral-400"}>
-          확정 {canConfirm ? "" : "(좌표 또는 구글 링크 + 근거 필요)"}
+          확정 {canConfirm ? "" : "(좌표·지도 링크 + 근거 필요)"}
         </span>
       </label>
       <label className="flex items-center gap-1.5 text-sm text-neutral-900">

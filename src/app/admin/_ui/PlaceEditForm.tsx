@@ -130,7 +130,7 @@ export function PlaceEditForm({
           <input
             name="naverPlace"
             defaultValue={place.naverPlaceId ?? ""}
-            placeholder="map.naver.com/p/entry/place/… 또는 ID"
+            placeholder="m.place.naver.com/…/{숫자}/… 또는 ID"
             className={inputCls}
           />
         </label>
