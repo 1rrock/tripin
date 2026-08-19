@@ -436,7 +436,13 @@ export function PlaceSheet({
       className="mt-3 block"
     >
       <Frame className="block w-full">
-        <Thumb key={hero.youtubeId} youtubeId={hero.youtubeId} alt={hero.videoTitle} eager />
+        <Thumb
+          key={hero.youtubeId}
+          youtubeId={hero.youtubeId}
+          alt={hero.videoTitle}
+          eager
+          variant="hero"
+        />
       </Frame>
       <span className="mt-2 block text-[13px] font-medium leading-snug">{hero.videoTitle}</span>
     </Link>

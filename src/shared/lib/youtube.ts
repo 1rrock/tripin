@@ -11,8 +11,8 @@
  *    꽉 채우는 것까지가 허용선이고, 그 위에 무언가를 덧그리지 않는다.
  *
  * maxres 는 업로더가 HD 썸네일을 올렸을 때만 존재한다. 없으면 120×90 회색
- * 플레이스홀더가 200 으로 내려오므로 화면단에서 hq 로 폴백한다(ui/frame.tsx 의 Thumb).
- * 현재 수집된 16편은 전부 maxres 가 있다.
+ * 플레이스홀더가 200 으로 내려온다. 화면단 Thumb 은 목록에 mq(항상 16:9)를
+ * 쓰고, 상세 히어로만 maxres → 실패 시 mq 로 되돌린다.
  */
 
 export function thumbMax(youtubeId: string): string {

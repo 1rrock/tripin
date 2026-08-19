@@ -25,29 +25,25 @@ function CityCard({
   const { messages: m, href, t, locale } = useLocale();
   const cut = city.recentVideos[0];
   const name = displayCityName(city, locale);
+  const meta = t(m.cityIndex.placesChannels, {
+    places: city.placeCount,
+    creators: city.creatorCount,
+  });
 
   return (
     <Link
       href={href(`/map?city=${city.slug}`)}
+      prefetch={false}
+      aria-label={`${name} ${meta}`}
       className="block transition-transform active:scale-95"
-      aria-label={t(m.cityIndex.openMap, {
-        name,
-        places: city.placeCount,
-        creators: city.creatorCount,
-      })}
     >
       <Frame className="block w-full">
-        {cut ? <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={i < 4} /> : null}
+        {cut ? <Thumb youtubeId={cut.youtubeId} alt={cut.title} eager={i < 2} /> : null}
       </Frame>
       <p className={`mt-2.5 truncate font-semibold ${wide ? "text-[16px]" : "text-[14px]"}`}>
         {name}
       </p>
-      <p className="text-[12px] text-(--dim)">
-        {t(m.cityIndex.placesChannels, {
-          places: city.placeCount,
-          creators: city.creatorCount,
-        })}
-      </p>
+      <p className="text-[12px] text-(--dim)">{meta}</p>
     </Link>
   );
 }
@@ -64,6 +60,7 @@ export function DestinationRail({ cities }: { cities: CityRow[] }) {
         </h2>
         <Link
           href={href("/map")}
+          prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
           {m.home.allRegions}
@@ -92,6 +89,7 @@ export function DestinationGrid({ cities }: { cities: CityRow[] }) {
         </h2>
         <Link
           href={href("/map")}
+          prefetch={false}
           className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
         >
           {m.home.allRegions}

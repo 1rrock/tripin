@@ -27,7 +27,11 @@ function Tile({
   variant?: Variant;
 }) {
   return (
-    <Link href={href} className="flex flex-col items-center gap-1.5 transition-transform active:scale-95">
+    <Link
+      href={href}
+      prefetch={href.includes("/map") ? false : undefined}
+      className="flex flex-col items-center gap-1.5 transition-transform active:scale-95"
+    >
       <span
         className={
           variant === "theme"

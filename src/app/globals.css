@@ -178,7 +178,10 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .develop,
   .rise-in,
-  .animate-nav-pill-liquid { animation: none; }
+  .animate-nav-pill-liquid,
+  .bone::after,
+  .bone-line::after,
+  .bone-ava::after { animation: none; }
 }
 
 .no-scrollbar { scrollbar-width: none; }
@@ -236,23 +239,34 @@ body {
 }
 .sheet-card:active .sheet-name { color: var(--wax); }
 
-/* 스켈레톤 — 시머. pulse 금지 */
+/* 스켈레톤 — 시머. pulse 금지.
+   background-position 애니메는 합성 레이어가 아니라서 Lighthouse 가
+   non-composited animation 으로 잡는다. 빛줄기는 ::after + transform. */
 @keyframes bone-flow {
-  from { background-position: 100% 0; }
-  to   { background-position: -100% 0; }
+  from { transform: translateX(50%); }
+  to   { transform: translateX(-50%); }
 }
 .bone,
 .bone-line,
 .bone-ava {
   background-color: var(--hover);
+  overflow: hidden;
+}
+.bone::after,
+.bone-line::after,
+.bone-ava::after {
+  content: "";
+  position: absolute;
+  inset: 0;
   background-image: linear-gradient(
     100deg,
-    var(--hover) 40%,
+    transparent 40%,
     #fff 50%,
-    var(--hover) 60%
+    transparent 60%
   );
-  background-size: 200% 100%;
+  transform: translateX(50%);
   animation: bone-flow 1.6s ease-in-out infinite;
+  pointer-events: none;
 }
 .bone {
   position: absolute;
@@ -373,7 +387,8 @@ html.is-place-open .tabbar {
 }
 .tab:active { transform: scale(0.95); }
 .tab[aria-current] {
-  color: var(--wax);
+  /* --wax on --halo 는 4.45:1. 12px 본문은 4.5 가 필요하다 */
+  color: var(--halo-ink);
 }
 
 @media (prefers-reduced-motion: reduce) {

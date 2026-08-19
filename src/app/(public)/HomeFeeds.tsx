@@ -32,7 +32,11 @@ function Head({
       <h2 id={id} className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">
         {title}
       </h2>
-      <Link href={moreHref} className="text-[13px] font-medium text-(--dim) hover:text-(--paper)">
+      <Link
+        href={moreHref}
+        prefetch={moreHref.includes("/map") ? false : undefined}
+        className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
+      >
         {moreLabel}
       </Link>
     </div>
@@ -48,7 +52,7 @@ export function VideoFeed({ videos }: { videos: FeedVideo[] }) {
     <section aria-labelledby="videos-h" className="pt-8 lg:pt-12">
       <Head id="videos-h" title={m.home.recentVideos} moreHref={href("/map")} moreLabel={m.home.moreFeed} />
       <ul className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-(--gutter) pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
-        {list.map((v, i) => {
+        {list.map((v) => {
           const place = v.placeNames[0];
           const rest = v.placeNames.slice(1, 3);
           const city = v.cities[0];
@@ -56,7 +60,7 @@ export function VideoFeed({ videos }: { videos: FeedVideo[] }) {
             <li key={v.youtubeId} className="w-[220px] shrink-0 lg:w-auto">
               <Link href={href(`/c/${v.creatorSlug}/v/${v.youtubeId}`)} className="block active:scale-[0.99]">
                 <Frame className="block w-full">
-                  <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i < 4} />
+                  <Thumb youtubeId={v.youtubeId} alt={v.title} />
                 </Frame>
                 <p className="mt-2.5 truncate text-[15px] font-semibold tracking-[-0.01em]">
                   {place ?? v.title}
@@ -91,12 +95,15 @@ export function ChannelFeed({ creators }: { creators: FeedCreator[] }) {
         moreLabel={m.home.moreFeed}
       />
       <ul className="mt-4 flex flex-col">
-        {creators.map((c, i) => (
+        {creators.map((c) => (
           <li key={c.slug} className="border-b border-(--hairline)">
             <Link
               href={href(`/c/${c.slug}`)}
+              aria-label={`${c.displayName} ${t(m.home.placesUnit, { n: c.placeCount })} ${c.cities
+                .slice(0, 4)
+                .map((x) => displayCityName(x, locale))
+                .join(" · ")}`}
               className="block px-(--gutter) py-4 active:bg-(--hover)"
-              aria-label={t(m.home.openChannel, { name: c.displayName })}
             >
               <span className="flex items-center gap-3.5">
                 <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={42} />
@@ -121,9 +128,9 @@ export function ChannelFeed({ creators }: { creators: FeedCreator[] }) {
               </span>
               {c.recentVideos.length > 0 ? (
                 <span className="mt-3 grid grid-cols-4 gap-2">
-                  {c.recentVideos.slice(0, 4).map((v, vi) => (
+                  {c.recentVideos.slice(0, 4).map((v) => (
                     <Frame key={v.youtubeId} className="block w-full">
-                      <Thumb youtubeId={v.youtubeId} alt={v.title} eager={i === 0 && vi === 0} />
+                      <Thumb youtubeId={v.youtubeId} alt={v.title} />
                     </Frame>
                   ))}
                 </span>
@@ -150,7 +157,7 @@ export function PieceFeed({ pieces }: { pieces: FeedPiece[] }) {
         moreLabel={m.home.moreFeed}
       />
       <ul className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-(--gutter) pb-1">
-        {list.map((p, i) => (
+        {list.map((p) => (
           <li key={`${p.creatorSlug}:${p.city.slug}`} className="w-[168px] shrink-0 lg:w-[200px]">
             <Link
               href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
@@ -158,7 +165,7 @@ export function PieceFeed({ pieces }: { pieces: FeedPiece[] }) {
             >
               <Frame className="block w-full">
                 {p.cut ? (
-                  <Thumb youtubeId={p.cut.youtubeId} alt={p.cut.title} eager={i < 3} />
+                  <Thumb youtubeId={p.cut.youtubeId} alt={p.cut.title} />
                 ) : null}
               </Frame>
               <p className="mt-2.5 truncate text-[15px] font-semibold tracking-[-0.01em]">

@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { preload } from "react-dom";
 import { loadHomeFeed } from "@/shared/api/home";
 import { loadCityIndex } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
@@ -6,6 +7,11 @@ import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, linkList } from "@/shared/seo/json-ld";
 import { HomeSheet } from "../HomeSheet";
+
+/** 홈 시트가 실제로 그리는 개수 — 로더는 전체를 주고 여기서 자른다 */
+const HOME_VIDEOS = 8;
+const HOME_PIECES = 8;
+const HOME_CREATORS = 8;
 
 /**
  * 홈 = 랜딩. 검색·종류·도시는 `/map` 으로 가서 필터를 고른다.
@@ -24,12 +30,17 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 export default async function HomePage() {
+  /* 히어로 지면은 첫 페인트에 보여야 한다 — 클라이언트 번들 뒤에 가면 LCP 가 밀린다 */
+  preload("/hero/field-map.webp", { as: "image", fetchPriority: "high" });
   const locale = await getLocale();
   const m = getDictionary(locale);
   const [{ videos, creators, pieces }, cities] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
   ]);
+  const homeVideos = videos.slice(0, HOME_VIDEOS);
+  const homeCreators = creators.slice(0, HOME_CREATORS);
+  const homePieces = pieces.slice(0, HOME_PIECES);
 
   if (videos.length === 0) {
     return (
@@ -52,13 +63,18 @@ export default async function HomePage() {
       <JsonLd
         data={linkList(
           m.home.srHeading,
-          creators.map((c) => ({
+          homeCreators.map((c) => ({
             name: c.displayName,
             url: absoluteUrl(`/c/${c.slug}`, locale),
           })),
         )}
       />
-      <HomeSheet pieces={pieces} cities={cities} videos={videos} creators={creators} />
+      <HomeSheet
+        pieces={homePieces}
+        cities={cities}
+        videos={homeVideos}
+        creators={homeCreators}
+      />
     </main>
   );
 }

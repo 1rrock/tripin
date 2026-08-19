@@ -77,9 +77,10 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
         <img
           src="/hero/field-map.webp"
           alt=""
-          width={1280}
-          height={1280}
+          width={800}
+          height={800}
           fetchPriority="high"
+          decoding="async"
           className="size-full object-cover opacity-45 grayscale contrast-[0.85] lg:opacity-50"
         />
         {/* 모바일 — 문구 뒤에도 지면이 아주 옅게 비친다. 아래로 갈수록 걷히다
@@ -126,7 +127,6 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
           type="button"
           id="home-hero-search"
           onClick={openSearch}
-          aria-label={m.home.searchAria}
           className="mt-5 flex h-[52px] w-full items-center gap-2.5 rounded-full bg-white pr-2 pl-4 text-left lg:mt-7 lg:h-14 lg:pr-2 lg:pl-5"
           style={{ boxShadow: "0 6px 24px rgba(0,0,0,0.09), 0 0 0 1px var(--hairline)" }}
         >
@@ -154,6 +154,7 @@ function FieldHero({ cities }: { cities: CityRow[] }) {
                 <Link
                   key={city.slug}
                   href={href(`/map?city=${city.slug}`)}
+                  prefetch={false}
                   className="inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[13px] font-medium"
                   style={
                     on

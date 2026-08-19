@@ -92,7 +92,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
 
       <header className="grid gap-4 md:grid-cols-[3fr_2fr] md:items-center md:gap-7">
         <Frame>
-          <Thumb youtubeId={video.youtubeId} alt={video.title} eager />
+          <Thumb youtubeId={video.youtubeId} alt={video.title} eager variant="hero" />
         </Frame>
 
         <div className="flex flex-col gap-2">

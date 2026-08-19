@@ -1,7 +1,15 @@
 "use client";
 
 /**
- * 유튜브 썸네일 — maxres 가 없는 영상을 hq 로 되받는다.
+ * 유튜브 썸네일.
+ *
+ * variant="card" (기본) — `mqdefault` 320×180. 목록·레일·그리드용.
+ *   maxres(1280×720, 200~370KB)를 132px 칸에 넣으면 LCP 가 10초를 넘는다.
+ *   mq 는 항상 있고 정확히 16:9 다.
+ *
+ * variant="hero" — maxres. 영상 상세처럼 프레임이 큰 자리만.
+ *   maxres 가 없으면 120×90 회색이 200 으로 온다(onError 없음).
+ *   그때는 naturalWidth 로 걸러 mq 로 되돌린다.
  *
  * 왜 next/image 가 아닌가: i.ytimg.com 은 이미 최적화된 JPEG 을 CDN 으로 준다.
  * 여기에 next/image 를 씌우면 우리 서버가 프록시(`/_next/image`)가 되어 대역폭을
@@ -14,33 +22,47 @@
  */
 
 import { useState } from "react";
-import { thumbHq, thumbMax } from "@/shared/lib/youtube";
-
-function markReady(el: HTMLImageElement | null, done: () => void) {
-  if (el?.complete && el.naturalWidth > 0) done();
-}
+import { thumbMax, thumbSmall } from "@/shared/lib/youtube";
 
 export function Thumb({
   youtubeId,
   alt,
   eager = false,
+  variant = "card",
 }: {
   youtubeId: string;
   /** 영상 제목 그대로 — 제목도 변형 대상이 아니다 */
   alt: string;
   /** 첫 화면에 보이는 프레임만 true. 나머지는 lazy 로 둔다 */
   eager?: boolean;
+  /** card = 목록(320×180). hero = 상세 히어로(1280×720) */
+  variant?: "card" | "hero";
 }) {
-  const [src, setSrc] = useState(() => thumbMax(youtubeId));
+  const pick = variant === "hero" ? thumbMax(youtubeId) : thumbSmall(youtubeId);
+  const [src, setSrc] = useState(pick);
   const [ready, setReady] = useState(false);
   /* 영상이 바뀌면 렌더 중에 되돌린다 — 이펙트로 미루면 한 프레임 전 영상의
      썸네일이 새 alt 로 그려진다(react.dev/learn/you-might-not-need-an-effect). */
-  const [prevId, setPrevId] = useState(youtubeId);
-  if (prevId !== youtubeId) {
-    setPrevId(youtubeId);
-    setSrc(thumbMax(youtubeId));
+  const key = `${youtubeId}:${variant}`;
+  const [prev, setPrev] = useState(key);
+  if (prev !== key) {
+    setPrev(key);
+    setSrc(pick);
     setReady(false);
   }
+
+  const fallback = () => {
+    const mq = thumbSmall(youtubeId);
+    setSrc((cur) => (cur === mq ? cur : mq));
+  };
+
+  const settle = (el: HTMLImageElement) => {
+    if (variant === "hero" && el.naturalWidth <= 120) {
+      fallback();
+      return;
+    }
+    setReady(true);
+  };
 
   return (
     <>
@@ -49,21 +71,18 @@ export function Thumb({
       <img
         src={src}
         alt={alt}
-        width={1280}
-        height={720}
+        width={variant === "hero" ? 1280 : 320}
+        height={variant === "hero" ? 720 : 180}
         loading={eager ? "eager" : "lazy"}
         fetchPriority={eager ? "high" : "auto"}
         decoding="async"
         referrerPolicy="no-referrer"
         style={ready ? undefined : { opacity: 0 }}
-        ref={(el) => markReady(el, () => setReady(true))}
-        onLoad={() => setReady(true)}
-        onError={() => {
-          // maxres 가 없는 영상은 120×90 회색 플레이스홀더가 200 으로 내려온다.
-          // 그 경우에도 onError 는 안 뜨므로, 진짜 404 일 때만 여기로 온다.
-          const hq = thumbHq(youtubeId);
-          setSrc((prev) => (prev === hq ? prev : hq));
+        ref={(el) => {
+          if (el?.complete && el.naturalWidth > 0) settle(el);
         }}
+        onLoad={(e) => settle(e.currentTarget)}
+        onError={fallback}
       />
     </>
   );

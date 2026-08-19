@@ -72,7 +72,12 @@ export function VideoSheet({
         aria-label={`${first ?? video.title}${extra ? ` ${extra}` : ""} — ${video.title}`}
       >
         <Frame>
-          <Thumb youtubeId={video.youtubeId} alt={video.title} eager={large} />
+          <Thumb
+            youtubeId={video.youtubeId}
+            alt={video.title}
+            eager={large}
+            variant={large ? "hero" : "card"}
+          />
         </Frame>
 
         <div className="flex flex-col gap-1.5">
