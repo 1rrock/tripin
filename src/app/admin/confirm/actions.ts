@@ -13,7 +13,9 @@ import { revalidatePath } from "next/cache";
 import { purgePublicData } from "@/shared/api/cache";
 import { z } from "zod";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { isNaverShortLink, parseKakaoPlaceId, parseNaverPlaceId } from "@/shared/lib/place-link-id";
 import { resolveGoogleCoords } from "@/shared/lib/resolve-google-place";
+import { resolveNaverPlace, type NaverPlaceInfo } from "@/shared/lib/resolve-naver-place";
 import { requireAdmin } from "@/shared/lib/require-admin";
 import type { ActionResult } from "../_lib/action-result";
 
@@ -59,6 +61,46 @@ function parseYoutubeId(raw: string): string | null {
   if (/^[A-Za-z0-9_-]{11}$/.test(t)) return t;
   const m = t.match(/(?:v=|youtu\.be\/|shorts\/|live\/|embed\/)([A-Za-z0-9_-]{11})/);
   return m ? m[1]! : null;
+}
+
+/**
+ * 카카오/네이버 장소 링크 입력을 ID 로 바꾼다. insertPlace·updatePlace 양쪽에서 씀.
+ * 매치 실패 시 (place-link-id.ts 규칙대로) 절대 입력값을 그대로 저장하지 않고,
+ * 저장을 막는 에러 메시지를 돌려준다 — 깨진 딥링크가 유저 화면에 노출되는 걸 막기 위함.
+ */
+function parseMapLinkIds(
+  kakaoRaw: string,
+  naverRaw: string,
+): { kakaoPlaceId: string | null; naverPlaceId: string | null } | { error: string } {
+  let kakaoPlaceId: string | null = null;
+  if (kakaoRaw) {
+    kakaoPlaceId = parseKakaoPlaceId(kakaoRaw);
+    if (!kakaoPlaceId) {
+      return {
+        error:
+          "카카오 장소 링크에서 ID를 못 찾았습니다 — place.map.kakao.com/{숫자} 형태나 숫자 ID 를 넣어주세요",
+      };
+    }
+  }
+
+  let naverPlaceId: string | null = null;
+  if (naverRaw) {
+    if (isNaverShortLink(naverRaw)) {
+      return {
+        error:
+          "naver.me 단축 링크는 ID를 알 수 없습니다 — 링크를 브라우저에서 연 뒤 주소창의 m.place.naver.com/…/{숫자}/… 주소를 넣어주세요",
+      };
+    }
+    naverPlaceId = parseNaverPlaceId(naverRaw);
+    if (!naverPlaceId) {
+      return {
+        error:
+          "네이버 장소 링크에서 ID를 못 찾았습니다 — map.naver.com/p/entry/place/… 또는 m.place.naver.com/…/{숫자}/… 형태나 숫자 ID 를 넣어주세요",
+      };
+    }
+  }
+
+  return { kakaoPlaceId, naverPlaceId };
 }
 
 // ── 크리에이터 ─────────────────────────────────────────
@@ -217,15 +259,12 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
   const googleRaw = String(form.get("googleMaps") ?? "").trim();
   const googleMapsUrl = /^https?:\/\//.test(googleRaw) ? googleRaw : null;
   const googlePlaceId = !googleMapsUrl && googleRaw ? googleRaw : null;
-  // 카카오/네이버: URL 이면 숫자 ID 를 추출, 아니면 입력값 그대로 ID 로.
+  // 카카오/네이버: URL·ID 둘 다 받되, 매치 실패면 통째로 저장하지 않고 저장을 막는다.
   const kakaoRaw = String(form.get("kakaoPlace") ?? "").trim();
-  const kakaoPlaceId = kakaoRaw
-    ? (kakaoRaw.match(/place\.map\.kakao\.com\/(\d+)/)?.[1] ?? kakaoRaw)
-    : null;
   const naverRaw = String(form.get("naverPlace") ?? "").trim();
-  const naverPlaceId = naverRaw
-    ? (naverRaw.match(/(?:place|entry\/place)\/(\d+)/)?.[1] ?? naverRaw)
-    : null;
+  const linkIds = parseMapLinkIds(kakaoRaw, naverRaw);
+  if ("error" in linkIds) return fail(linkIds.error);
+  const { kakaoPlaceId, naverPlaceId } = linkIds;
   const latlngRaw = String(form.get("latlng") ?? "").trim();
   let coords = latlngRaw ? parseLatLng(latlngRaw) : null;
   const timestampRaw = String(form.get("timestamp") ?? "").trim();
@@ -236,12 +275,19 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
 
   // 구글에 등록된 가게면 좌표를 손으로 안 넣어도 된다 — 공유 링크에서 자동 해석
   if (!coords && googleMapsUrl) coords = await resolveGoogleCoords(googleMapsUrl);
+  // 구글도 없으면 네이버 장소 페이지에서 좌표·주소를 시도 — 사람이 쓴 주소는 안 건드린다
+  let naverInfo: NaverPlaceInfo | null = null;
+  if (!coords && naverPlaceId) {
+    naverInfo = await resolveNaverPlace(naverPlaceId);
+    if (naverInfo) coords = { lat: naverInfo.lat, lng: naverInfo.lng };
+  }
+  const finalAddress = address ?? naverInfo?.address ?? null;
 
   // ★ 확정 잠금 (docs/ADMIN.md 5장 / LEGAL.md 4.6)
   if (d.mapStatus === "confirmed") {
     if (!coords) {
       return fail(
-        "확정하려면 좌표가 필요합니다 — 구글 공유 링크(maps.app.goo.gl)를 넣으면 자동으로 채워집니다",
+        "확정하려면 좌표가 필요합니다 — 구글 공유 링크(maps.app.goo.gl)나 네이버 장소 링크를 넣으면 자동으로 채워집니다",
       );
     }
     if (!sourceNote) {
@@ -261,7 +307,7 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
       place_type: d.placeType,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      address,
+      address: finalAddress,
       google_place_id: googlePlaceId,
       google_maps_url: googleMapsUrl,
       kakao_place_id: kakaoPlaceId,
@@ -340,13 +386,10 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   const googleMapsUrl = /^https?:\/\//.test(googleRaw) ? googleRaw : null;
   const googlePlaceId = !googleMapsUrl && googleRaw ? googleRaw : null;
   const kakaoRaw = String(form.get("kakaoPlace") ?? "").trim();
-  const kakaoPlaceId = kakaoRaw
-    ? (kakaoRaw.match(/place\.map\.kakao\.com\/(\d+)/)?.[1] ?? kakaoRaw)
-    : null;
   const naverRaw = String(form.get("naverPlace") ?? "").trim();
-  const naverPlaceId = naverRaw
-    ? (naverRaw.match(/(?:place|entry\/place)\/(\d+)/)?.[1] ?? naverRaw)
-    : null;
+  const linkIds = parseMapLinkIds(kakaoRaw, naverRaw);
+  if ("error" in linkIds) return fail(linkIds.error);
+  const { kakaoPlaceId, naverPlaceId } = linkIds;
   const latlngRaw = String(form.get("latlng") ?? "").trim();
   let coords = latlngRaw ? parseLatLng(latlngRaw) : null;
   const timestampRaw = String(form.get("timestamp") ?? "").trim();
@@ -357,12 +400,19 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
 
   // 구글에 등록된 가게면 좌표를 손으로 안 넣어도 된다 — 공유 링크에서 자동 해석
   if (!coords && googleMapsUrl) coords = await resolveGoogleCoords(googleMapsUrl);
+  // 구글도 없으면 네이버 장소 페이지에서 좌표·주소를 시도 — 사람이 쓴 주소는 안 건드린다
+  let naverInfo: NaverPlaceInfo | null = null;
+  if (!coords && naverPlaceId) {
+    naverInfo = await resolveNaverPlace(naverPlaceId);
+    if (naverInfo) coords = { lat: naverInfo.lat, lng: naverInfo.lng };
+  }
+  const finalAddress = address ?? naverInfo?.address ?? null;
 
   // ★ 확정 잠금 (docs/ADMIN.md 5장 / LEGAL.md 4.6) — 수정 경로에서도 동일하게 적용
   if (d.mapStatus === "confirmed") {
     if (!coords) {
       return fail(
-        "확정하려면 좌표가 필요합니다 — 구글 공유 링크(maps.app.goo.gl)를 넣으면 자동으로 채워집니다",
+        "확정하려면 좌표가 필요합니다 — 구글 공유 링크(maps.app.goo.gl)나 네이버 장소 링크를 넣으면 자동으로 채워집니다",
       );
     }
     if (!sourceNote) {
@@ -395,7 +445,7 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
       place_type: d.placeType,
       lat: coords?.lat ?? null,
       lng: coords?.lng ?? null,
-      address,
+      address: finalAddress,
       google_place_id: googlePlaceId,
       google_maps_url: googleMapsUrl,
       kakao_place_id: kakaoPlaceId,
