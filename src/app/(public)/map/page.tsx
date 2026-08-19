@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { loadHomeFeed } from "@/shared/api/home";
-import { loadCityIndex, loadHomeMap } from "@/shared/api/cities";
+import { loadCityIndex, loadHomeMap, toMapCanvasPlace } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale } from "@/shared/i18n/locale";
 import { publicMeta } from "@/shared/seo/page-meta";
@@ -25,11 +25,20 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function MapPage() {
   const locale = await getLocale();
   const m = getDictionary(locale);
-  const [{ creators }, cities, places] = await Promise.all([
+  const [{ creators: feedCreators }, cities, rawPlaces] = await Promise.all([
     loadHomeFeed(),
     loadCityIndex(),
     loadHomeMap(locale),
   ]);
+  const places = rawPlaces.map(toMapCanvasPlace);
+  const creators = feedCreators.map((c) => ({
+    ...c,
+    bio: null,
+    handle: null,
+    videoCount: 0,
+    recentVideos: [],
+    cities: [],
+  }));
 
   if (places.length === 0) {
     return (

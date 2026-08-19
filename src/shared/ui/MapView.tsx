@@ -297,7 +297,7 @@ export function MapView({
   // "전체 핀 보기" — 마지막 핀 세트의 뷰포트 맞춤을 다시 실행한다
   const refitRef = useRef<(() => void) | null>(null);
 
-  // 지도 생성 (재시도 전까지 1회)
+  // 지도 생성 (재시도 전까지 1회). 두 프레임 뒤에 시작해 목록·검색이 먼저 페인트된다.
   useEffect(() => {
     if (!publicEnv.googleMapsKey) return;
     const usingDemoMapId = publicEnv.googleMapsId === "DEMO_MAP_ID";
@@ -311,6 +311,8 @@ export function MapView({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let tilesListener: google.maps.MapsEventListener | undefined;
+    let raf = 0;
+    const start = () => {
     const { maps } = loadSdk();
     maps
       .then(({ Map }) => {
@@ -349,8 +351,13 @@ export function MapView({
       .catch(() => {
         if (!cancelled) setFailed(true);
       });
+    };
+    raf = requestAnimationFrame(() => {
+      raf = requestAnimationFrame(start);
+    });
     return () => {
       cancelled = true;
+      cancelAnimationFrame(raf);
       if (timer) clearTimeout(timer);
       tilesListener?.remove();
     };
@@ -371,6 +378,7 @@ export function MapView({
   useEffect(() => {
     if (failed) return;
     let cancelled = false;
+    let idleListener: google.maps.MapsEventListener | undefined;
     const { maps, marker } = loadSdk();
     Promise.all([
       maps,
@@ -388,6 +396,98 @@ export function MapView({
           pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}:${p.name}`).join("|");
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
+
+        // 전역 지도(1000+핀)는 AdvancedMarker 를 전부 만들지 않는다.
+        // Lighthouse FullPageScreenshot 이 1665개 DOM 마커에서 타임아웃 났다.
+        if (cluster && pins.length > 150) {
+          clustererRef.current?.setMap(null);
+          clustererRef.current = null;
+          for (const mk of markersRef.current.values()) mk.map = null;
+          markersRef.current.clear();
+          import("supercluster").then(({ default: Supercluster }) => {
+            if (cancelled || mapRef.current !== map) return;
+            const index = new Supercluster({
+              radius: CLUSTER_RADIUS_PX,
+              maxZoom: CLUSTER_MAX_ZOOM,
+            });
+            index.load(
+              pins.map((p) => ({
+                type: "Feature" as const,
+                geometry: {
+                  type: "Point" as const,
+                  coordinates: [p.lng, p.lat] as [number, number],
+                },
+                properties: { id: p.id },
+              })),
+            );
+            const byId = new Map(pins.map((p) => [p.id, p]));
+            const paintVisible = () => {
+              const bounds = map.getBounds();
+              if (!bounds) return;
+              const ne = bounds.getNorthEast();
+              const sw = bounds.getSouthWest();
+              const z = Math.max(0, Math.round(map.getZoom() ?? 2));
+              const features = index.getClusters([sw.lng(), sw.lat(), ne.lng(), ne.lat()], z);
+              const mode = nameWhenClose
+                ? (map.getZoom() ?? 0) >= NAME_ZOOM
+                  ? "name"
+                  : "dot"
+                : "index";
+              const want = new Set<string>();
+              for (const feat of features) {
+                const props = feat.properties as {
+                  cluster?: boolean;
+                  cluster_id?: number;
+                  point_count?: number;
+                  id?: string;
+                };
+                const [lng, lat] = feat.geometry.coordinates;
+                if (props.cluster) {
+                  const key = `c:${props.cluster_id}`;
+                  want.add(key);
+                  if (markersRef.current.has(key)) continue;
+                  const mk = new AdvancedMarkerElement({
+                    map,
+                    position: { lat, lng },
+                    content: clusterContent(props.point_count ?? 0, m),
+                    zIndex: 900,
+                    gmpClickable: true,
+                  });
+                  const cid = props.cluster_id!;
+                  mk.addEventListener("gmp-click", () => {
+                    map.setZoom(index.getClusterExpansionZoom(cid));
+                    map.panTo({ lat, lng });
+                  });
+                  markersRef.current.set(key, mk);
+                } else {
+                  const pin = byId.get(props.id ?? "");
+                  if (!pin) continue;
+                  want.add(pin.id);
+                  if (markersRef.current.has(pin.id)) continue;
+                  const mk = new AdvancedMarkerElement({
+                    map,
+                    position: { lat: pin.lat, lng: pin.lng },
+                    content: pinNode(pin, pin.id === activeId, mode),
+                    zIndex: pin.id === activeId ? 1000 : 0,
+                    gmpClickable: Boolean(onPinClick),
+                  });
+                  if (onPinClick) {
+                    mk.addEventListener("gmp-click", () => onPinClick(pin.id));
+                  }
+                  markersRef.current.set(pin.id, mk);
+                }
+              }
+              for (const [key, mk] of markersRef.current) {
+                if (want.has(key)) continue;
+                mk.map = null;
+                markersRef.current.delete(key);
+              }
+            };
+            idleListener = map.addListener("idle", paintVisible);
+            paintVisible();
+          });
+          return;
+        }
 
         // 기존 마커 제거 후 다시 그림 — 핀 수십 개 수준이라 diff 불필요
         clustererRef.current?.setMap(null);
@@ -465,6 +565,7 @@ export function MapView({
       .catch(() => setFailed(true));
     return () => {
       cancelled = true;
+      idleListener?.remove();
     };
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
     // eslint-disable-next-line react-hooks/exhaustive-deps

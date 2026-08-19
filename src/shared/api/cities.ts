@@ -342,6 +342,74 @@ export interface HomeMapPlace {
   youtubeTitle: string | null;
 }
 
+/**
+ * `/map` 첫 페인트용 — 상세(요약·출처 영상)는 드로어를 열 때 따로 받는다.
+ * 1665곳 전체를 HomeMapPlace 로 실으면 HTML 이 460KB 를 넘고 Lighthouse 가
+ * FullPageScreenshot 에서 타임아웃 난다.
+ */
+export type MapCanvasPlace = {
+  id: string;
+  slug: string;
+  name: string;
+  nameLocal: string | null;
+  placeType: PlaceType;
+  lat: number;
+  lng: number;
+  citySlug: string;
+  cityName: string;
+  cityNameEn: string | null;
+  countryCode: string;
+  youtubeId: string | null;
+  youtubeTitle: string | null;
+  sources: { creatorSlug: string }[];
+  searchText: string;
+};
+
+export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
+  const names = [...new Set(p.sources.map((s) => s.creatorName))];
+  return {
+    id: p.id,
+    slug: p.slug,
+    name: p.name,
+    nameLocal: p.nameLocal,
+    placeType: p.placeType,
+    lat: p.lat,
+    lng: p.lng,
+    citySlug: p.citySlug,
+    cityName: p.cityName,
+    cityNameEn: p.cityNameEn,
+    countryCode: p.countryCode,
+    youtubeId: p.youtubeId,
+    youtubeTitle: p.youtubeTitle,
+    sources: [...new Set(p.sources.map((s) => s.creatorSlug))].map((creatorSlug) => ({
+      creatorSlug,
+    })),
+    searchText: [p.name, p.nameLocal, p.cityName, p.cityNameEn, p.placeType, ...names]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase(),
+  };
+}
+
+export type MapPlaceDetail = {
+  address: string | null;
+  summary: SummaryDisplay;
+  mapUrl: string | null;
+  sources: PlaceSource[];
+};
+
+export async function loadMapPlace(id: string, locale: Locale): Promise<MapPlaceDetail | null> {
+  const all = await loadHomeMap(locale);
+  const p = all.find((row) => row.id === id);
+  if (!p) return null;
+  return {
+    address: p.address,
+    summary: p.summary,
+    mapUrl: p.mapUrl,
+    sources: p.sources,
+  };
+}
+
 function placeCoords(p: { lat: number | null; lng: number | null; google_maps_url: string | null }) {
   if (p.lat !== null && p.lng !== null) return { lat: p.lat, lng: p.lng };
   return coordsFromMapsUrl(p.google_maps_url);

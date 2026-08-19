@@ -18,14 +18,14 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlassIcon as MagnifyingGlass, XIcon as X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
-import type { CityRow, HomeMapPlace } from "@/shared/api/cities";
+import type { CityRow, MapCanvasPlace, MapPlaceDetail } from "@/shared/api/cities";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
 import { Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
-import { MapView } from "@/shared/ui/MapView";
+import dynamic from "next/dynamic";
 import { PlaceSheet, type PlaceDrawerSnap } from "@/shared/ui/PlaceSheet";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -45,6 +45,11 @@ import { CanvasFilters } from "./CanvasFilters";
 import { SavedMapChips } from "./SavedMapChips";
 import { useSaved } from "@/shared/ui/SavedContext";
 
+const MapView = dynamic(
+  () => import("@/shared/ui/MapView").then((mod) => ({ default: mod.MapView })),
+  { ssr: false },
+);
+
 export type CanvasLead = "home" | "region" | "channel" | "type";
 
 /** 바텀시트 스냅 — 화면(캔버스) 높이 비율 % */
@@ -56,7 +61,7 @@ const LIST_CHUNK = 48;
 const SHEET_SNAPS = [SHEET_PEEK, SHEET_MID, SHEET_FULL] as const;
 
 export function HomeCanvas(props: {
-  places: HomeMapPlace[];
+  places: MapCanvasPlace[];
   cities: CityRow[];
   creators: FeedCreator[];
 }) {
@@ -70,7 +75,7 @@ export function ExplorerCanvas({
   lead = "home",
   surface = "overlay",
 }: {
-  places: HomeMapPlace[];
+  places: MapCanvasPlace[];
   cities: CityRow[];
   creators: FeedCreator[];
   lead?: CanvasLead;
@@ -108,6 +113,12 @@ export function ExplorerCanvas({
      페이지를 2~3초 스켈레톤으로 갈아엎어 아무 반응이 없는 것처럼 보인다.
      URL 은 history.pushState 로만 맞춰 뒤로가기는 살린다. */
   const [localPlace, setLocalPlace] = useState<string | null>(placeParam);
+  const [placeDetail, setPlaceDetail] = useState<MapPlaceDetail | null>(null);
+  const [detailFor, setDetailFor] = useState<string | null>(localPlace);
+  if (detailFor !== localPlace) {
+    setDetailFor(localPlace);
+    setPlaceDetail(null);
+  }
   /* 드로어가 켠 채널은 sticky. popstate 는 place/스냅만 되돌리고,
      채널은 칩을 지울 때까지 로컬이 진실이다. router.replace 는 loading.tsx 를 연다. */
   const [localChannel, setLocalChannel] = useState<string | null>(sp.get("channel"));
@@ -117,6 +128,22 @@ export function ExplorerCanvas({
   const localChannelRef = useRef(localChannel);
   /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs) — 읽는 곳은
      popstate·드로어 콜백이라 커밋 뒤다. PlaceSheet onCloseRef 와 같은 계약. */
+  useEffect(() => {
+    if (!localPlace) return;
+    let alive = true;
+    fetch(`/api/map/place/${localPlace}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((row: MapPlaceDetail | null) => {
+        if (alive) setPlaceDetail(row);
+      })
+      .catch(() => {
+        if (alive) setPlaceDetail(null);
+      });
+    return () => {
+      alive = false;
+    };
+  }, [localPlace]);
+
   useEffect(() => {
     localPlaceRef.current = localPlace;
     localChannelRef.current = localChannel;
@@ -613,8 +640,17 @@ export function ExplorerCanvas({
     ? (savedLists.find((l) => l.id === listId)?.name ?? m.saved.title)
     : m.saved.title;
 
-  const sourcesFor = (place: HomeMapPlace) =>
-    channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
+  const EMPTY_SUMMARY = {
+    bullets: [] as string[],
+    summary: null,
+    priceHint: null,
+    isMachine: false,
+    original: null,
+  };
+  const sourcesFor = () => {
+    const all = placeDetail?.sources ?? [];
+    return channel ? all.filter((s) => s.creatorSlug === channel) : all;
+  };
 
   /**
    * 검색창 한 벌 — 자리만 둘이다.
@@ -692,32 +728,7 @@ export function ExplorerCanvas({
     return map;
   }, [places, axes, saved]);
 
-  const channelOptions = useMemo(() => {
-    const seen = new Set(creators.map((c) => c.slug));
-    const extra: FeedCreator[] = [];
-    for (const p of places) {
-      for (const s of p.sources) {
-        if (seen.has(s.creatorSlug)) continue;
-        if (!(channelCounts.get(s.creatorSlug) ?? 0)) continue;
-        seen.add(s.creatorSlug);
-        extra.push({
-          id: s.creatorSlug,
-          slug: s.creatorSlug,
-          displayName: s.creatorName,
-          initials: s.initials,
-          accentColor: s.accentColor,
-          avatarUrl: s.avatarUrl,
-          handle: null,
-          bio: null,
-          placeCount: channelCounts.get(s.creatorSlug) ?? 0,
-          videoCount: 0,
-          recentVideos: [],
-          cities: [],
-        });
-      }
-    }
-    return extra.length ? [...creators, ...extra] : creators;
-  }, [creators, places, channelCounts]);
+  const channelOptions = creators;
 
   const modalCities = useMemo(() => {
     const pool = places.filter((p) =>
@@ -873,10 +884,10 @@ export function ExplorerCanvas({
               name: displayPlaceName(detailPlace, locale),
               nameLocal: detailPlace.nameLocal,
               typeLabel: m.placeTypes[detailPlace.placeType],
-              address: detailPlace.address,
-              summary: detailPlace.summary,
-              mapUrl: detailPlace.mapUrl,
-              sources: sourcesFor(detailPlace),
+              address: placeDetail?.address ?? null,
+              summary: placeDetail?.summary ?? EMPTY_SUMMARY,
+              mapUrl: placeDetail?.mapUrl ?? null,
+              sources: sourcesFor(),
             }}
             onClose={closeDetail}
             collapseToken={collapseToken}
