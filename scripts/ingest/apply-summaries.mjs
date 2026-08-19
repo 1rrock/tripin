@@ -26,6 +26,18 @@ const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "applic
 
 const BANNED = ["진짜", "미쳤", "인생", "존맛", "대박", "JMT", "맛있", "맛없", "불친절", "별로"];
 
+/**
+ * 금지어 검사에서 **상호는 뺀다**.
+ * "알래스카에서 온 연어가 맛있는 집" 처럼 간판 자체에 금지어가 든 가게가 있다.
+ * 이 규칙은 평가 표현을 막자는 것이지 등록된 상호를 막자는 게 아니다.
+ */
+function bannedHits(bullets, place) {
+  const text = [place.name, place.name_local]
+    .filter(Boolean)
+    .reduce((t, n) => t.split(n).join(""), bullets.join(""));
+  return BANNED.filter((w) => text.toUpperCase().includes(w.toUpperCase()));
+}
+
 const file = process.argv[2];
 if (!file) {
   console.error("사용: node scripts/ingest/apply-summaries.mjs <drafts.json>");
@@ -33,9 +45,20 @@ if (!file) {
 }
 const drafts = JSON.parse(readFileSync(file, "utf8"));
 
-const places = await (
-  await fetch(`${URL_}/rest/v1/places?select=id,slug,summary,summary_bullets`, { headers: H })
-).json();
+// PostgREST 는 한 번에 1000행까지만 준다 — 장소가 그보다 많으므로 끝까지 넘긴다.
+// (이걸 안 해서 1000번째 뒤의 장소가 전부 "없음"으로 찍힌 적이 있다)
+const places = [];
+for (let offset = 0; ; offset += 1000) {
+  const page = await (
+    await fetch(
+      `${URL_}/rest/v1/places?select=id,slug,name,name_local,summary,summary_bullets` +
+        `&order=created_at.asc&offset=${offset}&limit=1000`,
+      { headers: H },
+    )
+  ).json();
+  places.push(...page);
+  if (page.length < 1000) break;
+}
 const bySlug = new Map(places.map((p) => [p.slug, p]));
 
 let applied = 0;
@@ -50,7 +73,7 @@ for (const d of drafts) {
     continue;
   }
   const joined = d.bullets.join("");
-  const hit = BANNED.filter((w) => joined.toUpperCase().includes(w.toUpperCase()));
+  const hit = bannedHits(d.bullets, place);
   if (hit.length > 0) {
     console.log(`  ⚠ 금지어(${hit.join(",")}) — 건너뜀: ${d.slug}`);
     continue;

@@ -196,8 +196,19 @@ function buildBullets({ name, cityName, placeType, address, sourceNote, googleNa
   return bullets.filter(Boolean).slice(0, 5);
 }
 
-function hasBanned(bullets) {
-  const j = bullets.join("");
+/**
+ * 금지어 검사 — **상호는 검사에서 뺀다.**
+ * "알래스카에서 온 연어가 맛있는 집" 처럼 간판에 금지어가 든 가게가 실제로 있고,
+ * 불릿은 상호를 담을 수밖에 없다. 이 규칙은 평가 표현을 막자는 것이지
+ * 등록된 상호를 막자는 게 아니다 (이것 때문에 그 가게가 계속 후보로 묶여 있었다).
+ *
+ * 구글 등록명은 우리 `name` 과 띄어쓰기가 다른 경우가 많아(`알래스카연어가 맛있는집`)
+ * 따로 넘겨야 한다 — `name` 만 지워서는 안 걸러진다.
+ */
+function hasBanned(bullets, names = []) {
+  const j = names
+    .filter(Boolean)
+    .reduce((t, n) => t.split(n).join(""), bullets.join(""));
   return BANNED.filter((w) => j.toUpperCase().includes(w.toUpperCase()));
 }
 
@@ -248,7 +259,7 @@ async function main() {
     const label = `[${i + 1}/${places.length}] ${p.name}`;
     try {
       // skip garbage names
-      if (/^(영업\s*시간|주소:)/.test(p.name)) {
+      if (/^(영업\s*시간|주소:)/.test(p.name) || /습니다|하세요|드립니다|바랍니다|가세요|만들어봤|기대해|편리합니다|만족은 했지만|여행 가시면/.test(p.name)) {
         report.skipped.push({ name: p.name, reason: "bad-name" });
         console.log(`  · skip bad-name ${p.name}`);
         continue;
@@ -309,7 +320,7 @@ async function main() {
               creatorHint: creatorByPlace.get(p.id) || null,
             });
 
-      const banned = hasBanned(bullets);
+      const banned = hasBanned(bullets, [p.name, p.name_local, enriched?.googleName]);
       if (banned.length) {
         report.skipped.push({ name: p.name, reason: `banned:${banned.join(",")}` });
         console.log(`  ⚠ skip banned ${p.name}`);
