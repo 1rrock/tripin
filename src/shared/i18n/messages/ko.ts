@@ -65,6 +65,8 @@ export const ko = {
     srHeading: "여행 유튜버가 간 곳 지도",
     regionFilter: "지역",
     regionAll: "전체 지역",
+    /** 2depth 목록 맨 위 — 이 권역을 통째로 고른다 */
+    regionWhole: "{name} 전체",
     regionPick: "지역 고르기",
     filterFind: "검색",
     typeAll: "전체 종류",
@@ -460,6 +462,7 @@ export type Messages = {
     srHeading: string;
     regionFilter: string;
     regionAll: string;
+    regionWhole: string;
     regionPick: string;
     filterFind: string;
     typeAll: string;

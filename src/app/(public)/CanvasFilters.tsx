@@ -6,7 +6,11 @@
  */
 
 import { useEffect, useRef, useState, type ReactNode } from "react";
-import { CaretDownIcon as CaretDown, MagnifyingGlassIcon as MagnifyingGlass } from "@phosphor-icons/react";
+import {
+  CaretDownIcon as CaretDown,
+  CaretRightIcon as CaretRight,
+  MagnifyingGlassIcon as MagnifyingGlass,
+} from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -72,7 +76,8 @@ function focusable(panel: HTMLElement) {
   );
 }
 
-/** 고르는 순간 적용된다 — 확인 단추가 없다. 그래서 바닥 줄도 없다.
+/** 고르는 순간 적용되고 닫힌다 — 확인 단추가 없다. 그래서 바닥 줄도 없다.
+ *  (지역의 1depth 만 예외다. 거긴 오른쪽 목록을 여는 줄이라 적용도 닫기도 하지 않는다.)
  *  role="dialog" 이니 포커스도 다이얼로그처럼 움직인다: 열리면 안으로 들어가고,
  *  Tab 은 패널을 못 벗어나고, 닫히면 연 트리거로 돌아간다. */
 function Panel({
@@ -248,6 +253,11 @@ export function CanvasFilters({
       ? visibleGroups.flatMap((g) => g.items)
       : (visibleGroups.find((g) => g.id === pane)?.items ?? []);
 
+  /** 2depth 맨 줄 — 열려 있는 권역 자체. 검색 중이면 없다. */
+  const wholePane =
+    pane === "all" || find.trim() ? null : (groups.find((g) => g.id === pane) ?? null);
+  const wholePaneCount = wholePane?.items.reduce((n, c) => n + c.placeCount, 0) ?? 0;
+
   const visibleCreators = creators.filter((c) => {
     const n = channelCounts.get(c.slug) ?? 0;
     if (n === 0) return false;
@@ -303,11 +313,12 @@ export function CanvasFilters({
                 onClick={() => {
                   setPane("all");
                   onApply({ region: null, city: null, type, channel });
+                  setOpen(null);
                 }}
                 className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
                 style={{
-                  background: pane === "all" && !city ? "var(--halo)" : undefined,
-                  color: pane === "all" && !city ? "var(--wax)" : "var(--paper)",
+                  background: !region && !city ? "var(--halo)" : undefined,
+                  color: !region && !city ? "var(--wax)" : "var(--paper)",
                 }}
               >
                 {m.home.regionAll}
@@ -316,21 +327,41 @@ export function CanvasFilters({
                 <button
                   key={g.id}
                   type="button"
-                  onClick={() => {
-                    setPane(g.id);
-                    onApply({ region: g.id, city: null, type, channel });
-                  }}
-                  className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
+                  /* 누르는 순간 적용하지 않는다 — 오른쪽 목록만 연다.
+                     권역 자체를 고르는 건 그 목록 맨 위 "전체" 줄이다. */
+                  onClick={() => setPane(g.id)}
+                  aria-expanded={pane === g.id}
+                  className="flex w-full items-center justify-between gap-1 px-3 py-2.5 text-left text-[13px] font-semibold"
                   style={{
                     background: pane === g.id ? "var(--halo)" : undefined,
                     color: pane === g.id ? "var(--wax)" : "var(--paper)",
                   }}
                 >
-                  {m.home.homeRegions[g.id]}
+                  <span className="min-w-0 truncate">{m.home.homeRegions[g.id]}</span>
+                  {/* 고르는 줄이 아니라 여는 줄이라는 표시 — 실제 선택은 오른쪽에서 끝난다. */}
+                  <CaretRight aria-hidden className="size-3 shrink-0 opacity-60" />
                 </button>
               ))}
             </div>
             <div className="min-h-0 min-w-0 flex-1 overflow-y-auto overscroll-contain py-1">
+              {/* 검색 중에는 안 보인다 — 그때는 도시를 찾는 중이지 권역을 고르는 중이 아니다. */}
+              {wholePane ? (
+                <button
+                  type="button"
+                  onClick={() => {
+                    onApply({ region: wholePane.id, city: null, type, channel });
+                    setOpen(null);
+                  }}
+                  className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px] font-semibold"
+                  style={{
+                    background: region === wholePane.id && !city ? "var(--halo)" : undefined,
+                    color: region === wholePane.id && !city ? "var(--wax)" : "var(--paper)",
+                  }}
+                >
+                  <span>{t(m.home.regionWhole, { name: m.home.homeRegions[wholePane.id] })}</span>
+                  <span className="index tnum text-(--dim)">{wholePaneCount}</span>
+                </button>
+              ) : null}
               {rightCities.map((c) => {
                 const on = city === c.slug;
                 return (

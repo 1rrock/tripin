@@ -59,6 +59,7 @@ export const en: Messages = {
     srHeading: "Map of places travel YouTubers visited",
     regionFilter: "Region",
     regionAll: "All regions",
+    regionWhole: "All of {name}",
     regionPick: "Choose a region",
     filterFind: "Search",
     typeAll: "All types",
