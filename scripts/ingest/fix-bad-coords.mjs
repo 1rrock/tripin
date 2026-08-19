@@ -8,7 +8,7 @@
  * 사용: node scripts/ingest/fix-bad-coords.mjs [--dry]
  */
 import { loadEnv } from "./_lib/env.mjs";
-import { fromGsi, fromShareLink, inJP, inKR } from "./_lib/geocode.mjs";
+import { fromGsi, fromShareLink, inAU, inES, inJP, inKR } from "./_lib/geocode.mjs";
 
 const DRY = process.argv.includes("--dry");
 const env = loadEnv();
@@ -21,7 +21,7 @@ if (!URL_ || !KEY) {
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
 
 const okFor = (cc, lat, lng) =>
-  cc === "KR" ? inKR(lat, lng) : cc === "JP" ? inJP(lat, lng) : true;
+  cc === "KR" ? inKR(lat, lng) : cc === "JP" ? inJP(lat, lng) : cc === "AU" ? inAU(lat, lng) : cc === "ES" ? inES(lat, lng) : true;
 
 async function gsi(q) {
   const hit = await fromGsi(q);
@@ -48,7 +48,7 @@ const NAME_GSI = {
 
 const places = await (
   await fetch(
-    `${URL_}/rest/v1/places?select=id,slug,name,address,lat,lng,google_maps_url,country_code&map_status=eq.candidate&order=created_at.desc&limit=100`,
+    `${URL_}/rest/v1/places?select=id,slug,name,address,lat,lng,google_maps_url,country_code&map_status=eq.candidate&order=created_at.desc&limit=400`,
     { headers: H },
   )
 ).json();
@@ -67,8 +67,7 @@ for (const p of places) {
   const missing = p.lat == null;
   if (!bad && !missing) continue;
 
-  // only care about JP/KR candidates from our ingest
-  if (p.country_code !== "JP" && p.country_code !== "KR") continue;
+  if (!["JP", "KR", "AU", "ES"].includes(p.country_code)) continue;
 
   if (bad) {
     console.log(`CLEAR ${p.name}  was ${p.lat},${p.lng}`);

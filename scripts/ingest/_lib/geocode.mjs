@@ -63,3 +63,5 @@ export function isGoogleShareLink(url) {
 
 export const inJP = (lat, lng) => lat > 30 && lat < 46 && lng > 129 && lng < 146;
 export const inKR = (lat, lng) => lat > 33 && lat < 39 && lng > 124 && lng < 132;
+export const inAU = (lat, lng) => lat > -45 && lat < -10 && lng > 110 && lng < 155;
+export const inES = (lat, lng) => lat > 27 && lat < 44 && lng > -19 && lng < 5;
