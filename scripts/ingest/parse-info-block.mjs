@@ -148,7 +148,16 @@ for (const [i, it] of items.entries()) {
       if (!c || /^https?:/i.test(c)) continue;
       // "1. 오월의 김밥" → "오월의 김밥"
       const nm = c.replace(/^\d+\s*[.)]\s*/, "").trim();
-      if (nm) entries.push({ name: nm, address: lines[li] });
+      // ⚠️ 상호 자리에 주소가 오면 버린다. 지점을 여러 개 늘어놓을 때 생긴다:
+      //     대한옥
+      //     서울 영등포구 영등포로51길 6 1층 대한옥 (본점)
+      //     http://naver.me/…
+      //     (빈 줄)
+      //     서울 영등포구 가마산로69가길 7 (신길점)   ← 이 줄의 "이름"을 위에서 찾으면
+      //     http://naver.me/…                          첫 지점의 주소가 상호가 된다
+      //   실제로 "서울 영등포구 영등포로51길 6 1층 대한옥 (본점)" 이 상호로 들어갔다.
+      //   지점 하나를 잃더라도 쓰레기 상호를 만들지 않는다.
+      if (nm && !ADDR_LINE.test(nm)) entries.push({ name: nm, address: lines[li] });
       break;
     }
   }
