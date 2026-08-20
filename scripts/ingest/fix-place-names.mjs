@@ -14,9 +14,14 @@
  *
  * 이 이름이 그대로 카드 제목으로 나간다.
  *
- * 고치는 방법 — 구글 Places 의 `displayName` 이 정답이다. **우리 이름이 구글 이름을
- * 통째로 품고 있을 때만** 바꾼다. 그 포함 관계가 "같은 가게인데 앞에 군더더기가 붙었다"
- * 는 증거다. 둘이 아예 다르면 사람이 봐야 하므로 건드리지 않고 목록으로 남긴다.
+ * 고치는 방법 — 구글 Places 의 `displayName` 이 정답이다. 우리 이름이 구글 이름을
+ * 통째로 품고 있을 때만 바꾼다. 둘이 아예 다르면 사람이 봐야 하므로 목록으로 남긴다.
+ *
+ * ⚠️ **포함 관계만 보면 지점명을 지운다.** 붙은 자리를 함께 봐야 한다 —
+ *    우리가 구글 이름으로 **끝나면** 앞의 것이 설명구다(떼낸다).
+ *    우리가 구글 이름으로 **시작하면** 뒤의 것은 지점명이다(그대로 둔다). 구글이 지점을
+ *    안 적었을 뿐 우리 게 더 정확하고, 지우면 "안동돼지국밥 덕포"와 다른 지점이 한 이름이 된다.
+ *    이 비대칭은 `backfill-naver.mjs` 의 `nameMatches` 와 같은 처방이다.
  *
  * ⛔ 로컬(어드민 머신) 전용. 요청 간 200ms. 이름 외의 컬럼은 손대지 않는다.
  */
@@ -54,6 +59,18 @@ function looksDescriptive(name) {
 /** 공백·구두점·대소문자를 무시한 비교용 문자열. */
 const norm = (s) => (s ?? "").replace(/[\s·・,.'"’”\-–—|()（）[\]]/g, "").toLowerCase();
 
+/**
+ * 원본 이름에서 구글 이름에 해당하는 꼬리를 뺀 **앞부분**을 돌려준다.
+ * 정규화된 문자열끼리는 자리를 못 세므로, 원본을 앞에서부터 잘라 가며 꼬리를 맞춘다.
+ */
+function prefixBefore(original, gname) {
+  const target = norm(gname);
+  for (let i = 0; i < original.length; i++) {
+    if (norm(original.slice(i)) === target) return original.slice(0, i).trim();
+  }
+  return null;
+}
+
 async function googleName(placeId) {
   try {
     const res = await fetch(
@@ -82,7 +99,7 @@ const places = [];
 for (let offset = 0; ; offset += 1000) {
   const page = await (
     await fetch(
-      `${URL_}/rest/v1/places?select=id,name,google_place_id,is_published` +
+      `${URL_}/rest/v1/places?select=id,name,address,google_place_id,is_published` +
         `&google_place_id=not.is.null&order=created_at.asc&offset=${offset}&limit=1000`,
       { headers: H },
     )
@@ -95,6 +112,8 @@ const targets = ALL ? places : places.filter((p) => looksDescriptive(p.name));
 console.log(`구글 ID 보유 ${places.length}곳 · 검사 대상 ${targets.length}곳${DRY ? " (dry-run)" : ""}`);
 
 let fixed = 0;
+/** 지점명이 붙어 있어 그대로 둔 것 — 고친 것과 구분해서 센다. */
+let kept = 0;
 const review = [];
 for (const [i, p] of targets.entries()) {
   const { name: gname, error } = await googleName(p.google_place_id);
@@ -109,6 +128,53 @@ for (const [i, p] of targets.entries()) {
   if (b.length < 3 || !a.includes(b)) {
     // 포함 관계가 아니면 같은 가게라는 증거가 없다 — 사람이 판단한다
     review.push({ name: p.name, google: gname, why: "포함 관계 아님" });
+    continue;
+  }
+
+  /* 포함 관계라도 **붙은 자리**에 따라 뜻이 정반대다. 방향을 안 보면 지점명을 지운다.
+   *
+   *   우리 이름이 구글 이름으로 **끝난다**  → 앞에 붙은 건 크리에이터의 설명구다
+   *     "퍼피 타코 원조집 레이스" / 구글 "레이스"        → 앞을 뗀다
+   *
+   *   우리 이름이 구글 이름으로 **시작한다** → 뒤에 붙은 건 지점명이다. 구글이 지점을
+   *     안 적었을 뿐이지 우리 게 더 정확하다. 지우면 같은 브랜드의 두 지점이 구분이 안 된다
+   *     "안동돼지국밥 덕포" / 구글 "안동돼지국밥"        → 그대로 둔다
+   *
+   *   가운데에 있으면 앞뒤가 다 붙은 것이라 자동으로 못 가른다
+   *     "돈스테이크 토이치 하카타역남 본점" / 구글 "토이치" → 사람이 본다
+   */
+  if (a.startsWith(b)) {
+    kept++;
+    continue;
+  }
+  if (!a.endsWith(b)) {
+    review.push({ name: p.name, google: gname, why: "구글 이름이 가운데에 있다(앞뒤 다 붙음)" });
+    continue;
+  }
+
+  /* 꼬리가 맞아도 앞부분이 **설명구**일 때만 뗀다. 두 가지가 걸린다:
+   *
+   *   지역 접두 — 우리가 일부러 붙인다("영광 동락식당", "노원 하이레"). 주소에 그 말이
+   *     들어 있으면 지역이다. 떼면 동명 가게와 구분이 안 된다.
+   *   한 토막 접두 — "야키니쿠 쵸우야", "블루시엘 (호텔…)" 처럼 업종일 수도, 진짜 상호일
+   *     수도 있다. 설명구는 보통 두 토막 이상이라("퍼피 타코 원조집"), 한 토막은 사람에게 넘긴다.
+   *     특히 "블루시엘"은 호텔 안 식당이라 떼면 식당 이름이 사라지고 호텔 이름만 남는다.
+   */
+  const pre = prefixBefore(p.name, gname);
+  if (!pre) {
+    review.push({ name: p.name, google: gname, why: "앞부분을 못 갈랐다" });
+    continue;
+  }
+  /* 앞부분이 **전부** 주소에 나오는 말로 이뤄졌으면 지역 표기다. 길이로 자르면 안 된다 —
+     "서울 성북구 정릉"(10자)도 지역이다. 어절 단위로 하나씩 주소와 맞춰 본다. */
+  const preTokens = pre.split(/\s+/).filter(Boolean);
+  const addr = norm(p.address ?? "");
+  if (preTokens.length > 0 && addr && preTokens.every((t) => norm(t).length >= 2 && addr.includes(norm(t)))) {
+    kept++;
+    continue;
+  }
+  if (pre.split(/\s+/).filter(Boolean).length < 2) {
+    review.push({ name: p.name, google: gname, why: `앞부분이 한 토막("${pre}") — 업종인지 상호인지 애매` });
     continue;
   }
   console.log(`  ${DRY ? "→" : "✔"} ${p.name}\n       ⇒ ${gname}`);
@@ -130,6 +196,6 @@ if (review.length) {
 }
 console.log(
   DRY
-    ? `\ndry-run 끝 — ${fixed}곳이 바뀔 예정. 실제로 쓰려면 --dry 를 빼라`
-    : `\n${fixed}곳 이름 정리 — 공개 화면 반영은 배포 또는 캐시 만료(1시간) 후`,
+    ? `\ndry-run 끝 — ${fixed}곳이 바뀔 예정 · 지점명이라 그대로 둔 곳 ${kept}. 실제로 쓰려면 --dry 를 빼라`
+    : `\n${fixed}곳 이름 정리 · 지점명이라 그대로 둔 곳 ${kept} — 공개 화면 반영은 배포 또는 캐시 만료(1시간) 후`,
 );
