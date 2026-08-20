@@ -25,14 +25,13 @@
  * ⛔ 전부 candidate 로 들어간다. 확정은 /admin/confirm 에서 사람이 한다.
  */
 import { loadEnv } from "./_lib/env.mjs";
+import { fetchVideoItems } from "./_lib/youtube.mjs";
 
 
 
-const KEY = loadEnv().YOUTUBE_API_KEY;
-if (!KEY) {
-  console.error("✖ .env.local 에 YOUTUBE_API_KEY 가 없습니다");
-  process.exit(1);
-}
+// 영상 메타는 InnerTube 로 받는다 — `YOUTUBE_API_KEY` 는 리퍼러 제한이라
+// 서버사이드에서 403 이 난다(_lib/youtube.mjs 주석). 키가 필요 없다.
+loadEnv();
 
 const args = process.argv.slice(2);
 const opt = (n, d) => args.find((a) => a.startsWith(`--${n}=`))?.split("=")[1] ?? d;
@@ -143,22 +142,11 @@ const slugify = (name, vid, i) => {
   return base ? `${base}-${vid.slice(0, 4).toLowerCase()}` : `place-${vid.toLowerCase()}-${i}`;
 };
 
-const api = async (path, params) => {
-  const qs = new URLSearchParams({ ...params, key: KEY });
-  const res = await fetch(`https://www.googleapis.com/youtube/v3/${path}?${qs}`);
-  const body = await res.json();
-  if (!res.ok) throw new Error(`${path} ${res.status}: ${JSON.stringify(body).slice(0, 200)}`);
-  return body;
-};
-
 // ── 영상 메타 수집 ──
-const items = [];
-for (let i = 0; i < videoIds.length; i += 50) {
-  // contentDetails 도 같이 받는다 — duration 을 안 채우면 타임라인이 "길이(추정)"로 돈다
-  // (HANDOFF.md §4-2 에서 79편 중 78편이 NULL 이던 그 문제)
-  const r = await api("videos", { part: "snippet,contentDetails", id: videoIds.slice(i, i + 50).join(",") });
-  items.push(...(r.items ?? []));
-}
+// duration·publishedAt 도 같이 받는다 — 안 채우면 타임라인이 "길이(추정)"로 돌고
+// 최신성 정렬이 죽는다 (79편 중 78편이 NULL 이던 그 문제).
+console.error(`영상 ${videoIds.length}편 메타 수집 중…`);
+const items = await fetchVideoItems(videoIds);
 
 /** ISO8601 PT#H#M#S → 초 */
 const durationSec = (iso) => {
@@ -223,6 +211,18 @@ for (const it of items) {
     }
     if (!name) continue;
 
+    // "이치란 신바시점 : 김 추가 옵션이 없는 매장이라 아쉽" 처럼 **상호 뒤에 한 줄
+    // 코멘트**를 붙이는 포맷이 있다(스나 LEE). 콜론 뒤는 상호가 아니다 — 그대로 두면
+    // "맛집"·"아쉽" 같은 평가어가 상호에 박혀 카드 제목으로 나간다(PRODUCT 원칙 2).
+    // 뒤쪽은 버리지 않고 mentionNote 로 옮긴다 — 영상에서 확인된 사실이라 쓸모가 있다.
+    // ⚠️ "12:30 상호" 를 자르지 않으려고 콜론 **뒤 공백**을 요구한다.
+    let nameNote = null;
+    const colonSplit = /^(.{2,40}?)\s*[:：]\s+(.{4,})$/.exec(name);
+    if (colonSplit) {
+      name = colonSplit[1].trim();
+      nameNote = colonSplit[2].trim();
+    }
+
     // "바쿠마츠 카레 (幕末カリー)" → name + name_local 로 나눈다.
     // 괄호 안이 일본어/한자면 현지 표기로 본다 (라틴 문자는 영문 표기라 그대로 둔다).
     let nameLocal = null;
@@ -257,7 +257,7 @@ for (const it of items) {
       kakaoPlaceId: null,
       naverPlaceId,
       timestampSec: ts,
-      mentionNote: null,
+      mentionNote: nameNote,
       sourceNote: `영상 더보기란에 크리에이터가 직접 표기한 상호 + ${
         naverPlaceId ? "네이버 지도 링크" : "구글 공유링크"
       } (${vid})`,
