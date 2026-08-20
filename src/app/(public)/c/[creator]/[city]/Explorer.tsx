@@ -21,7 +21,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
-import { mapChoices, type MapLink } from "@/shared/lib/map-links";
+import { mapLinks, type MapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
@@ -98,11 +98,9 @@ function youtubeUrl(videoId: string, timestampSec: number | null): string {
 }
 
 /** 열 수 있는 지도 앱 — 한국은 네이버→카카오→구글, 그 외는 구글→카카오→네이버.
- *  ID 가 없는 앱은 이름 검색으로 채운다(shared/lib/map-links.ts `mapChoices`). */
+ *  딥링크를 만들 수 있는 앱만 나온다(shared/lib/map-links.ts 머리말). */
 function mapsLinksFor(place: PublicPlace): MapLink[] {
-  return mapChoices({
-    name: place.name,
-    nameLocal: place.nameLocal,
+  return mapLinks({
     googleMapsUrl: place.googleMapsUrl,
     googlePlaceId: place.googlePlaceId,
     kakaoPlaceId: place.kakaoPlaceId,

@@ -2,7 +2,7 @@ import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
 import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
-import { mapChoices, type MapLink } from "@/shared/lib/map-links";
+import { mapLinks, type MapLink } from "@/shared/lib/map-links";
 import { coordsFromMapsUrl } from "@/shared/lib/resolve-google-place";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import {
@@ -271,9 +271,7 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
         summaryBulletsEn: p.summary_bullets_en ?? [],
         priceHintEn: p.price_hint_en,
         enSource: p.en_source,
-        mapLinks: mapChoices({
-          name: p.name,
-          nameLocal: p.name_local,
+        mapLinks: mapLinks({
           googleMapsUrl: p.google_maps_url,
           googlePlaceId: p.google_place_id,
           kakaoPlaceId: p.kakao_place_id,
@@ -526,9 +524,7 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
       lat: coords.lat,
       lng: coords.lng,
       address: p.address,
-      mapLinks: mapChoices({
-        name: p.name,
-        nameLocal: p.name_local,
+      mapLinks: mapLinks({
         googleMapsUrl: p.google_maps_url,
         googlePlaceId: p.google_place_id,
         kakaoPlaceId: p.kakao_place_id,
