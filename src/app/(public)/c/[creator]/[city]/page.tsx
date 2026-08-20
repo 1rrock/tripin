@@ -9,7 +9,7 @@ import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import type { Locale } from "@/shared/i18n/config";
-import { displayCityName, displayIntro, displaySummary } from "@/shared/i18n/display";
+import { displayCityName, displayIntro } from "@/shared/i18n/display";
 import type { EnSource } from "@/shared/i18n/display";
 import { Chip } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
@@ -364,9 +364,16 @@ export default async function CreatorCityPage({
     );
   }
 
-  /* 로케일이 여기서만 확정된다 — Explorer(클라이언트)에는 ko/en 원본을 둘 다 넘기지
-     않고 이미 고른 summary 하나만 보낸다. 그대로 넘기면 props 직렬화로 EN 페이지 HTML 에
-     한국어 원문이 새어 나간다(검증 중 실제로 걸림 — grep 이 0이어야 할 자리에 1이 나왔다). */
+  /* 목록·핀에 필요한 것만 넘긴다 — 요약·지도ID·영상 제목은 드로어가 열릴 때
+     `/api/map/place/[id]` 로 받는다(Explorer `PublicPlace` 주석). 예전에는 여기서
+     전부 넘겨서 후쿠오카 아저씨×후쿠오카 535곳이 HTML 3.2MB 였다.
+
+     ⚠️ 여기를 되돌리면 DOM 이 아니라 **RSC 페이로드**가 다시 부푼다. `.map()` 을
+     거치면 초과 속성 검사가 안 걸려서 tsc 가 잡아 주지 않는다 — 필드를 늘리기 전에
+     535를 곱해 보고, 정말 목록·핀·필터에 필요한지 따져라.
+
+     로케일 문제도 같이 사라진다 — 넘기는 값에 요약이 없으니 EN 페이지 HTML 에
+     한국어 원문이 샐 자리가 없다(예전에 실제로 걸렸던 검증 항목이다). */
   const places: PublicPlace[] = data.places.map((p) => ({
     id: p.id,
     slug: p.slug,
@@ -377,13 +384,6 @@ export default async function CreatorCityPage({
     lat: p.lat,
     lng: p.lng,
     address: p.address,
-    googlePlaceId: p.googlePlaceId,
-    googleMapsUrl: p.googleMapsUrl,
-    kakaoPlaceId: p.kakaoPlaceId,
-    naverPlaceId: p.naverPlaceId,
-    countryCode: p.countryCode,
-    summary: displaySummary(p, locale),
-    videoTitle: p.videoTitle,
     youtubeVideoId: p.youtubeVideoId,
     timestampSec: p.timestampSec,
   }));
@@ -426,8 +426,6 @@ export default async function CreatorCityPage({
       />
       <Explorer
         creatorName={data.creator.display_name}
-        creatorInitials={data.creator.initials}
-        creatorAvatar={data.creator.avatar_url}
         accentColor={data.creator.accent_color}
         cityName={cityName}
         introText={displayIntro(data, locale)}

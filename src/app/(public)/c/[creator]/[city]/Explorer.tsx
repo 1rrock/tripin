@@ -18,27 +18,46 @@
  * 왁스(선택 표시)와 액센트가 같은 층에서 싸운다.
  */
 
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
-import { mapLinks, type MapLink } from "@/shared/lib/map-links";
+import type { MapPlaceDetail } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
-import { Act, Icon } from "@/shared/ui/icons";
+import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 import type { SummaryDisplay } from "@/shared/i18n/display";
-import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { SaveButton } from "@/shared/ui/SaveButton";
 
+/** 상세가 도착하기 전 PlaceSheet 에 넘길 빈 요약 — SummaryBlock 이 알아서 아무것도 안 그린다. */
+const EMPTY_SUMMARY: SummaryDisplay = {
+  bullets: [],
+  summary: null,
+  priceHint: null,
+  isMachine: false,
+  original: null,
+};
+
 /**
- * `page.tsx` 가 이미 로케일로 `summary` 를 확정해서 넘긴다 — ko/en 원본을 그대로
- * 이 클라이언트 컴포넌트에 넘기면 props 직렬화로 EN 페이지 HTML 에 한국어 원문이
- * 새어 나간다(검증 중 실제로 걸렸다: grep 이 0이어야 할 자리에 1이 나왔다).
+ * 목록·핀이 읽는 최소 형태. **요약·지도ID·영상 제목은 여기 없다.**
+ *
+ * 예전에는 이 타입이 그것들을 다 들고 있었고, 후쿠오카 아저씨×후쿠오카(535곳)가
+ * HTML 3182KB(DOM 2163KB + RSC 814KB)가 됐다. 재보니 행마다 붙던 액션 블록이
+ * 1236KB, 요약 350KB, 영상 제목 104KB, 인라인 SVG 1621개가 608KB 다.
+ *
+ * `/map`·도시 페이지와 같은 규율을 쓴다 — 목록은 가볍게 싣고, 드로어를 열 때
+ * `/api/map/place/[id]` 로 상세만 받는다. 필드를 늘리기 전에 535를 곱해 볼 것.
+ *
+ * `timestampSec` 만 남는 이유: candidate 섹션(지도 핀이 없어 드로어로 못 여는
+ * 장소들)이 영상 링크를 직접 그린다. 확정 장소는 드로어가 받아 온다.
+ *
+ * 부수 효과로 EN 페이지에 한국어 원문이 샐 자리가 없어졌다 — 넘기는 props 에
+ * 요약이 아예 없다. 예전 주석이 경고하던 검증 항목이 구조적으로 해소됐다.
  */
 export interface PublicPlace {
   id: string;
@@ -50,14 +69,7 @@ export interface PublicPlace {
   lat: number | null;
   lng: number | null;
   address: string | null;
-  googlePlaceId: string | null;
-  googleMapsUrl: string | null;
-  kakaoPlaceId: string | null;
-  naverPlaceId: string | null;
-  /** 지도 앱 링크 순서(네이버 우선 vs 구글 우선)를 가른다 — shared/lib/map-links.ts */
-  countryCode: string | null;
-  summary: SummaryDisplay;
-  videoTitle: string | null;
+  /** 드로어 heroHint + candidate 영상 링크 */
   youtubeVideoId: string | null;
   timestampSec: number | null;
 }
@@ -71,9 +83,6 @@ export interface RelatedPiece {
 
 interface ExplorerProps {
   creatorName: string;
-  /** 핀 상세 시트의 출처 표식용 */
-  creatorInitials: string;
-  creatorAvatar: string | null;
   accentColor: string;
   cityName: string;
   introText: string | null;
@@ -84,38 +93,13 @@ interface ExplorerProps {
   otherCreators?: RelatedPiece[];
 }
 
-function formatTimestamp(sec: number): string {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = sec % 60;
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
-}
-
 /** 아웃링크 — 유튜브는 타임스탬프 포함 (&t=초). */
 function youtubeUrl(videoId: string, timestampSec: number | null): string {
   return `https://www.youtube.com/watch?v=${videoId}${timestampSec ? `&t=${timestampSec}s` : ""}`;
 }
 
-/** 열 수 있는 지도 앱 — 한국은 네이버→카카오→구글, 그 외는 구글→카카오→네이버.
- *  딥링크를 만들 수 있는 앱만 나온다(shared/lib/map-links.ts 머리말). */
-function mapsLinksFor(place: PublicPlace): MapLink[] {
-  return mapLinks({
-    googleMapsUrl: place.googleMapsUrl,
-    googlePlaceId: place.googlePlaceId,
-    kakaoPlaceId: place.kakaoPlaceId,
-    naverPlaceId: place.naverPlaceId,
-    lat: place.lat,
-    lng: place.lng,
-    countryCode: place.countryCode,
-  });
-}
-
 export function Explorer({
   creatorName,
-  creatorInitials,
-  creatorAvatar,
   accentColor,
   cityName,
   introText,
@@ -207,33 +191,58 @@ export function Explorer({
     revealRow(id);
   };
 
-  /* 시트에 넘길 모양으로 옮긴다. 이 화면은 채널이 하나라 출처도 항상 하나다 —
-     도시 페이지에서만 한 장소에 여러 채널이 붙는다 */
   const sheetIndex = confirmed.findIndex((p) => p.id === visibleActiveId);
   const sheetSource = sheetIndex >= 0 ? confirmed[sheetIndex]! : null;
+
+  /**
+   * 드로어 상세 — 목록 페이로드에 안 실은 요약·출처·지도링크를 열 때 받는다.
+   * `/map`·도시 페이지와 같은 라우트·같은 계약이라 CDN 캐시 항목을 셋이 공유한다.
+   *
+   * `?l=` 로 로케일을 URL 에 넣는 이유는 라우트 주석에 있다 — 응답이 s-maxage 로
+   * CDN 에 앉는데 proxy 가 심는 헤더는 캐시 키에 안 들어간다.
+   */
+  const detailForId = sheetOpen ? visibleActiveId : null;
+  const [detail, setDetail] = useState<MapPlaceDetail | null>(null);
+  const [settledFor, setSettledFor] = useState<string | null>(null);
+  const [detailFor, setDetailFor] = useState<string | null>(detailForId);
+  if (detailFor !== detailForId) {
+    setDetailFor(detailForId);
+    setDetail(null);
+    setSettledFor(null);
+  }
+  const detailLoading = Boolean(detailForId) && settledFor !== detailForId;
+
+  useEffect(() => {
+    if (!detailForId) return;
+    const id = detailForId;
+    let alive = true;
+    const settle = (row: MapPlaceDetail | null) => {
+      if (!alive) return;
+      setDetail(row);
+      setSettledFor(id);
+    };
+    fetch(`/api/map/place/${id}?l=${locale}`, { priority: "high" } as RequestInit)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(settle)
+      .catch(() => settle(null));
+    return () => {
+      alive = false;
+    };
+  }, [detailForId, locale]);
+
+  /* 이 화면은 채널이 하나다 — 상세가 모든 채널의 출처를 들고 와도 이 조각의
+     채널 것만 남긴다. 도시 페이지에서만 한 장소에 여러 채널이 붙는다. */
   const sheetPlace: SheetPlace | null = sheetSource
     ? {
         id: sheetSource.id,
         name: displayPlaceName(sheetSource, locale),
         nameLocal: sheetSource.nameLocal,
         typeLabel: m.placeTypes[sheetSource.placeType],
+        /* 주소는 목록이 이미 갖고 있다 — 상세가 오기 전에도 빈칸이 안 남는다 */
         address: sheetSource.address,
-        summary: sheetSource.summary,
-        mapLinks: mapsLinksFor(sheetSource),
-        sources: sheetSource.youtubeVideoId
-          ? [
-              {
-                creatorSlug,
-                creatorName,
-                initials: creatorInitials,
-                accentColor,
-                avatarUrl: creatorAvatar,
-                youtubeId: sheetSource.youtubeVideoId,
-                videoTitle: sheetSource.videoTitle ?? m.piece.sourceVideoFallback,
-                timestampSec: sheetSource.timestampSec,
-              },
-            ]
-          : [],
+        summary: detail?.summary ?? EMPTY_SUMMARY,
+        mapLinks: detail?.mapLinks ?? [],
+        sources: (detail?.sources ?? []).filter((src) => src.creatorSlug === creatorSlug),
       }
     : null;
 
@@ -254,6 +263,12 @@ export function Explorer({
             <PlaceSheet
               index={sheetIndex + 1}
               place={sheetPlace}
+              loading={detailLoading}
+              heroHint={
+                sheetSource?.youtubeVideoId
+                  ? { creatorSlug, youtubeId: sheetSource.youtubeVideoId }
+                  : null
+              }
               onClose={() => setSheetOpen(false)}
             />
           ) : null}
@@ -344,7 +359,6 @@ export function Explorer({
               <ol>
                 {confirmed.map((place, index) => {
                   const active = place.id === visibleActiveId;
-                  const mapHref = mapsLinksFor(place)[0]?.url ?? null;
                   const placeName = displayPlaceName(place, locale);
                   return (
                     <li
@@ -407,42 +421,18 @@ export function Explorer({
                           </span>
                         </PlaceRowLink>
 
+                        {/* 유튜브·지도 링크와 요약은 여기 없다 — 드로어와
+                            `/place/[slug]` 가 맡는다. 행에 그리던 시절 이 목록
+                            하나가 3.2MB 였다(위 PublicPlace 주석). 아웃링크를
+                            가리는 게 아니라 한 단계 뒤로 옮긴 것이고, /map·도시
+                            목록이 이미 같은 문법이다.
+
+                            하트만 남긴다. 아웃링크와 달리 이건 한 채널을 따라가며
+                            여러 곳을 담는 흐름 자체라, 드로어로 밀면 열고 닫기가
+                            매 장소마다 끼어든다(ROADMAP 1단계). */}
                         <div className="flex flex-wrap items-center gap-2 pl-10">
-                          {place.youtubeVideoId ? (
-                            <Act
-                              icon="play"
-                              href={youtubeUrl(place.youtubeVideoId, place.timestampSec)}
-                              title={place.videoTitle ?? m.piece.sourceVideoFallback}
-                            >
-                              {place.timestampSec !== null
-                                ? t(m.common.watchAt, { ts: formatTimestamp(place.timestampSec) })
-                                : m.common.watchVideo}
-                            </Act>
-                          ) : null}
-                          {mapHref ? (
-                            <Act icon="out" href={mapHref}>
-                              {m.common.openMap}
-                            </Act>
-                          ) : null}
                           <SaveButton placeId={place.id} placeName={placeName} />
                         </div>
-
-                        <SummaryBlock className="pl-10" display={place.summary} />
-
-                        {/* 출처 영상 제목 — 원문 그대로 노출 (YouTube API §III.E.3).
-                            title= 툴팁만으로는 터치 기기에서 보이지 않는다 */}
-                        {place.videoTitle ? (
-                          <p
-                            className="pl-10"
-                            style={{
-                              fontSize: "var(--t-meta)",
-                              color: "var(--dim)",
-                              lineHeight: 1.5,
-                            }}
-                          >
-                            {place.videoTitle}
-                          </p>
-                        ) : null}
                       </div>
                     </li>
                   );
