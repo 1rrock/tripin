@@ -3,6 +3,8 @@ import { fetchAll } from "@/shared/api/chunked-in";
 import { supabase } from "@/shared/api/supabase";
 import { publicEnv } from "@/shared/config/env";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import { loadPlaceSitemapRows } from "@/shared/api/places";
+import { placePath } from "@/shared/lib/place-path";
 import { sitemapLanguages } from "@/shared/seo/page-meta";
 import { localePath } from "@/shared/i18n/paths";
 
@@ -171,6 +173,25 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
         }),
       );
     }
+  }
+
+  /* 장소 낱개 — 이 사이트맵의 대부분을 차지한다(확정·공개 1692곳, 전체의 87%).
+     게이트를 따로 걸지 않는 이유: `loadPlaceSitemapRows` 가 읽는 `loadHomeMap` 이
+     이미 공개 도시(loadCityIndex)만 통과시키고, anon 클라이언트라 RLS 가
+     is_published 를 걸러 준다. 페이지(`/place/[slug]`)가 200 인지도 **같은 인덱스**로
+     판정되므로, "사이트맵에는 있는데 열면 404" 가 구조적으로 생기지 않는다.
+
+     `placePath` 를 반드시 거친다 — 한글 slug 를 그대로 넣으면 `<loc>` 만 인코딩이
+     빠져 canonical 과 표기가 갈린다(shared/lib/place-path.ts 주석). */
+  const placeRows = await loadPlaceSitemapRows();
+  for (const row of placeRows) {
+    entries.push(
+      entry(base, placePath(row.slug), {
+        lastModified: now,
+        changeFrequency: "monthly",
+        priority: 0.7,
+      }),
+    );
   }
 
   return [...home, ...entries];
