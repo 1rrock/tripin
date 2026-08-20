@@ -12,7 +12,7 @@ import { Act, Icon } from "@/shared/ui/icons";
 import { SubscribeButton } from "@/shared/ui/SaveButton";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
-import { displayCityName, displaySummary } from "@/shared/i18n/display";
+import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 
@@ -81,27 +81,22 @@ export default async function CreatorHubPage({
   ]);
   if (!data) notFound();
 
-  const { creator, places: rawPlaces, cities } = data;
+  const { creator, cities } = data;
   const videos = videoData?.videos ?? [];
   const channelUrl = creator.youtube_handle
     ? `https://www.youtube.com/${creator.youtube_handle}`
     : `https://www.youtube.com/channel/${creator.youtube_channel_id}`;
 
-  const places: CreatorPlace[] = rawPlaces.map((p) => ({
+  const places: CreatorPlace[] = data.places.map((p) => ({
     id: p.id,
     slug: p.slug,
     name: p.name,
     nameLocal: p.nameLocal,
     placeType: p.placeType,
-    lat: p.lat,
-    lng: p.lng,
-    address: p.address,
-    summary: displaySummary(p, locale),
-    mapUrl: p.mapUrl,
     citySlug: p.citySlug,
     cityName: p.cityName,
     cityNameEn: p.cityNameEn,
-    sources: p.sources,
+    firstVideoId: p.sources[0]?.youtubeId ?? null,
   }));
 
   return (

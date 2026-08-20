@@ -29,27 +29,30 @@ import {
   displayPlaceName,
   displayPlaceSecondary,
 } from "@/shared/i18n/display";
-import type { SummaryDisplay } from "@/shared/i18n/display";
 
+/**
+ * 목록 행이 읽는 최소 형태.
+ *
+ * ⚠️ 예전에는 `summary`(요약 불릿)·`mapUrl`·`address`·`lat`·`lng` 를 같이 넘겼는데
+ *    **이 화면은 그중 아무것도 그리지 않는다.** 행은 이름·도시·종류 한 줄이 전부다.
+ *    그래서 후쿠오카 아저씨(647곳) 허브의 RSC 페이로드 801KB 중 상당수가 아무도
+ *    읽지 않는 값이었다. 타입에만 있고 화면에 없는 필드는 순수한 낭비다 —
+ *    tsc 는 이걸 안 잡아 준다(넘기는 쪽이 더 많은 필드를 줘도 `.map()` 을 거치면
+ *    초과 속성 검사가 안 걸린다).
+ *
+ *    필드를 늘리기 전에 647을 곱해 보고, **실제로 렌더하는지** 확인할 것.
+ */
 export interface CreatorPlace {
   id: string;
   slug: string;
   name: string;
   nameLocal: string | null;
   placeType: PlaceType;
-  lat: number;
-  lng: number;
-  address: string | null;
-  summary: SummaryDisplay;
-  mapUrl: string | null;
   citySlug: string;
   cityName: string;
   cityNameEn: string | null;
-  sources: {
-    youtubeId: string;
-    videoTitle: string;
-    timestampSec: number | null;
-  }[];
+  /** 행 목적지 계산용 — 첫 출처 영상. 예전엔 sources[] 전체를 넘기고 [0]만 썼다. */
+  firstVideoId: string | null;
 }
 
 /** 목록 행 목적지 — 첫 출처 영상. 없으면 도시 조각으로 물러난다. */
@@ -58,8 +61,7 @@ function placeHref(
   place: CreatorPlace,
   href: (path: string) => string,
 ): string {
-  const first = place.sources[0];
-  if (first) return href(`/c/${creatorSlug}/v/${first.youtubeId}`);
+  if (place.firstVideoId) return href(`/c/${creatorSlug}/v/${place.firstVideoId}`);
   return href(`/c/${creatorSlug}/${place.citySlug}`);
 }
 
