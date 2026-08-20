@@ -326,6 +326,17 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
  * `loadMapPlace`(드로어) 두 캐시의 재료일 뿐이다. 여기 필드를 늘리면 그 두
  * 캐시 항목이 같이 무거워지고, 드로어 첫 열기가 그만큼 늦어진다.
  */
+/**
+ * ⚠️ **이 타입의 캐시 항목(`cities:home-map`)이 2MB 상한 바로 아래에 있다.**
+ *    실측 2.03MB. 필드를 하나 늘리면 1732를 곱한 만큼 커지는데, 2MB
+ *    (`unstable_cache` 한도)를 넘는 순간 Next 가 **조용히 캐시를 포기한다** —
+ *    에러가 아니라 빌드 로그에 "items over 2MB can not be cached" 한 줄만 남고,
+ *    그 뒤로는 요청마다 `loadGraph` 풀스캔이 그대로 나간다(실측 800ms).
+ *
+ *    실제로 여기에 `createdAt`·`updatedAt` 를 넣었다가 2.11MB 가 되어 캐시가
+ *    꺼진 적이 있다. 타임스탬프는 `places.ts` 의 별도 경량 로더로 뺐다.
+ *    필드를 늘려야 하면 먼저 다른 필드를 빼라.
+ */
 export interface HomeMapPlace {
   id: string;
   /** `/place/[slug]` 의 주소. `MapCanvasPlace` 는 이걸 안 싣는다 — 캔버스가 안 읽는다. */

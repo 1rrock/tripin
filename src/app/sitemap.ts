@@ -187,7 +187,9 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   for (const row of placeRows) {
     entries.push(
       entry(base, placePath(row.slug), {
-        lastModified: now,
+        /* 실제 수정 시각을 싣는다 — `now` 를 쓰면 가져갈 때마다 1692개가 전부
+           방금 바뀐 것으로 보이고, 그건 크롤 예산만 태운다(places.ts 주석). */
+        lastModified: new Date(row.updatedAt),
         changeFrequency: "monthly",
         priority: 0.7,
       }),

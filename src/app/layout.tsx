@@ -4,7 +4,7 @@ import localFont from "next/font/local";
 import { publicEnv } from "@/shared/config/env";
 import { getLocale } from "@/shared/i18n/locale";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { siteOrigin } from "@/shared/seo/page-meta";
+import { siteOrigin, RSS_ALTERNATE } from "@/shared/seo/page-meta";
 import { JsonLd, organizationNode, websiteNode } from "@/shared/seo/json-ld";
 import { SiteAnalytics } from "./SiteAnalytics";
 import "./globals.css";
@@ -75,6 +75,14 @@ export async function generateMetadata(): Promise<Metadata> {
     },
     twitter: {
       card: "summary_large_image",
+    },
+    /* RSS 자동 발견 — 브라우저·리더·크롤러가 <head> 에서 집어 간다.
+       네이버 서치어드바이저에는 콘솔에서 따로 등록하지만, 링크를 걸어 두면
+       등록 전에도 발견 경로가 하나 생긴다. */
+    alternates: {
+      types: {
+        ...RSS_ALTERNATE,
+      },
     },
     robots: {
       googleBot: {
