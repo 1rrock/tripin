@@ -126,6 +126,19 @@ export const ko = {
     otherCities: "다른 도시 보기",
     openMap: "지도 열기",
   },
+  placeDetail: {
+    /* 이 화면이 받는 질의는 상호명 하나다(PRODUCT.md 원칙 2). h1 은 이름만 세우고
+       도시·종류는 그 아래 줄로 내린다 — 제목에 "{도시} 맛집"을 겹쳐 쓰면 도시
+       페이지와 같은 말로 싸우고, 둘 다 밀린다. */
+    breadcrumbAria: "현재 위치",
+    typeInCity: "{city}의 {type}",
+    address: "주소",
+    openMapHeading: "지도 앱으로 열기",
+    sourcesHeading: "이 가게가 나온 영상",
+    nearbyHeading: "{city}의 다른 곳",
+    nearbyMore: "{city} 전체 지도 보기",
+    notFound: "찾을 수 없는 장소",
+  },
   channels: {
     /** `<title>`·메타 전용 — 화면 헤드라인은 heading 이다 */
     title: "채널",
@@ -530,6 +543,16 @@ export type Messages = {
     channelsInCity: string;
     otherCities: string;
     openMap: string;
+  };
+  placeDetail: {
+    breadcrumbAria: string;
+    typeInCity: string;
+    address: string;
+    openMapHeading: string;
+    sourcesHeading: string;
+    nearbyHeading: string;
+    nearbyMore: string;
+    notFound: string;
   };
   channels: {
     title: string;

@@ -328,6 +328,8 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
  */
 export interface HomeMapPlace {
   id: string;
+  /** `/place/[slug]` 의 주소. `MapCanvasPlace` 는 이걸 안 싣는다 — 캔버스가 안 읽는다. */
+  slug: string;
   name: string;
   nameLocal: string | null;
   placeType: PlaceType;
@@ -518,6 +520,7 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
     );
     out.push({
       id: p.id,
+      slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
       placeType: p.place_type,

@@ -119,6 +119,16 @@ export const en: Messages = {
     otherCities: "Other cities",
     openMap: "Open map",
   },
+  placeDetail: {
+    breadcrumbAria: "Breadcrumb",
+    typeInCity: "{type} in {city}",
+    address: "Address",
+    openMapHeading: "Open in a map app",
+    sourcesHeading: "Videos featuring this place",
+    nearbyHeading: "More in {city}",
+    nearbyMore: "See the full {city} map",
+    notFound: "Place not found",
+  },
   channels: {
     title: "Channels",
     heading: "Who to follow?",

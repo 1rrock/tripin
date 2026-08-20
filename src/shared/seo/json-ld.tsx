@@ -6,8 +6,8 @@
  *   · VideoObject 조회수 — YouTube §III.E.2
  *   · SearchAction — 검색이 클라이언트 전용이라 크롤 가능한 결과 URL 이 없다
  *
- * 쓰는 것: WebSite · Organization · BreadcrumbList · ItemList(Place).
- * 핵심 랜딩은 `/c/[creator]/[city]` 의 장소 목록이다.
+ * 쓰는 것: WebSite · Organization · BreadcrumbList · ItemList(Place) · Place.
+ * 목록 랜딩은 `/c/[creator]/[city]`, 낱개 랜딩은 `/place/[slug]` 다.
  */
 
 type JsonLdNode = Record<string, unknown>;
@@ -93,6 +93,73 @@ export function placeList(name: string, places: SchemaPlace[]): JsonLdNode {
       };
     }),
   };
+}
+
+/**
+ * 장소 종류 → schema.org 타입.
+ *
+ * `Place` 로 뭉뚱그리지 않는 이유는 구글이 종류별로 다른 결과 묶음에 넣기 때문이다.
+ * 다만 `Restaurant` 계열의 리치 결과는 메뉴·영업시간까지 요구하는데 우리는 그걸
+ * 갖고 있지 않다 — 타입만 정확히 붙이고 없는 속성을 지어내지 않는다.
+ * (평점·리뷰는 `LEGAL`·`PRODUCT` 상 아예 금지다. 위 파일 주석 참조.)
+ */
+const SCHEMA_TYPE: Record<string, string> = {
+  restaurant: "Restaurant",
+  cafe: "CafeOrCoffeeShop",
+  bar: "BarOrPub",
+  hotel: "LodgingBusiness",
+  shop: "Store",
+  attraction: "TouristAttraction",
+  viewpoint: "TouristAttraction",
+};
+
+/**
+ * 낱개 장소 — `/place/[slug]` 의 주인공 노드.
+ *
+ * `sameAs` 에 지도 앱 딥링크를 넣는다. 같은 실체를 가리키는 외부 주소라 엔티티
+ * 결합에 그대로 쓰이는 자리이고, 우리가 가진 가장 강한 신원 증거다.
+ */
+export function placeNode({
+  site,
+  url,
+  name,
+  alternateName,
+  placeType,
+  address,
+  lat,
+  lng,
+  description,
+  sameAs,
+  image,
+}: {
+  site: string;
+  url: string;
+  name: string;
+  alternateName?: string | null;
+  placeType: string;
+  address?: string | null;
+  lat?: number | null;
+  lng?: number | null;
+  description?: string | null;
+  sameAs?: string[];
+  image?: string | null;
+}): JsonLdNode {
+  const node: JsonLdNode = {
+    "@type": SCHEMA_TYPE[placeType] ?? "Place",
+    "@id": `${url}#place`,
+    name,
+    url,
+  };
+  if (alternateName?.trim()) node.alternateName = alternateName.trim();
+  if (address) node.address = address;
+  if (description) node.description = description;
+  if (image) node.image = image;
+  if (lat != null && lng != null) {
+    node.geo = { "@type": "GeoCoordinates", latitude: lat, longitude: lng };
+  }
+  if (sameAs && sameAs.length > 0) node.sameAs = sameAs;
+  node.isPartOf = { "@id": `${site}/#website` };
+  return node;
 }
 
 export function linkList(
