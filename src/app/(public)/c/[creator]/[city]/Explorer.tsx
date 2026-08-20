@@ -24,6 +24,7 @@ import type { MapStatus, PlaceType } from "@/shared/api/database.types";
 import { mapLinks, type MapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
+import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
@@ -363,10 +364,10 @@ export function Explorer({
                         }}
                       >
                         {/* 헤더 전체가 선택 트리거 — 지도 핀과 같은 selectPlace 하나로 통일 */}
-                        <button
-                          type="button"
-                          onClick={() => selectPlace(place.id)}
-                          aria-pressed={active}
+                        <PlaceRowLink
+                          slug={place.slug}
+                          onOpen={() => selectPlace(place.id)}
+                          active={active}
                           className="flex w-full cursor-pointer items-start gap-3 text-left"
                         >
                           <FrameNo n={index + 1} active={active} />
@@ -404,7 +405,7 @@ export function Explorer({
                               </span>
                             ) : null}
                           </span>
-                        </button>
+                        </PlaceRowLink>
 
                         <div className="flex flex-wrap items-center gap-2 pl-10">
                           {place.youtubeVideoId ? (

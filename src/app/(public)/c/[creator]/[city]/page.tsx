@@ -15,6 +15,7 @@ import { Chip } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
+import { placePath } from "@/shared/lib/place-path";
 import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
 
 /**
@@ -414,7 +415,11 @@ export default async function CreatorCityPage({
               address: p.address,
               lat: p.lat,
               lng: p.lng,
-              url: `${absoluteUrl(bare, locale)}#${p.slug}`,
+              /* 낱개 장소 페이지가 생기기 전에는 이 목록의 항목이 `#슬러그` 앵커를
+                 가리켰다. 이제 각 장소가 실재하는 문서라 그쪽을 가리킨다 —
+                 ItemList 가 프래그먼트가 아니라 URL 을 주면 검색엔진이 항목을
+                 독립 문서로 따라간다. */
+              url: absoluteUrl(placePath(p.slug), locale),
             })),
           ),
         ]}

@@ -24,6 +24,7 @@ import type { CityCreator, PlaceSource } from "@/shared/api/cities";
 import type { MapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
+import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -325,10 +326,10 @@ export function CityExplorer({
                         borderRadius: active ? "var(--r-control)" : undefined,
                       }}
                     >
-                      <button
-                        type="button"
-                        onClick={() => onRowClick(place.id)}
-                        aria-pressed={active}
+                      <PlaceRowLink
+                        slug={place.slug}
+                        onOpen={() => onRowClick(place.id)}
+                        active={active}
                         className="flex w-full cursor-pointer items-start gap-3 text-left"
                       >
                         <FrameNo n={index + 1} active={active} />
@@ -366,7 +367,7 @@ export function CityExplorer({
                             </span>
                           ) : null}
                         </span>
-                      </button>
+                      </PlaceRowLink>
 
                       <SummaryBlock className="pl-10" display={place.summary} showPriceHint={false} />
 

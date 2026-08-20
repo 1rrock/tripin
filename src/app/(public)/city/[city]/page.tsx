@@ -9,6 +9,7 @@ import { displayCityName, displaySummary } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
+import { placePath } from "@/shared/lib/place-path";
 import { Icon } from "@/shared/ui/icons";
 import { CityExplorer, type CityPlace } from "./CityExplorer";
 
@@ -129,7 +130,9 @@ export default async function CityPage({
               address: p.address,
               lat: p.lat,
               lng: p.lng,
-              url: `${absoluteUrl(`/city/${data.slug}`, locale)}#${p.slug}`,
+              /* 낱개 장소 페이지가 생기기 전에는 `#슬러그` 앵커였다. 이제 각 장소가
+                 실재하는 문서라 그쪽을 가리킨다 — 검색엔진이 항목을 독립 문서로 따라간다. */
+              url: absoluteUrl(placePath(p.slug), locale),
             })),
           ),
         ]}
