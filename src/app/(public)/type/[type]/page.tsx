@@ -8,8 +8,9 @@ import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shar
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
+import { placePath } from "@/shared/lib/place-path";
 import { Chip, Frame, Index, Rule } from "@/shared/ui/frame"
-import { Act, Icon } from "@/shared/ui/icons";
+import { Icon } from "@/shared/ui/icons";
 import { Thumb } from "@/shared/ui/Thumb";
 
 /* `export const revalidate` 를 두지 않는다 — 이 트리는 레이아웃이 headers() 를 읽어
@@ -21,17 +22,6 @@ const VISIBLE_PER_CITY = 12;
 
 interface Params {
   type: string;
-}
-
-function youtubeUrl(videoId: string, sec: number | null): string {
-  return `https://www.youtube.com/watch?v=${videoId}${sec !== null ? `&t=${Math.floor(sec)}s` : ""}`;
-}
-
-function fmt(sec: number | null): string {
-  if (sec === null) return "";
-  const m = Math.floor(sec / 60);
-  const s = Math.floor(sec % 60);
-  return `${m}:${String(s).padStart(2, "0")}`;
 }
 
 export async function generateMetadata({
@@ -152,7 +142,15 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                   return (
                     <li key={place.id} className="develop" style={{ "--i": i } as CSSProperties}>
                       <Rule />
-                      <div className="flex items-start gap-3.5 py-(--stack)">
+                      {/* 행 전체가 장소 페이지 링크다. 예전에는 여기에 출처·지도
+                          링크가 장소마다 붙어 /type/restaurant 이 3030KB 였고,
+                          정작 `/place` 링크는 하나도 없어서 크롤러가 이 페이지에서
+                          장소로 갈 길이 없었다. 도시·조각 목록과 같은 규율로 맞춘다 —
+                          아웃링크는 장소 페이지가 맡는다. */}
+                      <Link
+                        href={localePath(placePath(place.slug), locale)}
+                        className="flex items-start gap-3.5 py-(--stack)"
+                      >
                         {cut ? (
                           /* 첫 도시의 첫 장소 컷만 eager — 이 페이지의 LCP 후보 */
                           <span className="w-[104px] shrink-0 sm:w-[132px]">
@@ -166,12 +164,12 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                           </span>
                         ) : null}
 
-                        <div className="min-w-0 flex-1">
-                          <div className="flex items-baseline gap-2">
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-baseline gap-2">
                             <Index tone="wax" className="tnum shrink-0">
                               {String(i + 1).padStart(2, "0")}
                             </Index>
-                            <p
+                            <span
                               className="min-w-0 font-bold"
                               style={{
                                 fontSize: "var(--t-title)",
@@ -180,55 +178,26 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
                               }}
                             >
                               {displayPlaceName(place, locale)}
-                            </p>
-                          </div>
+                            </span>
+                          </span>
                           {displayPlaceSecondary(place, locale) ? (
-                            <p
-                              className="mt-1"
+                            <span
+                              className="mt-1 block"
                               style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                             >
                               {displayPlaceSecondary(place, locale)}
-                            </p>
+                            </span>
                           ) : null}
                           {place.address ? (
-                            <p
-                              className="mt-0.5"
+                            <span
+                              className="mt-0.5 block"
                               style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
                             >
                               {place.address}
-                            </p>
+                            </span>
                           ) : null}
-
-                          <div className="mt-2 flex flex-wrap items-center gap-2">
-                            {place.sources.map((s, si) => (
-                              <Act
-                                key={`${s.youtubeId}-${si}`}
-                                icon="play"
-                                href={youtubeUrl(s.youtubeId, s.timestampSec)}
-                                title={s.videoTitle}
-                              >
-                                {s.creatorName}
-                                {s.timestampSec !== null ? ` ${fmt(s.timestampSec)}` : ""}
-                              </Act>
-                            ))}
-                            {place.mapUrl ? (
-                              <Act icon="out" href={place.mapUrl}>
-                                {m.typeDetail.openMap}
-                              </Act>
-                            ) : null}
-                            {cut ? (
-                              <Chip
-                                href={localePath(
-                                  `/c/${cut.creatorSlug}/${place.citySlug}`,
-                                  locale,
-                                )}
-                              >
-                                {m.typeDetail.channelMap}
-                              </Chip>
-                            ) : null}
-                          </div>
-                        </div>
-                      </div>
+                        </span>
+                      </Link>
                     </li>
                   );
                 })}
