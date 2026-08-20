@@ -28,6 +28,16 @@ import { requireEnv } from "./_lib/env.mjs";
 
 const args = process.argv.slice(2);
 const APPLY = args.includes("--apply");
+/** 이름 비교로는 못 잇지만 사람이 같은 가게로 확인한 그룹 — 여기 적힌 이름이 그룹에
+ *  하나라도 있으면 합친다. 한글·영문·일본어 표기가 갈렸거나 오타인 것들이다. */
+const CONFIRMED_SAME = new Set([
+  "셰프 앤 웍", "핸즈 소품샵 + 뉴타운 구경", "별점 4.7 아사도", "라라포트 후쿠오카", "마막",
+  "Maná 75", "하몽 전문점", "퀸 빅토리아 빌딩", "싱글오", "와규 핑후", "후쿠오카현 호국신사",
+  "코쿠라성", "餃子のたっちゃん 교자의 탓짱", "라쿠쨩 본점", "텐푸라 히라오 본점",
+  "돈카츠 와카바 하카타역점", "유키하나", "스시스이교", "焼酎酒場ANSIC",
+  "야키니쿠 라이크 텐진니시도리", "わか葉/ 와카바", "텐진왓파테이쇼쿠도", "天安/ 텐안",
+  "하타카노미바 고에몬", "효탄스시 회전초밥",
+]);
 
 const env = requireEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]);
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;
@@ -111,6 +121,7 @@ for (const [pid, rows] of Object.entries(groups)) {
   let alike = true;
   for (let i = 0; i < rows.length && alike; i++)
     for (let j = i + 1; j < rows.length && alike; j++) if (!sameish(rows[i].name, rows[j].name)) alike = false;
+  if (!alike && rows.some((r) => CONFIRMED_SAME.has(r.name))) alike = true;
   (alike ? mergeable : skipped).push([pid, rows]);
 }
 
