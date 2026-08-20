@@ -2,7 +2,7 @@ import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
 import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
-import { primaryMapLink } from "@/shared/lib/map-links";
+import { mapChoices, type MapLink } from "@/shared/lib/map-links";
 import { coordsFromMapsUrl } from "@/shared/lib/resolve-google-place";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import {
@@ -58,7 +58,8 @@ export interface CityPlaceRaw {
   summaryBulletsEn: string[];
   priceHintEn: string | null;
   enSource: EnSource;
-  mapUrl: string | null;
+  /** 열 수 있는 지도 앱 전부 — 첫 번째가 그 나라의 기본(shared/lib/map-links.ts) */
+  mapLinks: MapLink[];
   /** 이 장소를 다녀간 채널·영상. 여러 채널이 같은 곳을 갔을 수 있고, 그게 이 페이지의 존재 이유다. */
   sources: PlaceSource[];
 }
@@ -270,16 +271,17 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
         summaryBulletsEn: p.summary_bullets_en ?? [],
         priceHintEn: p.price_hint_en,
         enSource: p.en_source,
-        mapUrl:
-          primaryMapLink({
-            googleMapsUrl: p.google_maps_url,
-            googlePlaceId: p.google_place_id,
-            kakaoPlaceId: p.kakao_place_id,
-            naverPlaceId: p.naver_place_id,
-            lat: p.lat,
-            lng: p.lng,
-            countryCode: p.country_code,
-          })?.url ?? null,
+        mapLinks: mapChoices({
+          name: p.name,
+          nameLocal: p.name_local,
+          googleMapsUrl: p.google_maps_url,
+          googlePlaceId: p.google_place_id,
+          kakaoPlaceId: p.kakao_place_id,
+          naverPlaceId: p.naver_place_id,
+          lat: p.lat,
+          lng: p.lng,
+          countryCode: p.country_code,
+        }),
         // 같은 장소를 여러 영상이 가리키면 이른 시각이 먼저 — 목록 순서가 매번 흔들리지 않게
         sources: sources.sort((a, b) => (a.timestampSec ?? 0) - (b.timestampSec ?? 0)),
       } satisfies CityPlaceRaw;
@@ -334,7 +336,7 @@ export interface HomeMapPlace {
   lat: number;
   lng: number;
   address: string | null;
-  mapUrl: string | null;
+  mapLinks: MapLink[];
   citySlug: string;
   cityName: string;
   cityNameEn: string | null;
@@ -421,7 +423,7 @@ export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
 export type MapPlaceDetail = {
   address: string | null;
   summary: SummaryDisplay;
-  mapUrl: string | null;
+  mapLinks: MapLink[];
   sources: PlaceSource[];
 };
 
@@ -447,7 +449,7 @@ const loadMapDetailIndex = cachePublic(async function loadMapDetailIndex(
     out[p.id] = {
       address: p.address,
       summary: p.summary,
-      mapUrl: p.mapUrl,
+      mapLinks: p.mapLinks,
       sources: p.sources,
     };
   }
@@ -524,16 +526,17 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
       lat: coords.lat,
       lng: coords.lng,
       address: p.address,
-      mapUrl:
-        primaryMapLink({
-          googleMapsUrl: p.google_maps_url,
-          googlePlaceId: p.google_place_id,
-          kakaoPlaceId: p.kakao_place_id,
-          naverPlaceId: p.naver_place_id,
-          lat: coords.lat,
-          lng: coords.lng,
-          countryCode: p.country_code,
-        })?.url ?? null,
+      mapLinks: mapChoices({
+        name: p.name,
+        nameLocal: p.name_local,
+        googleMapsUrl: p.google_maps_url,
+        googlePlaceId: p.google_place_id,
+        kakaoPlaceId: p.kakao_place_id,
+        naverPlaceId: p.naver_place_id,
+        lat: coords.lat,
+        lng: coords.lng,
+        countryCode: p.country_code,
+      }),
       citySlug: city.slug,
       cityName: city.name,
       cityNameEn: city.name_en,

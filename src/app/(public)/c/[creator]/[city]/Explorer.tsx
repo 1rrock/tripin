@@ -21,7 +21,7 @@
 import { useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
-import { primaryMapLink } from "@/shared/lib/map-links";
+import { mapChoices, type MapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
@@ -97,19 +97,20 @@ function youtubeUrl(videoId: string, timestampSec: number | null): string {
   return `https://www.youtube.com/watch?v=${videoId}${timestampSec ? `&t=${timestampSec}s` : ""}`;
 }
 
-/** 지도 앱 열기 — 한국은 네이버→카카오→구글, 그 외는 구글→카카오→네이버, 없으면 좌표 폴백. */
-function mapsUrl(place: PublicPlace): string | null {
-  return (
-    primaryMapLink({
-      googleMapsUrl: place.googleMapsUrl,
-      googlePlaceId: place.googlePlaceId,
-      kakaoPlaceId: place.kakaoPlaceId,
-      naverPlaceId: place.naverPlaceId,
-      lat: place.lat,
-      lng: place.lng,
-      countryCode: place.countryCode,
-    })?.url ?? null
-  );
+/** 열 수 있는 지도 앱 — 한국은 네이버→카카오→구글, 그 외는 구글→카카오→네이버.
+ *  ID 가 없는 앱은 이름 검색으로 채운다(shared/lib/map-links.ts `mapChoices`). */
+function mapsLinksFor(place: PublicPlace): MapLink[] {
+  return mapChoices({
+    name: place.name,
+    nameLocal: place.nameLocal,
+    googleMapsUrl: place.googleMapsUrl,
+    googlePlaceId: place.googlePlaceId,
+    kakaoPlaceId: place.kakaoPlaceId,
+    naverPlaceId: place.naverPlaceId,
+    lat: place.lat,
+    lng: place.lng,
+    countryCode: place.countryCode,
+  });
 }
 
 export function Explorer({
@@ -219,7 +220,7 @@ export function Explorer({
         typeLabel: m.placeTypes[sheetSource.placeType],
         address: sheetSource.address,
         summary: sheetSource.summary,
-        mapUrl: mapsUrl(sheetSource),
+        mapLinks: mapsLinksFor(sheetSource),
         sources: sheetSource.youtubeVideoId
           ? [
               {
@@ -344,7 +345,7 @@ export function Explorer({
               <ol>
                 {confirmed.map((place, index) => {
                   const active = place.id === visibleActiveId;
-                  const mapHref = mapsUrl(place);
+                  const mapHref = mapsLinksFor(place)[0]?.url ?? null;
                   const placeName = displayPlaceName(place, locale);
                   return (
                     <li

@@ -186,6 +186,9 @@ export const en: Messages = {
     opensNewTab: "Opens in a new tab",
     watchVideo: "Watch",
     watchAt: "Watch {ts}",
+    watchOnYoutube: "Watch on YouTube",
+    watchOnYoutubeAt: "YouTube from {ts}",
+    videoDetail: "Video details",
     home: "Home",
     about: "About",
     policy: "Content policy",
@@ -356,6 +359,11 @@ export const en: Messages = {
     backToMap: "Back to map",
     sheetHandle: "Resize place list",
     openInMapApp: "Open in maps app",
+    mapApps: {
+      google: "Google Maps",
+      naver: "Naver Map",
+      kakao: "KakaoMap",
+    },
   },
   notice: {
     title: "Notice",

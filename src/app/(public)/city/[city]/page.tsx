@@ -104,7 +104,7 @@ export default async function CityPage({
     lng: p.lng,
     address: p.address,
     summary: displaySummary(p, locale),
-    mapUrl: p.mapUrl,
+    mapLinks: p.mapLinks,
     sources: p.sources,
   }));
 

@@ -201,6 +201,11 @@ export const ko = {
     opensNewTab: "새 탭에서 열림",
     watchVideo: "영상 보기",
     watchAt: "영상 {ts}",
+    /* 상세 드로어의 두 갈래 — 유튜브로 바로 나갈지, 타임라인이 있는 우리 영상 화면으로 갈지.
+       예전엔 영상 화면 링크 하나뿐이라 "그냥 보고 싶다"가 두 번 눌러야 하는 일이 됐다. */
+    watchOnYoutube: "유튜브 보기",
+    watchOnYoutubeAt: "유튜브 {ts}부터",
+    videoDetail: "영상 상세보기",
     home: "홈",
     about: "소개",
     policy: "콘텐츠 정책",
@@ -381,6 +386,12 @@ export const ko = {
     backToMap: "지도로 돌아가기",
     sheetHandle: "목록 높이 조절",
     openInMapApp: "지도 앱에서 열기",
+    /** 지도 앱 이름 — 상세 드로어에서 어느 앱으로 열지 고르게 한다 */
+    mapApps: {
+      google: "구글 지도",
+      naver: "네이버 지도",
+      kakao: "카카오맵",
+    },
   },
   notice: {
     title: "고지",
@@ -587,6 +598,9 @@ export type Messages = {
     opensNewTab: string;
     watchVideo: string;
     watchAt: string;
+    watchOnYoutube: string;
+    watchOnYoutubeAt: string;
+    videoDetail: string;
     home: string;
     about: string;
     policy: string;
@@ -749,6 +763,11 @@ export type Messages = {
     backToMap: string;
     sheetHandle: string;
     openInMapApp: string;
+    mapApps: {
+      google: string;
+      naver: string;
+      kakao: string;
+    };
   };
   notice: {
     title: string;

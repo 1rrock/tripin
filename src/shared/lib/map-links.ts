@@ -79,3 +79,71 @@ export function mapLinks(place: MapLinkInput): MapLink[] {
 export function primaryMapLink(place: MapLinkInput): MapLink | null {
   return mapLinks(place)[0] ?? null;
 }
+
+export interface MapChoiceInput extends MapLinkInput {
+  /** 검색 폴백에 쓸 이름 */
+  name: string;
+  /** 현지 표기 — 있으면 이쪽을 질의로 쓴다. 지도가 아는 진짜 상호에 가깝다. */
+  nameLocal: string | null;
+}
+
+/**
+ * 상세 드로어용 — **구글과 네이버는 항상 고를 수 있게** 만든다.
+ *
+ * `mapLinks` 는 저장된 ID 로 만들 수 있는 딥링크만 준다. 그래서 일본 장소처럼
+ * google_place_id 하나만 있는 곳은 유저가 네이버 지도를 고를 방법이 없었다.
+ * 한국 유저는 해외에서도 네이버 지도를 쓴다(한글 리뷰·길찾기) — 그래서 ID 가
+ * 없는 쪽은 이름 검색 링크로 채운다. 검색은 404 가 안 나므로 깨진 링크가 없다.
+ *
+ * 카카오맵은 ID 가 있을 때만 남긴다 — 해외 POI 가 거의 없어서 검색으로 채우면
+ * 빈 결과 화면만 열린다.
+ */
+export function mapChoices(place: MapChoiceInput): MapLink[] {
+  /* 좌표 폴백(`mapLinks` 마지막 줄)은 여기서 안 쓴다 — 그건 이름을 버리고 핀만 찍는
+     링크라, 이름 검색보다 늘 못하다. 그래서 ID 가 있을 때만 딥링크를 집는다. */
+  const hasId = {
+    google: Boolean(place.googleMapsUrl || place.googlePlaceId),
+    kakao: Boolean(place.kakaoPlaceId),
+    naver: Boolean(place.naverPlaceId),
+  };
+  const byId = mapLinks(place);
+  const deep = (app: MapLink["app"]) =>
+    hasId[app] ? (byId.find((link) => link.app === app) ?? null) : null;
+
+  const query = (place.nameLocal ?? place.name).trim();
+  const hasCoords = place.lat !== null && place.lng !== null;
+  // `/@위도,경도,16z` — 구글 지도가 검색 결과를 그 근처로 좁히게 하는 고전 URL 문법
+  const googleNear = hasCoords ? `/@${place.lat},${place.lng},16z` : "";
+  // 네이버는 `c=경도,위도,줌,0,0,0,dh` 로 지도 중심을 잡는다 (경도가 먼저다)
+  const naverNear = hasCoords ? `?c=${place.lng},${place.lat},15,0,0,0,dh` : "";
+
+  const searchOr = (app: "google" | "naver", label: string, deepLink: MapLink | null): MapLink | null => {
+    if (deepLink) return deepLink;
+    if (query) {
+      return {
+        app,
+        label,
+        url:
+          app === "google"
+            ? `https://www.google.com/maps/search/${encodeURIComponent(query)}${googleNear}`
+            : `https://map.naver.com/p/search/${encodeURIComponent(query)}${naverNear}`,
+      };
+    }
+    // 이름조차 없으면 좌표 핀이라도 — 구글만 가능하다
+    if (app === "google" && hasCoords) {
+      return {
+        app,
+        label,
+        url: `https://www.google.com/maps/search/?api=1&query=${place.lat},${place.lng}`,
+      };
+    }
+    return null;
+  };
+
+  const google = searchOr("google", "구글 지도", deep("google"));
+  const naver = searchOr("naver", "네이버 지도", deep("naver"));
+
+  const isKorea = place.countryCode?.toUpperCase() === "KR";
+  const ordered = isKorea ? [naver, deep("kakao"), google] : [google, deep("kakao"), naver];
+  return ordered.filter((link): link is MapLink => link !== null);
+}

@@ -21,6 +21,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { CityCreator, PlaceSource } from "@/shared/api/cities";
+import type { MapLink } from "@/shared/lib/map-links";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
@@ -46,7 +47,7 @@ export interface CityPlace {
   lng: number;
   address: string | null;
   summary: SummaryDisplay;
-  mapUrl: string | null;
+  mapLinks: MapLink[];
   sources: PlaceSource[];
 }
 
@@ -212,7 +213,7 @@ export function CityExplorer({
               typeLabel: m.placeTypes[activePlace.placeType],
               address: activePlace.address,
               summary: activePlace.summary,
-              mapUrl: activePlace.mapUrl,
+              mapLinks: activePlace.mapLinks,
               sources: sourcesFor(activePlace),
             }}
             onClose={() => setSheetOpen(false)}
@@ -382,8 +383,8 @@ export function CityExplorer({
                             {s.timestampSec !== null ? ` ${fmt(s.timestampSec)}` : ""}
                           </Act>
                         ))}
-                        {place.mapUrl ? (
-                          <Act icon="out" href={place.mapUrl}>
+                        {place.mapLinks[0] ? (
+                          <Act icon="out" href={place.mapLinks[0].url}>
                             {m.cityDetail.openMap}
                           </Act>
                         ) : null}

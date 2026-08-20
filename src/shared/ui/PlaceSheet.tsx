@@ -25,6 +25,7 @@ import { useSaved } from "@/shared/ui/SavedContext";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
+import type { MapLink } from "@/shared/lib/map-links";
 
 export type PlaceDrawerSnap = "peek" | "mid" | "full";
 
@@ -49,8 +50,14 @@ export interface SheetPlace {
   typeLabel: string;
   address: string | null;
   summary: SummaryDisplay;
-  mapUrl: string | null;
+  /** 열 수 있는 지도 앱 전부 — 첫 번째가 이 나라의 기본(shared/lib/map-links.ts) */
+  mapLinks: MapLink[];
   sources: SheetSource[];
+}
+
+/** 아웃링크 — 유튜브는 타임스탬프 포함(&t=초). 목록 행과 같은 문법. */
+function youtubeUrl(videoId: string, sec: number | null): string {
+  return `https://www.youtube.com/watch?v=${videoId}${sec !== null ? `&t=${Math.floor(sec)}s` : ""}`;
 }
 
 function fmt(sec: number | null): string {
@@ -445,11 +452,14 @@ export function PlaceSheet({
     </>
   );
 
-  const heroShown: { creatorSlug: string; youtubeId: string; videoTitle?: string } | null =
-    hero ?? (loading ? heroHint : null);
+  /* 대표 컷은 "그냥 보고 싶다"를 받는다 — 눌러서 유튜브로 바로 나간다.
+     타임라인이 있는 우리 영상 화면은 아래 출처 줄의 "영상 상세보기"가 맡는다. */
+  const heroShown:
+    | { creatorSlug: string; youtubeId: string; videoTitle?: string; timestampSec?: number | null }
+    | null = hero ?? (loading ? heroHint : null);
   const heroBlock = heroShown ? (
-    <Link
-      href={href(`/c/${heroShown.creatorSlug}/v/${heroShown.youtubeId}`)}
+    <OutboundA
+      href={youtubeUrl(heroShown.youtubeId, heroShown.timestampSec ?? null)}
       title={heroShown.videoTitle ?? place.name}
       className="mt-3 block"
     >
@@ -465,7 +475,7 @@ export function PlaceSheet({
       <span className="mt-2 block text-[13px] font-medium leading-snug">
         {heroShown.videoTitle ?? <span className="bone-line inline-block w-[70%] align-middle" />}
       </span>
-    </Link>
+    </OutboundA>
   ) : loading ? (
     <span className="mt-3 block" aria-hidden>
       <span className="frame block w-full">
@@ -550,15 +560,28 @@ export function PlaceSheet({
               <Link href={videoHref} className="mt-1 block text-[13px] leading-snug font-medium">
                 {s.videoTitle}
               </Link>
-              <Link
-                href={videoHref}
-                className="mt-1.5 inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)"
-              >
-                <Icon.play className="size-3.5" />
-                {s.timestampSec !== null
-                  ? t(m.common.watchAt, { ts: fmt(s.timestampSec) })
-                  : m.common.watchVideo}
-              </Link>
+              {/* 두 갈래를 다 세운다 — 유튜브로 바로 나갈 사람과, 타임라인이 붙은
+                  우리 영상 화면을 볼 사람. 예전엔 뒤쪽 하나뿐이라 전자가 두 번 눌렀다. */}
+              <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
+                <OutboundA
+                  href={youtubeUrl(s.youtubeId, s.timestampSec)}
+                  title={s.videoTitle}
+                  className="inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)"
+                >
+                  <Icon.play className="size-3.5" />
+                  {s.timestampSec !== null
+                    ? t(m.common.watchOnYoutubeAt, { ts: fmt(s.timestampSec) })
+                    : m.common.watchOnYoutube}
+                </OutboundA>
+                <Link
+                  href={videoHref}
+                  className="inline-flex items-center gap-0.5 text-[12px] font-semibold"
+                  style={{ color: "var(--dim)" }}
+                >
+                  {m.common.videoDetail}
+                  <Icon.chevron className="size-2.5" />
+                </Link>
+              </span>
             </span>
           </div>
         );
@@ -566,26 +589,34 @@ export function PlaceSheet({
     </div>
   );
 
-  const mapCta = loading && !place.mapUrl ? (
+  /* 지도는 하나로 정하지 않고 고르게 한다 — 같은 가게라도 구글엔 사진·영업시간이,
+     네이버엔 한글 리뷰·길찾기가 있다. 첫 번째가 그 나라의 기본이라 칠해 둔다. */
+  const mapCta = loading && place.mapLinks.length === 0 ? (
     <span
       aria-hidden
       className="bone-line block w-full"
       style={{ height: 48, borderRadius: "var(--r-frame)" }}
     />
-  ) : place.mapUrl ? (
-    <OutboundA
-      href={place.mapUrl}
-      className="flex h-12 w-full items-center justify-center gap-1.5 font-bold"
-      style={{
-        fontSize: "var(--t-body)",
-        borderRadius: "var(--r-frame)",
-        background: "var(--paper)",
-        color: "var(--sheet)",
-      }}
-    >
-      <Icon.out className="size-4" />
-      {m.map.openInMapApp}
-    </OutboundA>
+  ) : place.mapLinks.length > 0 ? (
+    <div role="group" aria-label={m.map.openInMapApp} className="flex w-full gap-2">
+      {place.mapLinks.map((link, i) => (
+        <OutboundA
+          key={link.app}
+          href={link.url}
+          className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 font-bold"
+          style={{
+            fontSize: place.mapLinks.length > 2 ? "var(--t-meta)" : "var(--t-body)",
+            borderRadius: "var(--r-frame)",
+            background: i === 0 ? "var(--paper)" : "transparent",
+            color: i === 0 ? "var(--sheet)" : "var(--paper)",
+            boxShadow: i === 0 ? undefined : "inset 0 0 0 1px var(--hairline)",
+          }}
+        >
+          {place.mapLinks.length === 1 ? <Icon.out className="size-4" /> : null}
+          <span className="truncate">{m.map.mapApps[link.app]}</span>
+        </OutboundA>
+      ))}
+    </div>
   ) : null;
 
   /* ── 데스크톱 ── */

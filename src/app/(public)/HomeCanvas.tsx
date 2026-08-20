@@ -926,7 +926,7 @@ export function ExplorerCanvas({
               typeLabel: m.placeTypes[detailPlace.placeType],
               address: placeDetail?.address ?? null,
               summary: placeDetail?.summary ?? EMPTY_SUMMARY,
-              mapUrl: placeDetail?.mapUrl ?? null,
+              mapLinks: placeDetail?.mapLinks ?? [],
               sources: sourcesFor(),
             }}
             loading={detailLoading}
