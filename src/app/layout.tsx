@@ -92,17 +92,26 @@ export async function generateMetadata(): Promise<Metadata> {
     /**
      * 검색엔진 소유 확인.
      *
-     * 구글은 메타태그, 네이버는 **HTML 파일** 방식이다
-     * (`public/naver88f2840638e5031156f4301748d9fce5.html`).
-     * 방식이 갈린 건 취향이 아니라 각 콘솔에서 발급받은 그대로라서다.
+     * ⚠️ **정규 호스트는 apex(`eatripin.com`)다.** www 는 308 로 apex 에 모인다.
+     *    canonical·사이트맵·RSS·hreflang 이 전부 apex 를 가리키므로 검색엔진 콘솔의
+     *    사이트 등록도 apex 여야 한다.
      *
-     * ⚠️ 네이버 파일은 `proxy.ts` matcher 의 `.*\..*` (점 포함 경로 제외) 덕에
-     *    로케일 rewrite 를 타지 않고 public 에서 그대로 나간다. matcher 를 손볼 때
-     *    이 경로가 200 으로 살아있는지 같이 확인할 것 — 죽으면 네이버가 조용히
-     *    사이트 등록을 해제한다.
+     *    한동안 네이버에만 `https://www.eatripin.com` 으로 등록돼 있었고, 그 상태에서는
+     *    RSS·사이트맵 제출이 "형식이 올바르지 않습니다"로 거절된다. 네이버 규격
+     *    (`searchadvisor.naver.com/guide/request-feed`) 1번이 **"피드내 모든 URL의
+     *    도메인은 소유확인 된 사이트와 동일한 도메인이어야 한다"** 이기 때문이다.
+     *    www 가 직접 200 을 내도 소용없다 — 피드 *안의* URL 이 apex 라 그대로 걸린다.
+     *
+     * 네이버는 apex 등록에 새 토큰을 발급했다. HTML 파일 대신 메타태그를 쓰는 이유는
+     * 파일 방식이 배포마다 `public/` 에 파일을 얹어야 하는 반면 태그는 여기 한 줄이라서다.
+     * `public/naver88f2840638e5031156f4301748d9fce5.html` 은 옛 www 등록용이라 남겨 둔다
+     * (지우면 그 등록이 해제되는데, 아직 정리 전이다).
      */
     verification: {
       google: "lkxLO-HERLGf1WGk8DEGktQW_kCeCwXphuEsfj8NGog",
+      other: {
+        "naver-site-verification": "e06f7aa88418cdf08644308d588d602640b773b8",
+      },
     },
   };
 }
