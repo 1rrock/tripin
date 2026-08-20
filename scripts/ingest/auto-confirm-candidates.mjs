@@ -169,6 +169,19 @@ function shortAddress(addr) {
     .slice(0, 60);
 }
 
+/**
+ * 구글 주소와 우리가 들고 있는 주소 중 더 구체적인 쪽.
+ * Places 가 "대한민국 부산광역시" 처럼 번지 없는 값을 돌려줄 때가 있다 —
+ * 그때 우리 주소(영상 설명란에서 받아 검증한 도로명)를 버리면 불릿이 무의미해진다.
+ */
+function pickAddress(googleAddr, ownAddr) {
+  if (!googleAddr) return ownAddr;
+  if (!ownAddr) return googleAddr;
+  const hasNo = (a) => /\d/.test(a);
+  if (hasNo(googleAddr) !== hasNo(ownAddr)) return hasNo(googleAddr) ? googleAddr : ownAddr;
+  return googleAddr.length >= ownAddr.length ? googleAddr : ownAddr;
+}
+
 function buildBullets({ name, cityName, placeType, address, sourceNote, googleName, creatorHint }) {
   const bullets = [];
   bullets.push(`${typeLabel(placeType)}.`);
@@ -269,7 +282,7 @@ async function main() {
       if (p.google_place_id) {
         // still fetch status
         const res = await fetch(
-          `https://places.googleapis.com/v1/places/${encodeURIComponent(p.google_place_id)}`,
+          `https://places.googleapis.com/v1/places/${encodeURIComponent(p.google_place_id)}?languageCode=ko&regionCode=KR`,
           {
             headers: {
               ...PLACES_HEADERS,
@@ -314,7 +327,7 @@ async function main() {
               name: p.name,
               cityName: p.cities?.name,
               placeType,
-              address: enriched?.address || p.address,
+              address: pickAddress(enriched?.address, p.address),
               sourceNote: p.source_note,
               googleName: enriched?.googleName,
               creatorHint: creatorByPlace.get(p.id) || null,
