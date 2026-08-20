@@ -5,7 +5,7 @@ import { loadCityDetail } from "@/shared/api/cities";
 import type { PlaceType } from "@/shared/api/database.types";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
-import { displayCityName, displaySummary } from "@/shared/i18n/display";
+import { displayCityName } from "@/shared/i18n/display";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
@@ -92,9 +92,13 @@ export default async function CityPage({
 
   const cityLabel = displayCityName({ name: data.name, nameEn: data.nameEn }, locale);
 
-  /* 로케일이 여기서만 확정된다 — CityExplorer(클라이언트)에는 ko/en 원본을 둘 다 넘기지
-     않고 이미 고른 summary 하나만 보낸다. 그대로 넘기면 props 직렬화로 EN 페이지 HTML 에
-     한국어 원문이 새어 나간다(검증 중 실제로 걸림 — grep 이 0이어야 할 자리에 1이 나왔다). */
+  /* 목록·핀에 필요한 것만 넘긴다 — 요약·출처·지도링크는 드로어가 열릴 때
+     `/api/map/place/[id]` 로 받는다(CityExplorer `CityPlace` 주석). 예전에는 여기서
+     전부 넘겨서 후쿠오카 561곳이 HTML 3.1MB 였다.
+
+     로케일 문제도 같이 사라진다 — 넘기는 값에 요약이 없으니 EN 페이지 HTML 에
+     한국어 원문이 샐 자리가 없다(예전에 실제로 걸렸던 검증 항목이다). 상세 라우트는
+     `?l=` 로 로케일을 따로 받는다. */
   const places: CityPlace[] = data.places.map((p) => ({
     id: p.id,
     slug: p.slug,
@@ -104,9 +108,8 @@ export default async function CityPage({
     lat: p.lat,
     lng: p.lng,
     address: p.address,
-    summary: displaySummary(p, locale),
-    mapLinks: p.mapLinks,
-    sources: p.sources,
+    creatorSlugs: [...new Set(p.sources.map((s) => s.creatorSlug))],
+    youtubeId: p.sources[0]?.youtubeId ?? null,
   }));
 
   const listName =

@@ -16,28 +16,45 @@
  * 지도 뷰포트 초기화를 피하려고 풀 네비게이션은 쓰지 않는다.
  */
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
-import type { CityCreator, PlaceSource } from "@/shared/api/cities";
-import type { MapLink } from "@/shared/lib/map-links";
+import type { CityCreator, MapPlaceDetail, PlaceSource } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
-import { Act, Icon } from "@/shared/ui/icons";
+import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 import type { SummaryDisplay } from "@/shared/i18n/display";
-import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 
 /**
- * `CityPlaceRaw`(shared/api/cities.ts) 에서 요약을 로케일 하나로 확정한 표시용 형태.
- * `city/[city]/page.tsx` 가 로케일을 알고 있으므로 거기서 `displaySummary()` 로 만들어 넘긴다 —
- * 원본 ko/en 을 그대로 넘기면 클라이언트 props 직렬화로 EN 페이지에 한국어 원문이 새어 나간다.
+ * 목록·핀이 읽는 최소 형태. **요약·출처·지도링크는 여기 없다.**
+ *
+ * 예전에는 이 타입이 `summary`·`sources`·`mapLinks` 를 다 들고 있었고, 후쿠오카
+ * 561곳이면 그게 HTML 3.1MB(DOM 1.9MB + RSC 페이로드 1.0MB)가 됐다. 행마다 붙던
+ * 출처·지도 링크 블록만 1.05MB, 그 안의 인라인 SVG 1259개가 482KB 였다.
+ *
+ * `/map` 이 같은 문제를 이미 이렇게 풀었다(cities.ts `MapCanvasPlace` 주석) —
+ * 목록은 가볍게 싣고, 드로어를 열 때 `/api/map/place/[id]` 로 상세만 받는다.
+ * 여기도 같은 규율을 쓴다. 필드를 늘리기 전에 561을 곱해 보고, 정말 목록·핀·필터에
+ * 필요한지 따져라.
+ *
+ * 요약·출처를 잃는 게 아니다 — 드로어가 그대로 보여주고, 이제 각 장소에
+ * `/place/[slug]` 문서가 따로 있다(행 전체가 그 링크다).
  */
+/** 상세가 도착하기 전 PlaceSheet 에 넘길 빈 요약 — SummaryBlock 이 알아서 아무것도 안 그린다. */
+const EMPTY_SUMMARY: SummaryDisplay = {
+  bullets: [],
+  summary: null,
+  priceHint: null,
+  isMachine: false,
+  original: null,
+};
+
 export interface CityPlace {
   id: string;
   slug: string;
@@ -47,23 +64,10 @@ export interface CityPlace {
   lat: number;
   lng: number;
   address: string | null;
-  summary: SummaryDisplay;
-  mapLinks: MapLink[];
-  sources: PlaceSource[];
-}
-
-function fmt(sec: number | null): string {
-  if (sec === null) return "—";
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  const s = Math.floor(sec % 60);
-  return h > 0
-    ? `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`
-    : `${m}:${String(s).padStart(2, "0")}`;
-}
-
-function youtubeUrl(videoId: string, sec: number | null): string {
-  return `https://www.youtube.com/watch?v=${videoId}${sec !== null ? `&t=${Math.floor(sec)}s` : ""}`;
+  /** 채널 칩 필터용 — 이름·아바타는 안 싣는다. 드로어가 받아 온다 */
+  creatorSlugs: string[];
+  /** 드로어가 상세를 기다리는 동안 깔 대표 컷(heroHint) */
+  youtubeId: string | null;
 }
 
 export function CityExplorer({
@@ -134,7 +138,7 @@ export function CityExplorer({
     () =>
       places.filter((p) => {
         if (type && p.placeType !== type) return false;
-        if (channel && !p.sources.some((s) => s.creatorSlug === channel)) return false;
+        if (channel && !p.creatorSlugs.includes(channel)) return false;
         return true;
       }),
     [places, type, channel],
@@ -189,9 +193,45 @@ export function CityExplorer({
   const activeIndex = shown.findIndex((p) => p.id === visibleActiveId);
   const activePlace = activeIndex >= 0 ? shown[activeIndex]! : null;
 
+  /**
+   * 드로어 상세 — 목록 페이로드에 안 실은 요약·출처·지도링크를 열 때 받는다.
+   * `/map`(HomeCanvas)과 같은 라우트·같은 계약이라 CDN 캐시 항목도 공유한다.
+   *
+   * `?l=` 로 로케일을 URL 에 넣는 이유는 라우트 주석에 있다 — 응답이 s-maxage 로
+   * CDN 에 앉는데 proxy 가 심는 헤더는 캐시 키에 안 들어간다.
+   */
+  const detailForId = sheetOpen ? visibleActiveId : null;
+  const [detail, setDetail] = useState<MapPlaceDetail | null>(null);
+  const [settledFor, setSettledFor] = useState<string | null>(null);
+  const [detailFor, setDetailFor] = useState<string | null>(detailForId);
+  if (detailFor !== detailForId) {
+    setDetailFor(detailForId);
+    setDetail(null);
+    setSettledFor(null);
+  }
+  const detailLoading = Boolean(detailForId) && settledFor !== detailForId;
+
+  useEffect(() => {
+    if (!detailForId) return;
+    const id = detailForId;
+    let alive = true;
+    const settle = (row: MapPlaceDetail | null) => {
+      if (!alive) return;
+      setDetail(row);
+      setSettledFor(id);
+    };
+    fetch(`/api/map/place/${id}?l=${locale}`, { priority: "high" } as RequestInit)
+      .then((res) => (res.ok ? res.json() : null))
+      .then(settle)
+      .catch(() => settle(null));
+    return () => {
+      alive = false;
+    };
+  }, [detailForId, locale]);
+
   /** 채널 필터 중이면 출처도 그 채널만 — "이 사람이 간 장면"에 맞춤 */
-  const sourcesFor = (place: CityPlace) =>
-    channel ? place.sources.filter((s) => s.creatorSlug === channel) : place.sources;
+  const sourcesFor = (sources: PlaceSource[]) =>
+    channel ? sources.filter((s) => s.creatorSlug === channel) : sources;
 
   return (
     <div className="canvas-page">
@@ -212,11 +252,18 @@ export function CityExplorer({
               name: displayPlaceName(activePlace, locale),
               nameLocal: activePlace.nameLocal,
               typeLabel: m.placeTypes[activePlace.placeType],
+              /* 주소는 목록이 이미 갖고 있다 — 상세가 오기 전에도 빈칸이 안 남는다 */
               address: activePlace.address,
-              summary: activePlace.summary,
-              mapLinks: activePlace.mapLinks,
-              sources: sourcesFor(activePlace),
+              summary: detail?.summary ?? EMPTY_SUMMARY,
+              mapLinks: detail?.mapLinks ?? [],
+              sources: detail ? sourcesFor(detail.sources) : [],
             }}
+            loading={detailLoading}
+            heroHint={
+              activePlace.youtubeId
+                ? { creatorSlug: channel ?? "", youtubeId: activePlace.youtubeId }
+                : null
+            }
             onClose={() => setSheetOpen(false)}
             onSelectChannel={applyChannelFromDrawer}
           />
@@ -308,7 +355,6 @@ export function CityExplorer({
             <ol>
               {shown.map((place, index) => {
                 const active = place.id === visibleActiveId;
-                const rowSources = sourcesFor(place);
                 return (
                   <li
                     key={place.id}
@@ -368,28 +414,10 @@ export function CityExplorer({
                           ) : null}
                         </span>
                       </PlaceRowLink>
-
-                      <SummaryBlock className="pl-10" display={place.summary} showPriceHint={false} />
-
-                      {/* 출처 — 채널 필터 중이면 그 채널만 */}
-                      <div className="flex flex-wrap items-center gap-2 pl-10">
-                        {rowSources.map((s, i) => (
-                          <Act
-                            key={`${s.youtubeId}-${i}`}
-                            icon="play"
-                            href={youtubeUrl(s.youtubeId, s.timestampSec)}
-                            title={s.videoTitle}
-                          >
-                            {s.creatorName}
-                            {s.timestampSec !== null ? ` ${fmt(s.timestampSec)}` : ""}
-                          </Act>
-                        ))}
-                        {place.mapLinks[0] ? (
-                          <Act icon="out" href={place.mapLinks[0].url}>
-                            {m.cityDetail.openMap}
-                          </Act>
-                        ) : null}
-                      </div>
+                      {/* 요약·유튜브·지도 링크는 여기 없다 — 드로어와 `/place/[slug]` 가
+                          맡는다. 행에 그리던 시절 이 목록 하나가 3.1MB 였다(위 CityPlace 주석).
+                          아웃링크를 가리는 게 아니라 한 단계 뒤로 옮긴 것이고,
+                          `/map` 목록이 이미 같은 문법이다. */}
                     </div>
                   </li>
                 );
