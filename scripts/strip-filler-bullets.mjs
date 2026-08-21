@@ -130,24 +130,64 @@ if (citySlug) {
   cityId = city.id;
 }
 
-let q = sb
-  .from("places")
-  .select("id, name, slug, city_id, address, summary_bullets, summary_bullets_en")
-  .eq("map_status", "confirmed");
-if (cityId) q = q.eq("city_id", cityId);
-const { data: places, error } = await q;
-if (error) throw error;
+/**
+ * ⚠️ **페이지로 끊어 읽는다.** PostgREST 는 한 번에 1,000행에서 조용히 끊는다 —
+ * 에러도 경고도 없이 배열이 짧게 온다. 이 스크립트는 그 사실을 모른 채
+ * "대상 장소(확정): 1000" 을 찍고 있었고, 실제 확정 장소 1,898곳 중 뒤쪽 898곳은
+ * 한 번도 검사된 적이 없다. 숫자가 딱 1000 이면 잘린 것이라고 의심할 것.
+ */
+const PAGE = 1000;
+const places = [];
+for (let from = 0; ; from += PAGE) {
+  let q = sb
+    .from("places")
+    .select("id, name, slug, city_id, address, summary_bullets, summary_bullets_en")
+    .eq("map_status", "confirmed")
+    .order("id")
+    .range(from, from + PAGE - 1);
+  if (cityId) q = q.eq("city_id", cityId);
+  const { data, error } = await q;
+  if (error) throw error;
+  places.push(...data);
+  if (data.length < PAGE) break;
+}
 
 const cityNameById = new Map(cities.map((c) => [c.id, c.name]));
 
+/**
+ * EN 은 **자리로** 지운다 — 문장으로 알아보려 하지 않는다.
+ *
+ * 예전엔 `beforeEn.filter(keep)` 로 같은 한국어 규칙을 영어 배열에 돌렸다. 당연히
+ * 하나도 안 걸려서(removedEn = 0) 한국어만 깨끗해지고 영어 화면에는 필러가 그대로
+ * 남았다 — "Featured in the Busan episode of Sung Si Kyung's Meogeultende",
+ * "Gwangan-dong, Suyeong-gu, Busan" 같은 것들이다.
+ *
+ * 영어 쪽을 문장으로 잡는 건 위험하다. 번역이 구분자를 바꿔 놓고(" · " → ", "),
+ * 유형 라벨과 진짜 내용이 같은 꼴로 번역된다("Chicken specialty restaurant.").
+ *
+ * 대신 두 배열이 **원소 대 원소 번역**이라는 사실을 쓴다(translate-en.mjs). 길이가
+ * 같으면 한국어에서 버린 인덱스를 영어에서도 버리면 정확히 같은 문장이 사라진다.
+ * 길이가 다른 장소(확정 1,898곳 중 EN 이 있는 90곳 중 25곳)는 그 전제가 깨졌으므로
+ * **영어를 건드리지 않고 이름만 남긴다** — 지우는 쪽으로 추측하지 않는다.
+ */
 const changes = [];
+const enSkipped = [];
 for (const p of places) {
   const city = cityNameById.get(p.city_id);
-  const keep = (b) => !isFiller(b, city);
   const before = p.summary_bullets ?? [];
-  const after = before.filter(keep);
   const beforeEn = p.summary_bullets_en ?? [];
-  const afterEn = beforeEn.filter(keep);
+  const dropIdx = new Set();
+  before.forEach((b, i) => {
+    if (isFiller(b, city)) dropIdx.add(i);
+  });
+  const after = before.filter((_, i) => !dropIdx.has(i));
+
+  const enParallel = beforeEn.length > 0 && beforeEn.length === before.length;
+  const afterEn = enParallel ? beforeEn.filter((_, i) => !dropIdx.has(i)) : beforeEn;
+  if (dropIdx.size > 0 && beforeEn.length > 0 && !enParallel) {
+    enSkipped.push(`${p.name} (ko ${before.length} / en ${beforeEn.length})`);
+  }
+
   if (after.length === before.length && afterEn.length === beforeEn.length) continue;
   changes.push({ id: p.id, name: p.name, before, after, beforeEn, afterEn });
 }
@@ -160,6 +200,10 @@ console.log(`대상 장소(확정)      : ${places.length}${citySlug ? ` · ${ci
 console.log(`바뀌는 장소          : ${changes.length}`);
 console.log(`지워지는 불릿(ko/en) : ${removed} / ${removedEn}`);
 console.log(`불릿이 비는 장소     : ${emptied}`);
+if (enSkipped.length > 0) {
+  console.log(`\n⚠️ EN 을 건드리지 않은 장소 ${enSkipped.length}곳 — ko/en 길이가 달라 자리를 못 맞춘다:`);
+  for (const s of enSkipped) console.log(`   · ${s}`);
+}
 
 if (!apply) {
   console.log("\n--- 미리보기 (앞 5곳) ---");
