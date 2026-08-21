@@ -399,6 +399,11 @@ export const ko = {
     backToMap: "지도로 돌아가기",
     sheetHandle: "목록 높이 조절",
     openInMapApp: "지도 앱에서 열기",
+    /** 출처 영상 묶음의 머리 — 상세 드로어에서 요약과 영상 사이를 가른다 */
+    sourcesHeading: "이 곳이 나온 영상",
+    /** 채널 줄 두 갈래: 이름을 누르면 채널로 가고, 이 버튼은 지도를 그 채널로 좁힌다 */
+    openChannel: "{creator} 채널 보기",
+    filterByChannel: "이 채널만",
     /** 지도 앱 이름 — 상세 드로어에서 어느 앱으로 열지 고르게 한다 */
     mapApps: {
       google: "구글 지도",
@@ -786,6 +791,9 @@ export type Messages = {
     backToMap: string;
     sheetHandle: string;
     openInMapApp: string;
+    sourcesHeading: string;
+    openChannel: string;
+    filterByChannel: string;
     mapApps: {
       google: string;
       naver: string;

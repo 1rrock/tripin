@@ -369,6 +369,9 @@ export const en: Messages = {
     backToMap: "Back to map",
     sheetHandle: "Resize place list",
     openInMapApp: "Open in maps app",
+    sourcesHeading: "Seen in these videos",
+    openChannel: "Open {creator}",
+    filterByChannel: "Only this channel",
     mapApps: {
       google: "Google Maps",
       naver: "Naver Map",

@@ -16,9 +16,9 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Avatar, Frame } from "@/shared/ui/frame";
+import { Avatar, Frame, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
-import { Icon } from "@/shared/ui/icons";
+import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SaveButton } from "@/shared/ui/SaveButton";
 import { useSaved } from "@/shared/ui/SavedContext";
@@ -522,72 +522,96 @@ export function PlaceSheet({
     </div>
   );
 
-  const sourcesBlock = (
-    <div className="mt-5 flex flex-col gap-3">
+  /**
+   * 출처 영상 — **한 장에 한 영상.**
+   *
+   * 예전 모양은 `[썸네일 120px][채널 · 제목 · 링크 두 개]` 한 줄이었고, 세 가지가
+   * 동시에 어긋났다. 채널 버튼이 터치 크기(min-h-11)를 세로로 먹어 제목이 썸네일
+   * 중간부터 시작했고, 글줄 높이가 썸네일보다 커서 아래가 들쭉날쭉했고, 무엇보다
+   * 첫 출처의 썸네일은 바로 위 대표 컷과 **같은 그림**이라 같은 장면이 두 번 나왔다.
+   *
+   * 그래서 줄을 층으로 바꾼다: 채널 / 영상 / 행동. 각 층은 자기 높이만 쓴다.
+   *   · 채널 이름 → 채널 페이지. 지도를 그 채널로 좁히는 건 옆의 별도 버튼이다
+   *     (이름을 누르면 필터가 걸리던 동작은 "이동"으로 읽혀 매번 어긋났다)
+   *   · 대표 컷이 이미 보여 준 영상이면 썸네일을 다시 깔지 않는다
+   *   · 행동은 둘 다 버튼으로 세운다 — 유튜브(왁스)와 우리 영상 화면(외곽선)
+   */
+  const sourcesBlock = place.sources.length > 0 ? (
+    <div className="mt-5">
+      <h3 className="index mb-1" style={{ color: "var(--dim)" }}>
+        {m.map.sourcesHeading}
+      </h3>
       {place.sources.map((s, i) => {
         const videoHref = href(`/c/${s.creatorSlug}/v/${s.youtubeId}`);
-        const channelInner = (
-          <>
-            <Avatar
-              initials={s.initials}
-              accent={s.accentColor}
-              src={s.avatarUrl}
-              size={20}
-            />
-            <span className="truncate text-[12px] font-semibold">{s.creatorName}</span>
-          </>
-        );
+        const heroShowsThis = heroShown?.youtubeId === s.youtubeId;
         return (
-          <div key={`${s.youtubeId}-${i}`} className="flex gap-3">
-            <Link href={videoHref} title={s.videoTitle} className="w-[120px] shrink-0">
-              <Frame>
-                <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} eager={i === 0} />
-              </Frame>
-            </Link>
-            <span className="min-w-0 flex-1">
-              {onSelectChannel ? (
-                <button
-                  type="button"
-                  aria-label={s.creatorName}
-                  onClick={() => onSelectChannel(s.creatorSlug)}
-                  className="flex min-h-11 max-w-full cursor-pointer items-center gap-2 py-1 text-left hover:underline"
+          <div key={`${s.youtubeId}-${i}`}>
+            <Rule />
+            <div className="flex flex-col gap-2.5 py-3">
+              {/* 채널 줄 — 왼쪽은 **이동**(채널 페이지), 오른쪽은 이 지도를 좁히는 필터.
+                  예전엔 이름을 누르면 필터가 걸렸다. 이름 옆에 아바타가 붙은 줄은
+                  어느 앱에서나 "그리로 간다"로 읽혀서, 누를 때마다 기대가 어긋났다. */}
+              <div className="flex items-center gap-2">
+                <Link
+                  href={href(`/c/${s.creatorSlug}`)}
+                  title={t(m.map.openChannel, { creator: s.creatorName })}
+                  className="flex min-w-0 flex-1 items-center gap-2"
                 >
-                  {channelInner}
-                </button>
-              ) : (
-                <span className="flex items-center gap-2">{channelInner}</span>
-              )}
-              <Link href={videoHref} className="mt-1 block text-[13px] leading-snug font-medium">
-                {s.videoTitle}
+                  <Avatar initials={s.initials} accent={s.accentColor} src={s.avatarUrl} size={22} />
+                  <span className="truncate text-[13px] font-bold">{s.creatorName}</span>
+                  <Icon.chevron className="size-2.5 shrink-0" style={{ color: "var(--dim)" }} />
+                </Link>
+                {onSelectChannel ? (
+                  <button
+                    type="button"
+                    onClick={() => onSelectChannel(s.creatorSlug)}
+                    className="chip shrink-0"
+                  >
+                    {m.map.filterByChannel}
+                  </button>
+                ) : null}
+              </div>
+
+              {/* 영상 줄 — 대표 컷이 같은 영상을 이미 띄웠으면 썸네일을 겹치지 않는다 */}
+              <Link href={videoHref} title={s.videoTitle} className="flex items-start gap-3">
+                {heroShowsThis ? null : (
+                  <span className="w-[104px] shrink-0">
+                    <Frame className="block w-full">
+                      <Thumb key={s.youtubeId} youtubeId={s.youtubeId} alt={s.videoTitle} />
+                    </Frame>
+                  </span>
+                )}
+                <span className="min-w-0 flex-1">
+                  <span className="line-clamp-2 block text-[13px] leading-snug font-medium">
+                    {s.videoTitle}
+                  </span>
+                  {s.timestampSec !== null ? (
+                    <span className="tnum mt-1 block text-[12px]" style={{ color: "var(--dim)" }}>
+                      {fmt(s.timestampSec)}
+                    </span>
+                  ) : null}
+                </span>
               </Link>
+
               {/* 두 갈래를 다 세운다 — 유튜브로 바로 나갈 사람과, 타임라인이 붙은
-                  우리 영상 화면을 볼 사람. 예전엔 뒤쪽 하나뿐이라 전자가 두 번 눌렀다. */}
-              <span className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1">
-                <OutboundA
-                  href={youtubeUrl(s.youtubeId, s.timestampSec)}
-                  title={s.videoTitle}
-                  className="inline-flex items-center gap-1 text-[12px] font-semibold text-(--wax)"
-                >
-                  <Icon.play className="size-3.5" />
+                  우리 영상 화면을 볼 사람. 예전엔 12px 글자 링크라 손가락으로 짚기
+                  어려웠다. 알약은 이 월드가 이미 쓰는 행동 문법이다(Act). */}
+              <div className="flex flex-wrap gap-2">
+                <Act icon="play" href={youtubeUrl(s.youtubeId, s.timestampSec)} title={s.videoTitle}>
                   {s.timestampSec !== null
                     ? t(m.common.watchOnYoutubeAt, { ts: fmt(s.timestampSec) })
                     : m.common.watchOnYoutube}
-                </OutboundA>
-                <Link
-                  href={videoHref}
-                  className="inline-flex items-center gap-0.5 text-[12px] font-semibold"
-                  style={{ color: "var(--dim)" }}
-                >
+                </Act>
+                <Act icon="clock" href={videoHref}>
                   {m.common.videoDetail}
-                  <Icon.chevron className="size-2.5" />
-                </Link>
-              </span>
-            </span>
+                </Act>
+              </div>
+            </div>
           </div>
         );
       })}
     </div>
-  );
+  ) : null;
 
   /* 지도는 하나로 정하지 않고 고르게 한다 — 같은 가게라도 구글엔 사진·영업시간이,
      네이버엔 한글 리뷰·길찾기가 있다. 첫 번째가 그 나라의 기본이라 칠해 둔다. */
