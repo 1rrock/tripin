@@ -369,6 +369,8 @@ export const ko = {
   video: {
     breadcrumbLabel: "영상",
     stats: "나온 곳 {stops} · 도시 {cities}",
+    /** 도시가 하나뿐일 때 — 머리 줄이 그 도시 이름을 이미 말하고 있어서 "도시 1" 은 잡음이다 */
+    statsStops: "나온 곳 {n}",
     thumbnailNotice: "썸네일과 제목은 YouTube 원본 표기 그대로입니다.",
     otherVideos: "{creator}의 다른 영상",
     viewCityMap: "{city} 지도로 보기",
@@ -382,7 +384,11 @@ export const ko = {
     scrubHint: "위 클립을 누르거나 바를 드래그하세요. 화살표 키로도 시간을 옮길 수 있습니다.",
     scrubberAria: "{creator} 영상 타임라인 — 좌우 화살표로 이동",
     seekToAria: "{time} {name} 로 이동",
-    untimedHeading: "시각 미확인 {n}",
+    /** 정거장 목록의 머리 — 이 화면의 본문이 어디서 시작하는지 알린다.
+        예전의 "시각 미확인 {n}" 점선 상자는 없앴다. 타임코드가 있는 정거장이
+        전체의 5.4% 뿐이라, 격리 상자가 사실상 모든 페이지의 본문을 통째로
+        "미확인"으로 표시하고 있었다. */
+    stopsHeading: "이 영상에 나온 곳 {n}",
     mapAria: "이 영상에 나온 장소 지도",
     mapHint: "목록 번호와 핀 번호가 같아요 · 핀을 누르면 그 정거장으로",
     mapEmpty: "좌표가 있는 장소가 없어 지도를 그리지 못했어요. 목록의 지도 링크로 확인할 수 있어요.",
@@ -761,6 +767,7 @@ export type Messages = {
   video: {
     breadcrumbLabel: string;
     stats: string;
+    statsStops: string;
     thumbnailNotice: string;
     otherVideos: string;
     viewCityMap: string;
@@ -774,7 +781,7 @@ export type Messages = {
     scrubHint: string;
     scrubberAria: string;
     seekToAria: string;
-    untimedHeading: string;
+    stopsHeading: string;
     mapAria: string;
     mapHint: string;
     mapEmpty: string;

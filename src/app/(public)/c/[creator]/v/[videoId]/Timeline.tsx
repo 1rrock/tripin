@@ -69,8 +69,14 @@ function StopRow({
           {displayPlaceName(stop, locale)}
         </span>
         <span className="mt-1 block" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
-          <span className="tnum">{fmt(stop.timestampSec)}</span>
-          {" · "}
+          {/* 시각은 **있을 때만** 쓴다. 정거장 2,089개 중 타임코드가 붙은 건 112개
+              (5.4%)라, 없을 때 "—" 를 찍으면 거의 모든 줄이 빈칸으로 시작했다. */}
+          {stop.timestampSec !== null ? (
+            <>
+              <span className="tnum">{fmt(stop.timestampSec)}</span>
+              {" · "}
+            </>
+          ) : null}
           {m.placeTypes[stop.placeType]}
           {!stop.confirmed ? m.video.pendingLocation : ""}
           {displayPlaceSecondary(stop, locale) ? (
@@ -163,7 +169,6 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
     () => stops.filter((s): s is VideoStop & { timestampSec: number } => s.timestampSec !== null),
     [stops],
   );
-  const untimed = useMemo(() => stops.filter((s) => s.timestampSec === null), [stops]);
 
   // 축의 끝 — duration 이 있으면 그걸 쓰고, 없으면 마지막 정거장 + 여유 10%.
   const axisEnd = useMemo(() => {
@@ -460,18 +465,24 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
         </section>
       ) : null}
 
-      {pins.length > 0 ? (
-        <p className="index" style={{ color: "var(--dim)" }}>
-          {m.video.mapHint}
-        </p>
-      ) : (
-        <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}>
-          {m.video.mapEmpty}
-        </p>
-      )}
-
+      {/**
+       * 정거장 목록 — **한 덩어리로 잇는다.**
+       *
+       * 예전엔 시각이 없는 정거장을 점선 상자("시각 미확인 {n}")로 격리했다.
+       * 그런데 타임코드가 있는 정거장이 5.4% 뿐이라, 영상 1,094편 중 1,052편에서
+       * **본문 전체가 그 격리 상자 안에** 들어갔다. 예외 표시가 기본값을 덮은 것이다.
+       *
+       * `stops` 는 API 가 이미 "시각 있는 것 오름차순 → 없는 것" 순으로 정렬해 준다
+       * (videos.ts). 번호는 그 순서를 그대로 이어 붙이면 지도 핀 번호와 맞는다.
+       * 검수되지 않은 위치는 여전히 행 안에서 "· 위치 확인 중" 으로 말한다 —
+       * 그건 시각이 아니라 좌표에 대한 사실이라 따로 산다.
+       */}
       <div className="flex flex-col">
-        {timed.map((s, i) => (
+        <p className="index mb-1" style={{ color: "var(--dim)" }}>
+          {t(m.video.stopsHeading, { n: stops.length })}
+          {pins.length > 1 ? <span className="ml-1.5 font-normal">· {m.video.mapHint}</span> : null}
+        </p>
+        {stops.map((s, i) => (
           <div
             key={s.placeId}
             ref={(el) => {
@@ -485,43 +496,23 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
               videoId={video.youtubeId}
               index={i + 1}
               active={s.placeId === activePlaceId}
-              onSelect={() => selectStop(s.timestampSec, s.placeId)}
-              selectable={!soloLayout || pins.length > 0}
+              onSelect={() =>
+                s.timestampSec !== null
+                  ? selectStop(s.timestampSec, s.placeId)
+                  : (setActivePlaceId(s.placeId), revealPlace(s.placeId))
+              }
+              selectable={pins.length > 1 && pins.some((p) => p.id === s.placeId)}
             />
           </div>
         ))}
-        {timed.length > 0 ? <Rule /> : null}
-
-        {untimed.length > 0 ? (
-          <div
-            className="mt-(--block) flex flex-col gap-2 p-4"
-            style={{ border: "1px dashed var(--hairline)", borderRadius: "var(--r-control)" }}
+        <Rule />
+        {pins.length === 0 ? (
+          <p
+            className="mt-3"
+            style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}
           >
-            <p className="index" style={{ color: "var(--dim)" }}>
-              {t(m.video.untimedHeading, { n: untimed.length })}
-            </p>
-            {untimed.map((s, i) => (
-              <div
-                key={s.placeId}
-                ref={(el) => {
-                  if (el) rowByPlace.current.set(s.placeId, el);
-                  else rowByPlace.current.delete(s.placeId);
-                }}
-              >
-                <StopRow
-                  stop={s}
-                  videoId={video.youtubeId}
-                  index={timed.length + i + 1}
-                  active={s.placeId === activePlaceId}
-                  onSelect={() => {
-                    setActivePlaceId(s.placeId);
-                    revealPlace(s.placeId);
-                  }}
-                  selectable={pins.some((p) => p.id === s.placeId)}
-                />
-              </div>
-            ))}
-          </div>
+            {m.video.mapEmpty}
+          </p>
         ) : null}
       </div>
     </div>
@@ -529,7 +520,34 @@ export function Timeline({ video, creatorName }: { video: VideoDetail; creatorNa
 
   if (pins.length === 0) return timelinePanel;
 
-  /* 조각 페이지와 같은 2단: 모바일은 지도가 위, 데스크톱은 우측 sticky.
+  /**
+   * 정거장이 하나뿐인 영상 — 전체의 69%(755/1094). **여기가 기본형이다.**
+   *
+   * 이 경우 예전 배치는 핀 하나짜리 지도가 데스크톱 세로 한 화면(100dvh)을
+   * sticky 로 붙잡고 있었다. 한 점을 보려고 화면을 통째로 비운 셈이다.
+   *
+   * 그래서 지도를 **그 장소의 물건**으로 되돌린다. 모바일은 이름 바로 아래,
+   * 데스크톱은 오른쪽 좁은 칸. 지도 인스턴스는 하나뿐이고 자리만 그리드가 옮긴다
+   * (두 벌을 그리면 Google Maps 로드가 두 번 청구된다).
+   */
+  if (stops.length === 1) {
+    return (
+      <div className="grid gap-4 lg:grid-cols-[1fr_minmax(0,24rem)] lg:items-start lg:gap-7">
+        <div className="lg:col-start-2 lg:row-span-2 lg:row-start-1" aria-label={m.video.mapAria}>
+          <MapView
+            className="h-[13rem] w-full sm:h-[16rem] lg:h-[20rem]"
+            pins={pins}
+            activeId={activePlaceId}
+            singlePinZoom={16}
+          />
+        </div>
+        <div className="lg:col-start-1 lg:row-start-1">{timelinePanel}</div>
+      </div>
+    );
+  }
+
+  /* 정거장이 둘 이상 — 조각 페이지와 같은 2단.
+     모바일은 지도가 위, 데스크톱은 우측 sticky.
      페이지 main 에 gutter 가 있어 지도만 가장자리까지 뺀다. */
   return (
     <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7">

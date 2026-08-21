@@ -339,6 +339,7 @@ export const en: Messages = {
   video: {
     breadcrumbLabel: "Video",
     stats: "{stops} {stops|place|places} · {cities} {cities|city|cities}",
+    statsStops: "{n} {n|place|places}",
     thumbnailNotice: "Thumbnail and title are shown unmodified from YouTube.",
     otherVideos: "More videos from {creator}",
     viewCityMap: "View {city} map",
@@ -352,7 +353,7 @@ export const en: Messages = {
     scrubHint: "Tap a clip or drag the bar. Arrow keys also move the time.",
     scrubberAria: "{creator} video timeline — use left/right arrows",
     seekToAria: "Jump to {time} {name}",
-    untimedHeading: "{n} unconfirmed {n|time|times}",
+    stopsHeading: "Places in this video ({n})",
     mapAria: "Map of places in this video",
     mapHint: "List numbers match the pins · tap a pin to jump there",
     mapEmpty: "No places have coordinates yet, so the map is empty. Use the map links in the list.",
