@@ -9,8 +9,9 @@
  *
  *   1) 유형 라벨      "식당." · "카페." · "숙소." …
  *   2) 도시 · 주소 줄  "후쿠오카 · 2-chōme-3-1 Enokida, Hakata Ward, …"
- *   3) 출처 상투구     "곽튜브 영상에서 소개."
- *   4) 지도 상투구     "구글 지도에서 위치 확인."
+ *   3) 도시명 단독     "후쿠오카." · "바르셀로나."
+ *   4) 출처 상투구     "곽튜브 영상에서 소개."
+ *   5) 지도 상투구     "구글 지도에서 위치 확인."
  *
  * ⚠️ "구글 등록명: X." 는 **지우지 않는다.** 장소마다 문자열이 달라 중복 신호가 아니고,
  *    `name` 과 다른 검색 별칭을 담고 있는데(예: "니타카쇼쿠도" → "하루요시 쇼쿠도")
@@ -27,8 +28,10 @@
  *
  * 되돌리기: --apply 전에 원본을 `tmp/filler-backup-<city>-<stamp>.json` 로 떨군다.
  *
- * ⚠️ 반영 후 공개 화면은 데이터 캐시(TTL 1h) 때문에 바로 안 바뀐다 —
- *    `/admin` 에서 아무 저장이나 한 번 하거나 1시간 기다릴 것 (docs/HANDOFF.md §5-3).
+ * ⚠️ 반영 후 공개 화면은 데이터 캐시(TTL 1h) 때문에 바로 안 바뀐다. 셋 중 하나:
+ *      npx vercel cache invalidate --tag public-data --yes   ← 이게 가장 빠르다
+ *      `/admin` 에서 아무 저장이나 한 번 (purgePublicData 를 부른다)
+ *      1시간 기다리기 (shared/api/cache.ts 의 TTL_SECONDS)
  */
 
 import { createClient } from "@supabase/supabase-js";
@@ -92,12 +95,29 @@ function isCityAddress(b, cityName) {
  */
 const SOURCE_BOILERPLATE = /(영상에서 소개|편에서 소개)\.?$/;
 
+/**
+ * 도시명 하나만 찍힌 줄 — "후쿠오카." · "바르셀로나."
+ *
+ * 주소 줄(`{도시명} · {주소}`)과 달리 뒤에 아무것도 없다. 도시는 유형 줄
+ * ("맛집 · 후쿠오카")과 빵부스러기와 URL 이 이미 세 번 말하고 있어 정보가 0이고,
+ * 같은 문자열이 대량 반복된다 — 확정 장소 기준 "후쿠오카." 56회, "기타큐슈." 16회,
+ * "바르셀로나." 14회로 전체 150곳. 그중 106곳은 **이게 마지막 남은 불릿**이라,
+ * 빼고 나면 요약 블록이 통째로 안 그려진다(그래야 맞다).
+ *
+ * ⚠️ 완전 일치 + **그 장소의 도시일 때만**. 도시명이 문장 안에 들어간 것
+ * ("후쿠오카 공항 근처.")이나 다른 도시 이름은 건드리지 않는다.
+ */
+function isCityOnly(b, cityName) {
+  return Boolean(cityName) && b === `${cityName}.`;
+}
+
 function isFiller(b, cityName) {
   const s = String(b).trim();
   return (
     TYPE_LABELS.has(s) ||
     SOURCE_BOILERPLATE.test(s) ||
     /^구글 지도에서 위치 확인\.$/.test(s) ||
+    isCityOnly(s, cityName) ||
     isCityAddress(s, cityName)
   );
 }
