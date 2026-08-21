@@ -110,10 +110,14 @@ export function Explorer({
   otherCreators = [],
 }: ExplorerProps) {
   const { messages: m, href, t, locale } = useLocale();
-  const firstConfirmedId =
-    places.find((p) => p.mapStatus === "confirmed" && p.lat !== null && p.lng !== null)?.id ??
-    null;
-  const [activeId, setActiveId] = useState<string | null>(firstConfirmedId);
+  /**
+   * 첫 화면은 **아무것도 안 고른 상태**다.
+   *
+   * 예전엔 첫 확정 장소를 미리 골라 뒀는데, 지도 쪽에서 선택은 "그 핀으로 들어가라"
+   * 는 뜻이라(MapView FOCUS_MIN_ZOOM) 296곳짜리 조각이 열리자마자 1번 가게 골목으로
+   * 파고들었다. 조각을 처음 열면 그 도시 전체가 보여야 하고, 파고드는 건 고른 뒤다.
+   */
+  const [activeId, setActiveId] = useState<string | null>(null);
   // 핀을 눌렀을 때만 상세 시트를 띄운다. 목록 행은 그 자체가 이미 상세라
   // 행을 눌렀다고 시트까지 겹쳐 띄우면 같은 내용이 두 번 나온다.
   const [sheetOpen, setSheetOpen] = useState(false);

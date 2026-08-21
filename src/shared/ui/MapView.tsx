@@ -89,6 +89,18 @@ interface MapViewProps {
    * null 이면 평소대로 전체 핀에 맞춘다(권한 거부·미지원도 여기로 떨어진다).
    */
   focusAt?: { lat: number; lng: number; zoom?: number } | null;
+  /**
+   * 마운트 시점에 이미 정해져 있는 `activeId` 로 **화면을 옮길지**.
+   *
+   * 선택에는 두 종류가 있고 뜻이 다르다. 링크로 들어온 선택(`/map?place=…`)은
+   * "그리로 데려가 달라"는 요청이고, 화면이 기본으로 골라 둔 선택(영상 페이지가
+   * 1번 정거장을 켜 두는 것)은 그냥 표시다. 뒤엣것까지 따라 들어가면, 정거장
+   * 17곳짜리 영상이 열리자마자 1번 가게 골목에 처박힌다.
+   *
+   * 그래서 첫 한 번만 이 값으로 가른다. 그 뒤의 `activeId` 변화는 전부 사용자가
+   * 누른 결과이므로 언제나 따라간다.
+   */
+  focusActiveOnMount?: boolean;
 }
 
 let optionsSet = false;
@@ -261,6 +273,7 @@ export function MapView({
   nameWhenClose = false,
   fitPadding = 48,
   focusAt = null,
+  focusActiveOnMount = false,
 }: MapViewProps) {
   const { messages: m } = useLocale();
   const containerRef = useRef<HTMLDivElement>(null);
@@ -289,6 +302,13 @@ export function MapView({
   /* 시작점은 한 번만 듣는다 — 위치가 늦게 와도 그때 한 번, 그 뒤로는 사용자 것이다 */
   const focusedRef = useRef(false);
   const fittedOnceRef = useRef(false);
+  /* 선택 핀은 마커 생성 콜백에서도 읽는다 — 그 콜백들(뷰포트 페인트)은 activeId 를
+     의존성에 안 넣는 이펙트 안에 산다. 값을 그대로 닫아 두면 나중에 그려지는
+     마커가 항상 "선택 안 됨" 으로 태어난다. */
+  const activeIdRef = useRef<string | null>(activeId ?? null);
+  useEffect(() => {
+    activeIdRef.current = activeId ?? null;
+  });
   // 키 부재는 첫 렌더에 이미 아는 사실 — effect 에서 set 하지 않고 초기값으로 파생
   const [failed, setFailed] = useState(() => !publicEnv.googleMapsKey);
   const [loaded, setLoaded] = useState(false);
@@ -426,6 +446,42 @@ export function MapView({
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
 
+        // 뷰포트: 전체 bounds + 패딩 / 핀 1개면 고정 줌 (CONCEPT.md 4.3)
+        const fitAll = () => {
+          if (pins.length === 1) {
+            map.setCenter({ lat: pins[0]!.lat, lng: pins[0]!.lng });
+            map.setZoom(singlePinZoom);
+          } else if (pins.length > 1) {
+            const bounds = new google.maps.LatLngBounds();
+            for (const pin of pins) bounds.extend({ lat: pin.lat, lng: pin.lng });
+            const pad = fitPaddingRef.current;
+            map.fitBounds(bounds, typeof pad === "function" ? pad() : pad);
+          }
+        };
+        /**
+         * 첫 화면을 누가 정하는가. 셋 중 하나다.
+         *
+         *   · 시작점(현재 위치)이 첫 핀보다 먼저 잡혔으면 그 화면을 지킨다 —
+         *     맞춰 버리면 위치를 받자마자 다시 전 세계로 튕긴다
+         *   · 링크로 특정 장소를 열고 들어왔으면(activeId) 그 핀이 주인이다.
+         *     아래 포커스 이펙트가 잡아 줄 화면을 여기서 덮어쓰면 안 된다
+         *   · 그 외에는 전체에 맞춘다. 두 번째부터(=필터를 바꾼 뒤)는 언제나 맞춘다
+         */
+        const deepLinked =
+          focusActiveOnMount &&
+          activeIdRef.current !== null &&
+          pins.some((p) => p.id === activeIdRef.current);
+        const keepView = !fittedOnceRef.current && (focusedRef.current || deepLinked);
+        const applyFit = () => {
+          if (!keepView) fitAll();
+          /* 빈 핀 배열은 "한 번 맞췄다"로 치지 않는다. `/map` 은 인덱스를 받기 전
+             한 번 빈 배열로 이 자리를 지나가는데, 그걸 첫 맞춤으로 세면 진짜 핀이
+             도착했을 때 위 keepView 가 풀려서 딥링크 화면을 전체 보기로 덮어썼다. */
+          if (pins.length > 0) fittedOnceRef.current = true;
+          // 팬·줌 후 원래 화면으로 돌아올 길 — "전체 보기" 버튼이 재사용한다
+          refitRef.current = fitAll;
+        };
+
         // 전역 지도(1000+핀)는 AdvancedMarker 를 전부 만들지 않는다.
         // Lighthouse FullPageScreenshot 이 1665개 DOM 마커에서 타임아웃 났다.
         if (cluster && pins.length > 150) {
@@ -433,6 +489,11 @@ export function MapView({
           clustererRef.current = null;
           for (const mk of markersRef.current.values()) mk.map = null;
           markersRef.current.clear();
+          /* 뷰포트를 **먼저** 맞춘다. 이 갈래는 보이는 만큼만 그리므로 화면이
+             전 세계(초기 zoom 2)에 서 있으면 첫 페인트가 통짜 묶음 하나가 된다.
+             예전엔 이 갈래가 fitAll 을 아예 안 거치고 return 해서, 296곳짜리
+             조각도 640곳짜리 전역 지도도 세계 지도 위 숫자 하나로 열렸다. */
+          applyFit();
           import("supercluster").then(({ default: Supercluster }) => {
             if (cancelled || mapRef.current !== map) return;
             const index = new Supercluster({
@@ -493,11 +554,15 @@ export function MapView({
                   if (!pin) continue;
                   want.add(pin.id);
                   if (markersRef.current.has(pin.id)) continue;
+                  /* 선택 상태는 ref 로 읽는다 — 이 콜백은 activeId 를 의존성에
+                     안 넣는 이펙트 안이라, 값을 닫아 두면 선택 뒤에 화면으로
+                     들어온 핀이 "선택 안 됨" 으로 태어난다. */
+                  const on = pin.id === activeIdRef.current;
                   const mk = new AdvancedMarkerElement({
                     map,
                     position: { lat: pin.lat, lng: pin.lng },
-                    content: pinNode(pin, pin.id === activeId, mode),
-                    zIndex: pin.id === activeId ? 1000 : 0,
+                    content: pinNode(pin, on, mode),
+                    zIndex: on ? 1000 : 0,
                     gmpClickable: Boolean(onPinClick),
                   });
                   if (onPinClick) {
@@ -571,25 +636,7 @@ export function MapView({
           });
         }
 
-        // 뷰포트: 전체 bounds + 패딩 / 핀 1개면 고정 줌 (CONCEPT.md 4.3)
-        const fitAll = () => {
-          if (pins.length === 1) {
-            map.setCenter({ lat: pins[0]!.lat, lng: pins[0]!.lng });
-            map.setZoom(singlePinZoom);
-          } else if (pins.length > 1) {
-            const bounds = new google.maps.LatLngBounds();
-            for (const pin of pins) bounds.extend({ lat: pin.lat, lng: pin.lng });
-            const pad = fitPaddingRef.current;
-            map.fitBounds(bounds, typeof pad === "function" ? pad() : pad);
-          }
-        };
-        /* 시작점(현재 위치)이 첫 핀보다 먼저 잡혔으면 그 화면을 지킨다 — 맞춰 버리면
-           위치를 받자마자 다시 전 세계로 튕긴다. 두 번째부터(=필터를 바꾼 뒤)는
-           결과에 맞추는 것이 맞으므로 그대로 맞춘다. */
-        if (!(focusedRef.current && !fittedOnceRef.current)) fitAll();
-        fittedOnceRef.current = true;
-        // 팬·줌 후 원래 화면으로 돌아올 길 — "전체 보기" 버튼이 재사용한다
-        refitRef.current = fitAll;
+        applyFit();
       })
       .catch(() => setFailed(true));
     return () => {
@@ -632,6 +679,9 @@ export function MapView({
 
   // activeId 하이라이트 — 마커 콘텐츠만 교체 (재생성/뷰포트 리셋 없음)
   const prevActiveRef = useRef<string | null>(null);
+  /* 지도가 선 뒤 이 이펙트가 처음 도는 순간 — 그때의 activeId 만 "기본 선택"일 수
+     있다. 그 뒤로는 전부 손이 만든 값이다(위 focusActiveOnMount 주석). */
+  const focusArmedRef = useRef(false);
   useEffect(() => {
     const map = mapRef.current;
     if (!map) return;
@@ -642,31 +692,49 @@ export function MapView({
        돌던 것을 2개로 줄인다. */
     const prev = prevActiveRef.current;
     prevActiveRef.current = activeId ?? null;
-    for (const pin of pins) {
-      if (pin.id !== activeId && pin.id !== prev) continue;
-      const m = markersRef.current.get(pin.id);
-      if (!m) continue;
-      const active = pin.id === activeId;
+    for (const id of [prev, activeId ?? null]) {
+      if (!id) continue;
+      const pin = pins.find((p) => p.id === id);
+      const m = markersRef.current.get(id);
+      if (!pin || !m) continue;
+      const active = id === activeId;
       // .content 는 deprecated — 커스텀 엘리먼트의 children 교체로 동일 효과
       m.replaceChildren(pinNode(pin, active, mode));
       m.zIndex = active ? 1000 : (pin.index ?? 0);
-      if (!active) continue;
-      // 목록에서 골라도 "그 핀이 가깝게" 보여야 한다. pan 만 하면 전역 줌에
-      // 점이 그대로라 선택이 안 먹은 것처럼 보인다. 묶여 있으면 반드시 풀린다.
-      const z = map.getZoom() ?? 0;
-      const needZoom =
-        z < FOCUS_MIN_ZOOM || (cluster && !m.map && z <= CLUSTER_MAX_ZOOM);
-      if (needZoom) {
-        map.setZoom(Math.max(FOCUS_MIN_ZOOM, CLUSTER_MAX_ZOOM + 1));
-      }
-      map.panTo({ lat: pin.lat, lng: pin.lng });
-      /* 바텀시트가 먹는 만큼 핀을 위로 올린다 — 안 그러면 카드 뒤에 숨는다 */
-      const pad = fitPaddingRef.current;
-      const bottom =
-        typeof pad === "function" ? (pad().bottom ?? 0) : typeof pad === "number" ? pad : 0;
-      if (bottom > 64) map.panBy(0, Math.round(bottom / 2) - 24);
     }
-  }, [activeId, pins, cluster, nameWhenClose]);
+
+    /**
+     * 화면을 옮기는 일은 **마커가 있든 없든** 한다.
+     *
+     * 여기가 예전에 `markersRef.get(id)` 가 없으면 `continue` 였다. 핀이 150개를
+     * 넘는 지도는 보이는 만큼만 마커를 만드는 갈래로 가는데, 고른 장소가 아직
+     * 화면 밖이면 마커가 없다 — 즉 **고르면 고를수록 안 움직이는** 상태였다.
+     * 296곳짜리 조각(김사원세끼×서울)과 640곳짜리 전역 지도가 정확히 그 경우다.
+     * 좌표는 pins 가 이미 들고 있으니 마커를 기다릴 이유가 없고, 옮겨 놓으면
+     * idle 페인트가 그 자리에 마커를 만들면서 선택 상태로 태어난다(activeIdRef).
+     */
+    const firstRun = !focusArmedRef.current;
+    focusArmedRef.current = true;
+    if (firstRun && !focusActiveOnMount) return;
+    if (!activeId) return;
+    const pin = pins.find((p) => p.id === activeId);
+    if (!pin) return;
+    // 목록에서 골라도 "그 핀이 가깝게" 보여야 한다. pan 만 하면 전역 줌에
+    // 점이 그대로라 선택이 안 먹은 것처럼 보인다. 묶여 있으면 반드시 풀린다.
+    if ((map.getZoom() ?? 0) < FOCUS_MIN_ZOOM) {
+      map.setZoom(Math.max(FOCUS_MIN_ZOOM, CLUSTER_MAX_ZOOM + 1));
+    }
+    map.panTo({ lat: pin.lat, lng: pin.lng });
+    /* 바텀시트가 먹는 만큼 핀을 위로 올린다 — 안 그러면 카드 뒤에 숨는다 */
+    const pad = fitPaddingRef.current;
+    const bottom =
+      typeof pad === "function" ? (pad().bottom ?? 0) : typeof pad === "number" ? pad : 0;
+    if (bottom > 64) map.panBy(0, Math.round(bottom / 2) - 24);
+    /* `loaded` 가 의존성에 있는 이유: 링크로 들어온 선택(?place=)은 지도가 서기
+       전에 이미 정해져 있다. 지도 객체가 없으면 위에서 그냥 빠져나갔고, activeId
+       는 그 뒤로 안 바뀌니 이 이펙트가 다시 돌 일이 없었다 — 딥링크가 세계
+       지도에서 열리던 두 번째 이유다. */
+  }, [activeId, pins, nameWhenClose, loaded, focusActiveOnMount]);
 
   // 언마운트 시 클러스터러가 잡고 있는 지도 리스너를 놓아준다
   useEffect(

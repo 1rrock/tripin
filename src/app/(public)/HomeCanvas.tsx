@@ -129,7 +129,10 @@ export function ExplorerCanvas({
   /* 전체화면 상세 — URL 이 진실. push 로 열어 뒤로가기·스와이프가 맵으로 돌아온다 */
   const placeParam = sp.get("place");
 
-  const [activeId, setActiveId] = useState<string | null>(null);
+  /* 링크로 들어온 상세(`?place=`)는 **처음부터** 고른 핀이다. null 로 시작하면
+     아래 prevLocalPlace 동기화가 첫 렌더엔 안 돌아(둘이 같아서) 지도가 세계
+     지도에 선 채로 드로어만 열린다 — 640곳 위에 묶음 하나가 떠 있던 화면. */
+  const [activeId, setActiveId] = useState<string | null>(placeParam);
   const [sheetPct, setSheetPct] = useState(SHEET_MID);
   const sheetPctRef = useRef(sheetPct);
   const dragRef = useRef<{ startY: number; startPct: number } | null>(null);
@@ -892,6 +895,9 @@ export function ExplorerCanvas({
           cluster
           nameWhenClose
           focusAt={here}
+          /* `?place=` 로 들어온 선택은 "그리로 데려가 달라"는 요청이다 —
+             화면이 기본으로 골라 둔 선택과 달리 지도가 따라가야 한다 */
+          focusActiveOnMount
           /* 지도 위에 뜬 것들만큼 비운다 — 안 그러면 핀이 검색 줄과 바텀시트 밑에
              깔려서 "위아래가 잘린" 것처럼 보인다. 시트 높이는 끌 때마다 달라지므로
              값이 아니라 함수로 넘긴다(맞추는 순간에 잰다). */
