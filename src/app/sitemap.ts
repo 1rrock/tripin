@@ -2,7 +2,7 @@ import type { MetadataRoute } from "next";
 import { fetchAll } from "@/shared/api/chunked-in";
 import { supabase } from "@/shared/api/supabase";
 import { publicEnv } from "@/shared/config/env";
-import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import { MIN_CITY_PINS, MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import { loadPlaceSitemapRows } from "@/shared/api/places";
 import { placePath } from "@/shared/lib/place-path";
 import { sitemapLanguages } from "@/shared/seo/page-meta";
@@ -141,7 +141,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   }
 
   for (const [cityId, placeSet] of placesByCity) {
-    if (placeSet.size < MIN_CONFIRMED_PINS) continue;
+    // 도시 단위 판정 — 조각 게이트가 아니다 (publish.ts MIN_CITY_PINS 주석)
+    if (placeSet.size < MIN_CITY_PINS) continue;
     if ((creatorsByCity.get(cityId)?.size ?? 0) < 2) continue;
     const slug = cityIdBySlug.get(cityId);
     if (!slug) continue;

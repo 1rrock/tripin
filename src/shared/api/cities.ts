@@ -4,7 +4,7 @@ import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { mapLinks, type MapLink } from "@/shared/lib/map-links";
 import { coordsFromMapsUrl } from "@/shared/lib/resolve-google-place";
-import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
+import { MIN_CITY_PINS } from "@/shared/config/publish";
 import {
   displaySummary,
   type EnSource,
@@ -213,7 +213,7 @@ export const loadCityIndex = cachePublic(async function loadCityIndex(): Promise
           .sort((a, b) => b.count - a.count),
       } satisfies CityRow;
     })
-    .filter((r): r is CityRow => r !== null && r.placeCount >= MIN_CONFIRMED_PINS)
+    .filter((r): r is CityRow => r !== null && r.placeCount >= MIN_CITY_PINS)
     .sort((a, b) => b.placeCount - a.placeCount);
 }, ["cities:index"]);
 
