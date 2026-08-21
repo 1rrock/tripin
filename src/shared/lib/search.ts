@@ -1,8 +1,8 @@
 /**
  * 통합 검색 — 순수 매칭·채점.
  *
- * 검색 서버를 두지 않는다. 색인 전체가 gzip 14KB(이름만이면 5.6KB)라 브라우저에
- * 통째로 올려놓고 여기서 훑는 편이 왕복 한 번보다 빠르다. 엔티티가 216개다.
+ * 검색 서버를 두지 않는다. 색인을 브라우저에 올려놓고 여기서 훑는 편이
+ * 왕복 한 번보다 빠르고, 오타·초성·행정 접미 처리도 우리가 쥔다.
  *
  * DOM·로케일을 모른다 — 서버에서도 테스트에서도 그대로 돈다.
  */
@@ -49,6 +49,64 @@ export function choseong(text: string): string {
 /** 질의가 초성만으로 이루어졌는가 — 그럴 때만 초성 매칭을 켠다 */
 export function isChoseongQuery(q: string): boolean {
   return q.length > 0 && /^[ㄱ-ㅎ]+$/.test(q);
+}
+
+/**
+ * 행정 접미를 떼면 "제주도"가 "제주"와 같아진다.
+ * 긴 접미부터 본다 — "서울특별시" 가 "시" 만 잃고 "서울특별" 이 되면 안 된다.
+ *
+ * 실측: search_misses 의 "제주도"(2026-08-13) 는 도시명 "제주" 와 글자가
+ * 안 겹쳐 0건이었다. hay.includes(query) 방향이라 "제주".includes("제주도") 가
+ * false 다. 질의 쪽을 정규화하는 편이 도시마다 동의어를 적는 것보다 싸다.
+ */
+const ADMIN_SUFFIX = /(특별자치시|특별자치도|광역시|특별시|자치시|자치도|시|군|구|도|현|부)$/;
+
+/** 원문 + 접미를 뗀 변이. 초성 질의는 원문만. */
+export function queryVariants(raw: string): string[] {
+  const q = raw.trim().toLowerCase();
+  if (!q) return [];
+  if (isChoseongQuery(q)) return [q];
+  const stripped = q.replace(ADMIN_SUFFIX, "");
+  if (stripped.length >= 2 && stripped !== q) return [q, stripped];
+  return [q];
+}
+
+/** 지도 필터·드롭다운 검색 — 접미 정규화와 초성을 같은 규칙으로. */
+export function textMatchesQuery(hay: string, rawQuery: string): boolean {
+  const variants = queryVariants(rawQuery);
+  if (variants.length === 0) return true;
+  const h = hay.toLowerCase();
+  for (const v of variants) {
+    if (h.includes(v)) return true;
+    if (isChoseongQuery(v) && choseong(hay).includes(v)) return true;
+  }
+  return false;
+}
+
+/**
+ * 도시명 동의어 — 색인 hay 에 얹는다.
+ * 질의 접미 정규화와 겹쳐도 해가 없다. 접미가 아닌 별명(동경)만 여기 산다.
+ */
+export const CITY_SYNONYMS: Record<string, readonly string[]> = {
+  제주: ["제주도", "제주특별자치도"],
+  서울: ["서울시", "서울특별시"],
+  부산: ["부산시", "부산광역시"],
+  인천: ["인천시", "인천광역시"],
+  대구: ["대구시", "대구광역시"],
+  광주: ["광주시", "광주광역시"],
+  대전: ["대전시", "대전광역시"],
+  울산: ["울산시", "울산광역시"],
+  도쿄: ["동경", "도쿄도"],
+  오사카: ["오사카부"],
+  후쿠오카: ["후쿠오카현"],
+  교토: ["교토부"],
+};
+
+/** 도시 문서 hay — 이름·영문·슬러그 + 동의어 + 한글이면 `시` 접미. */
+export function cityHay(name: string, nameEn: string, slug: string): string[] {
+  const hay = [name, nameEn, slug, ...(CITY_SYNONYMS[name] ?? [])];
+  if (/^[가-힣]+$/.test(name) && !/(시|군|구|도)$/.test(name)) hay.push(`${name}시`);
+  return hay;
 }
 
 /* ── 채점 ─────────────────────────────────────────────────────────────
@@ -100,11 +158,14 @@ const KIND_CAP: Record<SearchKind, number> = {
 };
 
 export function search(index: SearchDoc[], rawQuery: string): SearchResults {
-  const query = rawQuery.trim().toLowerCase();
-  if (!query) return { top: null, groups: [] };
+  const variants = queryVariants(rawQuery);
+  if (variants.length === 0) return { top: null, groups: [] };
 
   const hits = index
-    .map((doc) => ({ doc, score: scoreDoc(doc, query) }))
+    .map((doc) => ({
+      doc,
+      score: Math.max(...variants.map((v) => scoreDoc(doc, v))),
+    }))
     .filter((h) => h.score > 0)
     .sort((a, b) => b.score - a.score || a.doc.name.length - b.doc.name.length);
 

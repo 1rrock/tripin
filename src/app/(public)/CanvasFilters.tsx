@@ -17,15 +17,11 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
 import { Avatar } from "@/shared/ui/frame";
 import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
-import { choseong, isChoseongQuery } from "@/shared/lib/search";
+import { textMatchesQuery } from "@/shared/lib/search";
 import type { HomeRegionId } from "@/shared/lib/geo-regions";
 
 function hit(hay: string, q: string) {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  const h = hay.toLowerCase();
-  if (h.includes(needle)) return true;
-  return isChoseongQuery(needle) && choseong(hay).includes(needle);
+  return textMatchesQuery(hay, q);
 }
 
 export type CityOption = {

@@ -6,13 +6,14 @@ import { loadHomeFeed } from "@/shared/api/home";
 import { loadTypeIndex } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import type { Locale } from "@/shared/i18n/config";
-import type { SearchDoc, SearchKind } from "@/shared/lib/search";
+import { cityHay, type SearchDoc, type SearchKind } from "@/shared/lib/search";
+import { placePath } from "@/shared/lib/place-path";
 
 /**
  * 통합 검색 색인 — 채널·지역·종류·장소·영상을 한 배열로.
  *
- * 왜 검색 서버가 없나: 색인 전체가 gzip 14KB 다(216개). 브라우저에 통째로
- * 올려놓고 훑는 편이 어떤 검색 API 왕복보다 빠르고, 오타·초성 처리도 우리가 쥔다.
+ * 왜 검색 서버가 없나: 브라우저에 통째로 올려놓고 훑는 편이 어떤 검색 API
+ * 왕복보다 빠르고, 오타·초성·행정 접미 처리도 우리가 쥔다.
  *
  * ⚠️ 이 로더는 **로케일을 모른다.** ko/en 을 둘 다 실어 보내고, 로케일을 아는
  *    쪽(`/api/search-index` 라우트)이 한쪽만 골라 내보낸다. 둘 다 넘기면 EN 응답에
@@ -51,7 +52,7 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
     fetchAll((from, to) =>
       supabase
         .from("places")
-        .select("name, name_en, city_id, summary_bullets, summary_bullets_en, map_status")
+        .select("slug, name, name_en, city_id, summary_bullets, summary_bullets_en, map_status")
         .eq("map_status", "confirmed")
         .range(from, to),
     ),
@@ -62,7 +63,6 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
   const docs: SearchDocRaw[] = [];
 
   // ── 지역 — "도쿄"의 가장 좋은 답은 영상 목록이 아니라 도쿄 지도다
-  const cityById = new Map<string, (typeof cities)[number]>();
   for (const c of cities) {
     docs.push({
       kind: "city",
@@ -70,12 +70,12 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
       ko: {
         name: c.name,
         sub: t(ko.cityIndex.minorMeta, { places: c.placeCount, videos: c.videoCount }),
-        hay: [c.name, c.nameEn, c.slug],
+        hay: cityHay(c.name, c.nameEn, c.slug),
       },
       en: {
         name: c.nameEn || c.name,
         sub: t(en.cityIndex.minorMeta, { places: c.placeCount, videos: c.videoCount }),
-        hay: [c.nameEn, c.name, c.slug],
+        hay: cityHay(c.name, c.nameEn, c.slug),
       },
     });
   }
@@ -123,24 +123,23 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
     });
   }
 
-  // ── 장소 — 핀은 도시 지도 안에 산다. 장소 전용 공개 라우트가 없어 도시로 보낸다
-  for (const c of cities) cityById.set(c.slug, c);
-  const citySlugById = new Map<string, string>();
+  // ── 장소 — 상호명 질의의 착지는 `/place/[slug]` 다. 도시로 보내면
+  //    "잇케이 JRJP 하카타점" 이 후쿠오카 561곳 문서에 묻힌다.
   {
     const { data: cityRows } = await supabase.from("cities").select("id, slug, name, name_en");
-    for (const row of cityRows ?? []) citySlugById.set(row.id, row.slug);
+    const cityByUuid = new Map((cityRows ?? []).map((row) => [row.id, row]));
     for (const p of placeRows ?? []) {
-      const citySlug = citySlugById.get(p.city_id);
-      const city = citySlug ? cityById.get(citySlug) : undefined;
+      if (!p.slug) continue;
+      const city = cityByUuid.get(p.city_id);
       if (!city) continue;
       const bulletsKo = (p.summary_bullets ?? []).join(" ").slice(0, BULLET_CAP);
       const bulletsEn = (p.summary_bullets_en ?? []).join(" ").slice(0, BULLET_CAP);
       docs.push({
         kind: "place",
-        path: `/city/${city.slug}`,
-        ko: { name: p.name, sub: city.name, hay: [p.name, bulletsKo] },
+        path: placePath(p.slug),
+        ko: { name: p.name, sub: city.name, hay: [p.name, p.name_en ?? "", bulletsKo] },
         // 장소명은 번역하지 않는다(§2-4) — EN 에서도 원문 상호명이다
-        en: { name: p.name, sub: city.nameEn || city.name, hay: [p.name, bulletsEn] },
+        en: { name: p.name, sub: city.name_en || city.name, hay: [p.name, p.name_en ?? "", bulletsEn] },
       });
     }
   }

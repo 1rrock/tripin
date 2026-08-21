@@ -1,5 +1,5 @@
 import type { PlaceType } from "@/shared/api/database.types";
-import { choseong, isChoseongQuery } from "@/shared/lib/search";
+import { textMatchesQuery } from "@/shared/lib/search";
 import { homeRegionForCountry, type HomeRegionId } from "@/shared/lib/geo-regions";
 
 export type MapFilterAxes = {
@@ -27,10 +27,7 @@ export type MapSavedLookup = {
 };
 
 export function matchesMapQuery(hay: string, q: string) {
-  const needle = q.trim().toLowerCase();
-  if (!needle) return true;
-  if (hay.includes(needle)) return true;
-  return isChoseongQuery(needle) && choseong(hay).includes(needle);
+  return textMatchesQuery(hay, q);
 }
 
 export function placeMatchesMapFilter(
