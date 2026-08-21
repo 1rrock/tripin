@@ -131,22 +131,13 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
               <span className="index truncate">{ch.displayName}</span>
               <Icon.chevron className="size-2.5 shrink-0" style={{ color: "var(--dim)" }} />
             </Link>
-            {/* 제목은 유튜브 원본 그대로여야 한다 — 요약·의역은 §III.E.3 위반 */}
-            <h1
-              className="font-black"
-              style={{
-                fontSize: "var(--t-title)",
-                letterSpacing: "-0.035em",
-                lineHeight: 1.3,
-              }}
-            >
-              <span className="lg:hidden">{video.title}</span>
-              <span
-                className="hidden lg:block"
-                style={{ fontSize: "var(--t-display)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-              >
-                {video.title}
-              </span>
+            {/* 제목은 유튜브 원본 그대로여야 한다 — 요약·의역은 §III.E.3 위반.
+                크기는 클래스로 가른다. `lg:hidden` / `hidden lg:block` 두 span 에
+                같은 제목을 넣으면 **문서에 제목이 두 번 실린다** — 평균 41자짜리
+                문자열이 매 영상 페이지마다 두 벌씩 나가고, 보조기기·복사 붙여넣기
+                에서도 어색하다. */}
+            <h1 className="font-black text-[length:var(--t-title)] leading-[1.3] tracking-[-0.035em] lg:text-[length:var(--t-display)] lg:leading-[1.15] lg:tracking-[-0.04em]">
+              {video.title}
             </h1>
             {/* 도시가 하나면 이름을 앞에 세우고 "도시 1" 은 지운다 — 바로 옆에서
                 같은 사실을 두 번 말하던 자리다. 여러 도시면 원래의 두 값을 쓴다. */}
@@ -162,19 +153,11 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
                 {m.common.watchOnYoutube}
               </Act>
             </div>
-            <p
-              className="hidden lg:block"
-              style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}
-            >
-              {m.video.thumbnailNotice}
-            </p>
           </div>
         </div>
-        {/* 모바일은 머리 아래로 내린다 — 136px 칸 옆에서는 이 문장이 제목을 밀어낸다 */}
-        <p
-          className="lg:hidden"
-          style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}
-        >
+        {/* 머리 아래 한 줄. 136px 칸 옆에 두면 모바일에서 제목을 밀어내고,
+            두 벌로 나눠 두면 문서에 같은 문장이 두 번 실린다. */}
+        <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.6 }}>
           {m.video.thumbnailNotice}
         </p>
       </header>
