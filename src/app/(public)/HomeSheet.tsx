@@ -6,14 +6,14 @@
  */
 
 import Link from "next/link";
-import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
+import type { FeedCelebritySpot, FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
 import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
-import { ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
+import { CelebrityFeed, ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
 import { HomeSearchButton } from "./HomeSearchButton";
 
 const RAIL = 8;
@@ -24,11 +24,13 @@ export async function HomeSheet({
   cities,
   videos,
   creators,
+  celebritySpots,
 }: {
   pieces: FeedPiece[];
   cities: CityRow[];
   videos: FeedVideo[];
   creators: FeedCreator[];
+  celebritySpots: FeedCelebritySpot[];
 }) {
   const locale = await getLocale();
   const m = getDictionary(locale);
@@ -50,6 +52,7 @@ export async function HomeSheet({
           <DestinationGrid cities={grid} locale={locale} messages={m} />
         </div>
 
+        <CelebrityFeed spots={celebritySpots} locale={locale} messages={m} />
         <VideoFeed videos={videos} locale={locale} messages={m} />
         <ChannelFeed creators={creators} locale={locale} messages={m} />
         <PieceFeed pieces={pieces} locale={locale} messages={m} />

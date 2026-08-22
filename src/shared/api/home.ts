@@ -83,11 +83,32 @@ export interface FeedPiece {
   cut: { youtubeId: string; title: string } | null;
 }
 
+/**
+ * 연예인 스팟 — "연예인이 간 장소" 섹션의 카드 한 장. 단위는 장소다.
+ *
+ * 인물은 채널이 아니다. (a) 본인 채널이 있는 인물(성시경 — creators.celebrity_name
+ * 등록 채널)과 (b) 남의 영상이 "OO도 다녀간"이라고 언급만 하는 인물(백종원 —
+ * place_celebrity_mentions)이 한 풀에 섞인다. 같은 장소가 양쪽에 있으면
+ * 언급(b)이 이긴다 — "성시경도 다녀간"이 본인 방문보다 강한 스토리다.
+ */
+export interface FeedCelebritySpot {
+  placeSlug: string;
+  placeName: string;
+  personName: string;
+  personNameEn: string | null;
+  city: { slug: string; name: string; nameEn: string | null };
+  /** 이 장소가 나온 영상의 컷 — places 에 사진 컬럼이 없어 썸네일은 늘 영상이다 */
+  cut: { youtubeId: string; title: string };
+  publishedAt: string | null;
+}
+
 export interface HomeFeed {
   videos: FeedVideo[];
   creators: FeedCreator[];
   /** 채널당 가장 두꺼운 조각. 핀 수 내림차순 */
   pieces: FeedPiece[];
+  /** 인물별 최신 1곳 라운드로빈 — 화면은 앞 8장만 쓴다 */
+  celebritySpots: FeedCelebritySpot[];
   /** ⚠️ 영상 수는 API 유래 데이터다 — 표기할 때 "우리가 검수한" 성격을 붙인다(LEGAL.md 4.5-(2)). */
   totals: { creators: number; cities: number; places: number; videos: number };
 }
@@ -98,16 +119,19 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     videos: [],
     creators: [],
     pieces: [],
+    celebritySpots: [],
     totals: { creators: 0, cities: 0, places: 0, videos: 0 },
   };
 
   const { data: creators } = await supabase
     .from("creators")
-    .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_handle, bio")
+    .select(
+      "id, slug, display_name, display_name_en, celebrity_name, initials, accent_color, avatar_url, youtube_handle, bio",
+    )
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
 
-  const [cities, videos, links, places] = await Promise.all([
+  const [cities, videos, links, places, mentions] = await Promise.all([
     fetchAll((from, to) =>
       supabase.from("cities").select("id, slug, name, name_en").range(from, to),
     ),
@@ -124,7 +148,19 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     fetchAll((from, to) =>
       supabase
         .from("places")
-        .select("id, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en")
+        .select(
+          "id, slug, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en",
+        )
+        .range(from, to),
+    ),
+    // 연예인 언급(b) — anon 클라이언트라 RLS 가 is_published 만 내준다.
+    // 오래된 것부터 순회해 같은 장소의 최신 언급이 마지막에 덮어쓰게 한다
+    // (아래 spotByPlace 병합이 나중 행 승리라서, 정렬이 없으면 승자가 비결정적).
+    fetchAll((from, to) =>
+      supabase
+        .from("place_celebrity_mentions")
+        .select("place_id, person_name, person_name_en, source_video_id")
+        .order("created_at", { ascending: true })
         .range(from, to),
     ),
   ]);
@@ -173,6 +209,17 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const feed: FeedVideo[] = [];
   const seenCities = new Set<string>();
   const seenPlaces = new Set<string>();
+  // 연예인 스팟 재료 — feed 가 최신순이라 장소당 처음 만나는 영상이 최신 컷이다.
+  // spotBaseByPlace 는 모든 보이는 장소(언급(b)의 발판),
+  // celebSpotByPlace 는 celebrity_name 채널의 것만 ((a)).
+  type SpotBase = {
+    place: { slug: string; name: string };
+    city: { slug: string; name: string; nameEn: string | null };
+    cut: { youtubeId: string; title: string };
+    publishedAt: string | null;
+  };
+  const spotBaseByPlace = new Map<string, SpotBase>();
+  const celebSpotByPlace = new Map<string, FeedCelebritySpot>();
   for (const v of videos ?? []) {
     const creator = creatorById.get(v.creator_id);
     if (!creator) continue;
@@ -184,6 +231,32 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     for (const p of stops) {
       seenPlaces.add(p.id);
       seenCities.add(p.city_id);
+      const city = cityById.get(p.city_id);
+      if (!city) continue;
+      if (!spotBaseByPlace.has(p.id)) {
+        spotBaseByPlace.set(p.id, {
+          place: { slug: p.slug, name: p.name },
+          city: { slug: city.slug, name: city.name, nameEn: city.name_en },
+          cut: { youtubeId: v.youtube_video_id, title: v.title },
+          publishedAt: v.published_at,
+        });
+      }
+      // (a)는 base 와 별도로 건다 — 같은 장소를 남의 채널 최신 영상이 먼저
+      // 선점해도, 인물 본인 영상이 있으면 그 컷으로 (a)에 들어가야 한다.
+      if (creator.celebrity_name && !celebSpotByPlace.has(p.id)) {
+        celebSpotByPlace.set(p.id, {
+          placeSlug: p.slug,
+          placeName: p.name,
+          personName: creator.celebrity_name,
+          // ⚠️ 채널 영문명을 인물 영문명으로 대용한다 — 현 4명은 채널명=인물명이라
+          // 성립. 인물명과 채널명이 다른 연예인을 등록하려면 celebrity_name_en
+          // 컬럼을 먼저 만들 것.
+          personNameEn: creator.display_name_en,
+          city: { slug: city.slug, name: city.name, nameEn: city.name_en },
+          cut: { youtubeId: v.youtube_video_id, title: v.title },
+          publishedAt: v.published_at,
+        });
+      }
     }
     const times = mine.map((l) => l.timestamp_sec).filter((t): t is number => t !== null);
 
@@ -219,6 +292,50 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     });
   }
   if (feed.length === 0) return empty;
+
+  // 2.5단계 — 연예인 스팟. (a) celebrity_name 채널 파생 + (b) 승인된 언급.
+  // 같은 장소가 양쪽에 있으면 (b)가 덮는다 — 언급이 더 강한 스토리다.
+  const videoRowById = new Map((videos ?? []).map((v) => [v.id, v]));
+  const spotByPlace = new Map(celebSpotByPlace);
+  for (const m of mentions ?? []) {
+    const base = spotBaseByPlace.get(m.place_id);
+    // 공개 조각 어디에도 안 보이는 장소의 언급은 카드가 링크할 곳이 없다
+    if (!base) continue;
+    const src = m.source_video_id ? videoRowById.get(m.source_video_id) : undefined;
+    spotByPlace.set(m.place_id, {
+      placeSlug: base.place.slug,
+      placeName: base.place.name,
+      personName: m.person_name,
+      personNameEn: m.person_name_en,
+      city: base.city,
+      cut: src ? { youtubeId: src.youtube_video_id, title: src.title } : base.cut,
+      publishedAt: src?.published_at ?? base.publishedAt,
+    });
+  }
+  // 인물별 최신 1곳씩 라운드로빈 — 한 인물(추성훈 42곳)이 섹션을 도배하지
+  // 못하게 한다. 인물 순서는 각자의 최신 스팟 기준. 화면은 8장, 여유로 12장.
+  const byPerson = new Map<string, FeedCelebritySpot[]>();
+  for (const spot of spotByPlace.values()) {
+    const queue = byPerson.get(spot.personName);
+    if (queue) queue.push(spot);
+    else byPerson.set(spot.personName, [spot]);
+  }
+  const ts = (s: FeedCelebritySpot) => (s.publishedAt ? Date.parse(s.publishedAt) : 0);
+  const queues = [...byPerson.values()];
+  for (const queue of queues) queue.sort((a, b) => ts(b) - ts(a));
+  queues.sort((a, b) => ts(b[0]) - ts(a[0]));
+  const celebritySpots: FeedCelebritySpot[] = [];
+  for (let round = 0; celebritySpots.length < 12; round += 1) {
+    let picked = false;
+    for (const queue of queues) {
+      const spot = queue[round];
+      if (!spot) continue;
+      celebritySpots.push(spot);
+      picked = true;
+      if (celebritySpots.length >= 12) break;
+    }
+    if (!picked) break;
+  }
 
   // 3단계 — 채널 스트립. 피드에 실제로 올라간 영상을 가진 채널만 남는다
   const activeCreators = new Set(feed.map((f) => f.creatorSlug));
@@ -289,6 +406,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     videos: feed,
     creators: creatorRows,
     pieces,
+    celebritySpots,
     totals: {
       creators: creatorRows.length,
       cities: seenCities.size,

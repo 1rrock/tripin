@@ -44,6 +44,8 @@ export const ko = {
     categoryMore: "더보기",
     tabRecommend: "추천",
     tabRecent: "최근",
+    /** 연예인 스팟 레일 — 인물(성시경·백종원…)이 다녀간 장소 카드 */
+    celebHeading: "연예인이 간 장소",
     /** 조각(채널×도시) 레일 — 홈에서 지도로 들어가는 주 입구 */
     piecesHeading: "채널이 간 도시",
     feedRecent: "최근 영상",
@@ -483,6 +485,7 @@ export type Messages = {
     categoryMore: string;
     tabRecommend: string;
     tabRecent: string;
+    celebHeading: string;
     piecesHeading: string;
     feedRecent: string;
     feedChannels: string;

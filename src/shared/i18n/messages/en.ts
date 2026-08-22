@@ -40,6 +40,7 @@ export const en: Messages = {
     categoryMore: "More",
     tabRecommend: "For you",
     tabRecent: "New",
+    celebHeading: "Spots celebrities visited",
     piecesHeading: "Cities by channel",
     feedRecent: "New videos",
     feedChannels: "Channels",

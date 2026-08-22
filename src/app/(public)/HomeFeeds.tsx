@@ -1,11 +1,11 @@
 /**
- * 홈 본문 섹션 — 도시 다음으로 깔리는 세 덩어리.
- * 최근 영상 · 채널 롤 · 조각(채널×도시).
+ * 홈 본문 섹션 — 도시 다음으로 깔리는 네 덩어리.
+ * 연예인 스팟 · 최근 영상 · 채널 롤 · 조각(채널×도시).
  * 서버 컴포넌트. 썸네일은 HTML 에 바로 실려 LCP 가 JS 를 기다리지 않는다.
  */
 
 import Link from "next/link";
-import type { FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
+import type { FeedCelebritySpot, FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { Locale } from "@/shared/i18n/config";
 import type { Messages } from "@/shared/i18n/messages/ko";
 import { t } from "@/shared/i18n/get-dictionary";
@@ -16,6 +16,7 @@ import { Thumb } from "@/shared/ui/Thumb";
 
 const VIDEOS = 8;
 const PIECES = 8;
+const CELEB_SPOTS = 8;
 
 type LocaleProps = {
   locale: Locale;
@@ -30,21 +31,65 @@ function Head({
 }: {
   id: string;
   title: string;
-  moreHref: string;
-  moreLabel: string;
+  /** 없으면 제목만 — 연예인 레일처럼 v1 에 더보기 목적지가 없는 섹션용 */
+  moreHref?: string;
+  moreLabel?: string;
 }) {
   return (
     <div className="flex items-baseline justify-between gap-3 px-(--gutter)">
       <h2 id={id} className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">
         {title}
       </h2>
-      <Link
-        href={moreHref}
-        className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
-      >
-        {moreLabel}
-      </Link>
+      {moreHref && moreLabel ? (
+        <Link
+          href={moreHref}
+          className="text-[13px] font-medium text-(--dim) hover:text-(--paper)"
+        >
+          {moreLabel}
+        </Link>
+      ) : null}
     </div>
+  );
+}
+
+/**
+ * 연예인이 간 장소 — 카드 단위는 장소다. 인물 단위로 하면 바로 아래
+ * 채널 롤과 같은 물건이 된다. 배지의 인물은 채널 주인일 수도(성시경),
+ * 남의 영상이 언급한 제3자일 수도(백종원) 있다. v1 은 더보기 없음.
+ */
+export function CelebrityFeed({
+  spots,
+  locale,
+  messages: m,
+}: { spots: FeedCelebritySpot[] } & LocaleProps) {
+  const href = (path: string) => localePath(path, locale);
+  const list = spots.slice(0, CELEB_SPOTS);
+  if (list.length === 0) return null;
+
+  return (
+    <section aria-labelledby="celeb-h" className="pt-8 lg:pt-12">
+      <Head id="celeb-h" title={m.home.celebHeading} />
+      <ul className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-(--gutter) pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
+        {list.map((s) => {
+          const person = locale === "ko" ? s.personName : (s.personNameEn ?? s.personName);
+          return (
+            <li key={s.placeSlug} className="w-[220px] shrink-0 lg:w-auto">
+              <Link href={href(`/place/${s.placeSlug}`)} className="block active:scale-[0.99]">
+                <Frame className="block w-full">
+                  <Thumb youtubeId={s.cut.youtubeId} alt={s.cut.title} />
+                </Frame>
+                <p className="mt-2.5 truncate text-[15px] font-semibold tracking-[-0.01em]">
+                  {s.placeName}
+                </p>
+                <p className="mt-0.5 truncate text-[12px] text-(--dim)">
+                  {person} · {displayCityName(s.city, locale)}
+                </p>
+              </Link>
+            </li>
+          );
+        })}
+      </ul>
+    </section>
   );
 }
 

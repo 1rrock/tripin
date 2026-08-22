@@ -53,6 +53,12 @@ export type Creator = {
   api_fetched_at: string;
   accent_color: string;
   bio: string | null;
+  /**
+   * 홈 "연예인이 간 장소" 섹션의 인물 표기 — display_name 파싱 대신 명시 등록.
+   * 값이 있는 채널만 섹션 (a) 풀에 들어간다. place_celebrity_mentions.person_name
+   * 과 같은 표기를 써야 라운드로빈이 같은 인물로 묶는다(0014).
+   */
+  celebrity_name: string | null;
   /** 삭제 요청 시 이 값만 false 로 내리면 RLS 가 즉시 차단한다. */
   is_published: boolean;
   place_count: number;
@@ -180,6 +186,20 @@ export type ChannelApplication = {
   created_at: string;
 }
 
+/**
+ * 연예인 언급 — 0014. "OO도 다녀간"이라고 남의 영상이 말하는 장소.
+ * 사람 승인(is_published) 전에는 RLS 가 anon 에 숨긴다. 자동 시드 금지.
+ */
+export type PlaceCelebrityMention = {
+  id: string;
+  place_id: string;
+  person_name: string;
+  person_name_en: string | null;
+  source_video_id: string | null;
+  is_published: boolean;
+  created_at: string;
+}
+
 /* ── 계정 — 0009_accounts.sql ──────────────────────────
    전부 소유자 전용 RLS 다. 공개 테이블과 달리 select 조차 auth.uid() 로 잠겨 있어
    `supabase-server.ts` / `supabase-browser.ts` 의 세션 클라이언트로만 읽힌다.
@@ -264,6 +284,7 @@ export type Database = {
       takedown_requests: TableOf<TakedownRequest>;
       search_misses: TableOf<SearchMiss>;
       channel_applications: TableOf<ChannelApplication>;
+      place_celebrity_mentions: TableOf<PlaceCelebrityMention>;
       profiles: TableOf<Profile>;
       saved_places: TableOf<SavedPlace>;
       subscriptions: TableOf<Subscription>;
