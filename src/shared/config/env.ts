@@ -127,4 +127,7 @@ export const serverEnv = {
    * 접수 자체를 메일 실패에 인질 잡히게 하지 않기 위한 optional 이다.
    */
   resendApiKey: () => optionalServer("RESEND_API_KEY"),
+
+  /** 알림 수신 주소 — Resend 샌드박스 제약상 **가입 계정의 이메일**이어야 한다. */
+  applyNotifyTo: () => optionalServer("APPLY_NOTIFY_TO"),
 } as const;

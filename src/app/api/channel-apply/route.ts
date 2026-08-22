@@ -70,15 +70,15 @@ export async function POST(req: Request): Promise<NextResponse> {
   return new NextResponse(null, { status: 204 });
 }
 
-const NOTIFY_TO = "hello@eatripin.com";
-
 /**
  * 새 신청을 운영자 메일로 알린다 — Resend HTTP API 직접 호출(SDK 불필요).
  * RESEND_API_KEY 가 없으면 조용히 건너뛴다(로컬·키 미설정 환경).
  *
- * from 이 onboarding@resend.dev 인 이유: 도메인 DNS 인증 전에는 Resend 가
- * 자기 샌드박스 주소로만 발신을 허용한다. eatripin.com 을 Resend 에 인증하면
- * no-reply@eatripin.com 으로 바꿀 수 있다.
+ * 수신 주소가 env 인 이유: Resend 샌드박스는 **가입 계정의 이메일로만** 발송을
+ * 허용한다(도메인 DNS 인증 전). 그래서 가입에 쓴 주소를 APPLY_NOTIFY_TO 로
+ * 넣는다 — hello@ 포워딩은 받는 길이지, 서버가 보내는 길이 아니다.
+ * from 도 같은 이유로 샌드박스 주소다. eatripin.com 을 Resend 에 인증하면
+ * from 은 no-reply@eatripin.com, to 는 아무 주소로나 바꿀 수 있다.
  */
 async function notifyByEmail(app: {
   channelUrl: string;
@@ -87,7 +87,8 @@ async function notifyByEmail(app: {
   note: string;
 }): Promise<void> {
   const key = serverEnv.resendApiKey();
-  if (!key) return;
+  const to = serverEnv.applyNotifyTo();
+  if (!key || !to) return;
 
   const admin = `${publicEnv.siteUrl.replace(/\/$/, "")}/admin/applications`;
   const text = [
@@ -106,7 +107,7 @@ async function notifyByEmail(app: {
     headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
     body: JSON.stringify({
       from: "Eatripin <onboarding@resend.dev>",
-      to: [NOTIFY_TO],
+      to: [to],
       subject: `채널 등록 신청 — ${app.channelUrl}`,
       text,
     }),
