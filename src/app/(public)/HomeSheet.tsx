@@ -8,8 +8,9 @@
 import Link from "next/link";
 import type { FeedCelebritySpot, FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
+import type { Locale } from "@/shared/i18n/config";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
-import { getLocale, localePath } from "@/shared/i18n/locale";
+import { localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
 import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
@@ -25,21 +26,22 @@ export async function HomeSheet({
   videos,
   creators,
   celebritySpots,
+  locale,
 }: {
   pieces: FeedPiece[];
   cities: CityRow[];
   videos: FeedVideo[];
   creators: FeedCreator[];
   celebritySpots: FeedCelebritySpot[];
+  locale: Locale;
 }) {
-  const locale = await getLocale();
   const m = getDictionary(locale);
   const rail = cities.slice(0, RAIL);
   const grid = cities.slice(0, GRID);
 
   return (
     <div>
-      <FieldHero cities={cities} />
+      <FieldHero cities={cities} locale={locale} />
 
       <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
         <div className="lg:hidden">
@@ -69,8 +71,7 @@ export async function HomeSheet({
  * fetchpriority=high 인데도 클라이언트 트리 뒤에 있어 로드 지연이 수 초였다.
  * 대신 `.hero-field` 의 CSS 배경으로 깐다 — 모바일은 440px 흑백 13KB 판.
  */
-async function FieldHero({ cities }: { cities: CityRow[] }) {
-  const locale = await getLocale();
+async function FieldHero({ cities, locale }: { cities: CityRow[]; locale: Locale }) {
   const m = getDictionary(locale);
   const chips = cities.slice(0, 4);
 

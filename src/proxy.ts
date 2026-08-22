@@ -1,15 +1,19 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 import { ADMIN_COOKIE, getAdminSecret, verifyToken } from "@/shared/lib/admin-auth";
-import { LOCALE_HEADER } from "@/shared/i18n/paths";
 import { publicEnv } from "@/shared/config/env";
 
 /**
- * 1) /en/* → 내부 경로 rewrite + x-tripin-locale
+ * 1) 로케일 → **URL 세그먼트** rewrite. 페이지가 `(public)/[lang]/` 아래 살므로
+ *    ko 는 `/city` → `/ko/city` 로 rewrite 하고(주소창은 그대로), en 은 `/en/city` 가
+ *    세그먼트와 이미 일치해 그대로 통과한다. 옛 구조(x-tripin-locale 헤더 +
+ *    `getLocale()`→`headers()`)는 공개 트리 전체를 요청마다 렌더하게 만들어
+ *    Vercel Active CPU 를 소진했다 — 헤더 방식으로 되돌리지 마라.
  * 2) `/` 첫 진입 시 Accept-Language 로 언어 판정 → 한국어가 아니면 /en 으로
  * 3) /admin/* · /api/admin/* 보호 (docs/ADMIN.md 1장)
  *
- * 기본 로케일(ko)은 URL 접두사 없음 — 기존 링크 유지.
+ * 기본 로케일(ko)은 URL 접두사 없음 — 기존 링크 유지. 내부 세그먼트 `/ko/*` 가
+ * 밖에서 직접 들어오면 bare 경로로 308 — 같은 문서가 두 URL 로 색인되는 것을 막는다.
  */
 
 /**
@@ -58,15 +62,10 @@ function isDirectEntry(request: NextRequest): boolean {
   }
 }
 
-function withLocale(request: NextRequest, locale: "ko" | "en", rewritePath?: string) {
-  const requestHeaders = new Headers(request.headers);
-  requestHeaders.set(LOCALE_HEADER, locale);
-  if (rewritePath !== undefined) {
-    const url = request.nextUrl.clone();
-    url.pathname = rewritePath;
-    return NextResponse.rewrite(url, { request: { headers: requestHeaders } });
-  }
-  return NextResponse.next({ request: { headers: requestHeaders } });
+function rewriteTo(request: NextRequest, pathname: string) {
+  const url = request.nextUrl.clone();
+  url.pathname = pathname;
+  return NextResponse.rewrite(url);
 }
 
 /**
@@ -146,10 +145,15 @@ async function protectAdmin(request: NextRequest) {
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
-  // 정적·API(어드민 제외)는 로케일 헤더만 필요한 경우 없음
+  // 정적 자산과 루트 메타데이터 파일 규약(점 없는 URL — og 이미지·앱 아이콘)은
+  // [lang] 트리 밖에 산다 — ko rewrite 에 휩쓸리면 404 가 된다.
   if (
     pathname.startsWith("/_next") ||
     pathname.startsWith("/favicon") ||
+    pathname === "/opengraph-image" ||
+    pathname === "/twitter-image" ||
+    pathname === "/apple-icon" ||
+    pathname === "/icon" ||
     pathname.includes(".")
   ) {
     return NextResponse.next();
@@ -181,10 +185,18 @@ export default async function proxy(request: NextRequest) {
     return res;
   };
 
-  // EN: /en → / , /en/city → /city
+  /* 내부 세그먼트가 밖으로 새면 정규 URL 로 돌려보낸다 — `/ko/city` 와 `/city` 가
+     같은 문서로 둘 다 색인되는 것을 막는다. rewrite 만 있으면 생기지 않지만,
+     내부 경로가 어딘가(로그·복사된 링크)로 새는 날을 대비한 안전판. */
+  if (pathname === "/ko" || pathname.startsWith("/ko/")) {
+    const url = request.nextUrl.clone();
+    url.pathname = pathname === "/ko" ? "/" : pathname.slice(3);
+    return attach(NextResponse.redirect(url, 308));
+  }
+
+  // EN: `/en/*` 은 [lang] 세그먼트와 이미 일치 — rewrite 없이 통과.
   if (pathname === "/en" || pathname.startsWith("/en/")) {
-    const bare = pathname === "/en" ? "/" : pathname.slice(3) || "/";
-    return attach(withLocale(request, "en", bare));
+    return attach(NextResponse.next());
   }
 
   /* 언어 감지는 홈 첫 진입에서만 한다. 하위 경로까지 걸면 검색 결과로 들어온
@@ -199,10 +211,8 @@ export default async function proxy(request: NextRequest) {
     }
   }
 
-  /* 통과 응답에는 Vary 를 안 건다 — NextResponse.next() 의 헤더는 뒤이어 오는 페이지
-     응답이 덮어써서 실제로 안 나간다(확인함). 리다이렉트 쪽에만 붙어 있으면 되고,
-     공개 페이지는 전부 동적(ƒ)이라 CDN 이 언어를 섞어 캐시할 여지도 없다. */
-  return attach(withLocale(request, "ko"));
+  // KO: 접두사 없는 경로 → `/ko/*` 세그먼트로 rewrite (주소창은 그대로).
+  return attach(rewriteTo(request, pathname === "/" ? "/ko" : `/ko${pathname}`));
 }
 
 export const config = {

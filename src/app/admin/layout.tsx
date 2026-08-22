@@ -2,12 +2,22 @@ import type { Metadata } from "next";
 import { cookies } from "next/headers";
 import Link from "next/link";
 import { ADMIN_COOKIE, getAdminSecret, verifyToken } from "@/shared/lib/admin-auth";
+import { publicEnv } from "@/shared/config/env";
+import { fontClasses } from "@/app/fonts";
+import "@/app/globals.css";
 
 /** 어드민 전체는 색인 금지 (docs/ADMIN.md 1장). robots.ts 의 차단과 이중 방어. */
 export const metadata: Metadata = {
+  metadataBase: new URL(publicEnv.siteUrl),
   robots: { index: false, follow: false },
 };
 
+/**
+ * 어드민의 **루트 레이아웃** — 공개 트리와 html 셸을 공유하지 않는다.
+ * 공개 쪽은 `(public)/[lang]/layout.tsx` 가 로케일 세그먼트로 정적 렌더되는 반면,
+ * 여기는 cookies() 를 읽는 동적 트리다(ko 고정). 루트 `app/layout.tsx` 를 되살려
+ * 합치면 공개 페이지 정적화가 통째로 풀리니 주의.
+ */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {
   // 로그인 페이지에는 헤더를 띄우지 않는다 — 인증 여부로 판단.
   const secret = getAdminSecret();
@@ -15,7 +25,9 @@ export default async function AdminLayout({ children }: { children: React.ReactN
   const authed = secret ? await verifyToken(secret, token) : false;
 
   return (
-    <div className="min-h-dvh bg-neutral-100 text-neutral-900">
+    <html lang="ko" className={fontClasses}>
+      <body>
+        <div className="min-h-dvh bg-neutral-100 text-neutral-900">
       {authed ? (
         <header className="border-b border-neutral-200 bg-white">
           <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
@@ -64,8 +76,10 @@ export default async function AdminLayout({ children }: { children: React.ReactN
             </form>
           </div>
         </header>
-      ) : null}
-      {children}
-    </div>
+          ) : null}
+          {children}
+        </div>
+      </body>
+    </html>
   );
 }

@@ -3,14 +3,14 @@ import { revalidateTag, unstable_cache } from "next/cache";
 /**
  * 공개 데이터 캐시.
  *
- * ⚠️ 공개 페이지는 정적이 아니다. `(public)/layout.tsx` 와 루트 `layout.tsx` 가
- *    `getLocale()` → `next/headers` 를 읽으므로 하위 트리 전체가 요청마다 렌더된다
- *    (`npm run build` 출력에서 공개 라우트가 전부 `ƒ`). 로케일이 URL 세그먼트가
- *    아니라 proxy 헤더로만 오는 구조(docs/I18N.md)의 대가다.
+ * 로케일이 URL 세그먼트(`(public)/[lang]/`)가 되면서 공개 페이지 대부분이
+ * 정적(ISR)이다 — searchParams 를 읽는 화면(지도·도시 상세·크리에이터 허브·조각)과
+ * force-dynamic(저장·계정·로그인)만 요청마다 렌더된다. 이 캐시는 그 동적 화면들과
+ * ISR 재생성이 Supabase 왕복을 페이지 수만큼 반복하지 않게 하는 층이다.
  *
- *    그래서 페이지의 `export const revalidate` 는 이 트리에서 아무 일도 하지 않았고,
- *    요청 한 번마다 Supabase 풀테이블 스캔이 그대로 나갔다. 렌더는 동적으로 두고
- *    **데이터 왕복만** 캐시한다 — 비용의 대부분이 렌더가 아니라 DB 에 있다.
+ * ⚠️ 공개 서버 트리에서 `headers()`·`cookies()` 를 읽으면 그 라우트의 정적화가
+ *    통째로 풀린다 — 요청마다 렌더 = Vercel Active CPU 소진(2026-08 무료 한도
+ *    초과 사태의 원인). 로케일이 필요하면 params.lang 으로 받아라.
  *
  * 규칙 두 가지:
  *
