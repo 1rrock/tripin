@@ -16,15 +16,18 @@ export interface PlaceCelebrity {
 
 export { celebAnchor } from "@/shared/lib/celeb-anchor";
 
-export async function loadPlaceCelebrities(
-  placeId: string,
+/** 장소 여러 곳 묶음 판 — 영상 페이지(정거장 N곳)가 쓴다. */
+export async function loadCelebritiesFor(
+  placeIds: string[],
   creatorSlugs: string[],
 ): Promise<PlaceCelebrity[]> {
   const [mentions, creators] = await Promise.all([
-    supabase
-      .from("place_celebrity_mentions")
-      .select("person_name, person_name_en")
-      .eq("place_id", placeId),
+    placeIds.length > 0
+      ? supabase
+          .from("place_celebrity_mentions")
+          .select("person_name, person_name_en")
+          .in("place_id", placeIds)
+      : Promise.resolve({ data: [] as { person_name: string; person_name_en: string | null }[] }),
     creatorSlugs.length > 0
       ? supabase
           .from("creators")
@@ -43,4 +46,11 @@ export async function loadPlaceCelebrities(
     byName.set(m.person_name, { name: m.person_name, nameEn: m.person_name_en });
   }
   return [...byName.values()];
+}
+
+export async function loadPlaceCelebrities(
+  placeId: string,
+  creatorSlugs: string[],
+): Promise<PlaceCelebrity[]> {
+  return loadCelebritiesFor([placeId], creatorSlugs);
 }

@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadVideoDetail } from "@/shared/api/videos";
+import { loadCelebritiesFor } from "@/shared/api/celebs";
+import { celebAnchor } from "@/shared/lib/celeb-anchor";
 import { Avatar, Chip, Frame } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
@@ -86,6 +88,12 @@ export default async function VideoPage({
   if (!data) notFound();
 
   const { creator: ch, video } = data;
+  // 이 영상의 정거장을 다녀간 연예인 — 아래 "다음 행동" 칩 줄에 선다.
+  // 채널 본인이 연예인이거나(성시경 영상), 정거장에 승인된 언급이 붙은 경우.
+  const celebrities = await loadCelebritiesFor(
+    [...new Set(video.stops.map((s) => s.placeId))],
+    [ch.slug],
+  );
 
   return (
     <main
@@ -191,6 +199,13 @@ export default async function VideoPage({
             {t(m.video.viewCityMap, { city: displayCityName(video.cities[0], locale) })}
           </Chip>
         ) : null}
+        {celebrities.map((c) => (
+          <Chip key={c.name} href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}>
+            {t(m.placeDetail.celebMore, {
+              person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
+            })}
+          </Chip>
+        ))}
       </section>
     </main>
   );
