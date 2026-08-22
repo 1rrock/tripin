@@ -113,7 +113,10 @@ for (const r of rows) {
 }
 
 if (INSERT) {
-  // 실명 + 단일 장소만 — 그 외에는 기계가 place 를 특정할 수 없다
+  // 실명 + 단일 장소만 — 그 외에는 기계가 place 를 특정할 수 없다.
+  // ⚠️ person_name_en 은 비워 들어간다 — 승인해서 is_published 를 올릴 때
+  //    반드시 같이 채울 것. 안 채우면 EN 화면 그룹 제목이 한글로 떨어진다
+  //    (2026-08-23 실제 발생: 신동엽·최강록이 /en/celebs 에 한글로 노출).
   const rowsToInsert = found.flatMap((f) =>
     f.placeId
       ? f.hits

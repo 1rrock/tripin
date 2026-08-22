@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { loadHomeFeed, type FeedCelebritySpot } from "@/shared/api/home";
+import { celebAnchor } from "@/shared/api/celebs";
 import type { Locale } from "@/shared/i18n/config";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
@@ -119,7 +120,7 @@ export default async function CelebsPage({
         {groups.map(([personName, spots]) => (
           <a
             key={personName}
-            href={`#p-${personName}`}
+            href={`#${celebAnchor(personName)}`}
             className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium"
             style={{
               background: "var(--ground)",
@@ -135,7 +136,7 @@ export default async function CelebsPage({
       {groups.map(([personName, spots]) => (
         <section
           key={personName}
-          id={`p-${personName}`}
+          id={celebAnchor(personName)}
           aria-label={personName}
           className="scroll-mt-14 pt-9"
         >

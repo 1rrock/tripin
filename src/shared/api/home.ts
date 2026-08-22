@@ -322,18 +322,25 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const videoRowById = new Map((videos ?? []).map((v) => [v.id, v]));
   const spotByPlace = new Map(celebSpotByPlace);
   for (const m of mentions ?? []) {
-    const base = spotBaseByPlace.get(m.place_id);
-    // 공개 조각 어디에도 안 보이는 장소의 언급은 카드가 링크할 곳이 없다
-    if (!base) continue;
+    // 발판은 보이는 장소(spotBase)가 우선, 없으면 (a) 보강분(게이트 우회로
+    // 들어온 celebrity 채널 장소)도 인정한다 — 안 그러면 게이트 밖 장소에서
+    // "(b)가 이긴다" 원칙이 조용히 무너진다. 둘 다 없으면 링크할 곳이 없는 것.
+    const vis = spotBaseByPlace.get(m.place_id);
+    const celeb = celebSpotByPlace.get(m.place_id);
+    if (!vis && !celeb) continue;
+    const place = vis?.place ?? { slug: celeb!.placeSlug, name: celeb!.placeName };
+    const city = vis?.city ?? celeb!.city;
+    const cut = vis?.cut ?? celeb!.cut;
+    const publishedAt = vis?.publishedAt ?? celeb!.publishedAt;
     const src = m.source_video_id ? videoRowById.get(m.source_video_id) : undefined;
     spotByPlace.set(m.place_id, {
-      placeSlug: base.place.slug,
-      placeName: base.place.name,
+      placeSlug: place.slug,
+      placeName: place.name,
       personName: m.person_name,
       personNameEn: m.person_name_en,
-      city: base.city,
-      cut: src ? { youtubeId: src.youtube_video_id, title: src.title } : base.cut,
-      publishedAt: src?.published_at ?? base.publishedAt,
+      city,
+      cut: src ? { youtubeId: src.youtube_video_id, title: src.title } : cut,
+      publishedAt: src?.published_at ?? publishedAt,
     });
   }
   // 인물별 최신 1곳씩 라운드로빈 — 한 인물(추성훈 42곳)이 섹션을 도배하지

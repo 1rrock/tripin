@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadNearbyPlaces, loadPlaceBySlug } from "@/shared/api/places";
-import { loadPlaceCelebrities } from "@/shared/api/celebs";
+import { celebAnchor, loadPlaceCelebrities } from "@/shared/api/celebs";
 import { placePath } from "@/shared/lib/place-path";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
@@ -317,7 +317,7 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
           {celebrities.map((c) => (
             <Link
               key={c.name}
-              href={localePath(`/celebs#p-${c.name}`, locale)}
+              href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}
               className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
               style={{ background: "var(--wax)" }}
             >
