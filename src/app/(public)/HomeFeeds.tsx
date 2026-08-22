@@ -102,6 +102,7 @@ export function CelebrityFeed({
   const href = (path: string) => localePath(path, locale);
   const person = (s: FeedCelebritySpot) =>
     locale === "ko" ? s.personName : (s.personNameEn ?? s.personName);
+  // 커버 로테이션은 로더(home.ts)가 한다 — 여기선 첫 장이 곧 오늘의 표지다.
   const [cover, ...rest] = spots;
   if (!cover) return null;
   const grid = rest.slice(0, 4);
@@ -227,7 +228,7 @@ export function ChannelFeed({
       />
       <ul className="no-scrollbar mt-4 flex gap-4 overflow-x-auto px-(--gutter) pb-1 lg:gap-6">
         {creators.map((c) => (
-          <li key={c.slug} className="w-[72px] shrink-0 lg:w-[84px]">
+          <li key={c.slug} className="w-[84px] shrink-0 lg:w-[92px]">
             <Link
               href={href(`/c/${c.slug}`)}
               aria-label={`${c.displayName} ${t(m.home.placesUnit, { n: c.placeCount })}`}

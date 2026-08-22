@@ -126,6 +126,7 @@ export const en: Messages = {
     address: "Address",
     openMapHeading: "Open in a map app",
     sourcesHeading: "Videos featuring this place",
+    celebMore: "All spots {person} visited",
     nearbyHeading: "More in {city}",
     nearbyMore: "See the full {city} map",
     notFound: "Place not found",

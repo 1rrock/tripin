@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadNearbyPlaces, loadPlaceBySlug } from "@/shared/api/places";
+import { loadPlaceCelebrities } from "@/shared/api/celebs";
 import { placePath } from "@/shared/lib/place-path";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
@@ -113,7 +114,10 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
   if (!place) notFound();
 
   const m = getDictionary(locale);
-  const nearby = await loadNearbyPlaces(place.citySlug, place.slug);
+  const [nearby, celebrities] = await Promise.all([
+    loadNearbyPlaces(place.citySlug, place.slug),
+    loadPlaceCelebrities(place.id, [...new Set(place.sources.map((s) => s.creatorSlug))]),
+  ]);
 
   const name = displayPlaceName(place, locale);
   const secondary = displayPlaceSecondary(place, locale);
@@ -305,6 +309,26 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
           ))}
         </div>
       </section>
+
+      {/* 이 장소를 다녀간 연예인 → /celebs 의 그 인물 그룹으로. 홈 커버스토리의
+          역방향 진입로다 — "성시경이 간 데 또 어디?"가 여기서 시작된다. */}
+      {celebrities.length > 0 ? (
+        <div className="mt-8 flex flex-wrap gap-2">
+          {celebrities.map((c) => (
+            <Link
+              key={c.name}
+              href={localePath(`/celebs#p-${c.name}`, locale)}
+              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
+              style={{ background: "var(--wax)" }}
+            >
+              {t(m.placeDetail.celebMore, {
+                person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
+              })}
+              <Icon.chevron className="size-2.5" />
+            </Link>
+          ))}
+        </div>
+      ) : null}
 
       {/* 크롤러가 옆으로 갈 길 — 사이트맵만으로는 발견은 되어도 링크 신호가 안 붙는다.
           12개에서 끊는 이유는 이 파일 맨 위 주석. */}

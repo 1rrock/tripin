@@ -59,6 +59,8 @@ export type Creator = {
    * 과 같은 표기를 써야 라운드로빈이 같은 인물로 묶는다(0014).
    */
   celebrity_name: string | null;
+  /** 인물 영문 표기(0016) — 없으면 화면이 display_name_en 으로 물러난다 */
+  celebrity_name_en: string | null;
   /** 삭제 요청 시 이 값만 false 로 내리면 RLS 가 즉시 차단한다. */
   is_published: boolean;
   place_count: number;

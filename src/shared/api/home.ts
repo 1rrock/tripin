@@ -126,7 +126,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const { data: creators } = await supabase
     .from("creators")
     .select(
-      "id, slug, display_name, display_name_en, celebrity_name, initials, accent_color, avatar_url, youtube_handle, bio",
+      "id, slug, display_name, display_name_en, celebrity_name, celebrity_name_en, initials, accent_color, avatar_url, youtube_handle, bio",
     )
     .order("place_count", { ascending: false });
   if (!creators || creators.length === 0) return empty;
@@ -248,10 +248,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
           placeSlug: p.slug,
           placeName: p.name,
           personName: creator.celebrity_name,
-          // ⚠️ 채널 영문명을 인물 영문명으로 대용한다 — 현 4명은 채널명=인물명이라
-          // 성립. 인물명과 채널명이 다른 연예인을 등록하려면 celebrity_name_en
-          // 컬럼을 먼저 만들 것.
-          personNameEn: creator.display_name_en,
+          personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
           city: { slug: city.slug, name: city.name, nameEn: city.name_en },
           cut: { youtubeId: v.youtube_video_id, title: v.title },
           publishedAt: v.published_at,
@@ -325,17 +322,22 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   const queues = [...byPerson.values()];
   for (const queue of queues) queue.sort((a, b) => ts(b) - ts(a));
   queues.sort((a, b) => ts(b[0]) - ts(a[0]));
-  const celebritySpots: FeedCelebritySpot[] = [];
+  const roundRobin: FeedCelebritySpot[] = [];
   for (let round = 0; ; round += 1) {
     let picked = false;
     for (const queue of queues) {
       const spot = queue[round];
       if (!spot) continue;
-      celebritySpots.push(spot);
+      roundRobin.push(spot);
       picked = true;
     }
     if (!picked) break;
   }
+  // 커버 일별 로테이션 — 새 영상이 없어도 매일 다른 인물이 표지에 선다.
+  // 회전 폭을 인물 수로 제한하면 첫 순환 구간 안이라 연속 5장의 인물이 안 겹친다.
+  // 캐시(1시간) 안에서 계산하므로 날짜 경계 반영이 최대 1시간 늦을 수 있다 — 수용.
+  const rot = queues.length > 0 ? Math.floor(Date.now() / 86_400_000) % queues.length : 0;
+  const celebritySpots = [...roundRobin.slice(rot), ...roundRobin.slice(0, rot)];
 
   // 3단계 — 채널 스트립. 피드에 실제로 올라간 영상을 가진 채널만 남는다
   const activeCreators = new Set(feed.map((f) => f.creatorSlug));

@@ -6,7 +6,7 @@ import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
-import { JsonLd, breadcrumbList } from "@/shared/seo/json-ld";
+import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Frame, Index } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -88,6 +88,15 @@ export default async function CelebsPage({
           { name: m.celebs.title, url: absoluteUrl("/celebs", locale) },
         ])}
       />
+      <JsonLd
+        data={linkList(
+          m.celebs.srHeading,
+          celebritySpots.map((s) => ({
+            name: s.placeName,
+            url: absoluteUrl(`/place/${s.placeSlug}`, locale),
+          })),
+        )}
+      />
       <h1 className="sr-only">{m.celebs.srHeading}</h1>
       <header className="px-(--gutter) pt-6">
         <p
@@ -101,8 +110,35 @@ export default async function CelebsPage({
         </p>
       </header>
 
+      {/* 인물 앵커 칩 — 추성훈 42곳 같은 긴 그룹을 스크롤로 지나지 않고 건너뛴다 */}
+      <nav
+        aria-label={m.celebs.title}
+        className="no-scrollbar sticky top-0 z-10 mt-4 flex gap-1.5 overflow-x-auto bg-(--ground) px-(--gutter) py-2.5"
+        style={{ borderBottom: "1px solid var(--hairline)" }}
+      >
+        {groups.map(([personName, spots]) => (
+          <a
+            key={personName}
+            href={`#p-${personName}`}
+            className="inline-flex shrink-0 items-center gap-1 rounded-full px-3 py-1.5 text-[13px] font-medium"
+            style={{
+              background: "var(--ground)",
+              color: "#383838",
+              boxShadow: "inset 0 0 0 1px var(--hairline)",
+            }}
+          >
+            {person(spots[0])} <span style={{ color: "var(--dim)" }}>{spots.length}</span>
+          </a>
+        ))}
+      </nav>
+
       {groups.map(([personName, spots]) => (
-        <section key={personName} aria-label={personName} className="pt-9">
+        <section
+          key={personName}
+          id={`p-${personName}`}
+          aria-label={personName}
+          className="scroll-mt-14 pt-9"
+        >
           <div className="flex items-baseline gap-2.5 px-(--gutter)">
             <span aria-hidden className="h-[3px] w-[18px] self-center" style={{ background: "var(--wax)" }} />
             <h2 className="text-xl font-bold tracking-[-0.03em]">{person(spots[0])}</h2>

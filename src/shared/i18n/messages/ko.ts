@@ -137,6 +137,8 @@ export const ko = {
     address: "주소",
     openMapHeading: "지도 앱으로 열기",
     sourcesHeading: "이 가게가 나온 영상",
+    /** 연예인 역링크 칩 — 조사(이/가) 문제를 피해 이름 뒤에 조사를 안 붙인다 */
+    celebMore: "{person} 간 곳 전부 보기",
     nearbyHeading: "{city}의 다른 곳",
     nearbyMore: "{city} 전체 지도 보기",
     notFound: "찾을 수 없는 장소",
@@ -579,6 +581,7 @@ export type Messages = {
     address: string;
     openMapHeading: string;
     sourcesHeading: string;
+    celebMore: string;
     nearbyHeading: string;
     nearbyMore: string;
     notFound: string;
