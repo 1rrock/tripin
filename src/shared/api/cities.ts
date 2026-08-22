@@ -334,15 +334,17 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
  * 캐시 항목이 같이 무거워지고, 드로어 첫 열기가 그만큼 늦어진다.
  */
 /**
- * ⚠️ **이 타입의 캐시 항목(`cities:home-map`)이 2MB 상한 바로 아래에 있다.**
- *    실측 2.03MB. 필드를 하나 늘리면 1732를 곱한 만큼 커지는데, 2MB
- *    (`unstable_cache` 한도)를 넘는 순간 Next 가 **조용히 캐시를 포기한다** —
- *    에러가 아니라 빌드 로그에 "items over 2MB can not be cached" 한 줄만 남고,
- *    그 뒤로는 요청마다 `loadGraph` 풀스캔이 그대로 나간다(실측 800ms).
- *
- *    실제로 여기에 `createdAt`·`updatedAt` 를 넣었다가 2.11MB 가 되어 캐시가
- *    꺼진 적이 있다. 타임스탬프는 `places.ts` 의 별도 경량 로더로 뺐다.
- *    필드를 늘려야 하면 먼저 다른 필드를 빼라.
+ * ⚠️ **이 타입은 2MiB 짜리 파생 캐시 항목들의 재료다 — 필드 하나가 1,845배로 불어난다.**
+ *    직접 캐시(`cities:home-map`)는 2026-08-23 에 없앴다: 상한(2MiB)의 93.7%
+ *    까지 차 있었는데, 소비자 전부가 자기 `cachePublic` 안에서 부르는 탓에
+ *    중첩 우회로 실효도 없었다(unstable_cache 는 중첩되면 안쪽을 건너뛴다).
+ *    지금 상한을 견디는 것은 파생 항목들이다 — `map:detail-index`(72%),
+ *    `places:slug-index`. 상한을 넘으면 Next 가 **조용히 캐시를 포기한다** —
+ *    빌드 로그에 "items over 2MB can not be cached" 한 줄만 남고 그 뒤로는
+ *    요청마다 풀스캔이다. 실제로 `createdAt`·`updatedAt` 를 얹었다가 2.11MB 로
+ *    캐시가 꺼진 적이 있다(타임스탬프는 places.ts 의 경량 로더로 뺐다).
+ *    필드를 늘려야 하면 먼저 다른 필드를 빼라 — cachePublic 이 80% 부터
+ *    함수 로그에 `[cachePublic]` 경고를 남긴다(cache.ts).
  */
 export interface HomeMapPlace {
   id: string;
@@ -542,9 +544,15 @@ function placeCoords(p: { lat: number | null; lng: number | null; google_maps_ur
   return coordsFromMapsUrl(p.google_maps_url);
 }
 
-/** locale 은 인자라서 캐시 키에 들어간다 — ko/en 이 항목을 나눠 가진다.
- *  (헤더를 캐시 안에서 읽는 것과 달리 첫 요청의 로케일이 굳는 문제가 없다) */
-export const loadHomeMap = cachePublic(async function loadHomeMap(
+/**
+ * **일부러 cachePublic 으로 안 감싼다.** 소비자 여섯(캔버스·드로어·장소·사이트맵·
+ * RSS 인덱스)이 전부 자기 `cachePublic` 안에서 부르는데, unstable_cache 는
+ * 중첩되면 안쪽을 우회하므로 여기 캐시는 어차피 안 읽혔다 — 2MiB 상한의 93.7%
+ * 를 차지하는 폭탄이기만 했다(HomeMapPlace 주석). 진짜 캐시는 소비자들의
+ * 파생 항목이고, 여기는 캐시된 `loadGraph` 위의 매핑(~100ms)일 뿐이다.
+ * reactCache 는 같은 렌더에서 소비자 둘이 동시에 미스날 때 매핑 중복만 끊는다.
+ */
+export const loadHomeMap = reactCache(async function loadHomeMap(
   locale: Locale,
 ): Promise<HomeMapPlace[]> {
   const { cities, links, placeById, videoById, creatorById } = await loadGraph();
@@ -640,4 +648,4 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
     });
   }
   return out.sort((a, b) => a.name.localeCompare(b.name, "ko"));
-}, ["cities:home-map"]);
+});

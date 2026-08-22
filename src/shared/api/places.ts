@@ -138,9 +138,10 @@ export async function loadNearbyPlaces(
 /**
  * 장소 slug → 생성·수정 시각. **별도 쿼리다.**
  *
- * `loadHomeMap` 에 얹지 않는 이유가 있다 — 그 캐시 항목이 이미 2.03MB 로
- * `unstable_cache` 의 2MB 상한 바로 아래다. 실제로 여기 두 필드를 거기 넣었더니
- * 2.11MB 가 되어 **캐시가 조용히 꺼졌다**(빌드 로그의 "items over 2MB can not be
+ * `loadHomeMap`(HomeMapPlace)에 얹지 않는 이유가 있다 — 그 타입은 2MiB 상한
+ * 근처의 파생 캐시 항목들(`map:detail-index`·`places:slug-index`)의 재료라,
+ * 필드 하나가 1,845배로 불어난다. 실제로 여기 두 필드를 거기 넣었더니 2.11MB
+ * 가 되어 **캐시가 조용히 꺼졌다**(빌드 로그의 "items over 2MB can not be
  * cached" 한 줄이 유일한 신호였고, 그 뒤로는 요청마다 풀스캔이 나간다).
  *
  * 이 로더는 3개 컬럼만 읽어 ~200KB 다. `map_status=confirmed` 로 좁히고, 공개

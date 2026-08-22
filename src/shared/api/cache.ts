@@ -31,11 +31,40 @@ export const PUBLIC_DATA_TAG = "public-data";
 /** 태그 무효화가 안 걸린 경로를 위한 상한. 페이지의 옛 ISR 주기와 같다. */
 const TTL_SECONDS = 3600;
 
+/**
+ * unstable_cache 는 직렬화 2MiB 를 넘는 항목을 **조용히** 버린다 — 빌드 로그
+ * "items over 2MB can not be cached" 한 줄이 전부이고, 그 뒤로는 요청마다
+ * 풀스캔이다(cities:home-map 이 실제로 그렇게 꺼진 적이 있다). 넘기 **전에**
+ * 알 수 있게, 로더가 실제로 돌 때(=미스)마다 크기를 재서 80% 부터 함수 로그에
+ * 경고를 남긴다. Vercel 로그에서 `[cachePublic]` 로 찾는다.
+ */
+const ITEM_SIZE_LIMIT = 2 * 1024 * 1024;
+const ITEM_SIZE_WARN_AT = 0.8;
+
 export function cachePublic<A extends unknown[], R>(
   loader: (...args: A) => Promise<R>,
   keyParts: string[],
 ): (...args: A) => Promise<R> {
-  return unstable_cache(loader, keyParts, {
+  const measured = async (...args: A): Promise<R> => {
+    const out = await loader(...args);
+    try {
+      const size = new TextEncoder().encode(JSON.stringify(out)).length;
+      if (size >= ITEM_SIZE_LIMIT * ITEM_SIZE_WARN_AT) {
+        const pct = Math.round((size / ITEM_SIZE_LIMIT) * 100);
+        console.warn(
+          `[cachePublic] ${keyParts.join("/")}(${JSON.stringify(args)}) 항목이 ` +
+            `${(size / 1024 / 1024).toFixed(2)}MiB — 2MiB 상한의 ${pct}%. ` +
+            `100% 를 넘는 순간 조용히 캐시가 꺼지고 매 요청 풀스캔이 된다. ` +
+            `필드를 빼거나 항목을 쪼갤 것(cities.ts HomeMapPlace 주석).`,
+        );
+      }
+    } catch {
+      /* 측정 실패(순환 참조 등)가 응답을 막아선 안 된다 — 캐시 계약(직렬화 가능)
+         위반은 어차피 unstable_cache 쪽에서 드러난다 */
+    }
+    return out;
+  };
+  return unstable_cache(measured, keyParts, {
     tags: [PUBLIC_DATA_TAG],
     revalidate: TTL_SECONDS,
   });
