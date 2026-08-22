@@ -259,6 +259,7 @@ export function CityExplorer({
               summary: detail?.summary ?? EMPTY_SUMMARY,
               mapLinks: detail?.mapLinks ?? [],
               sources: detail ? sourcesFor(detail.sources) : [],
+              celebrities: detail?.celebrities ?? [],
             }}
             loading={detailLoading}
             heroHint={

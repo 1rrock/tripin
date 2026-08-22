@@ -249,6 +249,7 @@ export function Explorer({
         summary: detail?.summary ?? EMPTY_SUMMARY,
         mapLinks: detail?.mapLinks ?? [],
         sources: (detail?.sources ?? []).filter((src) => src.creatorSlug === creatorSlug),
+        celebrities: detail?.celebrities ?? [],
       }
     : null;
 

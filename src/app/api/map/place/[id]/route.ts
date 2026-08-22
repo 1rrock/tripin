@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { loadMapPlace } from "@/shared/api/cities";
+import { loadPlaceCelebrities } from "@/shared/api/celebs";
 import { defaultLocale, isLocale } from "@/shared/i18n/config";
 
 /**
@@ -18,7 +19,14 @@ export async function GET(
   const locale = asked && isLocale(asked) ? asked : defaultLocale;
   const place = await loadMapPlace(id, locale);
   if (!place) return NextResponse.json(null, { status: 404 });
-  return NextResponse.json(place, {
-    headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" },
-  });
+  // 연예인 배지는 캐시된 인덱스에 안 실린다(cities.ts MapPlaceDetail 주석 —
+  // 2MB 상한). 여기서 따로 조회해 붙인다 — CDN s-maxage 가 이 비용을 흡수한다.
+  const celebrities = await loadPlaceCelebrities(
+    id,
+    [...new Set(place.sources.map((s) => s.creatorSlug))],
+  );
+  return NextResponse.json(
+    { ...place, celebrities },
+    { headers: { "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400" } },
+  );
 }

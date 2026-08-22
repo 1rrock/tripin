@@ -1,5 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
+import type { PlaceCelebrity } from "@/shared/api/celebs";
 import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { mapLinks, type MapLink } from "@/shared/lib/map-links";
@@ -439,6 +440,12 @@ export type MapPlaceDetail = {
   summary: SummaryDisplay;
   mapLinks: MapLink[];
   sources: PlaceSource[];
+  /**
+   * 이 장소를 다녀간 연예인 — 캐시된 인덱스에는 **넣지 않는다**(위 2MB 상한
+   * 주석). `/api/map/place/[id]` 라우트가 응답 직전에 celebs.ts 로 따로 조회해
+   * 붙이고, CDN s-maxage 가 실질 캐시 역할을 한다. 인덱스 유래 객체에는 없다.
+   */
+  celebrities?: PlaceCelebrity[];
 };
 
 /**

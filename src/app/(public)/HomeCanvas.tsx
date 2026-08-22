@@ -936,6 +936,7 @@ export function ExplorerCanvas({
               summary: placeDetail?.summary ?? EMPTY_SUMMARY,
               mapLinks: placeDetail?.mapLinks ?? [],
               sources: sourcesFor(),
+              celebrities: placeDetail?.celebrities ?? [],
             }}
             loading={detailLoading}
             heroHint={

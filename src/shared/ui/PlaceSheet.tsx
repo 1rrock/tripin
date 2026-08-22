@@ -28,6 +28,7 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 import type { MapLink } from "@/shared/lib/map-links";
 import { placePath } from "@/shared/lib/place-path";
+import { celebAnchor } from "@/shared/lib/celeb-anchor";
 
 export type PlaceDrawerSnap = "peek" | "mid" | "full";
 
@@ -58,6 +59,8 @@ export interface SheetPlace {
   /** 열 수 있는 지도 앱 전부 — 첫 번째가 이 나라의 기본(shared/lib/map-links.ts) */
   mapLinks: MapLink[];
   sources: SheetSource[];
+  /** 이 장소를 다녀간 연예인 — 상세 응답에만 실려 온다. 없거나 빈 배열이면 칩을 안 그린다 */
+  celebrities?: { name: string; nameEn: string | null }[];
 }
 
 /** 아웃링크 — 유튜브는 타임스탬프 포함(&t=초). 목록 행과 같은 문법. */
@@ -103,7 +106,7 @@ export function PlaceSheet({
   heroHint?: SheetHeroHint | null;
 }) {
   void _index;
-  const { messages: m, t, href } = useLocale();
+  const { locale, messages: m, t, href } = useLocale();
   const { lists, listsOf } = useSaved();
   const hero = place.sources[0] ?? null;
   const groups = lists.filter((l) => listsOf(place.id).has(l.id)).map((l) => l.name);
@@ -541,6 +544,27 @@ export function PlaceSheet({
    *   · 대표 컷이 이미 보여 준 영상이면 썸네일을 다시 깔지 않는다
    *   · 행동은 둘 다 버튼으로 세운다 — 유튜브(왁스)와 우리 영상 화면(외곽선)
    */
+  /* 연예인 역링크 — 장소 상세 페이지의 "OO 간 곳 전부 보기" 칩과 같은 문법.
+     지도가 주요 발견 경로인데 드로어에서만 이 신호가 사라지면 안 된다. */
+  const celebBlock =
+    place.celebrities && place.celebrities.length > 0 ? (
+      <div className="mt-4 flex flex-wrap gap-2">
+        {place.celebrities.map((c) => (
+          <Link
+            key={c.name}
+            href={href(`/celebs#${celebAnchor(c.name)}`)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
+            style={{ background: "var(--wax)" }}
+          >
+            {t(m.placeDetail.celebMore, {
+              person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
+            })}
+            <Icon.chevron className="size-2.5" />
+          </Link>
+        ))}
+      </div>
+    ) : null;
+
   const sourcesBlock = place.sources.length > 0 ? (
     <div className="mt-5">
       <h3 className="index mb-1" style={{ color: "var(--dim)" }}>
@@ -705,6 +729,7 @@ export function PlaceSheet({
           ) : (
             <>
               <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+              {celebBlock}
               {sourcesBlock}
             </>
           )}
@@ -860,6 +885,7 @@ export function PlaceSheet({
         ) : (
           <>
             <SummaryBlock className="mt-4" display={place.summary} dimColor="var(--dim)" />
+            {celebBlock}
             {sourcesBlock}
           </>
         )}
