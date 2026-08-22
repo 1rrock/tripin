@@ -196,6 +196,8 @@ export type PlaceCelebrityMention = {
   person_name: string;
   person_name_en: string | null;
   source_video_id: string | null;
+  /** 검수 근거 문장 — 프로브가 채운다(0015). places.source_note 와 같은 역할. */
+  source_note: string | null;
   is_published: boolean;
   created_at: string;
 }
