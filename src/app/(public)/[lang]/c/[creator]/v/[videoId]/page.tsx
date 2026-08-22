@@ -199,12 +199,20 @@ export default async function VideoPage({
             {t(m.video.viewCityMap, { city: displayCityName(video.cities[0], locale) })}
           </Chip>
         ) : null}
+        {/* 연예인 칩만 밀랍색 — 장소 상세·지도 드로어와 같은 강조 문법.
+            회색 Chip 사이에 두면 이 기능의 후크가 묻힌다(2026-08-23 UX 점검). */}
         {celebrities.map((c) => (
-          <Chip key={c.name} href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}>
+          <Link
+            key={c.name}
+            href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}
+            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
+            style={{ background: "var(--wax)" }}
+          >
             {t(m.placeDetail.celebMore, {
               person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
             })}
-          </Chip>
+            <Icon.chevron className="size-2.5" />
+          </Link>
         ))}
       </section>
     </main>
