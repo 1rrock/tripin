@@ -98,6 +98,7 @@ export default async function PublicLayout({ children }: { children: React.React
                 { href: "/policy", label: m.common.policy },
                 { href: "/privacy", label: m.common.privacy },
                 { href: "/takedown", label: m.common.takedown },
+                { href: "/apply", label: m.common.apply },
               ].map((it) => (
                 <Link
                   key={it.href}

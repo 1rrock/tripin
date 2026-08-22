@@ -53,6 +53,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     entry(base, "/policy", { lastModified: now, changeFrequency: "monthly", priority: 0.3 }),
     entry(base, "/privacy", { lastModified: now, changeFrequency: "monthly", priority: 0.3 }),
     entry(base, "/takedown", { lastModified: now, changeFrequency: "monthly", priority: 0.3 }),
+    entry(base, "/apply", { lastModified: now, changeFrequency: "monthly", priority: 0.3 }),
   ];
 
   /* 전 테이블 조회는 전부 fetchAll — PostgREST 는 1000행에서 자르고, 잘린

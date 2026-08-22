@@ -7,6 +7,7 @@ import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
 import { Avatar, Rule } from "@/shared/ui/frame";
+import { Icon } from "@/shared/ui/icons";
 import { SubscribeButton } from "@/shared/ui/SaveButton";
 
 /**
@@ -162,6 +163,18 @@ export default async function ChannelsPage() {
           <Rule />
         </ul>
       )}
+
+      {/* 크리에이터가 들어오는 문 — 채널 목록을 보는 사람 중에 채널 주인이 섞여 있다 */}
+      <p className="mt-6">
+        <Link
+          href={localePath("/apply", locale)}
+          className="index inline-flex items-center gap-0.5 underline-offset-4 hover:underline"
+          style={{ color: "var(--dim)" }}
+        >
+          {m.channels.applyCta}
+          <Icon.chevron className="size-2.5" />
+        </Link>
+      </p>
     </main>
   );
 }

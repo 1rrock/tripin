@@ -137,6 +137,7 @@ export const en: Messages = {
     openChannel: "Open {name} — {places} places",
     placesUnit: "{n} places",
     rollMeta: "{videos} {videos|video|videos} · {places} {places|place|places}",
+    applyCta: "Want your channel here?",
   },
   typeIndex: {
     title: "What kind?",
@@ -207,6 +208,7 @@ export const en: Messages = {
     loading: "Loading",
     shareAria: "Share {name}",
     linkCopied: "Link copied",
+    apply: "Add your channel",
   },
   saved: {
     nav: "Saved",

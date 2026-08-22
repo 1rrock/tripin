@@ -168,6 +168,18 @@ export type SearchMiss = {
   last_seen_at: string;
 }
 
+/** 채널 등록 신청 — 0013. 공개 폼의 저장소, 어드민(service_role)만 읽는다 */
+export type ChannelApplication = {
+  id: string;
+  channel_url: string;
+  contact_email: string;
+  video_urls: string | null;
+  note: string | null;
+  /** new → done(등록됨) / dismissed(보류·거절) */
+  status: string;
+  created_at: string;
+}
+
 /* ── 계정 — 0009_accounts.sql ──────────────────────────
    전부 소유자 전용 RLS 다. 공개 테이블과 달리 select 조차 auth.uid() 로 잠겨 있어
    `supabase-server.ts` / `supabase-browser.ts` 의 세션 클라이언트로만 읽힌다.
@@ -251,6 +263,7 @@ export type Database = {
       creator_cities: TableOf<CreatorCity>;
       takedown_requests: TableOf<TakedownRequest>;
       search_misses: TableOf<SearchMiss>;
+      channel_applications: TableOf<ChannelApplication>;
       profiles: TableOf<Profile>;
       saved_places: TableOf<SavedPlace>;
       subscriptions: TableOf<Subscription>;
@@ -263,6 +276,16 @@ export type Database = {
       recount_stats: { Args: Record<string, never>; Returns: undefined };
       /** 검색 실패어 upsert — 0008. anon 실행 권한은 잠겨 있다(service_role 전용) */
       log_search_miss: { Args: { q: string }; Returns: undefined };
+      /** 채널 등록 신청 — 0013. anon 실행 권한은 잠겨 있다(service_role 전용) */
+      submit_channel_application: {
+        Args: {
+          p_channel_url: string;
+          p_contact_email: string;
+          p_video_urls: string | null;
+          p_note: string | null;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       place_type: PlaceType;

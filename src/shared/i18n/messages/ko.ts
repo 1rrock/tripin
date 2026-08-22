@@ -149,6 +149,7 @@ export const ko = {
     openChannel: "{name} 채널 열기 — {places}곳",
     placesUnit: "{n}곳",
     rollMeta: "영상 {videos} · {places}곳",
+    applyCta: "내 채널도 등록하고 싶다면",
   },
   typeIndex: {
     title: "뭐 볼래요?",
@@ -228,6 +229,7 @@ export const ko = {
     /* 공유 — 모바일은 시스템 시트, 데스크톱은 클립보드 복사(ShareButton) */
     shareAria: "{name} 링크 공유",
     linkCopied: "링크를 복사했어요",
+    apply: "채널 등록",
   },
   saved: {
     /* 하트·체크·구독. 로그인 문구는 저장 목록 화면에서만 쓴다 —
@@ -576,6 +578,7 @@ export type Messages = {
     openChannel: string;
     placesUnit: string;
     rollMeta: string;
+    applyCta: string;
   };
   typeIndex: {
     title: string;
@@ -646,6 +649,7 @@ export type Messages = {
     loading: string;
     shareAria: string;
     linkCopied: string;
+    apply: string;
   };
   saved: {
     nav: string;
