@@ -1,4 +1,5 @@
 import { supabase } from "@/shared/api/supabase";
+import { cache as reactCache } from "react";
 import { cachePublic } from "@/shared/api/cache";
 import type { PlaceCelebrity } from "@/shared/api/celebs";
 import { fetchAll } from "@/shared/api/chunked-in";
@@ -106,7 +107,12 @@ export interface CityRow {
  * 로케일 무관한 원본 행만 담는다(`name` 과 `name_en` 을 둘 다 실어 보낸다).
  * 캐시가 JSON 직렬화라 여기서 Map 을 만들면 안 된다 — 아래 `loadGraph` 가 맡는다.
  */
-const loadGraphRows = cachePublic(async () => {
+/* React cache() 로 한 겹 더 — unstable_cache 는 **중첩되면 안쪽이 캐시를 우회**한다
+   (loadHomeMap 미스 한 번에 이 스캔이 2회 돌아 1.7초가 나왔다). cache() 는 같은
+   요청 안에서 두 번째 호출에 첫 promise 를 돌려줘 그 중복을 끊는다. 라우트
+   핸들러에서는 no-op 일 수 있으므로, 핸들러 경로는 loadHomeMap 쪽에서 중첩
+   호출 자체를 없애는 것으로 따로 막는다(publishedCityIds 인라인 유도). */
+const loadGraphRows = reactCache(cachePublic(async () => {
   const [cities, creators, videos, links, places] = await Promise.all([
     fetchAll((from, to) =>
       supabase
@@ -141,10 +147,10 @@ const loadGraphRows = cachePublic(async () => {
   ]);
 
   return { cities, creators, videos, links, places };
-}, ["cities:graph"]);
+}, ["cities:graph"]));
 
 /** 도시 → 확정 장소·채널을 잇는 공통 조회. 목록과 상세가 같은 판정을 쓰게 한다. */
-async function loadGraph() {
+const loadGraph = reactCache(async function loadGraph() {
   const { cities, creators, videos, links, places } = await loadGraphRows();
 
   const placeById = new Map(places.map((p) => [p.id, p]));
@@ -152,7 +158,7 @@ async function loadGraph() {
   const creatorById = new Map(creators.map((c) => [c.id, c]));
 
   return { cities, links, placeById, videoById, creatorById };
-}
+});
 
 /** 지역 목록 — 확정 장소가 하나라도 있는 도시만.
  *  행(loadGraphRows)만이 아니라 **파생 결과**도 캐시한다 — 그래프 순회와
@@ -408,6 +414,53 @@ export async function loadMapCanvasSeed(): Promise<MapCanvasPlace[]> {
   return (await loadMapCanvasIndex()).slice(0, MAP_CANVAS_SEED);
 }
 
+/** 캔버스 필터 칩이 읽는 채널 한 줄 — id(구독 토글용)·표시·확정 장소 수. */
+export interface MapCreatorChip {
+  id: string;
+  slug: string;
+  displayName: string;
+  initials: string;
+  accentColor: string;
+  avatarUrl: string | null;
+  placeCount: number;
+}
+
+/**
+ * `/map` 의 채널 칩 — 예전엔 이걸 위해 `loadHomeFeed()`(700KB 캐시 항목, 자체
+ * 5테이블 스캔)를 통째로 읽고 대부분 필드를 null 로 덮었다. 칩이 실제로 읽는
+ * 것은 이 일곱 필드뿐이다. placeCount 는 캔버스 인덱스(이미 캐시)에서 센다 —
+ * 새 스캔이 없다.
+ */
+export const loadMapCreators = cachePublic(async function loadMapCreators(): Promise<
+  MapCreatorChip[]
+> {
+  const [{ creators }, places] = await Promise.all([loadGraphRows(), loadMapCanvasIndex()]);
+  const counts = new Map<string, number>();
+  for (const p of places) {
+    for (const slug of new Set(p.sources.map((s) => s.creatorSlug))) {
+      counts.set(slug, (counts.get(slug) ?? 0) + 1);
+    }
+  }
+  return creators
+    .map((c) => ({
+      id: c.id,
+      slug: c.slug,
+      displayName: c.display_name,
+      initials: c.initials,
+      accentColor: c.accent_color,
+      avatarUrl: c.avatar_url,
+      placeCount: counts.get(c.slug) ?? 0,
+    }))
+    .filter((c) => c.placeCount > 0)
+    .sort((a, b) => b.placeCount - a.placeCount);
+}, ["map:creators"]);
+
+/** 드로어 단독 렌더용 핀 한 줄 — `?place=` 딥링크가 1,845곳 인덱스를 기다리지
+ *  않도록, 상세 응답에 이름·좌표·종류를 같이 실어 보낼 때 쓴다. */
+export async function loadMapCanvasPlace(id: string): Promise<MapCanvasPlace | null> {
+  return (await loadMapCanvasIndex()).find((p) => p.id === id) ?? null;
+}
+
 export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
   const names = [...new Set(p.sources.map((s) => s.creatorName))];
   return {
@@ -495,7 +548,26 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
   locale: Locale,
 ): Promise<HomeMapPlace[]> {
   const { cities, links, placeById, videoById, creatorById } = await loadGraph();
-  const publishedCities = new Set((await loadCityIndex()).map((c) => c.slug));
+  /* ⚠️ 여기서 `loadCityIndex()` 를 부르면 안 된다 — unstable_cache 는 중첩되면
+     안쪽 캐시를 우회해서, 이 함수의 미스 한 번에 전수 스캔이 **2회** 돌았다
+     (실측 1.72초). 공개 도시 판정(확정 장소 MIN_CITY_PINS 곳 이상)은 이미 손에
+     든 그래프에서 그대로 유도한다 — loadCityIndex:217 과 같은 판정이다. */
+  const cityPlaceIds = new Map<string, Set<string>>();
+  for (const link of links) {
+    const place = placeById.get(link.place_id);
+    if (!place) continue;
+    const video = videoById.get(link.video_id);
+    if (!video || !creatorById.has(video.creator_id)) continue;
+    let set = cityPlaceIds.get(place.city_id);
+    if (!set) {
+      set = new Set();
+      cityPlaceIds.set(place.city_id, set);
+    }
+    set.add(place.id);
+  }
+  const publishedCityIds = new Set(
+    [...cityPlaceIds].filter(([, ids]) => ids.size >= MIN_CITY_PINS).map(([id]) => id),
+  );
   const cityById = new Map(cities.map((c) => [c.id, c]));
 
   const byPlace = new Map<string, PlaceSource[]>();
@@ -503,7 +575,7 @@ export const loadHomeMap = cachePublic(async function loadHomeMap(
     const place = placeById.get(link.place_id);
     if (!place) continue;
     const city = cityById.get(place.city_id);
-    if (!city || !publishedCities.has(city.slug)) continue;
+    if (!city || !publishedCityIds.has(city.id)) continue;
     if (!placeCoords(place)) continue;
     const video = videoById.get(link.video_id);
     if (!video) continue;

@@ -24,7 +24,9 @@ import { revalidateTag, unstable_cache } from "next/cache";
  * 무효화: 어드민 액션이 공개 데이터를 바꿀 때 `purgePublicData()`.
  * `revalidatePath` 는 이 캐시를 비우지 않는다 — 둘 다 불러야 한다.
  */
-const PUBLIC_DATA_TAG = "public-data";
+/** 라우트 핸들러의 `Cache-Tag` 헤더도 이 값을 쓴다 — 리터럴이 갈라지면
+ *  `vercel cache invalidate --tag public-data` 가 그 CDN 사본을 못 지운다. */
+export const PUBLIC_DATA_TAG = "public-data";
 
 /** 태그 무효화가 안 걸린 경로를 위한 상한. 페이지의 옛 ISR 주기와 같다. */
 const TTL_SECONDS = 3600;

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PUBLIC_DATA_TAG } from "@/shared/api/cache";
 import { loadMapCanvasIndex } from "@/shared/api/cities";
 
 /**
@@ -15,7 +16,10 @@ export async function GET() {
     { places },
     {
       headers: {
-        "Cache-Control": "public, s-maxage=3600, stale-while-revalidate=86400",
+        /* max-age 5분 — 뒤로가기·재방문이 727KB 를 다시 안 받게 브라우저에도 앉힌다 */
+        "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+        // 어드민 purge 가 CDN 사본까지 지우게 — place 라우트와 같은 태그
+        "Cache-Tag": PUBLIC_DATA_TAG,
       },
     },
   );

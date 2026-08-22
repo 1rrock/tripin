@@ -51,6 +51,18 @@ const MapView = dynamic(
   { ssr: false },
 );
 
+/** 드로어 상세 — 핀 필드(이름·좌표·종류)가 응답에 같이 실려 온다(라우트 주석). */
+type PlaceDetailRow = MapPlaceDetail & Partial<MapCanvasPlace>;
+
+/* 모듈 스코프 상세 캐시 — 같은 세션에서 같은 장소를 다시 열면 네트워크를 안 탄다.
+   CDN 키가 장소×로케일로 흩어져 미스가 잦은 것을 브라우저 쪽에서 흡수한다.
+   항목당 ~1KB, 상한을 넘으면 가장 오래된 것부터 버린다.
+   TTL 은 라우트의 max-age 와 같은 5분 — 탭을 오래 열어 둔 사용자가 어드민
+   수정(삭제 요청 반영 등)을 영영 못 보는 일이 없게, 그보다 오래 머물 수 없다. */
+const detailCache = new Map<string, { row: PlaceDetailRow; at: number }>();
+const DETAIL_CACHE_MAX = 300;
+const DETAIL_CACHE_TTL_MS = 5 * 60 * 1000;
+
 export type CanvasLead = "home" | "region" | "channel" | "type";
 
 /** 바텀시트 스냅 — 화면(캔버스) 높이 비율 % */
@@ -92,8 +104,10 @@ export function ExplorerCanvas({
 
      ⚠️ 예전엔 이걸 requestIdleCallback(timeout 1800) 뒤로 미뤘다. Lighthouse
      점수는 좋아졌는데 실제로는 진입 후 1~2초 동안 지도도 목록도 없는 흰
-     화면이 떴다. 지금은 마운트 즉시 받는다 — 단 priority:"low" 로 내려
-     preload 한 LCP 썸네일이 대역폭을 먼저 가져간다.
+     화면이 떴다. 지금은 마운트 즉시, 기본 우선순위로 받는다 — priority:"low"
+     로 내렸을 때는 목록·핀·딥링크 드로어가 전부 이 응답에 매달리는데도
+     썸네일·지도 SDK 뒤로 밀려, CDN 미스와 겹치면 수 초짜리 빈 화면이 됐다.
+     LCP 썸네일은 preload(fetchPriority:high)가 이미 지키고 있다.
      지도를 뒤로 미루는 일은 MapView 한 곳에서만 한다(거기 rAF+타이머). */
   const [fetchedPlaces, setFetchedPlaces] = useState<MapCanvasPlace[] | null>(
     surface === "page" ? null : places,
@@ -103,7 +117,7 @@ export function ExplorerCanvas({
   useEffect(() => {
     if (surface !== "page") return;
     let alive = true;
-    fetch("/api/map/index", { priority: "low" } as RequestInit)
+    fetch("/api/map/index")
       .then((res) => (res.ok ? res.json() : { places: [] }))
       .then((data: { places?: MapCanvasPlace[] }) => {
         if (alive) setFetchedPlaces(data.places ?? []);
@@ -145,7 +159,7 @@ export function ExplorerCanvas({
      페이지를 2~3초 스켈레톤으로 갈아엎어 아무 반응이 없는 것처럼 보인다.
      URL 은 history.pushState 로만 맞춰 뒤로가기는 살린다. */
   const [localPlace, setLocalPlace] = useState<string | null>(placeParam);
-  const [placeDetail, setPlaceDetail] = useState<MapPlaceDetail | null>(null);
+  const [placeDetail, setPlaceDetail] = useState<PlaceDetailRow | null>(null);
   /* 어느 장소의 상세를 **받아봤는지**. null 하나로는 "아직 로딩" 과 "없더라(404)"
      를 구분 못 해 뼈가 영영 안 걷힌다. */
   const [detailSettledFor, setDetailSettledFor] = useState<string | null>(null);
@@ -169,16 +183,34 @@ export function ExplorerCanvas({
     if (!localPlace) return;
     const id = localPlace;
     let alive = true;
-    const settle = (row: MapPlaceDetail | null) => {
+    const settle = (row: PlaceDetailRow | null) => {
       if (!alive) return;
       setPlaceDetail(row);
       setDetailSettledFor(id);
     };
+    /* 재열람은 메모리에서 — 뒤로가기로 닫았다 다시 여는 흐름이 제일 잦다 */
+    const cached = detailCache.get(`${locale}:${id}`);
+    if (cached && Date.now() - cached.at < DETAIL_CACHE_TTL_MS) {
+      settle(cached.row);
+      return;
+    }
     /* `?l=` — 라우트 응답이 CDN 에 s-maxage 로 앉는데, proxy 헤더는 캐시 키에
        안 들어간다. 로케일을 URL 로 갈라야 KO 요약이 EN 에 안 나간다. */
     fetch(`/api/map/place/${id}?l=${locale}`, { priority: "high" } as RequestInit)
       .then((res) => (res.ok ? res.json() : null))
-      .then((row: MapPlaceDetail | null) => settle(row))
+      .then((row: PlaceDetailRow | null) => {
+        if (row) {
+          /* 만료 항목을 갱신할 때 자리부터 비운다 — Map 은 set 해도 삽입 순서가
+             안 바뀌어, 안 지우면 갱신분이 "가장 오래된 것"으로 먼저 쫓겨난다 */
+          detailCache.delete(`${locale}:${id}`);
+          if (detailCache.size >= DETAIL_CACHE_MAX) {
+            const oldest = detailCache.keys().next().value;
+            if (oldest !== undefined) detailCache.delete(oldest);
+          }
+          detailCache.set(`${locale}:${id}`, { row, at: Date.now() });
+        }
+        settle(row);
+      })
       .catch(() => settle(null));
     return () => {
       alive = false;
@@ -331,9 +363,44 @@ export function ExplorerCanvas({
     [filtered, locale],
   );
 
+  /**
+   * `?place=` 딥링크의 드로어는 상세 응답만으로 선다.
+   *
+   * 예전엔 인덱스 행(filtered/livePlaces)에서만 장소를 찾아서, 상세가 200ms 에
+   * 와 있어도 1,845곳 인덱스가 도착하기 전엔 드로어를 아예 안 그렸다 — 인덱스
+   * CDN 미스(실측 6.7초)와 겹치면 딥링크가 그 시간 내내 빈 지도였다. 상세
+   * 응답이 핀 필드(이름·좌표·종류)를 같이 실어 오므로(라우트 주석) 그걸로
+   * 캔버스 행을 세워 먼저 연다. 인덱스가 오면 진짜 행이 이 자리를 대신한다.
+   */
+  const fallbackDetailPlace = useMemo<MapCanvasPlace | null>(() => {
+    if (!localPlace || !placeDetail || detailSettledFor !== localPlace) return null;
+    const d = placeDetail;
+    if (typeof d.name !== "string" || typeof d.lat !== "number" || typeof d.lng !== "number") {
+      return null;
+    }
+    return {
+      id: localPlace,
+      name: d.name,
+      nameLocal: d.nameLocal ?? null,
+      placeType: d.placeType ?? "restaurant",
+      lat: d.lat,
+      lng: d.lng,
+      citySlug: d.citySlug ?? "",
+      cityName: d.cityName ?? "",
+      cityNameEn: d.cityNameEn ?? null,
+      countryCode: d.countryCode ?? "",
+      youtubeId: d.youtubeId ?? null,
+      sources: d.sources.map((s) => ({ creatorSlug: s.creatorSlug })),
+      searchText: d.searchText ?? "",
+    };
+  }, [localPlace, placeDetail, detailSettledFor]);
+
   const detailPlace =
-    (localPlace ? (filtered.find((p) => p.id === localPlace) ?? livePlaces.find((p) => p.id === localPlace)) : null) ??
-    null;
+    (localPlace
+      ? (filtered.find((p) => p.id === localPlace) ??
+        livePlaces.find((p) => p.id === localPlace) ??
+        fallbackDetailPlace)
+      : null) ?? null;
   const detailOpen = Boolean(detailPlace);
 
   useEffect(() => {
