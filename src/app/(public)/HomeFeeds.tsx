@@ -2,6 +2,14 @@
  * 홈 본문 섹션 — 도시 다음으로 깔리는 네 덩어리.
  * 연예인 스팟 · 최근 영상 · 채널 롤 · 조각(채널×도시).
  * 서버 컴포넌트. 썸네일은 HTML 에 바로 실려 LCP 가 JS 를 기다리지 않는다.
+ *
+ * 매거진 리듬(2026-08 리디자인 A안): 같은 썸네일 레일이 세 번 반복되던 걸
+ * 섹션마다 카드 문법을 다르게 바꿨다 — 연예인은 커버스토리(대형 1+그리드 4),
+ * 영상은 와이드 레일, 채널은 아바타 스트립, 조각은 이미지 없는 넘버드 리스트.
+ * 스크롤마다 밀도가 바뀌어야 "편집된 페이지"로 읽힌다(Infatuation 크기 위계).
+ *
+ * ⚠️ 커버 카드도 썸네일 위에 글자·그라데이션을 얹지 않는다 — 오버레이 금지
+ *    (YouTube 정책 §III.E.3, Thumb.tsx 주석). 텍스트는 항상 이미지 밖에 둔다.
  */
 
 import Link from "next/link";
@@ -16,7 +24,6 @@ import { Thumb } from "@/shared/ui/Thumb";
 
 const VIDEOS = 8;
 const PIECES = 8;
-const CELEB_SPOTS = 8;
 
 type LocaleProps = {
   locale: Locale;
@@ -28,18 +35,28 @@ function Head({
   title,
   moreHref,
   moreLabel,
+  waxed = false,
 }: {
   id: string;
   title: string;
   /** 없으면 제목만 — 연예인 레일처럼 v1 에 더보기 목적지가 없는 섹션용 */
   moreHref?: string;
   moreLabel?: string;
+  /** 킥커 바 색 — 주인공 섹션(연예인)만 밀랍색으로 세운다 */
+  waxed?: boolean;
 }) {
   return (
-    <div className="flex items-baseline justify-between gap-3 px-(--gutter)">
-      <h2 id={id} className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">
-        {title}
-      </h2>
+    <div className="flex items-center justify-between gap-3 px-(--gutter)">
+      <span className="flex items-center gap-2">
+        <span
+          aria-hidden
+          className="h-[3px] w-[18px]"
+          style={{ background: waxed ? "var(--wax)" : "var(--paper)" }}
+        />
+        <h2 id={id} className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">
+          {title}
+        </h2>
+      </span>
       {moreHref && moreLabel ? (
         <Link
           href={moreHref}
@@ -52,10 +69,30 @@ function Head({
   );
 }
 
+/** 넘버드 리스트·카드의 오른쪽 화살촉 — 장식이 아니라 "행 전체가 링크"라는 신호 */
+function Chevron() {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      className="size-[14px] shrink-0"
+      aria-hidden
+      fill="none"
+      stroke="var(--edge)"
+      strokeWidth="2"
+      strokeLinecap="round"
+    >
+      <path d="M9 6l6 6-6 6" />
+    </svg>
+  );
+}
+
 /**
- * 연예인이 간 장소 — 카드 단위는 장소다. 인물 단위로 하면 바로 아래
- * 채널 롤과 같은 물건이 된다. 배지의 인물은 채널 주인일 수도(성시경),
+ * 연예인이 간 장소 — 홈의 커버스토리. 카드 단위는 장소다(인물 단위면 바로
+ * 아래 채널 롤과 같은 물건이 된다). 배지의 인물은 채널 주인일 수도(성시경),
  * 남의 영상이 언급한 제3자일 수도(백종원) 있다. v1 은 더보기 없음.
+ *
+ * 대형 1장 + 소형 4장 — 로더의 라운드로빈이 커버를 매번 다른 인물의 최신
+ * 장소로 갈아 끼우므로 큐레이션 손이 따로 들지 않는다.
  */
 export function CelebrityFeed({
   spots,
@@ -63,32 +100,57 @@ export function CelebrityFeed({
   messages: m,
 }: { spots: FeedCelebritySpot[] } & LocaleProps) {
   const href = (path: string) => localePath(path, locale);
-  const list = spots.slice(0, CELEB_SPOTS);
-  if (list.length === 0) return null;
+  const person = (s: FeedCelebritySpot) =>
+    locale === "ko" ? s.personName : (s.personNameEn ?? s.personName);
+  const [cover, ...rest] = spots;
+  if (!cover) return null;
+  const grid = rest.slice(0, 4);
 
   return (
     <section aria-labelledby="celeb-h" className="pt-8 lg:pt-12">
-      <Head id="celeb-h" title={m.home.celebHeading} />
-      <ul className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-(--gutter) pb-1 lg:grid lg:grid-cols-4 lg:overflow-visible">
-        {list.map((s) => {
-          const person = locale === "ko" ? s.personName : (s.personNameEn ?? s.personName);
-          return (
-            <li key={s.placeSlug} className="w-[220px] shrink-0 lg:w-auto">
-              <Link href={href(`/place/${s.placeSlug}`)} className="block active:scale-[0.99]">
-                <Frame className="block w-full">
-                  <Thumb youtubeId={s.cut.youtubeId} alt={s.cut.title} />
-                </Frame>
-                <p className="mt-2.5 truncate text-[15px] font-semibold tracking-[-0.01em]">
-                  {s.placeName}
-                </p>
-                <p className="mt-0.5 truncate text-[12px] text-(--dim)">
-                  {person} · {displayCityName(s.city, locale)}
-                </p>
-              </Link>
-            </li>
-          );
-        })}
-      </ul>
+      <Head id="celeb-h" title={m.home.celebHeading} waxed />
+      <div className="mt-4 px-(--gutter) lg:grid lg:grid-cols-2 lg:gap-6">
+        <Link
+          href={href(`/place/${cover.placeSlug}`)}
+          className="block active:scale-[0.99]"
+        >
+          <Frame className="block w-full">
+            {/* maxres 는 영상에 따라 404 — 커버는 매일 회전하므로 항상 있는 mq(16:9)를 쓴다 */}
+            <Thumb youtubeId={cover.cut.youtubeId} alt={cover.cut.title} eager />
+          </Frame>
+          <span className="mt-3 flex flex-col items-start gap-1.5">
+            <span
+              className="rounded-full px-2.5 py-1 text-[12px] font-bold text-white"
+              style={{ background: "var(--wax)" }}
+            >
+              {person(cover)} · {displayCityName(cover.city, locale)}
+            </span>
+            <span className="text-[22px] leading-tight font-black tracking-[-0.03em] lg:text-[26px]">
+              {cover.placeName}
+            </span>
+            <span className="line-clamp-1 text-[13px] text-(--dim)">{cover.cut.title}</span>
+          </span>
+        </Link>
+        {grid.length > 0 ? (
+          <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-5 lg:mt-0 lg:content-start">
+            {grid.map((s) => (
+              <li key={s.placeSlug} className="min-w-0">
+                <Link href={href(`/place/${s.placeSlug}`)} className="block active:scale-[0.99]">
+                  <Frame className="block w-full">
+                    <Thumb youtubeId={s.cut.youtubeId} alt={s.cut.title} />
+                  </Frame>
+                  <p className="mt-2 truncate text-[14px] font-semibold tracking-[-0.01em]">
+                    {s.placeName}
+                  </p>
+                  <p className="mt-0.5 truncate text-[12px] text-(--dim)">
+                    {person(s)} · {displayCityName(s.city, locale)}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+      </div>
     </section>
   );
 }
@@ -136,6 +198,11 @@ export function VideoFeed({
   );
 }
 
+/**
+ * 채널 — 아바타 스트립. 필름 롤(썸네일 4컷) 리스트는 /channels 로 물러났다:
+ * 홈에서 영상·조각 섹션과 같은 썸네일 문법을 반복하면 페이지가 단조로워진다.
+ * 여기서는 "사람"이라는 시각 언어(원형)만 세운다.
+ */
 export function ChannelFeed({
   creators,
   locale,
@@ -152,47 +219,19 @@ export function ChannelFeed({
         moreHref={href("/channels")}
         moreLabel={m.home.moreFeed}
       />
-      <ul className="mt-4 flex flex-col">
+      <ul className="no-scrollbar mt-4 flex gap-4 overflow-x-auto px-(--gutter) pb-1 lg:gap-6">
         {creators.map((c) => (
-          <li key={c.slug} className="border-b border-(--hairline)">
+          <li key={c.slug} className="w-[72px] shrink-0 lg:w-[84px]">
             <Link
               href={href(`/c/${c.slug}`)}
-              aria-label={`${c.displayName} ${t(m.home.placesUnit, { n: c.placeCount })} ${c.cities
-                .slice(0, 4)
-                .map((x) => displayCityName(x, locale))
-                .join(" · ")}`}
-              className="block px-(--gutter) py-4 active:bg-(--hover)"
+              aria-label={`${c.displayName} ${t(m.home.placesUnit, { n: c.placeCount })}`}
+              className="flex flex-col items-center gap-1.5 active:scale-[0.98]"
             >
-              <span className="flex items-center gap-3.5">
-                <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={42} />
-                <span className="min-w-0 flex-1">
-                  <span className="flex items-baseline justify-between gap-3">
-                    <span className="min-w-0 truncate text-[15px] font-bold tracking-[-0.02em]">
-                      {c.displayName}
-                    </span>
-                    <Index className="shrink-0">
-                      {t(m.home.placesUnit, { n: c.placeCount })}
-                    </Index>
-                  </span>
-                  <span className="mt-0.5 block truncate">
-                    <Index>
-                      {c.cities
-                        .slice(0, 4)
-                        .map((x) => displayCityName(x, locale))
-                        .join(" · ")}
-                    </Index>
-                  </span>
-                </span>
+              <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={56} />
+              <span className="w-full truncate text-center text-[11px] font-bold tracking-[-0.01em]">
+                {c.displayName}
               </span>
-              {c.recentVideos.length > 0 ? (
-                <span className="mt-3 grid grid-cols-4 gap-2">
-                  {c.recentVideos.slice(0, 4).map((v) => (
-                    <Frame key={v.youtubeId} className="block w-full">
-                      <Thumb youtubeId={v.youtubeId} alt={v.title} />
-                    </Frame>
-                  ))}
-                </span>
-              ) : null}
+              <Index>{t(m.home.placesUnit, { n: c.placeCount })}</Index>
             </Link>
           </li>
         ))}
@@ -201,6 +240,12 @@ export function ChannelFeed({
   );
 }
 
+/**
+ * 조각(채널×도시) — 이미지 없는 넘버드 리스트. 홈의 마지막 섹션은 밀도를
+ * 낮춰 호흡을 만든다(Infatuation 의 하단 텍스트 리스트 위계). 썸네일은 위
+ * 두 섹션이 이미 충분히 보여줬고, 여기서 파는 건 "누가 어느 도시를 얼마나
+ * 팠나"라는 사실 한 줄이다.
+ */
 export function PieceFeed({
   pieces,
   locale,
@@ -218,28 +263,35 @@ export function PieceFeed({
         moreHref={href("/map")}
         moreLabel={m.home.moreFeed}
       />
-      <ul className="no-scrollbar mt-4 flex gap-3 overflow-x-auto px-(--gutter) pb-1">
-        {list.map((p) => (
-          <li key={`${p.creatorSlug}:${p.city.slug}`} className="w-[168px] shrink-0 lg:w-[200px]">
+      <ol className="mt-2 px-(--gutter) lg:columns-2 lg:gap-10">
+        {list.map((p, i) => (
+          <li
+            key={`${p.creatorSlug}:${p.city.slug}`}
+            className="border-b border-(--hairline) last:border-b-0 lg:break-inside-avoid"
+          >
             <Link
               href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
-              className="block active:scale-[0.99]"
+              className="flex items-center gap-3.5 py-3.5 active:bg-(--hover)"
             >
-              <Frame className="block w-full">
-                {p.cut ? (
-                  <Thumb youtubeId={p.cut.youtubeId} alt={p.cut.title} />
-                ) : null}
-              </Frame>
-              <p className="mt-2.5 truncate text-[15px] font-semibold tracking-[-0.01em]">
-                {displayCityName(p.city, locale)}
-              </p>
-              <p className="mt-0.5 truncate text-[12px] text-(--dim)">
-                {p.creatorName} · {t(m.home.placesUnit, { n: p.placeCount })}
-              </p>
+              <span
+                className="w-[26px] text-[15px] font-black tabular-nums"
+                style={{ color: "var(--wax)" }}
+              >
+                {String(i + 1).padStart(2, "0")}
+              </span>
+              <span className="min-w-0 flex-1 truncate">
+                <span className="text-[15px] font-bold tracking-[-0.01em]">
+                  {displayCityName(p.city, locale)}
+                </span>{" "}
+                <span className="text-[13px] text-(--dim)">
+                  {p.creatorName} · {t(m.home.placesUnit, { n: p.placeCount })}
+                </span>
+              </span>
+              <Chevron />
             </Link>
           </li>
         ))}
-      </ul>
+      </ol>
     </section>
   );
 }
