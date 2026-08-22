@@ -115,8 +115,13 @@ const places = [];
 const videos = [];
 const skips = [];
 
-const slugify = (name, vid) =>
-  `${name.toLowerCase().replace(/[^0-9a-z가-힣\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 40)}-${vid.slice(0, 4).toLowerCase()}`;
+/** 한글·로마자 밖 상호(태국어·일본어 등)는 base 가 비어 `-{vid4}` 꼴이 된다 —
+    parse-description.mjs 와 같은 `place-{vid}` 폴백으로 통일한다. 폴백 슬러그는
+    auto-confirm 단계가 구글 등록명으로 구조한다(rescueSlug). */
+const slugify = (name, vid) => {
+  const base = name.toLowerCase().replace(/[^0-9a-z가-힣\s-]/g, "").trim().replace(/\s+/g, "-").slice(0, 40);
+  return base ? `${base}-${vid.slice(0, 4).toLowerCase()}` : `place-${vid.toLowerCase()}`;
+};
 
 async function findPlace(name, address) {
   const res = await fetch("https://places.googleapis.com/v1/places:searchText", {

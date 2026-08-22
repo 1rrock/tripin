@@ -210,6 +210,30 @@ function buildBullets({ name, cityName, placeType, address, sourceNote, googleNa
 }
 
 /**
+ * 폴백 슬러그 구조.
+ *
+ * 상호가 한글·로마자 밖(태국어·일본어 등)이면 파서의 slugify 가 문자를 전부 지워
+ * `place-{vid}` 로 폴백한다(parse-description.mjs). 파싱 시점엔 달리 쓸 이름이
+ * 없지만, 확정 시점엔 구글 등록명(languageCode=ko → 대개 한글)이 손에 있다 —
+ * 여기서 한 번 더 슬러그를 만들어 준다. 색인되기 전이 URL 을 고칠 제일 싼 때다.
+ *
+ * 접미사는 옛 폴백 슬러그에 박힌 videoId 앞 4자를 그대로 이어받는다 —
+ * 파서의 `{base}-{vid4}` 규칙과 같은 모양이 된다.
+ */
+function rescueSlug(oldSlug, googleName) {
+  if (!/^place-/.test(oldSlug || "") || !googleName) return null;
+  const base = googleName
+    .toLowerCase()
+    .replace(/[^\w가-힣\s-]/g, "")
+    .trim()
+    .replace(/\s+/g, "-")
+    .slice(0, 40);
+  if (!base) return null;
+  const vid4 = oldSlug.replace(/^place-/, "").slice(0, 4);
+  return `${base}-${vid4}`;
+}
+
+/**
  * 금지어 검사 — **상호는 검사에서 뺀다.**
  * "알래스카에서 온 연어가 맛있는 집" 처럼 간판에 금지어가 든 가게가 실제로 있고,
  * 불릿은 상호를 담을 수밖에 없다. 이 규칙은 평가 표현을 막자는 것이지
@@ -352,6 +376,18 @@ async function main() {
       if (enriched?.address && !p.address) patch.address = enriched.address;
       else if (enriched?.address && (!p.address || p.address.length < 8))
         patch.address = enriched.address;
+
+      // 폴백 슬러그면 구글 등록명으로 구조 — 충돌 시엔 그냥 폴백을 유지한다.
+      const rescued = rescueSlug(p.slug, enriched?.googleName);
+      if (rescued) {
+        const { data: dup } = await db
+          .from("places")
+          .select("id")
+          .eq("slug", rescued)
+          .neq("id", p.id)
+          .maybeSingle();
+        if (!dup) patch.slug = rescued;
+      }
 
       if (DRY) {
         console.log(
