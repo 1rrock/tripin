@@ -205,6 +205,8 @@ export const en: Messages = {
     takedown: "Report an issue",
     privacy: "Privacy",
     loading: "Loading",
+    shareAria: "Share {name}",
+    linkCopied: "Link copied",
   },
   saved: {
     nav: "Saved",

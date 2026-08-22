@@ -225,6 +225,9 @@ export const ko = {
     takedown: "삭제 요청",
     privacy: "개인정보처리방침",
     loading: "불러오는 중",
+    /* 공유 — 모바일은 시스템 시트, 데스크톱은 클립보드 복사(ShareButton) */
+    shareAria: "{name} 링크 공유",
+    linkCopied: "링크를 복사했어요",
   },
   saved: {
     /* 하트·체크·구독. 로그인 문구는 저장 목록 화면에서만 쓴다 —
@@ -641,6 +644,8 @@ export type Messages = {
     takedown: string;
     privacy: string;
     loading: string;
+    shareAria: string;
+    linkCopied: string;
   };
   saved: {
     nav: string;

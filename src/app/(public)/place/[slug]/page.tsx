@@ -13,6 +13,7 @@ import { Avatar, Frame } from "@/shared/ui/frame";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SaveButton } from "@/shared/ui/SaveButton";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { Thumb } from "@/shared/ui/Thumb";
 
@@ -186,7 +187,8 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
             </p>
           ) : null}
         </div>
-        <div className="mt-0.5 shrink-0">
+        <div className="mt-0.5 flex shrink-0 items-center gap-1">
+          <ShareButton title={name} bare />
           <SaveButton placeId={place.id} placeName={place.name} bare />
         </div>
       </header>

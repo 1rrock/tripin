@@ -28,6 +28,7 @@ import {
   MapPinIcon as MapPin,
   PlayIcon as Play,
   PlaylistIcon as Playlist,
+  ShareNetworkIcon as ShareNetwork,
   SignOutIcon as SignOut,
   TagIcon as Tag,
   TrashIcon as Trash,
@@ -73,6 +74,7 @@ export const IconCup = ph(Coffee);
 export const IconBed = ph(Bed);
 export const IconHeart = ph(GlyphHeart);
 export const IconCheck = ph(Check);
+export const IconShare = ph(ShareNetwork);
 export const IconUser = ph(GlyphUser);
 export const IconSignOut = ph(SignOut);
 export const IconTrash = ph(Trash);
@@ -98,6 +100,7 @@ const GLYPH = {
   bed: IconBed,
   heart: IconHeart,
   check: IconCheck,
+  share: IconShare,
   user: IconUser,
   signOut: IconSignOut,
   trash: IconTrash,

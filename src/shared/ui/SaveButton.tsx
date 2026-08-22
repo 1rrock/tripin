@@ -11,6 +11,7 @@
  */
 
 import { useState } from "react";
+import { track } from "@vercel/analytics";
 import { Icon } from "@/shared/ui/icons";
 import { ListPicker } from "@/shared/ui/ListPicker";
 import { useSaved } from "@/shared/ui/SavedContext";
@@ -47,6 +48,10 @@ export function SaveButton({
             setPicking(true);
             return;
           }
+          /* 저장 발생 세션 비율이 1단계의 관측 지표다(ROADMAP). 해제는 안 센다.
+             Hobby 플랜은 커스텀 이벤트를 대시보드에 안 보여 준다 — OutboundA 와 같은 이유로
+             호출은 플랜과 무관하게 둔다. */
+          track("save");
           void toggleSaved(placeId).then(() => setPicking(true));
         }}
         aria-pressed={on}
