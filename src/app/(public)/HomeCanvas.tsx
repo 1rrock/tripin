@@ -927,6 +927,8 @@ export function ExplorerCanvas({
             index={detailIndex + 1}
             place={{
               id: detailPlace.id,
+              /* 캔버스 인덱스는 slug 를 안 실어(payload 예산) 상세 응답에서 받는다 */
+              slug: placeDetail?.slug ?? null,
               name: displayPlaceName(detailPlace, locale),
               nameLocal: detailPlace.nameLocal,
               typeLabel: m.placeTypes[detailPlace.placeType],

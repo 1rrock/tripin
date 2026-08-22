@@ -23,6 +23,7 @@ import type { PlaceType } from "@/shared/api/database.types";
 import type { CityCreator, MapPlaceDetail, PlaceSource } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet } from "@/shared/ui/PlaceSheet";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
@@ -249,6 +250,7 @@ export function CityExplorer({
             index={activeIndex + 1}
             place={{
               id: activePlace.id,
+              slug: activePlace.slug,
               name: displayPlaceName(activePlace, locale),
               nameLocal: activePlace.nameLocal,
               typeLabel: m.placeTypes[activePlace.placeType],
@@ -271,13 +273,15 @@ export function CityExplorer({
       </div>
 
       <section className="canvas-panel">
-        <div className="hidden px-(--gutter) pt-4 pb-1 lg:block">
+        {/* 데스크톱 h1 — 모바일 h1(페이지 헤더, lg:hidden)과 공유 버튼 짝을 맞춘다 */}
+        <div className="hidden items-start gap-2 px-(--gutter) pt-4 pb-1 lg:flex">
           <h1
-            className="font-black"
+            className="min-w-0 flex-1 font-black"
             style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
           >
             {cityName}
           </h1>
+          <ShareButton title={cityName} bare className="mt-0.5" />
         </div>
         <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:pt-3">
           {presentTypes.length > 1 ? (

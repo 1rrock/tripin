@@ -33,6 +33,7 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 import { SaveButton } from "@/shared/ui/SaveButton";
+import { ShareButton } from "@/shared/ui/ShareButton";
 
 /** 상세가 도착하기 전 PlaceSheet 에 넘길 빈 요약 — SummaryBlock 이 알아서 아무것도 안 그린다. */
 const EMPTY_SUMMARY: SummaryDisplay = {
@@ -239,6 +240,7 @@ export function Explorer({
   const sheetPlace: SheetPlace | null = sheetSource
     ? {
         id: sheetSource.id,
+        slug: sheetSource.slug,
         name: displayPlaceName(sheetSource, locale),
         nameLocal: sheetSource.nameLocal,
         typeLabel: m.placeTypes[sheetSource.placeType],
@@ -295,12 +297,19 @@ export function Explorer({
               <span style={{ color: "var(--paper)" }}>{cityName}</span>
             </nav>
 
-            <h1
-              className="font-black"
-              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-            >
-              {t(m.piece.title, { creator: creatorName, city: cityName })}
-            </h1>
+            <div className="flex items-start gap-2">
+              <h1
+                className="min-w-0 flex-1 font-black"
+                style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+              >
+                {t(m.piece.title, { creator: creatorName, city: cityName })}
+              </h1>
+              <ShareButton
+                title={t(m.piece.title, { creator: creatorName, city: cityName })}
+                bare
+                className="mt-0.5"
+              />
+            </div>
 
             <p className="index tnum" style={{ color: "var(--dim)" }}>
               {t(m.piece.statsConfirmed, { n: confirmed.length })}

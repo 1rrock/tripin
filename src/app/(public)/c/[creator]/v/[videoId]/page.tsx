@@ -5,6 +5,7 @@ import { loadVideoDetail } from "@/shared/api/videos";
 import { Avatar, Chip, Frame } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { Thumb } from "@/shared/ui/Thumb";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
@@ -158,6 +159,7 @@ export default async function VideoPage({ params }: { params: Promise<Params> })
               <Act icon="play" href={`https://www.youtube.com/watch?v=${video.youtubeId}`}>
                 {m.common.watchOnYoutube}
               </Act>
+              <ShareButton title={video.title} />
             </div>
           </div>
         </div>

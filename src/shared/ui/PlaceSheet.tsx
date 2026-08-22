@@ -21,11 +21,13 @@ import { Thumb } from "@/shared/ui/Thumb";
 import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SaveButton } from "@/shared/ui/SaveButton";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { useSaved } from "@/shared/ui/SavedContext";
 import { SummaryBlock } from "@/shared/ui/SummaryBlock";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 import type { MapLink } from "@/shared/lib/map-links";
+import { placePath } from "@/shared/lib/place-path";
 
 export type PlaceDrawerSnap = "peek" | "mid" | "full";
 
@@ -45,6 +47,9 @@ export interface SheetSource {
 
 export interface SheetPlace {
   id: string;
+  /** `/place/[slug]` 공유 링크. `/map` 은 상세 응답에만 실려 오므로 오기 전엔 null —
+      그동안 공유 버튼은 안 그린다(현재 URL 을 대신 공유하면 도시 화면 주소가 나간다). */
+  slug: string | null;
   name: string;
   nameLocal: string | null;
   typeLabel: string;
@@ -678,6 +683,9 @@ export function PlaceSheet({
               <div className="mt-1.5">{meta}</div>
             </div>
             <div className="flex shrink-0 items-center gap-0.5">
+              {place.slug ? (
+                <ShareButton title={place.name} path={placePath(place.slug)} bare />
+              ) : null}
               <SaveButton placeId={place.id} placeName={place.name} bare />
               <button
                 ref={closeBtnRef}
@@ -736,6 +744,7 @@ export function PlaceSheet({
           <Icon.back className="size-5" />
         </button>
         <div className="min-w-0 flex-1" />
+        {place.slug ? <ShareButton title={place.name} path={placePath(place.slug)} bare /> : null}
         <SaveButton placeId={place.id} placeName={place.name} bare />
         <button
           type="button"
@@ -822,6 +831,7 @@ export function PlaceSheet({
         </div>
         {/* mid 의 하트·닫기 — full 로 자라면 헤더의 같은 버튼에 자리를 넘긴다 */}
         <div className="place-drawer-titletools mt-0.5 flex shrink-0 items-center gap-0.5" inert={full}>
+          {place.slug ? <ShareButton title={place.name} path={placePath(place.slug)} bare /> : null}
           <SaveButton placeId={place.id} placeName={place.name} bare />
           <button
             ref={full || peek ? undefined : closeBtnRef}

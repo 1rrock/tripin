@@ -10,6 +10,7 @@ import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { Avatar } from "@/shared/ui/frame"
 import { Act, Icon } from "@/shared/ui/icons";
 import { SubscribeButton } from "@/shared/ui/SaveButton";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { getLocale, localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
@@ -166,6 +167,7 @@ export default async function CreatorHubPage({
                 {m.hub.channelLink}
               </Act>
               <SubscribeButton creatorId={creator.id} creatorName={creator.display_name} />
+              <ShareButton title={creator.display_name} />
             </div>
           </div>
         </div>

@@ -432,6 +432,9 @@ export function toMapCanvasPlace(p: HomeMapPlace): MapCanvasPlace {
 }
 
 export type MapPlaceDetail = {
+  /** `/place/[slug]` 공유 링크용 — 캔버스 인덱스는 slug 를 안 실으므로(위 주석)
+      `/map` 드로어는 여기서만 받는다. 항목당 ~30B, 전체 ~55KB — 2MB 상한 대비 계산함. */
+  slug: string;
   address: string | null;
   summary: SummaryDisplay;
   mapLinks: MapLink[];
@@ -458,6 +461,7 @@ const loadMapDetailIndex = cachePublic(async function loadMapDetailIndex(
   const out: Record<string, MapPlaceDetail> = {};
   for (const p of all) {
     out[p.id] = {
+      slug: p.slug,
       address: p.address,
       summary: p.summary,
       mapLinks: p.mapLinks,

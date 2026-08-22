@@ -11,6 +11,7 @@ import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { placePath } from "@/shared/lib/place-path";
 import { Icon } from "@/shared/ui/icons";
+import { ShareButton } from "@/shared/ui/ShareButton";
 import { CityExplorer, type CityPlace } from "./CityExplorer";
 
 
@@ -161,12 +162,15 @@ export default async function CityPage({
           <span style={{ color: "var(--paper)" }}>{cityLabel}</span>
         </nav>
 
-        <h1
-          className="font-black lg:hidden"
-          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-        >
-          {t(m.cityDetail.creatorsTitle, { city: cityLabel })}
-        </h1>
+        <div className="flex items-start gap-2 lg:hidden">
+          <h1
+            className="min-w-0 flex-1 font-black"
+            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+          >
+            {t(m.cityDetail.creatorsTitle, { city: cityLabel })}
+          </h1>
+          <ShareButton title={cityLabel} bare className="mt-0.5" />
+        </div>
 
         <p className="index tnum lg:hidden" style={{ color: "var(--dim)" }}>
           {t(m.cityDetail.stats, {

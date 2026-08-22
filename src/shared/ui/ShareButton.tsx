@@ -16,16 +16,20 @@ import { useLocale } from "@/shared/i18n/LocaleContext";
 
 export function ShareButton({
   title,
+  path,
   className = "",
   bare = false,
 }: {
   /** 공유 시트 제목 — 상호명 */
   title: string;
+  /** 공유할 경로(로케일 프리픽스 없이) — 지도 드로어처럼 현재 URL 이 그 장소의
+      주소가 아닌 자리에서 쓴다. 없으면 지금 보는 주소 그대로. */
+  path?: string;
   className?: string;
   /** 행 끝 아이콘 무리 — 상자 없이 아이콘만(SaveButton 과 같은 문법) */
   bare?: boolean;
 }) {
-  const { messages: m, t } = useLocale();
+  const { messages: m, t, href } = useLocale();
   const [copied, setCopied] = useState(false);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -35,7 +39,9 @@ export function ShareButton({
       onClick={async (e) => {
         e.stopPropagation();
         e.preventDefault();
-        const url = window.location.href;
+        const url = path
+          ? new URL(href(path), window.location.origin).toString()
+          : window.location.href;
         if (navigator.share) {
           try {
             await navigator.share({ title, url });
