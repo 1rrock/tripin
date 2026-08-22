@@ -68,6 +68,17 @@ function requireServer(name: string): string {
   return value;
 }
 
+/** 서버 전용이지만 없어도 되는 값 — 없으면 null. 기능이 조용히 꺼지는 쪽을 고른 키만. */
+function optionalServer(name: string): string | null {
+  if (typeof window !== "undefined") {
+    throw new Error(
+      `[env] ${name} 은 서버 전용입니다. 클라이언트 컴포넌트에서 읽으려 했습니다. ` +
+        `서버 컴포넌트나 route handler로 옮기세요.`,
+    );
+  }
+  return process.env[name] || null;
+}
+
 /**
  * 서버 전용 환경 변수.
  *
@@ -110,4 +121,10 @@ export const serverEnv = {
    * 이게 기본값을 주지 않는 이유다.
    */
   cronSecret: () => requireServer("CRON_SECRET"),
+
+  /**
+   * 채널 신청 알림 메일(Resend) — **선택.** 없으면 알림 없이 접수만 된다.
+   * 접수 자체를 메일 실패에 인질 잡히게 하지 않기 위한 optional 이다.
+   */
+  resendApiKey: () => optionalServer("RESEND_API_KEY"),
 } as const;

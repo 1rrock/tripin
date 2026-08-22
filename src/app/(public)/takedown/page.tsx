@@ -20,11 +20,7 @@ const body = {
   lineHeight: 1.7,
 } as const;
 
-/**
- * 전용 주소는 hello@eatripin.com 이지만, apex MX 가 비어 있어 지금은
- * 도착하지 않는다. mailto 를 내밀면 창구가 있는 척이 된다 — 그게 없는 것보다 나쁘다.
- * 가비아에서 포워딩(MX) 을 걸면 이 함수와 아래 접수 문구를 같이 되돌린다.
- */
+/** 전용 주소 — 가비아 포워딩(MX) 연결됨(2026-08-22). 수신은 운영자 개인 메일로 전달된다. */
 function contactEmail(): string {
   let host = "eatripin.com";
   try {
@@ -85,12 +81,15 @@ export default async function TakedownPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>접수 방법</h2>
               <p style={body}>
-                전용 메일함({email})은 아직 수신이 연결되지 않았습니다. 지금 그 주소로 보내시면
-                도착하지 않습니다. 창구를 연결하는 대로 이 페이지에 주소를 올리겠습니다.
-              </p>
-              <p style={body}>
-                그때 보내주실 내용은 세 가지입니다 — 해당 채널 또는 장소의 URL, 요청 사유,
-                회신받을 연락처.
+                <a
+                  href={`mailto:${email}`}
+                  className="underline underline-offset-4"
+                  style={{ color: "var(--paper)" }}
+                >
+                  {email}
+                </a>
+                {" "}로 보내주세요. 내용은 세 가지면 됩니다 — 해당 채널 또는 장소의 URL, 요청
+                사유, 회신받을 연락처.
               </p>
             </section>
 
@@ -142,13 +141,16 @@ export default async function TakedownPage() {
             <section className="flex flex-col gap-3">
               <h2 style={h2}>How to submit</h2>
               <p style={body}>
-                The dedicated mailbox ({email}) is not receiving mail yet. Messages sent there
-                now will not arrive. We&rsquo;ll put a working address on this page as soon as
-                it&rsquo;s connected.
-              </p>
-              <p style={body}>
-                When it is, please include three things: the channel or place URL, the reason
-                for your request, and a contact for a reply.
+                Email{" "}
+                <a
+                  href={`mailto:${email}`}
+                  className="underline underline-offset-4"
+                  style={{ color: "var(--paper)" }}
+                >
+                  {email}
+                </a>{" "}
+                with three things: the channel or place URL, the reason for your request, and a
+                contact for a reply.
               </p>
             </section>
 

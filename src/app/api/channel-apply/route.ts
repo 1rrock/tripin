@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
+import { publicEnv, serverEnv } from "@/shared/config/env";
 
 /**
  * 채널 등록 신청 접수 — `/apply` 폼이 쏘는 유일한 목적지.
@@ -62,5 +63,52 @@ export async function POST(req: Request): Promise<NextResponse> {
     p_note: note || null,
   });
   if (error) return new NextResponse(null, { status: 500 });
+
+  /* 알림은 접수의 부속이다 — 메일이 죽어도 접수는 204 로 끝난다.
+     await 하는 이유: Vercel 은 응답 후 떠 있는 promise 를 보장하지 않는다. */
+  await notifyByEmail({ channelUrl, email, videoUrls, note }).catch(() => {});
   return new NextResponse(null, { status: 204 });
+}
+
+const NOTIFY_TO = "hello@eatripin.com";
+
+/**
+ * 새 신청을 운영자 메일로 알린다 — Resend HTTP API 직접 호출(SDK 불필요).
+ * RESEND_API_KEY 가 없으면 조용히 건너뛴다(로컬·키 미설정 환경).
+ *
+ * from 이 onboarding@resend.dev 인 이유: 도메인 DNS 인증 전에는 Resend 가
+ * 자기 샌드박스 주소로만 발신을 허용한다. eatripin.com 을 Resend 에 인증하면
+ * no-reply@eatripin.com 으로 바꿀 수 있다.
+ */
+async function notifyByEmail(app: {
+  channelUrl: string;
+  email: string;
+  videoUrls: string;
+  note: string;
+}): Promise<void> {
+  const key = serverEnv.resendApiKey();
+  if (!key) return;
+
+  const admin = `${publicEnv.siteUrl.replace(/\/$/, "")}/admin/applications`;
+  const text = [
+    `채널: ${app.channelUrl}`,
+    `이메일: ${app.email}`,
+    app.videoUrls ? `대표 영상:\n${app.videoUrls}` : null,
+    app.note ? `메모:\n${app.note}` : null,
+    ``,
+    `판정: ${admin}`,
+  ]
+    .filter((l) => l !== null)
+    .join("\n");
+
+  await fetch("https://api.resend.com/emails", {
+    method: "POST",
+    headers: { Authorization: `Bearer ${key}`, "Content-Type": "application/json" },
+    body: JSON.stringify({
+      from: "Eatripin <onboarding@resend.dev>",
+      to: [NOTIFY_TO],
+      subject: `채널 등록 신청 — ${app.channelUrl}`,
+      text,
+    }),
+  });
 }
