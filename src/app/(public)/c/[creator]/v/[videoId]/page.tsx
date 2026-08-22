@@ -19,10 +19,13 @@ import { Timeline } from "./Timeline";
  * "그 가게 어디야"라 상호명이 제목 자리를 가져가지만, 여기는 그 영상 자신의
  * 페이지이므로 제목이 주인공인 게 맞다. 어느 쪽이든 유튜브 원본 그대로 쓴다.
  *
- * 색인 정책: `noindex`. 이 페이지의 장소는 조각 페이지(`/c/[creator]/[city]`)
- * 장소의 부분집합이라 같은 요약문이 두 URL 에 뜬다. 조각 페이지가 이미
- * 롱테일 상호명을 흡수하도록 설계돼 있어(PRODUCT.md) 영상 페이지가 같은
- * 상호명으로 경쟁하면 둘 다 내려간다. 사람은 볼 수 있고 검색엔진은 조각을 본다.
+ * 색인 정책: **조각 페이지로 canonical**. 이 페이지의 장소는 조각 페이지
+ * (`/c/[creator]/[city]`) 장소의 부분집합이라 같은 요약문이 두 URL 에 뜬다 —
+ * 영상 페이지가 같은 상호명으로 경쟁하면 둘 다 내려간다. 예전에는 noindex 로
+ * 눌렀는데, 그러면 "곽튜브 후쿠오카 맛집" 류 영상 단위 롱테일에 이 페이지로
+ * 들어오는 링크 신호까지 통째로 버린다. canonical 은 신호를 조각에 몰아주면서
+ * 잠식은 그대로 막는다(AUDIT-2026-08-18 2-3의 전환 실험).
+ * 도시가 여럿이거나 없는 영상은 몰아줄 조각이 하나가 아니므로 noindex 를 유지한다.
  */
 
 interface Params {
@@ -53,12 +56,15 @@ export async function generateMetadata({
     locale === "en"
       ? `${data.video.stopCount} places in this video: ${names}. Each place has a video timestamp and map link.`
       : `이 영상에 나온 곳 ${data.video.stopCount}곳: ${names}. 각 장소마다 영상 타임스탬프와 지도 링크가 있습니다.`;
+  const soleCity = data.video.cities.length === 1 ? data.video.cities[0] : null;
   return publicMeta({
     locale,
     title,
     description,
     bare,
-    robots: { index: false, follow: true },
+    ...(soleCity
+      ? { canonicalBare: `/c/${creator}/${soleCity.slug}` }
+      : { robots: { index: false, follow: true } }),
   });
 }
 

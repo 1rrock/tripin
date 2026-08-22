@@ -46,15 +46,19 @@ export function publicMeta({
   title,
   description,
   bare,
+  canonicalBare,
   robots,
 }: {
   locale: Locale;
   title: string;
   description: string;
   bare: string;
+  /** 이 문서의 링크 신호를 몰아줄 다른 경로 — 영상 페이지가 조각 페이지를 가리킬 때 쓴다.
+      canonical 만 바꾸고 hreflang 을 자기 자신으로 두면 신호가 서로 싸우므로 짝으로 바꾼다. */
+  canonicalBare?: string;
   robots?: Metadata["robots"];
 }): Metadata {
-  const url = localePath(bare, locale);
+  const canonical = localePath(canonicalBare ?? bare, locale);
   return {
     title,
     description,
@@ -62,14 +66,14 @@ export function publicMeta({
       title,
       description,
       type: "website",
-      url,
+      url: canonical,
       locale: locale === "en" ? "en_US" : "ko_KR",
       alternateLocale: locale === "en" ? ["ko_KR"] : ["en_US"],
     },
     twitter: { card: "summary_large_image" },
     alternates: {
-      canonical: url,
-      languages: hreflang(bare),
+      canonical,
+      languages: hreflang(canonicalBare ?? bare),
       /* RSS 자동발견 — 루트 레이아웃에도 같은 선언이 있지만, Next 는 하위에서
          `alternates` 를 주면 **객체를 통째로 교체**한다. 공개 페이지는 전부 이
          함수를 거치므로 여기에 없으면 사이트 어디에도 <link rel="alternate"
