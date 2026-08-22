@@ -141,6 +141,16 @@ export const ko = {
     nearbyMore: "{city} 전체 지도 보기",
     notFound: "찾을 수 없는 장소",
   },
+  celebs: {
+    /** `<title>`·메타 전용 — 화면 헤드라인은 heading 이다 */
+    title: "연예인이 간 장소",
+    heading: "그 사람이 간 곳, 전부",
+    /** 화면에 안 보이는 h1 — 설명형. */
+    srHeading: "연예인이 다녀간 맛집·명소 전체 목록",
+    /** {people}=인물 수, {n}=장소 수 */
+    intro: "{people}명이 다녀간 {n}곳 — 전부 영상으로 확인했다",
+    empty: "아직 공개된 장소가 없어요.",
+  },
   channels: {
     /** `<title>`·메타 전용 — 화면 헤드라인은 heading 이다 */
     title: "채널",
@@ -572,6 +582,13 @@ export type Messages = {
     nearbyHeading: string;
     nearbyMore: string;
     notFound: string;
+  };
+  celebs: {
+    title: string;
+    heading: string;
+    srHeading: string;
+    intro: string;
+    empty: string;
   };
   channels: {
     title: string;

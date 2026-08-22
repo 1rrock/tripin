@@ -313,7 +313,8 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     });
   }
   // 인물별 최신 1곳씩 라운드로빈 — 한 인물(추성훈 42곳)이 섹션을 도배하지
-  // 못하게 한다. 인물 순서는 각자의 최신 스팟 기준. 화면은 8장, 여유로 12장.
+  // 못하게 한다. 인물 순서는 각자의 최신 스팟 기준. 전체를 실어 보낸다 —
+  // 홈은 앞 8장만 자르고, /celebs 인덱스가 나머지 전부를 쓴다.
   const byPerson = new Map<string, FeedCelebritySpot[]>();
   for (const spot of spotByPlace.values()) {
     const queue = byPerson.get(spot.personName);
@@ -325,14 +326,13 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   for (const queue of queues) queue.sort((a, b) => ts(b) - ts(a));
   queues.sort((a, b) => ts(b[0]) - ts(a[0]));
   const celebritySpots: FeedCelebritySpot[] = [];
-  for (let round = 0; celebritySpots.length < 12; round += 1) {
+  for (let round = 0; ; round += 1) {
     let picked = false;
     for (const queue of queues) {
       const spot = queue[round];
       if (!spot) continue;
       celebritySpots.push(spot);
       picked = true;
-      if (celebritySpots.length >= 12) break;
     }
     if (!picked) break;
   }

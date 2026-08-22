@@ -108,7 +108,13 @@ export function CelebrityFeed({
 
   return (
     <section aria-labelledby="celeb-h" className="pt-8 lg:pt-12">
-      <Head id="celeb-h" title={m.home.celebHeading} waxed />
+      <Head
+        id="celeb-h"
+        title={m.home.celebHeading}
+        moreHref={href("/celebs")}
+        moreLabel={m.home.moreFeed}
+        waxed
+      />
       <div className="mt-4 px-(--gutter) lg:grid lg:grid-cols-2 lg:gap-6">
         <Link
           href={href(`/place/${cover.placeSlug}`)}

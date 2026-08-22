@@ -130,6 +130,13 @@ export const en: Messages = {
     nearbyMore: "See the full {city} map",
     notFound: "Place not found",
   },
+  celebs: {
+    title: "Spots celebrities visited",
+    heading: "Every spot they visited",
+    srHeading: "All restaurants and places visited by celebrities",
+    intro: "{n} places visited by {people} celebrities — every one verified on video",
+    empty: "No places published yet.",
+  },
   channels: {
     title: "Channels",
     heading: "Who to follow?",
