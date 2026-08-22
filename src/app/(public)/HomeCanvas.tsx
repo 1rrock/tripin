@@ -1114,10 +1114,12 @@ export function ExplorerCanvas({
           <div className="hidden lg:block">{filters("sheet")}</div>
 
           <div className="flex items-center justify-between gap-3 px-4 pb-2">
-            {/* 머리말이 이미 개수를 들고 있으면 같은 숫자를 두 번 쓰지 않는다 */}
+            {/* 머리말이 이미 개수를 들고 있으면 같은 숫자를 두 번 쓰지 않는다.
+                개수는 인덱스가 온 뒤에만 — 씨앗 6곳만 든 순간의 filtered.length 는
+                "전부 몇 곳"의 답이 아니라, 잠깐 6곳이 떴다 1,845곳으로 뛰었다. */}
             {savedLead ? (
               <span aria-hidden />
-            ) : placesReady || livePlaces.length > 0 ? (
+            ) : placesReady ? (
               <p className="index tnum" style={{ color: "var(--dim)" }}>
                 {t(m.cityDetail.placesAll, { n: filtered.length })}
               </p>
