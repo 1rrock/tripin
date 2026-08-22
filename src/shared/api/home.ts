@@ -290,7 +290,34 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   }
   if (feed.length === 0) return empty;
 
-  // 2.5단계 — 연예인 스팟. (a) celebrity_name 채널 파생 + (b) 승인된 언급.
+  // 2.5단계 — (a) 보강. feed 루프의 celebSpotByPlace 는 isVisible 을 거쳐
+  // 채널×도시 핀이 MIN_CONFIRMED_PINS 미만인 조각의 장소를 놓친다. 그런데
+  // 그 조각 게이트는 조각(홈 레일) 것이지 장소 상세 것이 아니다 — 장소 상세는
+  // MIN_CITY_PINS=1 이라 게이트와 무관하게 이미 살아 있다. 그러니 여기서는
+  // 게이트 없이 celebrity_name 채널의 확정 장소를 전부 훑어 채운다.
+  // videos 는 이미 최신순이라 장소당 첫 등장이 최신 컷 — feed 루프와 같은 규칙.
+  for (const v of videos ?? []) {
+    const creator = creatorById.get(v.creator_id);
+    if (!creator?.celebrity_name) continue;
+    for (const link of linksByVideo.get(v.id) ?? []) {
+      if (celebSpotByPlace.has(link.place_id)) continue;
+      const place = confirmedById.get(link.place_id);
+      if (!place) continue;
+      const city = cityById.get(place.city_id);
+      if (!city) continue;
+      celebSpotByPlace.set(place.id, {
+        placeSlug: place.slug,
+        placeName: place.name,
+        personName: creator.celebrity_name,
+        personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
+        city: { slug: city.slug, name: city.name, nameEn: city.name_en },
+        cut: { youtubeId: v.youtube_video_id, title: v.title },
+        publishedAt: v.published_at,
+      });
+    }
+  }
+
+  // 2.6단계 — 연예인 스팟 확정. (a) 파생·보강분 + (b) 승인된 언급.
   // 같은 장소가 양쪽에 있으면 (b)가 덮는다 — 언급이 더 강한 스토리다.
   const videoRowById = new Map((videos ?? []).map((v) => [v.id, v]));
   const spotByPlace = new Map(celebSpotByPlace);

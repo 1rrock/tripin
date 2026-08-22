@@ -21,6 +21,7 @@ import { localePath } from "@/shared/i18n/paths";
 import { displayCityName } from "@/shared/i18n/display";
 import { Frame, Avatar, Index } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
+import { CoverThumb } from "@/shared/ui/CoverThumb";
 
 const VIDEOS = 8;
 const PIECES = 8;
@@ -122,8 +123,8 @@ export function CelebrityFeed({
           className="block active:scale-[0.99]"
         >
           <Frame className="block w-full">
-            {/* maxres 는 영상에 따라 404 — 커버는 매일 회전하므로 항상 있는 mq(16:9)를 쓴다 */}
-            <Thumb youtubeId={cover.cut.youtubeId} alt={cover.cut.title} eager />
+            {/* maxres 는 영상에 따라 404 — CoverThumb 이 onError 로 mq 로 물러난다 */}
+            <CoverThumb youtubeId={cover.cut.youtubeId} alt={cover.cut.title} />
           </Frame>
           <span className="mt-3 flex flex-col items-start gap-1.5">
             <span
