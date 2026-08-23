@@ -6,8 +6,14 @@ import { loadHomeFeed } from "@/shared/api/home";
 import { loadTypeIndex } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import type { Locale } from "@/shared/i18n/config";
-import { cityHay, type SearchDoc, type SearchKind } from "@/shared/lib/search";
-import { placePath } from "@/shared/lib/place-path";
+import {
+  cityHay,
+  packHay,
+  KIND_WIRE,
+  type PackedDoc,
+  type PackedIndex,
+  type SearchKind,
+} from "@/shared/lib/search";
 
 /**
  * 통합 검색 색인 — 채널·지역·종류·장소·영상을 한 배열로.
@@ -33,12 +39,15 @@ interface Loc {
 /** 로더가 돌려주는 원본 — ko/en 둘 다 */
 export interface SearchDocRaw {
   kind: SearchKind;
-  path: string;
+  /** 경로의 **가변부만** 쥔다 — 접두사는 kind 가 안다(`unpackPath`). 완성된
+      `path` 는 클라이언트가 조립한다. video 는 youtubeId 다(썸네일 id 와 같은 값) */
+  slug: string;
+  /** video 전용 — `/c/{creatorSlug}/v/{slug}` 의 가운데 칸 */
+  creatorSlug?: string;
   ko: Loc;
   en: Loc;
   accent?: string;
   avatarUrl?: string | null;
-  youtubeId?: string;
 }
 
 /** 요약 불릿에서 매칭용 텍스트만 — "라멘"은 상호명이 아니라 여기 산다 */
@@ -66,7 +75,7 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
   for (const c of cities) {
     docs.push({
       kind: "city",
-      path: `/city/${c.slug}`,
+      slug: c.slug,
       ko: {
         name: c.name,
         sub: t(ko.cityIndex.minorMeta, { places: c.placeCount, videos: c.videoCount }),
@@ -85,7 +94,7 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
     const hay = [cr.displayName, cr.slug, cr.handle ?? ""];
     docs.push({
       kind: "channel",
-      path: `/c/${cr.slug}`,
+      slug: cr.slug,
       ko: {
         name: cr.displayName,
         sub: t(ko.channels.rollMeta, { videos: cr.videoCount, places: cr.placeCount }),
@@ -109,7 +118,7 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
     const hay = [koLabel, enLabel, row.type];
     docs.push({
       kind: "type",
-      path: `/type/${row.type}`,
+      slug: row.type,
       ko: {
         name: koLabel,
         sub: t(ko.typeIndex.citiesChannels, { cities: row.cityCount, creators: row.creatorCount }),
@@ -136,7 +145,7 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
       const bulletsEn = (p.summary_bullets_en ?? []).join(" ").slice(0, BULLET_CAP);
       docs.push({
         kind: "place",
-        path: placePath(p.slug),
+        slug: p.slug,
         ko: { name: p.name, sub: city.name, hay: [p.name, p.name_en ?? "", bulletsKo] },
         // 장소명은 번역하지 않는다(§2-4) — EN 에서도 원문 상호명이다
         en: { name: p.name, sub: city.name_en || city.name, hay: [p.name, p.name_en ?? "", bulletsEn] },
@@ -149,29 +158,58 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
     const hay = [v.title, v.creatorName];
     docs.push({
       kind: "video",
-      path: `/c/${v.creatorSlug}/v/${v.youtubeId}`,
+      slug: v.youtubeId,
+      creatorSlug: v.creatorSlug,
       ko: { name: v.title, sub: v.creatorName, hay },
       en: { name: v.title, sub: v.creatorName, hay },
-      youtubeId: v.youtubeId,
     });
   }
 
   return docs;
 }, ["search:index"]);
 
-/** 로케일 하나만 남긴다 — 이 함수를 거쳐야 클라이언트로 나갈 수 있다 */
-export function pickLocale(docs: SearchDocRaw[], locale: Locale): SearchDoc[] {
-  return docs.map((d) => {
-    const loc = locale === "en" ? d.en : d.ko;
-    return {
-      kind: d.kind,
-      path: d.path,
-      name: loc.name,
-      sub: loc.sub,
-      hay: loc.hay.filter(Boolean),
-      ...(d.accent ? { accent: d.accent } : {}),
-      ...(d.avatarUrl ? { avatarUrl: d.avatarUrl } : {}),
-      ...(d.youtubeId ? { youtubeId: d.youtubeId } : {}),
-    } satisfies SearchDoc;
+/**
+ * 로케일 하나만 남기고 **전선 형식으로 압축한다** — 이 함수를 거쳐야 클라이언트로
+ * 나갈 수 있다. 되읽는 쪽은 `unpackIndex`(shared/lib/search.ts)이고, 형식이 왜
+ * 이렇게 생겼는지는 거기 "전선 형식" 주석에 있다.
+ *
+ * 여기서 버리는 것은 전부 **되살릴 수 있는 것들뿐**이다:
+ *   · 경로 접두사 → kind 가 안다
+ *   · `hay[0]` → 이름과 같을 때만 뗀다(`packHay`)
+ *   · `youtubeId` → 영상 항목의 slug 가 곧 그것이다
+ *   · 채널 slug(영상 경로의 가운데 칸) → 16종뿐이라 사전으로 접는다
+ */
+export function pickLocale(docs: SearchDocRaw[], locale: Locale): PackedIndex {
+  /* 채널 사전은 **영상이 실제로 가리키는 slug** 로 짓는다 — `feed.creators` 를
+     그대로 쓰면 목록에 없는 채널의 영상이 섞였을 때 자리가 어긋난다 */
+  const creators: string[] = [];
+  const creatorAt = new Map<string, number>();
+
+  const d: PackedDoc[] = docs.map((doc) => {
+    const loc = locale === "en" ? doc.en : doc.ko;
+    const row: PackedDoc = [
+      KIND_WIRE.indexOf(doc.kind),
+      doc.slug,
+      loc.name,
+      loc.sub,
+      packHay(loc.hay, loc.name),
+    ];
+    if (doc.kind === "channel") {
+      // 옛 응답은 값이 있을 때만 키를 넣었다 — 되읽는 쪽이 빈 문자열을 그렇게 읽는다
+      row[5] = doc.accent ?? "";
+      row[6] = doc.avatarUrl ?? "";
+    } else if (doc.kind === "video") {
+      const slug = doc.creatorSlug ?? "";
+      let at = creatorAt.get(slug);
+      if (at === undefined) {
+        at = creators.length;
+        creators.push(slug);
+        creatorAt.set(slug, at);
+      }
+      row[5] = at;
+    }
+    return row;
   });
+
+  return { k: KIND_WIRE, c: creators, d };
 }

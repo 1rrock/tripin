@@ -12,7 +12,15 @@
  * 얹으면 검색을 안 쓰고 나가는 대다수에게 세금을 매기는 셈이다.
  */
 
-import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
+import {
+  useCallback,
+  useDeferredValue,
+  useEffect,
+  useId,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { createPortal } from "react-dom";
 import { usePathname, useRouter } from "next/navigation";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -20,7 +28,14 @@ import { stripLocalePrefix } from "@/shared/i18n/paths";
 import { Avatar } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
 import { thumbSmall } from "@/shared/lib/youtube";
-import { highlight, search, type SearchDoc, type SearchKind } from "@/shared/lib/search";
+import {
+  highlight,
+  search,
+  unpackIndex,
+  type PackedIndex,
+  type SearchDoc,
+  type SearchKind,
+} from "@/shared/lib/search";
 
 export function SearchBar() {
   const { messages: m, href, t, locale } = useLocale();
@@ -32,6 +47,8 @@ export function SearchBar() {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [index, setIndex] = useState<SearchDoc[] | null>(null);
+  /** 색인을 못 받았다 — 검색이 **불가능한** 상태. `index` 가 빈 배열인 것과 다르다 */
+  const [indexError, setIndexError] = useState(false);
   const [cursor, setCursor] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const listId = useId();
@@ -55,33 +72,64 @@ export function SearchBar() {
     setCursor(0);
   }, []);
 
-  // 색인은 처음 열 때 한 번만. 실패해도 조용히 둔다 — 검색이 안 될 뿐 화면은 멀쩡하다
+  /* 색인은 처음 열 때 한 번만.
+     🔴 HTTP 에러를 `[]` 로 삼키지 않는다 — 예전엔 `r.ok ? r.json() : []` 라
+        500 이 와도 "빈 색인으로 검색이 도는" 상태가 됐고, 그러면 글자가 있는
+        모든 질의가 실패로 판정돼 `/api/search-miss` 에 가짜 실패어가 쌓였다.
+        (`search_misses` 는 다음에 만들 조각을 고르는 데 쓰는 표다 — 오염되면 안 된다.)
+        실패는 `index` 를 null 로 둔 채 `indexError` 로만 말한다 — 네트워크가
+        끊긴 `.catch` 경로와 같은 취급이다. 닫았다 다시 열면 한 번 더 시도한다
+
+     `v=2` 는 **캐시를 가르는 자물쇠**다. 응답이 문서 배열에서 압축 형식으로 바뀌었고
+     (`PackedIndex`), 이 응답은 브라우저 5분·CDN 1시간 캐시라 배포 직후 옛 배열이
+     새 코드에 도착할 수 있다. 주소가 다르면 그 일이 아예 안 일어난다.
+     형식을 또 바꾸면 이 숫자를 올릴 것 — 라우트는 `locale` 말고는 안 읽는다 */
   useEffect(() => {
     if (!open || index) return;
     let alive = true;
-    fetch(`/api/search-index?locale=${locale}`)
-      .then((r) => (r.ok ? r.json() : []))
-      .then((docs: SearchDoc[]) => {
-        if (alive) setIndex(docs);
+    fetch(`/api/search-index?locale=${locale}&v=2`)
+      .then((r) => {
+        if (!r.ok) throw new Error(`search-index ${r.status}`);
+        return r.json();
       })
-      .catch(() => {});
+      .then((packed: PackedIndex) => {
+        if (!alive) return;
+        // 모양이 어긋나면 빈 색인으로 굴러가느니 실패로 친다 — 위의 🔴 와 같은 이유다
+        if (!packed || !Array.isArray(packed.d)) throw new Error("search-index shape");
+        // 되읽기와 소문자·초성 사전계산을 **여기서 한 번**. 타건마다가 아니라
+        setIndex(unpackIndex(packed));
+        setIndexError(false);
+      })
+      .catch(() => {
+        if (alive) setIndexError(true);
+      });
     return () => {
       alive = false;
     };
   }, [open, index, locale]);
 
+  /* 입력 반영과 결과 계산을 갈라 놓는다 — 문서 3,015개 전수 스캔이 키 입력과
+     같은 렌더에 묶여 있어서 빠르게 치면 탭이 통째로 굳었다. `deferred` 는
+     급하지 않은 렌더에서만 따라오므로 입력 필드는 즉시 글자를 그리고,
+     스캔이 도는 동안 목록에는 직전 결과가 남는다 */
+  const deferred = useDeferredValue(query);
   const results = useMemo(
-    () => (index ? search(index, query) : { top: null, groups: [] }),
-    [index, query],
+    () => (index ? search(index, deferred) : { top: null, groups: [] }),
+    [index, deferred],
   );
+  /** 결과가 아직 지금 입력을 못 따라왔다 — 스피너 대신 잉크를 살짝 뺀다.
+      색인이 아직 안 온 것도 같은 상태로 친다(그동안은 아무것도 못 훑는다) */
+  const pending = deferred !== query || (!indexError && index === null);
 
   // 빈손으로 나간 검색어를 남긴다 — 무슨 말로 찾다가 못 찾았는지가 다음 수집의
   // 우선순위 신호다(/admin/search-misses). 홈 검색이 헤더로 옮겨 오면서 함께 왔다.
   // 1.2초 머문 질의만, 마운트당 한 번씩. 타이핑 중간 글자("라멘ㅋ")는 남기지 않는다.
+  // 판정은 **화면에 보이는 결과와 같은 질의**(deferred)로 한다. 색인이 실제로
+  // 있을 때만 — 못 받았거나(null) 비었으면 그건 질의의 실패가 아니라 우리 실패다.
   const reported = useRef(new Set<string>());
-  const missed = Boolean(index) && query.trim().length > 0 && !results.top;
+  const missed = index !== null && index.length > 0 && deferred.trim().length > 0 && !results.top;
   useEffect(() => {
-    const needle = query.trim().toLowerCase();
+    const needle = deferred.trim().toLowerCase();
     if (!missed || reported.current.has(needle)) return;
     const timer = setTimeout(() => {
       reported.current.add(needle);
@@ -93,13 +141,17 @@ export function SearchBar() {
       }).catch(() => {});
     }, 1200);
     return () => clearTimeout(timer);
-  }, [missed, query]);
+  }, [missed, deferred]);
 
   /** 키보드 이동용 평평한 목록 — 화면 순서와 같아야 한다 */
   const flat = useMemo(
     () => (results.top ? [results.top, ...results.groups.flatMap((g) => g.docs)] : []),
     [results],
   );
+
+  /** 결과 행의 id — 평평한 목록의 자리로 짓는다. 입력의 `aria-activedescendant`
+      가 이걸 가리켜야 화살표로 훑을 때 스크린리더가 그 줄을 읽는다(없으면 침묵했다) */
+  const optionId = (i: number) => `${listId}-o-${i}`;
 
   const go = useCallback(
     (doc: SearchDoc) => {
@@ -304,6 +356,7 @@ export function SearchBar() {
                   role="combobox"
                   aria-expanded
                   aria-controls={listId}
+                  aria-activedescendant={flat[cursor] ? optionId(cursor) : undefined}
                   aria-autocomplete="list"
                   autoComplete="off"
                   enterKeyHint="search"
@@ -329,8 +382,24 @@ export function SearchBar() {
               role="listbox"
               aria-label={m.search.open}
               className="flex-1 overflow-y-auto overscroll-contain pb-2 sm:max-h-[min(62vh,32.5rem)]"
+              /* 결과가 입력을 못 따라오는 동안에는 직전 결과를 **그대로** 두되
+                 잉크를 조금 뺀다 — 스피너를 얹으면 몇십 ms 짜리 깜빡임이 생긴다 */
+              style={pending ? { opacity: 0.55, transition: "opacity 120ms" } : undefined}
+              aria-busy={pending || undefined}
             >
-              {!query.trim() ? (
+              {indexError ? (
+                /* 검색이 불가능한 상태. 빈 결과와 **다른** 말을 해야 한다 —
+                   여기서 `search.empty` 를 쓰면 "그 말에 맞는 게 없다"는 거짓말이 된다.
+                   ⚠️ 전용 문구 키가 없어 공용 에러 문구를 빌려 쓴다(i18n 은 다른 소유자) */
+                <div className="px-4 py-8 text-center">
+                  <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.error.title}</p>
+                  <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
+                    {m.error.body}
+                  </p>
+                </div>
+              ) : !deferred.trim() || index === null ? (
+                /* 색인이 아직 오는 중이면 힌트를 계속 둔다 — 예전엔 이 사이에
+                   "맞는 것이 없어요" 가 잠깐 떴다. 훑어보지도 않고 없다고 한 셈이다 */
                 <p
                   className="px-4 py-4"
                   style={{ fontSize: "var(--t-meta)", color: "var(--dim)", lineHeight: 1.75 }}
@@ -338,9 +407,11 @@ export function SearchBar() {
                   {m.search.hint}
                 </p>
               ) : !results.top ? (
+                /* 문구도 결과와 같은 질의(deferred)로 — `query` 로 쓰면 아직 훑지도
+                   않은 글자를 두고 "맞는 것이 없다"고 말하게 된다 */
                 <div className="px-4 py-8 text-center">
                   <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                    {t(m.search.empty, { q: query.trim() })}
+                    {t(m.search.empty, { q: deferred.trim() })}
                   </p>
                   <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
                     {m.search.emptyHint}
@@ -360,8 +431,10 @@ export function SearchBar() {
                 <>
                   <GroupHead label={m.search.top} wax />
                   <Row
+                    id={optionId(0)}
                     doc={results.top}
-                    query={query}
+                    linkHref={href(results.top.path)}
+                    query={deferred}
                     m={m}
                     lead
                     active={cursor === 0}
@@ -375,8 +448,10 @@ export function SearchBar() {
                         {g.docs.map((doc, i) => (
                           <Row
                             key={`${doc.kind}-${doc.path}-${doc.name}`}
+                            id={optionId(offset + i)}
                             doc={doc}
-                            query={query}
+                            linkHref={href(doc.path)}
+                            query={deferred}
                             m={m}
                             active={cursor === offset + i}
                             onPick={() => go(doc)}
@@ -426,29 +501,52 @@ function GroupHead({ label, wax = false }: { label: string; wax?: boolean }) {
   );
 }
 
+/**
+ * 결과 한 줄 — **문서에는 링크로, 손에는 지금까지의 동작으로.**
+ *
+ * 예전엔 `<button onClick>` 이었다. 목적지가 화면에 따라 갈리기 때문인데
+ * (홈에서는 `/map` 필터로 꽂는다), 그 대가로 ⌘클릭·가운데 클릭·링크 주소 복사가
+ * 전부 죽어 있었다. "찾아서 간다"가 본업인 디렉터리에서는 큰 손실이다.
+ * `PlaceRowLink` 와 같은 방식으로, **평범한 좌클릭일 때만** 가로챈다.
+ * combobox 배선(`role="option"`)은 그대로 — 링크가 됐다고 목록의 항목이
+ * 아니게 되는 건 아니다.
+ */
 function Row({
+  id,
   doc,
+  linkHref,
   query,
   m,
   lead = false,
   active,
   onPick,
 }: {
+  id: string;
   doc: SearchDoc;
+  /** 로케일까지 입힌 진짜 목적지 — 새 탭·주소 복사가 이 주소를 쓴다 */
+  linkHref: string;
   query: string;
   m: ReturnType<typeof useLocale>["messages"];
   /** 대표 결과 — 한 단 크게, 테두리를 두른다 */
   lead?: boolean;
   active: boolean;
+  /** 평범한 좌클릭에서 부를 것 — 지금까지 `onClick` 이 하던 화면별 분기 */
   onPick: () => void;
 }) {
   const [before, hit, after] = highlight(doc.name, query);
   return (
-    <button
-      type="button"
+    <a
+      id={id}
+      href={linkHref}
       role="option"
       aria-selected={active}
-      onClick={onPick}
+      onClick={(e) => {
+        /* 새 탭·새 창으로 열려는 의도는 건드리지 않는다. 가운데 클릭은 대개
+           click 이 아니라 auxclick 이라 여기 안 오지만, 오는 브라우저도 있어서 같이 본다 */
+        if (e.metaKey || e.ctrlKey || e.shiftKey || e.altKey || e.button !== 0) return;
+        e.preventDefault();
+        onPick();
+      }}
       className={
         lead
           ? "mx-2.5 mt-1 flex w-[calc(100%-1.25rem)] cursor-pointer items-center gap-3 rounded-(--r-control) px-3.5 py-3 text-left"
@@ -479,7 +577,7 @@ function Row({
           {lead ? `${m.search.kinds[doc.kind]} · ${doc.sub}` : doc.sub}
         </span>
       </span>
-    </button>
+    </a>
   );
 }
 

@@ -7,6 +7,8 @@
  * DOM·로케일을 모른다 — 서버에서도 테스트에서도 그대로 돈다.
  */
 
+import { placePath } from "@/shared/lib/place-path";
+
 export type SearchKind = "city" | "channel" | "type" | "place" | "video";
 
 /** 화면으로 나가는 문서 — **한 로케일만** 담는다(원문 누수 방지, HANDOFF §3-2) */
@@ -19,6 +21,11 @@ export interface SearchDoc {
   sub: string;
   /** 매칭 대상. 이름 말고도 핸들·요약 불릿 같은 걸 넣는다 */
   hay: string[];
+  /** `unpackIndex` 가 색인을 되읽으며 **그 자리에서 한 번** 붙이는 사전계산값.
+      `hay` 와 자리(index)가 1:1 로 맞는다. 서버·테스트에서 그냥 만든 문서는
+      비어 있고, 그때는 `scoreDoc` 이 예전처럼 즉석에서 계산한다 */
+  lcHay?: string[];
+  choHay?: string[];
   /** 채널 고유색 — 아바타 링 */
   accent?: string;
   avatarUrl?: string | null;
@@ -36,13 +43,24 @@ const HANGUL_BASE = 0xac00;
 const HANGUL_COUNT = 11172;
 const JUNG_JONG = 588; // 중성 21 × 종성 28
 
+/* 같은 문자열의 초성을 몇 번이고 다시 만들던 자리다. `textMatchesQuery` 는
+   지도 필터에서 같은 hay 를 타건마다 다시 훑기 때문에 한 번 만든 건 들고 있는다.
+   상한을 두는 건 지도의 장소·질의 조합이 무한히 늘어날 수 있어서다 —
+   넘치면 통째로 버린다(LRU 를 흉내 낼 만큼 비싼 계산이 아니다). */
+const CHOSEONG_CACHE = new Map<string, string>();
+const CHOSEONG_CACHE_CAP = 20000;
+
 /** "도쿄" → "ㄷㅋ". 한글이 아닌 글자는 그대로 둔다 */
 export function choseong(text: string): string {
+  const hit = CHOSEONG_CACHE.get(text);
+  if (hit !== undefined) return hit;
   let out = "";
   for (const ch of text) {
     const code = ch.charCodeAt(0) - HANGUL_BASE;
     out += code >= 0 && code < HANGUL_COUNT ? CHOSEONG[Math.floor(code / JUNG_JONG)] : ch;
   }
+  if (CHOSEONG_CACHE.size >= CHOSEONG_CACHE_CAP) CHOSEONG_CACHE.clear();
+  CHOSEONG_CACHE.set(text, out);
   return out;
 }
 
@@ -122,19 +140,155 @@ const KIND_WEIGHT: Record<SearchKind, number> = {
   video: 6,
 };
 
+/* ── 전선 형식 ────────────────────────────────────────────────────────
+   `/api/search-index` 는 `SearchDoc[]` 을 그대로 싣지 않는다. 실측(ko, 3,015 항목)
+   으로 805,618 bytes 였고 그 절반 가까이가 **되풀이되는 군더더기**였다:
+
+     · `path` 34% — 접두사가 4종뿐인데(`/city/` `/c/` `/type/` `/place/`) 항목마다
+       실렸고, 장소 경로는 한글 slug 를 퍼센트 인코딩한 상태라 글자당 9바이트였다
+       (날 UTF-8 이면 3바이트다)
+     · `hay[0]` 27% 중 절반 — ko 에서 3,015/3,015 항목이 `name` 과 같은 문자열이다
+     · `kind` 9% — 서로 다른 값 5개가 3,015번
+     · 키 이름 자체 — `"kind":"path":"name":"sub":"hay":` 가 항목마다 한 벌씩
+
+   그래서 **튜플 + 사전**으로 바꾼다. 실측 −49% raw / −26% gzip.
+
+   ⚠️ gzip 은 되풀이되는 접두사·키 이름을 이미 잘 압축한다 — raw 가 반으로 줄어도
+      gzip 은 4분의 1만 준다. 그래도 값어치가 있는 건 전송량이 아니라 **파싱 비용과
+      메모리**다: `JSON.parse` 가 만들던 키 8개짜리 객체 3,015개가 배열 3,015개가
+      되고, 되풀이 문자열(kind·접두사·hay[0]·youtubeId)이 애초에 힙에 안 올라온다.
+
+   ⚠️ 사전(`k`·`c`)을 **응답에 함께 싣는다.** 클라이언트가 자기 쪽 상수로 되읽으면
+      캐시에 굳은 옛 응답이 새 코드를 만났을 때 종류가 통째로 어긋난다 — 이 응답은
+      브라우저 5분·CDN 1시간 캐시다. 사전을 같이 실으면 그런 어긋남이 없다. */
+
+/** 전선 사전의 kind 순서. **`KIND_ORDER`(화면 노출 순서)와 일부러 분리한다** —
+    노출 순서를 손댔다고 전선 형식이 따라 바뀌면 안 된다 */
+export const KIND_WIRE: readonly SearchKind[] = ["city", "channel", "type", "place", "video"];
+
+/**
+ * 압축된 한 항목.
+ *
+ * 0 kind — 사전(`PackedIndex.k`)의 자리
+ * 1 slug — 경로의 **가변부만**. video 는 youtubeId(경로의 마지막 칸이자 화면이 쓰는
+ *          썸네일 id — 둘이 늘 같은 문자열이라 따로 싣지 않는다)
+ * 2 name
+ * 3 sub
+ * 4 hay  — `name` 과 겹치는 머리를 뗀 나머지(`packHay`)
+ * 5 video: 채널 slug 사전(`PackedIndex.c`)의 자리 · channel: accent
+ * 6 channel: avatarUrl
+ */
+export type PackedDoc = [
+  kind: number,
+  slug: string,
+  name: string,
+  sub: string,
+  hay: string[],
+  extraA?: string | number,
+  extraB?: string,
+];
+
+export interface PackedIndex {
+  /** kind 사전 */
+  k: readonly SearchKind[];
+  /** 채널 slug 사전 — 영상 경로 `/c/{slug}/v/{id}` 의 가운데 칸(16종뿐이다) */
+  c: string[];
+  /** 항목 */
+  d: PackedDoc[];
+}
+
+/**
+ * `hay` 에서 `name` 과 겹치는 머리를 뗀다 — 되읽을 때 `name` 을 도로 붙인다.
+ *
+ * ko 색인은 3,015/3,015 항목이 `hay[0] === name` 이다(장소명·영상 제목·채널명·
+ * 도시명이 곧 첫 건초더미다). 즉 이름이 항목마다 두 번 실려 있었다.
+ *
+ * ⚠️ **en 에서는 늘 같지 않다.** 도시(132)와 종류(6)는 `name` 이 영문 표기인데
+ *    `hay[0]` 은 한국어 원문이다("Tokyo" vs "도쿄"). 거기서 머리를 그냥 떼면
+ *    EN 화면에서 "도쿄"로 Tokyo 를 못 찾게 된다 — 그래서 **같을 때만** 뗀다.
+ *    다를 때는 hay 를 통째로 싣고, 되읽은 결과는 `[name, ...hay]` 가 된다.
+ *    `name` 은 그런 항목에서도 언제나 hay 안에 이미 있는 값이라(en 도시의 name 은
+ *    hay[1]) 늘어나는 건 중복 하나뿐이고, `scoreDoc` 은 필드들의 **최댓값**만
+ *    보므로 점수가 달라지지 않는다. 자리(순서)만 바뀐다.
+ */
+export function packHay(hay: string[], name: string): string[] {
+  return (hay[0] === name ? hay.slice(1) : hay).filter(Boolean);
+}
+
+/** 접두사를 kind 로 되살린다 — **로더가 만들던 문자열과 글자 하나까지 같다.**
+    장소만 `placePath()`(퍼센트 인코딩)를 거치고 나머지는 날 slug 그대로다 —
+    채널·영상 경로의 한글 slug 는 예나 지금이나 인코딩하지 않는다 */
+function unpackPath(kind: SearchKind, slug: string, creator: string): string {
+  switch (kind) {
+    case "city":
+      return `/city/${slug}`;
+    case "channel":
+      return `/c/${slug}`;
+    case "type":
+      return `/type/${slug}`;
+    case "place":
+      return placePath(slug);
+    case "video":
+      return `/c/${creator}/v/${slug}`;
+  }
+}
+
+/**
+ * 받은 압축 색인을 `SearchDoc[]` 으로 되돌린다 — **소문자·초성 사전계산까지 한 번에.**
+ *
+ * 사전계산을 여기서 하는 이유: 이걸 안 하면 `scoreDoc` 이 타건마다
+ * `field.toLowerCase()` 를 문서×필드만큼 새로 할당했다(3,015 문서 × hay 약 3 필드
+ * ≈ 9,000 회/키 — 연속으로 빠르게 치면 탭이 통째로 굳었다). 질의가 바뀌어도 문서
+ * 쪽 문자열은 그대로라 다시 만들 이유가 없다. 어차피 되읽느라 한 번 도는 순회라
+ * 여기 얹으면 공짜다.
+ */
+export function unpackIndex(packed: PackedIndex): SearchDoc[] {
+  const { k: kinds, c: creators, d: rows } = packed;
+  const out: SearchDoc[] = new Array(rows.length);
+  for (let i = 0; i < rows.length; i += 1) {
+    const row = rows[i];
+    const kind = kinds[row[0]];
+    const slug = row[1];
+    const name = row[2];
+    // 뗐던 머리를 도로 붙인다 — `packHay` 참고
+    const hay = [name, ...row[4]];
+    const doc: SearchDoc = {
+      kind,
+      path: unpackPath(kind, slug, kind === "video" ? (creators[row[5] as number] ?? "") : ""),
+      name,
+      sub: row[3],
+      hay,
+      lcHay: hay.map((f) => (f ? f.toLowerCase() : "")),
+      choHay: hay.map((f) => (f ? choseong(f) : "")),
+    };
+    if (kind === "video") doc.youtubeId = slug;
+    else if (kind === "channel") {
+      // 옛 응답과 같게 — 값이 있을 때만 붙인다(`pickLocale` 이 그랬다)
+      if (row[5]) doc.accent = row[5] as string;
+      if (row[6]) doc.avatarUrl = row[6];
+    }
+    out[i] = doc;
+  }
+  return out;
+}
+
 /** 0 이면 매칭 없음 */
 export function scoreDoc(doc: SearchDoc, query: string): number {
   const cho = isChoseongQuery(query);
+  const { hay: fields, lcHay, choHay } = doc;
   let best = 0;
-  for (const field of doc.hay) {
+  for (let i = 0; i < fields.length; i += 1) {
+    const field = fields[i];
     if (!field) continue;
-    const hay = field.toLowerCase();
+    // 사전계산이 있으면 읽기만 한다(`prepareIndex`). 없으면 예전 경로 그대로
+    const hay = lcHay ? lcHay[i] : field.toLowerCase();
     let s = 0;
     if (hay === query) s = 100;
     else if (hay.startsWith(query)) s = 80;
     else if (hay.includes(query)) s = 55;
-    else if (cho && choseong(field).includes(query)) s = 45;
+    else if (cho && (choHay ? choHay[i] : choseong(field)).includes(query)) s = 45;
     if (s > best) best = s;
+    if (best === 100) break; // 완전 일치가 최대치 — 남은 필드를 볼 이유가 없다
   }
   return best === 0 ? 0 : best + KIND_WEIGHT[doc.kind];
 }
@@ -161,13 +315,19 @@ export function search(index: SearchDoc[], rawQuery: string): SearchResults {
   const variants = queryVariants(rawQuery);
   if (variants.length === 0) return { top: null, groups: [] };
 
-  const hits = index
-    .map((doc) => ({
-      doc,
-      score: Math.max(...variants.map((v) => scoreDoc(doc, v))),
-    }))
-    .filter((h) => h.score > 0)
-    .sort((a, b) => b.score - a.score || a.doc.name.length - b.doc.name.length);
+  /* 예전엔 `.map(...).filter(...)` 이라 문서 수만큼 래퍼 객체를 만들고 대부분
+     버렸다(타건마다 3,015 개). 맞은 것만 담는다 — 정렬은 안정 정렬이라
+     원래 순서가 유지되고 결과·순위는 그대로다 */
+  const hits: { doc: SearchDoc; score: number }[] = [];
+  for (const doc of index) {
+    let score = 0;
+    for (const v of variants) {
+      const s = scoreDoc(doc, v);
+      if (s > score) score = s;
+    }
+    if (score > 0) hits.push({ doc, score });
+  }
+  hits.sort((a, b) => b.score - a.score || a.doc.name.length - b.doc.name.length);
 
   if (hits.length === 0) return { top: null, groups: [] };
 
