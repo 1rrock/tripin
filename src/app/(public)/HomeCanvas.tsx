@@ -28,7 +28,7 @@ import type {
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
-import { Frame } from "@/shared/ui/frame";
+import { Chip, Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import dynamic from "next/dynamic";
@@ -106,7 +106,7 @@ export function ExplorerCanvas({
   /** page = /map 전 구간. overlay = 지역·종류·채널 데스크톱만. */
   surface?: "page" | "overlay";
 }) {
-  const { messages: m, t, locale } = useLocale();
+  const { messages: m, t, locale, href } = useLocale();
   const router = useRouter();
   const pathname = usePathname() ?? "/";
   const sp = useSearchParams();
@@ -131,7 +131,12 @@ export function ExplorerCanvas({
   useEffect(() => {
     if (surface !== "page") return;
     let alive = true;
-    fetch("/api/map/index")
+    /* `v=2` 는 **캐시를 가르는 자물쇠**다(SearchBar 의 `/api/search-index?v=2` 와 같은
+       이유). 이 응답의 `places` 가 객체 배열에서 자리번호 행 배열로 바뀌었는데,
+       브라우저 5분·CDN 1시간 캐시라 배포 직후 옛 본문이 새 코드에 도착할 수 있다.
+       주소가 다르면 그 일이 아예 안 일어난다. 형식을 또 바꾸면 이 숫자를 올릴 것 —
+       라우트는 쿼리를 안 읽는다. */
+    fetch("/api/map/index?v=2")
       .then((res) => {
         if (!res.ok) throw new Error(`map index ${res.status}`);
         return res.json();
@@ -139,8 +144,25 @@ export function ExplorerCanvas({
       .then((data: MapIndexPayload | null) => {
         if (!alive) return;
         /* 응답은 정규화된 사전 + 자리번호다(cities.ts `MapIndexPayload`).
-           여기서 원래 행으로 되세운다 — 검색어도 이때 조립된다. */
-        setFetchedPlaces(data && Array.isArray(data.places) ? decodeMapIndex(data) : []);
+           여기서 원래 행으로 되세운다 — 검색어도 이때 조립된다.
+
+           🔴 모양이 어긋나면 `[]` 로 삼키지 않는다. 옛 본문(`places` 가 **객체**
+              배열)이 오면 `Array.isArray(data.places)` 는 통과한 뒤 decode 의
+              `const [id, name, …] = row` 가 객체를 구조분해하다 터진다. 씨앗까지
+              지워진 빈 화면이 되느니 실패로 쳐서 아래 재시도 줄을 세운다. */
+        if (
+          !data ||
+          !Array.isArray(data.places) ||
+          !Array.isArray(data.cities) ||
+          !Array.isArray(data.types) ||
+          !Array.isArray(data.creators)
+        ) {
+          throw new Error("map index shape");
+        }
+        if (data.places.length > 0 && !Array.isArray(data.places[0])) {
+          throw new Error("map index legacy shape");
+        }
+        setFetchedPlaces(decodeMapIndex(data));
         setIndexFailed(false);
       })
       .catch(() => {
@@ -188,11 +210,16 @@ export function ExplorerCanvas({
   /* 어느 장소의 상세를 **받아봤는지**. null 하나로는 "아직 로딩" 과 "없더라(404)"
      를 구분 못 해 뼈가 영영 안 걷힌다. */
   const [detailSettledFor, setDetailSettledFor] = useState<string | null>(null);
+  /* **조회 실패**(통신 끊김·본문 깨짐)와 "그런 장소 없음"(404)은 다르다. 아래 복구
+     이펙트는 진짜 없는 장소에만 반응해야 한다 — 이걸 안 가르면 모바일 전환 한 번에
+     공유받은 멀쩡한 `?place=` 가 URL 에서 지워졌다. */
+  const [detailErrorFor, setDetailErrorFor] = useState<string | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(localPlace);
   if (detailFor !== localPlace) {
     setDetailFor(localPlace);
     setPlaceDetail(null);
     setDetailSettledFor(null);
+    setDetailErrorFor(null);
   }
   const detailLoading = Boolean(localPlace) && detailSettledFor !== localPlace;
   /* 드로어가 켠 채널은 sticky. popstate 는 place/스냅만 되돌리고,
@@ -236,7 +263,13 @@ export function ExplorerCanvas({
         }
         settle(row);
       })
-      .catch(() => settle(null));
+      .catch(() => {
+        /* 통신이 끊겼거나 본문이 깨진 것 — "없는 장소"가 아니다. 뼈는 걷되
+           (settle) 실패로 표시해, 복구 이펙트가 `?place=` 를 걷어내지 않게 한다. */
+        if (!alive) return;
+        setDetailErrorFor(id);
+        settle(null);
+      });
     return () => {
       alive = false;
     };
@@ -282,12 +315,17 @@ export function ExplorerCanvas({
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
   const geoAskedRef = useRef(false);
   const aliveRef = useRef(true);
-  useEffect(
-    () => () => {
+  useEffect(() => {
+    /* 정리에서 false 만 쓰고 끝내면 다시 마운트돼도 죽은 채로 남는다. 프로덕션은
+       마운트가 한 번이라 무해하지만, dev StrictMode 의 이중 마운트에서는 위치를
+       받아도 setHere 가 안 불려 첫 진입 시작점이 없는 것처럼 보인다 — 로컬에서
+       시작 위치를 확인할 때 헛다리를 짚는 자리였다. 본문에서 되돌린다. */
+    aliveRef.current = true;
+    geoAskedRef.current = false;
+    return () => {
       aliveRef.current = false;
-    },
-    [],
-  );
+    };
+  }, []);
   /**
    * 위치를 **딱 한 번** 묻는다. 부르는 자리가 둘이라 함수로 뺐다:
    * 첫 진입(아래 이펙트)과, 없는 장소 링크에서 빠져나온 직후(그 전까지는
@@ -601,14 +639,24 @@ export function ExplorerCanvas({
    *
    * 조회가 **끝났는데**(settled) 인덱스 행도, 상세 응답으로 세운 대체 행도 없으면
    * 그 id 는 없는 것이다. 알리고 `?place=` 를 걷어내 지도를 평소로 돌린 뒤,
-   * 그제야 시작점을 묻는다. id 당 한 번만 처리한다 — `history.back()` 갈래는
-   * localPlace 가 popstate 뒤에야 비므로 두 번 부르면 히스토리를 두 칸 넘는다.
+   * 그제야 시작점을 묻는다. **한 번의 열림당** 한 번만 처리한다 — `history.back()`
+   * 갈래는 localPlace 가 popstate 뒤에야 비므로 두 번 부르면 히스토리를 두 칸 넘는다.
+   *
+   * 조회가 실패한 것(detailErrorFor)은 여기 오면 안 된다 — 통신이 끊겼을 뿐인
+   * 멀쩡한 링크를 지우게 된다(위 `.catch` 주석).
    */
   const [placeMissing, setPlaceMissing] = useState(false);
   const missingHandledRef = useRef<string | null>(null);
   useEffect(() => {
-    if (!localPlace) return;
+    if (!localPlace) {
+      /* 닫히면 가드를 푼다 — id 로만 기억하면 앞으로가기로 같은 죽은 링크에
+         다시 들어왔을 때 알림도 URL 정리도 안 일어나고 그대로 멈춰 있었다.
+         "이번 열림" 단위라 히스토리 이중 이동은 여전히 막힌다. */
+      missingHandledRef.current = null;
+      return;
+    }
     if (detailSettledFor !== localPlace) return;
+    if (detailErrorFor === localPlace) return;
     if (detailPlace) return;
     if (missingHandledRef.current === localPlace) return;
     missingHandledRef.current = localPlace;
@@ -616,7 +664,7 @@ export function ExplorerCanvas({
     setActiveId(null);
     closeDetail();
     askHere();
-  }, [localPlace, detailSettledFor, detailPlace, closeDetail, askHere]);
+  }, [localPlace, detailSettledFor, detailErrorFor, detailPlace, closeDetail, askHere]);
 
   /* 알림은 잠깐이면 된다 — 목록 머리에 영영 붙어 있을 줄이 아니다 */
   useEffect(() => {
@@ -1302,7 +1350,13 @@ export function ExplorerCanvas({
           ) : filtered.length === 0 ? (
             <EmptyState message={m.home.empty}>
               {/* 막다른 화면 금지(EmptyState.tsx 주석) — 위 헤더의 지우기 버튼은
-                  빈 상태에서 눈에 안 들어온다. 같은 동작을 본문에 다시 세운다. */}
+                  빈 상태에서 눈에 안 들어온다. 같은 동작을 본문에 다시 세운다.
+                  🔴 `null` 갈래를 두지 않는다. 필터가 없는데 0곳인 화면은 실제로
+                     생긴다(인덱스가 빈 채로 도착 — home.ts:132 의 그 사고). 그때
+                     여기가 비면 다음 행동이 통째로 사라진 막다른 화면이 된다.
+                     그래서 갈래마다 원인이 정한 행동을 준다(Explorer.tsx:455 와
+                     같은 모양): 필터 때문이면 필터를 풀고, 지도 자체가 비었으면
+                     이 앱의 다른 곳(홈)으로 보낸다. "새로고침"은 금지다. */}
               {hasFilter ? (
                 <button
                   type="button"
@@ -1322,7 +1376,13 @@ export function ExplorerCanvas({
                 >
                   {m.cityDetail.clearFilters}
                 </button>
-              ) : null}
+              ) : (
+                /* 문구는 `error.toHome`("홈으로")을 빌려 쓴다 — i18n 은 다른
+                   소유자라 키를 새로 만들지 않았다(celebs/page.tsx 와 같은 이유). */
+                <Chip size="md" href={href("/")}>
+                  {m.error.toHome}
+                </Chip>
+              )}
             </EmptyState>
           ) : (
             <ul className="px-4 pb-6">

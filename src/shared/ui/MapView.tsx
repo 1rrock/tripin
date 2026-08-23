@@ -333,11 +333,19 @@ export function MapView({
   const namedRef = useRef(false);
   const pinsLiveRef = useRef(pins);
   const onMapClickRef = useRef(onMapClick);
+  /**
+   * 핀 클릭도 ref 로 받는다 — 마커는 **생성 시점 클로저**로 콜백을 붙드는데,
+   * 마커를 다시 만드는 조건은 핀 지문 변화뿐이고 지문에는 선택 상태가 없다.
+   * 값을 그대로 닫아 두면 호출부의 최신 콜백(선택 id 를 아는 쪽)이 영영 안 불려,
+   * 같은 핀을 두 번 눌러도 닫히지 않고 히스토리만 한 칸씩 쌓였다.
+   */
+  const onPinClickRef = useRef(onPinClick);
   /* 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 읽는 곳은 전부 지도
      이벤트 콜백이라 이 이펙트가 먼저 돈 뒤다. 아래 fitPaddingRef 와 같은 계약. */
   useEffect(() => {
     pinsLiveRef.current = pins;
     onMapClickRef.current = onMapClick;
+    onPinClickRef.current = onPinClick;
   });
   /* 여백은 맞추는 순간에 읽는다 — 이펙트 의존성에 넣으면 시트를 끌 때마다 뷰포트가 튄다.
      렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 실제로 읽는 곳은 SDK 로드
@@ -625,7 +633,8 @@ export function MapView({
                     gmpClickable: Boolean(onPinClick),
                   });
                   if (onPinClick) {
-                    mk.addEventListener("gmp-click", () => onPinClick(pin.id));
+                    /* 최신 콜백을 ref 로 읽는다 — 위 onPinClickRef 주석 */
+                    mk.addEventListener("gmp-click", () => onPinClickRef.current?.(pin.id));
                   }
                   markersRef.current.set(pin.id, mk);
                 }
@@ -672,7 +681,8 @@ export function MapView({
           });
           if (onPinClick) {
             // addListener("click") 은 deprecated — 표준 이벤트(gmp-click)로 받는다
-            m.addEventListener("gmp-click", () => onPinClick(pin.id));
+            // 콜백 자체는 ref 로 읽는다 — 위 onPinClickRef 주석
+            m.addEventListener("gmp-click", () => onPinClickRef.current?.(pin.id));
           }
           markersRef.current.set(pin.id, m);
           made.push(m);
@@ -709,8 +719,12 @@ export function MapView({
       cancelled = true;
     };
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
+    /* `loaded` 가 있어야 하는 이유: 지도 객체는 rAF 두 번 뒤에 선다. 이 이펙트가
+       그 전에 돌면 `!map` 으로 빠져나가는데, 그 뒤 지도가 서도 다시 돌 계기가
+       없었다("다시 시도" 뒤에 핀이 영영 안 그려지던 자리 — retry 는 failed 만
+       되돌린다). 지문 가드가 중복 실행을 막으므로 한 번 더 도는 건 공짜다. */
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pins, failed, cluster, nameWhenClose]);
+  }, [pins, failed, cluster, nameWhenClose, loaded]);
 
   /* 시작점 — 현재 위치처럼 늦게 오는 좌표. 지도가 서 있으면 그때 한 번 옮긴다.
      핀 맞춤과 달리 사용자가 이후 어떻게 움직이든 다시 끼어들지 않는다. */
