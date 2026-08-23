@@ -1,26 +1,48 @@
 import { ImageResponse } from "next/og";
-import { loadKoreanFont } from "@/shared/seo/og-font";
+import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import type { Locale } from "@/shared/i18n/config";
 
 /**
- * 기본 공유 카드 — 흰 지면(#ffffff) + 잉크 타이포 + 왁스(#c9441a) 밑줄 바.
- * 사진·그라디언트 없음. 지면과 타이포 위계만으로 선다.
+ * 홈 공유 카드 — 사이트 전체 피치. 앱 루트 기본 카드(`src/app/opengraph-image.tsx`)와
+ * 같은 헤드라인 문법(흰 지면, 잉크 타이포, 키 프레이즈에 왁스 밑줄 바, 사진 없음)을
+ * 쓰되 로케일별로 갈린다 — 루트 파일은 `(public)/[lang]` 트리에 상속되지 않는다
+ * (AUDIT-2026-08-23: `/`·`/en`·`/map`·영상 페이지에 og:image 가 통째로 없었다).
  */
 export const alt = "여행 유튜버가 간 곳만 지도로 — Eatripin";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
-const HEAD_A = "여행 유튜버가";
-const HEAD_B = "간 곳만";
-const HEAD_C = "지도로.";
-const SUB = "모든 장소에 출처 영상·타임스탬프";
-const FOOT = "Eatripin · 비공식 디렉터리";
+const COPY = {
+  ko: {
+    headA: "여행 유튜버가",
+    headB: "간 곳만",
+    headC: "지도로.",
+    sub: "모든 장소에 출처 영상·타임스탬프",
+    foot: "Eatripin · 비공식 디렉터리",
+  },
+  en: {
+    headA: "Only the places",
+    headB: "travel YouTubers",
+    headC: "visited.",
+    sub: "Every place has a source video and timestamp",
+    foot: "Eatripin · Unofficial directory",
+  },
+} as const;
 
-export default async function OpengraphImage() {
-  const glyphs = HEAD_A + HEAD_B + HEAD_C + SUB + FOOT;
-  const [bold, regular] = await Promise.all([
-    loadKoreanFont(glyphs, 800),
-    loadKoreanFont(glyphs, 500),
-  ]);
+export default async function HomeOpengraphImage({
+  params,
+}: {
+  params: Promise<{ lang: Locale }>;
+}) {
+  const { lang: locale } = await params;
+  const c = COPY[locale];
+
+  const glyphs = c.headA + c.headB + c.headC + c.sub + c.foot;
+  const needsKR = needsKoreanFont(glyphs);
+  const [bold, regular] = needsKR
+    ? await Promise.all([loadKoreanFont(glyphs, 800), loadKoreanFont(glyphs, 500)])
+    : [null, null];
+  const showRich = !needsKR || Boolean(bold);
 
   const fonts = bold
     ? [
@@ -46,7 +68,7 @@ export default async function OpengraphImage() {
           letterSpacing: "-0.035em",
         }}
       >
-        {bold ? (
+        {showRich ? (
           <div
             style={{
               flex: 1,
@@ -57,13 +79,13 @@ export default async function OpengraphImage() {
             }}
           >
             <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#171717" }}>
-              {HEAD_A}
+              {c.headA}
             </div>
             <div style={{ display: "flex", alignItems: "flex-start", marginTop: 10 }}>
               {/* 키 프레이즈 — 왁스 밑줄 바 */}
               <div style={{ display: "flex", flexDirection: "column", alignItems: "stretch" }}>
                 <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#171717" }}>
-                  {HEAD_B}
+                  {c.headB}
                 </div>
                 <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
               </div>
@@ -76,13 +98,13 @@ export default async function OpengraphImage() {
                   marginLeft: 22,
                 }}
               >
-                {HEAD_C}
+                {c.headC}
               </div>
             </div>
             <div
               style={{ display: "flex", fontSize: 30, fontWeight: 500, color: "#6b6b6b", marginTop: 34 }}
             >
-              {SUB}
+              {c.sub}
             </div>
           </div>
         ) : (
@@ -120,7 +142,7 @@ export default async function OpengraphImage() {
             letterSpacing: "0.06em",
           }}
         >
-          {bold ? FOOT : "EATRIPIN"}
+          {showRich ? c.foot : "EATRIPIN"}
         </div>
       </div>
     ),
