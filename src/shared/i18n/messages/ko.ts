@@ -340,6 +340,8 @@ export const ko = {
     deleteConfirm: "정말 탈퇴할까요? 저장한 곳 {n}곳과 구독이 모두 지워지고 되돌릴 수 없어요.",
     deleting: "지우는 중",
     deleteFailed: "탈퇴하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    /* 확인 판의 물러설 길 — 로그아웃·탈퇴 둘 다 이 하나를 쓴다 */
+    cancel: "취소",
 
     /* 구글에서 돌아온 뒤의 실패. 반환값이 아니라 URL 로 오기 때문에
        이 문구가 없으면 유저는 아무 일도 안 일어난 것처럼 본다. */
@@ -348,6 +350,45 @@ export const ko = {
     errMissing: "구글에서 돌아오는 길을 놓쳤어요. 다시 로그인해 주세요.",
     errNotLinked: "구글 로그인은 됐는데 이 기기에 붙지는 않았어요. 다시 시도해 주세요.",
     errGeneric: "로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+  },
+  /* 채널 등록 신청(/apply). 이 화면만 사전을 우회해 페이지 안에 KO/EN 인라인
+     사전과 삼항을 들고 있었다 — 카피 한 줄 고치려면 두 곳을 봐야 했다.
+     문구는 그때 것 그대로 옮겼다(필드별 에러 세 줄만 새로 쪼갰다). */
+  apply: {
+    title: "채널 등록 신청",
+    metaDescription:
+      "여행 유튜브 채널의 영상 속 장소를 지도로 정리해 드립니다. 채널 주소만 남기면 검토 후 순차 등록됩니다.",
+    intro:
+      "여행 영상 속 장소들을 상호명·타임스탬프·지도 링크로 정리해, 도시·장소 검색으로 영상이 계속 발견되게 합니다. 채널 주소만 남겨주시면 영상 설명란을 바탕으로 저희가 직접 정리해 등록합니다.",
+    channelLabel: "유튜브 채널 주소",
+    channelPlaceholder: "https://www.youtube.com/@channel",
+    emailLabel: "회신받을 이메일",
+    emailPlaceholder: "you@example.com",
+    videosLabel: "대표 영상 링크 (선택, 2~3개)",
+    videosPlaceholder: "장소가 나오는 영상이면 검토가 빨라져요",
+    noteLabel: "하고 싶은 말 (선택)",
+    submit: "신청하기",
+    submitting: "보내는 중…",
+    doneTitle: "신청을 받았어요.",
+    doneBody:
+      "검토 후 순차적으로 등록하고 있어요. 등록되거나 어려운 경우 남겨주신 이메일로 알려드릴게요.",
+    /* 필드별 에러 — 예전엔 폼 아래 한 줄뿐이라 채널이 틀렸는지 이메일이 틀렸는지 알 수 없었다.
+       errorInvalid 는 서버가 400 만 주고 어느 필드인지 말하지 않을 때의 폼 단위 폴백. */
+    errChannel: "유튜브 채널 주소를 확인해 주세요.",
+    errEmail: "이메일 주소를 확인해 주세요.",
+    errorInvalid: "유튜브 채널 주소와 이메일을 확인해 주세요.",
+    /* 429 — "실패"가 아니라 "너무 자주"다. 같은 문구로 뭉뚱그리면 다시 눌러 또 막힌다. */
+    errorRateLimited: "요청이 너무 잦아요. 잠시 뒤 다시 시도해 주세요.",
+    errorFailed: "잠시 후 다시 시도해 주세요.",
+    stepsHeading: "등록 절차",
+    steps: [
+      "접수 — 채널과 영상을 확인합니다. 장소가 나오는 여행 콘텐츠인지가 기준입니다.",
+      "정리 — 영상 설명란을 바탕으로 장소를 추출하고, 상호·주소·지도 링크를 하나하나 확인합니다.",
+      "등록 — 확인이 끝난 장소만 공개됩니다. 등록되면 이메일로 알려드립니다.",
+    ],
+    takedownBefore: "등록 후 언제든 ",
+    takedownLink: "삭제 요청",
+    takedownAfter: "으로 채널 전체를 내릴 수 있습니다.",
   },
   hub: {
     channelNav: "채널",
@@ -446,6 +487,22 @@ export const ko = {
     p2: "썸네일과 제목은 YouTube 원본 그대로이며, 저작권은 각 채널에 있습니다. 가격·영업 정보는 영상 촬영 시점 기준입니다.",
     p3: "삭제·수정 요청은 접수 즉시 비공개로 내린 뒤 검토합니다.",
     p3LinkLabel: "요청 보내기",
+  },
+  /* 없는 페이지·에러 화면. 라우트마다 제각각이던 not-found 제목("Not found" 와
+     "찾을 수 없는 페이지"가 섞여 있었다)을 여기 하나로 모은다. */
+  notFound: {
+    title: "찾는 페이지가 없어요",
+    body: "주소가 바뀌었거나, 내려간 곳이거나, 아직 없는 곳이에요.",
+    toMap: "지도에서 찾아보기",
+    toHome: "홈으로",
+    metaTitle: "찾을 수 없는 페이지",
+  },
+  error: {
+    title: "화면을 불러오지 못했어요",
+    /* 내부 에러 원문(minify 문자열·digest)을 여기 그대로 흘리지 않는다 */
+    body: "잠시 뒤 다시 시도해 주세요.",
+    retry: "다시 시도",
+    toHome: "홈으로",
   },
   meta: {
     homeTitle: "여행 유튜버가 간 곳 지도",
@@ -760,6 +817,34 @@ export type Messages = {
     errMissing: string;
     errNotLinked: string;
     errGeneric: string;
+    cancel: string;
+  };
+  apply: {
+    title: string;
+    metaDescription: string;
+    intro: string;
+    channelLabel: string;
+    channelPlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    videosLabel: string;
+    videosPlaceholder: string;
+    noteLabel: string;
+    submit: string;
+    submitting: string;
+    doneTitle: string;
+    doneBody: string;
+    errChannel: string;
+    errEmail: string;
+    errorInvalid: string;
+    errorRateLimited: string;
+    errorFailed: string;
+    stepsHeading: string;
+    /** 세 단계. 번호는 화면이 붙인다 — 문구에 "1." 을 넣지 않는다. */
+    steps: string[];
+    takedownBefore: string;
+    takedownLink: string;
+    takedownAfter: string;
   };
   hub: {
     channelNav: string;
@@ -848,6 +933,19 @@ export type Messages = {
     p2: string;
     p3: string;
     p3LinkLabel: string;
+  };
+  notFound: {
+    title: string;
+    body: string;
+    toMap: string;
+    toHome: string;
+    metaTitle: string;
+  };
+  error: {
+    title: string;
+    body: string;
+    retry: string;
+    toHome: string;
   };
   meta: {
     homeTitle: string;
