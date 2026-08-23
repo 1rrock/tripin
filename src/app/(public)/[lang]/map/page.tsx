@@ -68,7 +68,10 @@ export default async function MapPage({
   }
   return (
     <main>
-      <h1 className="sr-only">{m.home.srHeading}</h1>
+      {/* 화면에 안 보이는 h1. `m.home.srHeading` 은 홈 타이틀과 같은 문구다 —
+          지도 화면이 홈과 같은 h1 을 쓰면 두 문서가 같은 제목을 광고한다.
+          이 화면이 스스로 내거는 제목(generateMetadata 와 같은 키)을 쓴다. */}
+      <h1 className="sr-only">{m.meta.mapTitle}</h1>
       <HomeCanvas places={seedPlaces} cities={mapCities} creators={creators} />
     </main>
   );

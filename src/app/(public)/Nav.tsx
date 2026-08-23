@@ -6,9 +6,13 @@
  * 지역·종류·채널은 탭이 아니라 지도 필터다. 홈에서 고르면 `/map` 으로 간다.
  *
  * 데스크톱(lg+): 지도 옆 플로팅 아이콘 레일.
- * 태블릿: 헤더 안 텍스트+아이콘.
- * 모바일: 하단 탭바 — 헤더 밖에 둔다. 헤더 backdrop-filter 안에 fixed 를 두면
+ * 태블릿(md~lg): 헤더 안 텍스트+아이콘.
+ * 모바일(<md): 하단 탭바 — 헤더 밖에 둔다. 헤더 backdrop-filter 안에 fixed 를 두면
  * 뷰포트가 아니라 헤더 바닥에 붙는다.
+ *
+ * 세 벌은 **겹치지 않는다.** 예전엔 탭바가 lg:hidden 이라 md~lg 에서 헤더 내비와
+ * 함께 떴고(같은 목적지가 두 곳), 동시에 layout 의 하단 여백은 md:pb-0 이라
+ * 푸터 마지막 줄(정책 링크·언어 전환)이 fixed 탭바 밑으로 들어가 눌리지 않았다.
  *
  * 계정(마이)은 어느 폭에서든 **내비의 맨 오른쪽/맨 아래**에 선다. 헤더에 두면
  * 브랜드·검색과 같은 줄에서 크롬처럼 보이는데, 실제로는 사람들이 찾아 들어가는
@@ -155,7 +159,9 @@ export function TabDock() {
   const activeIndex = items.findIndex((it) => isActive(pathname, it.path));
 
   return (
-    <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-50 lg:hidden">
+    /* md:hidden — md 부터는 헤더 내비(Nav)가 같은 목적지를 들고 있고, layout 의
+       하단 여백도 md:pb-0 이라 여기서 끊어야 푸터가 안 잘린다. */
+    <nav aria-label={m.nav.tabsAria} className="tabbar fixed inset-x-0 bottom-0 z-50 md:hidden">
       <div className="relative mx-auto flex h-14 max-w-2xl items-stretch">
         {activeIndex >= 0 ? (
           /* 폭을 items.length 에서 뽑는다 — w-1/2 로 박아두면 탭이 늘 때

@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { publicEnv } from "@/shared/config/env";
@@ -137,9 +136,20 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
           <SavedProvider>
             <MapRouteChrome />
             <AuthHashRescue />
-            {/* 모바일은 하단 탭바(Nav)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
-                않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터 */}
-            <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 lg:max-w-none lg:pl-[88px]">
+            {/* 모바일은 하단 탭바(TabDock)가 fixed 로 떠 있다 — 그 높이만큼 지면을 비워 두지
+                않으면 푸터 마지막 줄이 바 밑으로 들어간다. 바 높이 60px + 홈 인디케이터.
+                md 부터는 탭바가 없고 헤더 내비가 그 몫을 하므로 md:pb-0 이 맞아떨어진다
+                (탭바도 md:hidden — 태블릿에서 같은 목적지가 두 벌 뜨던 것을 걷었다).
+
+                데스크톱 상한 max-w-6xl(72rem) — 레일 자리 pl-[88px] 을 빼면 본문 1064px.
+                자기 폭을 안 잡는 화면(/place·/city·/c/*)이 27" 에서 한 줄로 화면을
+                가로지르던 것을 여기서 막는다. 자기 폭을 잡는 화면은 그대로다 — 홈·
+                /celebs·/login 이 5xl(1024px), /channels·/account·/c/[creator] 가 3xl 인데
+                전부 1064px 안에 들어가고, mx-auto 로 잡히는 중심이 상한 전후 모두
+                (뷰포트 중심 + 44px)라 픽셀이 움직이지 않는다.
+                /map 은 이 상한 바깥이다 — `.canvas-page` 가 position:fixed 라 이 div 의
+                폭이 아니라 뷰포트를 기준으로 선다(globals.css). */}
+            <div className="mx-auto flex min-h-dvh w-full max-w-2xl flex-col pb-[calc(5.5rem+env(safe-area-inset-bottom))] md:pb-0 lg:max-w-6xl lg:pl-[88px]">
               <DesktopRail />
               <header
                 /* site-header — 지도 화면에서 통째로 감춘다(globals.css) */
@@ -207,11 +217,12 @@ FINISH: unreviewed and undocumented is unfinished; this build ends with the fini
                         {it.label}
                       </Link>
                     ))}
-                    {/* useSearchParams() 사용 — Suspense 없이는 정적 프리렌더가
-                        통째로 CSR 로 빠진다(missing-suspense-with-csr-bailout). */}
-                    <Suspense fallback={null}>
-                      <LocaleSwitch />
-                    </Suspense>
+                    {/* 여기를 `<Suspense fallback={null}>` 로 감싸면 안 된다 — 정적
+                        렌더에서 fallback(null) 이 그대로 굳어 SSG 페이지 HTML 에서
+                        전환 링크가 사라진다. useSearchParams() 경계는 조각 안에
+                        따로 있다(LocaleSwitch). 로케일은 세그먼트에서 온 값을
+                        그대로 내려준다 — 링크와 라벨은 서버가 정한다. */}
+                    <LocaleSwitch locale={locale} />
                   </nav>
                 </div>
 
