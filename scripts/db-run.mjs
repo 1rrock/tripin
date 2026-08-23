@@ -157,12 +157,17 @@ function apply(file) {
   console.log(`\n▶ ${label}`);
   run(["-f", file], { inherit: true });
   if (key) {
-    /* 값을 SQL 문자열에 보간하지 않는다 — psql 변수로 넘기고 `:'v'` 로 인용시킨다.
-       파일명에 따옴표가 들어가면 보간은 그대로 깨진다(그리고 그 자리는 SQL 이다). */
+    /* 값을 SQL 문자열 리터럴로 넣되 따옴표를 두 배로 이스케이프한다.
+       ⚠️ `-v mname=… ` + `:'mname'` 은 쓰지 마라 — psql 은 `-c` 로 준 문자열에는
+          변수 확장을 안 해서 `syntax error at or near ":"` 가 난다(2026-08-24 실측:
+          0018 적용 때 SQL 은 돌았는데 이 줄에서 죽어 이력이 안 남았다).
+          stdin(`-f -`)이면 확장되지만 run() 이 stdin 을 ignore 로 막아 둔다.
+       standard_conforming_strings 가 기본 on 이라 역슬래시는 특수문자가 아니고,
+       따옴표만 두 배로 하면 문자열 리터럴로 안전하다. */
     psql([
       "-q",
-      "-v", `mname=${key}`,
-      "-c", "insert into _migrations(name) values (:'mname') on conflict do nothing",
+      "-c",
+      `insert into _migrations(name) values ('${key.replace(/'/g, "''")}') on conflict do nothing`,
     ]);
   } else {
     console.log("  (supabase/migrations 밖의 파일이라 적용 이력에 남기지 않습니다)");

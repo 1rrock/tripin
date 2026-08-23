@@ -29,6 +29,7 @@ import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import { setTimeout as sleep } from "node:timers/promises";
+import { mapPlaceType } from "./_lib/place-type.mjs";
 
 const ROOT = dirname(dirname(dirname(fileURLToPath(import.meta.url))));
 function loadEnvLocal() {
@@ -69,60 +70,6 @@ const PLACES_HEADERS = {
 };
 
 const BANNED = ["진짜", "미쳤", "인생", "존맛", "대박", "JMT", "맛있", "맛없", "불친절", "별로"];
-
-/**
- * Google 타입 → 우리 place_type.
- *
- * ⚠️ 순서가 곧 우선순위다. **구체적인 것이 위, 범용이 아래.** 예전엔 restaurant 규칙이
- *    맨 위에 있으면서 `food` 를 물고 있었는데, Google 은 `food` 를 호텔·시장·역·백화점·
- *    박물관에도 붙인다. 현실적인 타입 배열로 돌려 보면 9종이 restaurant 로 뭉개졌다.
- *    `food`·`point_of_interest`·`establishment` 같은 범용 토큰은 맨 아래 폴백에만 둔다.
- *
- * 반환값은 DB enum 에 있는 것만 — restaurant, cafe, attraction, hotel, bar, shop,
- * viewpoint, other, unknown (0001_init.sql:83) + fishing (0012).
- * 역·터미널은 enum 에 없다. `other` 로 접는다 — 우리 유저는 "가 볼 곳"을 찾는데
- * 역은 그 자체가 목적지가 아니라 경유지다. `attraction`(명소·관광)으로 넣으면
- * 도쿄역처럼 관광지인 역 몇 개 때문에 평범한 환승역이 명소 목록을 오염시킨다.
- */
-const TYPE_MAP = [
-  [/\b(lodging|hotel|motel|resort_hotel|inn|guest_house|hostel|bed_and_breakfast|japanese_inn|ryokan|campground|rv_park)\b/i, "hotel"],
-  [/\b(train_station|subway_station|light_rail_station|transit_station|bus_station|airport|ferry_terminal)\b/i, "other"],
-  [/\b(fishing|fish_farm|marina)\b/i, "fishing"],
-  [/\b(tourist_attraction|museum|art_gallery|park|national_park|temple|shrine|church|zoo|aquarium|amusement_park|historical_landmark|historical_place|monument|castle|observation_deck)\b/i, "attraction"],
-  [/\b(market|farmers_market|supermarket|grocery_store|convenience_store|shopping_mall|department_store|book_store|clothing_store|gift_shop|store)\b/i, "shop"],
-  [/\b(cafe|coffee_shop|bakery|tea_house|dessert_shop|ice_cream_shop|juice_shop)\b/i, "cafe"],
-  [/\b(bar|pub|night_club|wine_bar|bar_and_grill|liquor_store)\b/i, "bar"],
-  [/\b(restaurant|sushi_restaurant|ramen_restaurant|meal_takeaway|meal_delivery|fast_food_restaurant|steak_house|barbecue_restaurant|pizza_restaurant|sandwich_shop|breakfast_restaurant|brunch_restaurant)\b/i, "restaurant"],
-];
-
-/** 범용 토큰 — 위 구체 규칙이 **하나도** 안 걸렸을 때만 본다. */
-const TYPE_FALLBACK = [
-  [/\b(sushi|ramen|food|dining)\b/i, "restaurant"],
-  [/\b(point_of_interest|tourist)\b/i, "attraction"],
-];
-
-/**
- * `primaryType` 을 먼저, 그것만으로 본다.
- * Google 의 primaryType 은 그 장소를 한 마디로 뭐라 부르는지다 — 가장 구체적이라
- * 여기서 걸리면 그게 답이다. 안 걸릴 때만 `types` 배열을 본다.
- *
- * ⚠️ types 를 한 문자열로 이어 붙여 검사하면 안 된다. 그러면 배열 어디에 있든
- *    "먼저 걸린 규칙"이 이기는 게 아니라 "먼저 걸린 **토큰**"이 이기고,
- *    호텔의 `food` 하나 때문에 restaurant 이 된다. 규칙을 바깥 루프로 돌려
- *    **구체적인 규칙이 배열 전체를 먼저 훑게** 한다.
- */
-function mapPlaceType(types = [], primary) {
-  const list = (types ?? []).filter(Boolean);
-  // 1) primaryType 을 구체 규칙으로 — 여기서 걸리면 그게 답이다
-  if (primary) {
-    for (const [re, t] of TYPE_MAP) if (re.test(primary)) return t;
-  }
-  // 2) types 배열을 구체 규칙으로 (규칙이 바깥 루프 — 구체적인 규칙이 배열 전체를 먼저 훑는다)
-  for (const [re, t] of TYPE_MAP) if (list.some((x) => re.test(x))) return t;
-  // 3) 그래도 모르면 범용 토큰
-  for (const [re, t] of TYPE_FALLBACK) if ((primary && re.test(primary)) || list.some((x) => re.test(x))) return t;
-  return "unknown";
-}
 
 function typeLabel(t) {
   return (
