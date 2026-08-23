@@ -85,6 +85,24 @@ interface TranscriptCheck {
 
 const MIN_MATCH = 12;
 
+/**
+ * 자막 트랙 URL 은 유튜브 응답이 준 값이라 우리가 만든 문자열이 아니다 —
+ * 그대로 페치하면 응답이 가리키는 아무 호스트로나 서버가 요청을 나간다.
+ * 인증된 어드민만 트리거하고 대상도 사실상 고정이지만, 호스트를 못 박아 둔다.
+ */
+const CAPTION_HOSTS = new Set(["www.youtube.com", "youtube.com", "m.youtube.com"]);
+
+function captionUrl(baseUrl: string): string | null {
+  try {
+    const url = new URL(baseUrl);
+    if (url.protocol !== "https:" || !CAPTION_HOSTS.has(url.hostname)) return null;
+    url.searchParams.set("fmt", "json3");
+    return url.toString();
+  } catch {
+    return null;
+  }
+}
+
 /** 공백 차이를 무시하고 비교하기 위한 정규화. */
 function squash(text: string): string {
   return text.replace(/\s+/g, "");
@@ -117,8 +135,11 @@ export async function checkTranscriptOverlap(
       tracks[0];
     if (!track?.baseUrl) return { status: "unavailable", overlaps: [], note: "자막 트랙 없음" };
 
+    const url = captionUrl(track.baseUrl);
+    if (!url) return { status: "unavailable", overlaps: [], note: "자막 트랙 주소가 유튜브가 아님" };
+
     const body = await (
-      await fetch(track.baseUrl + "&fmt=json3", { headers: { "user-agent": IOS_UA }, cache: "no-store" })
+      await fetch(url, { headers: { "user-agent": IOS_UA }, cache: "no-store" })
     ).text();
     if (!body) return { status: "unavailable", overlaps: [], note: "자막 응답 없음" };
     const timed = JSON.parse(body) as { events?: { segs?: { utf8?: string }[] }[] };

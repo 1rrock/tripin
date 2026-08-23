@@ -51,12 +51,19 @@ function constantTimeEqualHex(a: string, b: string): boolean {
 }
 
 /**
- * 비밀번호 비교. 원문을 직접 비교하지 않고 양쪽 SHA-256 해시를 비교한다 —
- * 입력 길이가 달라도 비교 대상 길이가 항상 같아진다.
+ * 임의 문자열 시크릿의 상수시간 비교. 원문을 직접 비교하지 않고 양쪽 SHA-256 해시를
+ * 비교한다 — 입력 길이가 달라도 비교 대상 길이가 항상 같아진다.
+ *
+ * hex 가 아닌 값(크론 시크릿의 Authorization 헤더 등)에도 그대로 쓴다.
  */
-export async function passwordMatches(secret: string, input: string): Promise<boolean> {
-  const [a, b] = await Promise.all([sha256Hex(secret), sha256Hex(input)]);
+export async function secretMatches(expected: string, input: string): Promise<boolean> {
+  const [a, b] = await Promise.all([sha256Hex(expected), sha256Hex(input)]);
   return constantTimeEqualHex(a, b);
+}
+
+/** 어드민 비밀번호 비교 — 위와 같은 방식. 호출부의 뜻을 드러내려고 이름만 따로 둔다. */
+export async function passwordMatches(secret: string, input: string): Promise<boolean> {
+  return secretMatches(secret, input);
 }
 
 /** 로그인 성공 시 발급하는 쿠키 값. */

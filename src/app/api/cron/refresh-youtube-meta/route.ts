@@ -2,6 +2,7 @@ import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { purgePublicData } from "@/shared/api/cache";
 import { fetchAll, chunkedIn } from "@/shared/api/chunked-in";
 import { serverEnv } from "@/shared/config/env";
+import { secretMatches } from "@/shared/lib/admin-auth";
 
 /**
  * 30일 갱신 배치 — YouTube 유래 메타를 다시 받아 온다.
@@ -103,7 +104,9 @@ export async function GET(request: Request) {
 async function run(request: Request) {
   // 스케줄러만 부를 수 있어야 한다. CRON_SECRET 미설정이면 requireServer 가 throw 해서
   // 라우트가 열린 채로 뜨지 않는다.
-  if (request.headers.get("authorization") !== `Bearer ${serverEnv.cronSecret()}`) {
+  // 비교는 `!==` 가 아니라 상수시간으로 — 앞자리부터 맞춰 가며 시크릿을 캐내지 못하게.
+  const expected = `Bearer ${serverEnv.cronSecret()}`;
+  if (!(await secretMatches(expected, request.headers.get("authorization") ?? ""))) {
     return Response.json({ error: "unauthorized" }, { status: 401 });
   }
 

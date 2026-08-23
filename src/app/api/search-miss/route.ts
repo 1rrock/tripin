@@ -9,21 +9,57 @@ import { getSupabaseAdmin } from "@/shared/api/supabase";
  *
  * 공개 쓰기 엔드포인트라 최소한의 가드를 둔다:
  * - 길이 1~80자로 클램프, 소문자 정규화(집계 목적)
- * - 프로세스당 분당 상한 — IP 를 저장하지 않는 대신 전체를 뭉툭하게 막는다
+ * - IP 별 분당 상한 (아래)
  */
 
+/**
+ * IP 별 분당 상한.
+ *
+ * 예전엔 프로세스 전역 카운터 하나였다 — 그러면 누가 한도를 채우는 순간 그 인스턴스에
+ * 붙은 **정상 사용자가 전부** 429 를 맞는다. 뭉툭한 쪽이 공격자가 아니라 보통 사람을
+ * 때리는 구조다. 어드민 로그인 실패 카운터(`api/admin/login/route.ts`)와 같이 키를
+ * 요청자별로 가른다.
+ *
+ * 한계: 인메모리라 인스턴스 간에 공유되지 않는다 — 서버리스에서 인스턴스가 여럿이면
+ * 실효 한도가 그만큼 늘어난다. 외부 저장소를 하나 더 붙일 만한 문제는 아니라고 본다.
+ * 로그인 카운터도 같은 절충 위에 있다.
+ *
+ * 키는 IP 원문이 아니라 **프로세스마다 새로 뽑는 소금으로 해시한 값**이다 —
+ * 개인정보처리방침대로 IP 자체는 어디에도 남기지 않는다.
+ */
 const WINDOW_MS = 60_000;
 const WINDOW_LIMIT = 30;
-let windowStart = 0;
-let windowCount = 0;
+/** 창이 지난 키를 걷어내는 시점 — 키가 IP 별로 갈라진 뒤로는 무한히 쌓일 수 있다. */
+const SWEEP_AT = 5_000;
+const RATE_SALT = crypto.randomUUID();
+const hits = new Map<string, { start: number; count: number }>();
+
+async function rateKey(req: Request): Promise<string> {
+  const ip = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const digest = await crypto.subtle.digest(
+    "SHA-256",
+    new TextEncoder().encode(`${RATE_SALT}:${ip}`),
+  );
+  return Array.from(new Uint8Array(digest).slice(0, 8), (b) => b.toString(16).padStart(2, "0")).join(
+    "",
+  );
+}
+
+function overLimit(key: string, now: number): boolean {
+  const record = hits.get(key);
+  if (!record || now - record.start > WINDOW_MS) {
+    if (hits.size >= SWEEP_AT) {
+      for (const [k, v] of hits) if (now - v.start > WINDOW_MS) hits.delete(k);
+    }
+    hits.set(key, { start: now, count: 1 });
+    return false;
+  }
+  record.count += 1;
+  return record.count > WINDOW_LIMIT;
+}
 
 export async function POST(req: Request): Promise<NextResponse> {
-  const now = Date.now();
-  if (now - windowStart > WINDOW_MS) {
-    windowStart = now;
-    windowCount = 0;
-  }
-  if (++windowCount > WINDOW_LIMIT) {
+  if (overLimit(await rateKey(req), Date.now())) {
     return new NextResponse(null, { status: 429 });
   }
 

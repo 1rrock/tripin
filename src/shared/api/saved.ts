@@ -157,15 +157,30 @@ export async function createList(name: string): Promise<ListResult> {
   return { ok: false, reason: "failed" };
 }
 
+/**
+ * 그룹 이름을 바꾼다.
+ *
+ * ⚠️ `.select()` 로 **영향 행을 되받는 것이 핵심이다.** PostgREST 는 0행 매칭을
+ *    에러로 주지 않는다 — 세션이 만료됐거나 남의 그룹을 가리켜 RLS 에 막혀도
+ *    `error` 는 null 이다. 그것만 보고 성공이라 답하면 화면은 바뀐 이름을 보여주고
+ *    새로고침하면 옛 이름이 돌아온다. 다른 쓰기처럼 `ensureSession()` 도 태운다.
+ */
 export async function renameList(listId: string, name: string): Promise<ListResult> {
   const trimmed = name.trim();
   if (!trimmed || trimmed.length > 40) return { ok: false, reason: "failed" };
 
-  const sb = supabaseBrowser();
-  const { error } = await sb.from("saved_lists").update({ name: trimmed }).eq("id", listId);
+  const uid = await ensureSession();
+  if (!uid) return { ok: false, reason: "failed" };
+
+  const { data, error } = await supabaseBrowser()
+    .from("saved_lists")
+    .update({ name: trimmed })
+    .eq("id", listId)
+    .select("id");
   if (error) {
     return { ok: false, reason: error.code === PG_UNIQUE_VIOLATION ? "duplicate" : "failed" };
   }
+  if (!data?.length) return { ok: false, reason: "failed" };
   return { ok: true, id: listId };
 }
 
@@ -175,11 +190,20 @@ export async function renameList(listId: string, name: string): Promise<ListResu
  * 안에 있던 장소는 **저장 목록에 그대로 남는다** — saved_list_places 만 cascade 로
  * 지워지고 saved_places 는 건드리지 않는다. 그룹은 분류일 뿐이라 분류를 없앤다고
  * 모아둔 곳이 사라지면 안 된다.
+ *
+ * renameList 와 같은 이유로 `.select()` 로 영향 행을 확인한다 — RLS 에 막힌 삭제도
+ * 에러 없이 0행으로 돌아온다.
  */
 export async function deleteList(listId: string): Promise<boolean> {
-  const sb = supabaseBrowser();
-  const { error } = await sb.from("saved_lists").delete().eq("id", listId);
-  return !error;
+  const uid = await ensureSession();
+  if (!uid) return false;
+
+  const { data, error } = await supabaseBrowser()
+    .from("saved_lists")
+    .delete()
+    .eq("id", listId)
+    .select("id");
+  return !error && (data?.length ?? 0) > 0;
 }
 
 /**
@@ -198,12 +222,15 @@ export async function setInList(
   const sb = supabaseBrowser();
 
   if (!next) {
-    const { error } = await sb
+    /* `.select()` 로 영향 행을 확인한다 — RLS 에 막힌 삭제는 에러가 아니라 0행이다.
+       0행을 성공이라 답하면 체크가 풀린 채로 보이다가 새로고침에 되돌아온다. */
+    const { data, error } = await sb
       .from("saved_list_places")
       .delete()
       .eq("list_id", listId)
-      .eq("place_id", placeId);
-    return !error;
+      .eq("place_id", placeId)
+      .select("place_id");
+    return !error && (data?.length ?? 0) > 0;
   }
 
   const saved = await setSaved(placeId, true);
