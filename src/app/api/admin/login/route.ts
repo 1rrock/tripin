@@ -16,8 +16,24 @@ const FAIL_LIMIT = 5;
 const LOCK_MS = 60_000;
 const fails = new Map<string, { count: number; lockedUntil: number }>();
 
+/**
+ * 실패 잠금의 키. **클라이언트가 못 바꾸는 값이어야 한다.**
+ *
+ * `x-forwarded-for` 의 맨 **왼쪽**은 클라이언트가 직접 보낸 값이라, 매 요청마다
+ * 다른 값을 넣으면 카운터가 매번 새 키로 갈려서 잠금이 영영 안 걸린다
+ * (= ADMIN_SECRET 무제한 추측. 이 값은 비밀번호이자 HMAC 서명 키다).
+ * 그래서 가장 가까운 프록시가 직접 붙인 맨 **오른쪽**을 쓴다 — 위조가 불가능한 유일한 칸.
+ * Vercel 이 넣어주는 x-real-ip · x-vercel-forwarded-for 가 있으면 그게 더 정확하다.
+ */
 function clientIp(request: NextRequest): string {
-  return request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? "local";
+  const real = request.headers.get("x-real-ip")?.trim();
+  if (real) return real;
+
+  const vercel = request.headers.get("x-vercel-forwarded-for")?.trim();
+  if (vercel) return vercel;
+
+  const chain = request.headers.get("x-forwarded-for")?.split(",") ?? [];
+  return chain[chain.length - 1]?.trim() || "local";
 }
 
 function backToLogin(request: NextRequest, error: string, next: string | null) {
@@ -34,7 +50,16 @@ export async function POST(request: NextRequest) {
     return backToLogin(request, "nosecret", null);
   }
 
-  const form = await request.formData();
+  /* 폼이 아닌 본문(예: JSON content-type)으로 POST 하면 formData() 가 TypeError 를
+     던진다. 안 잡으면 본문 없는 500 이 나간다 — 스캐너가 실제로 보내는 요청이다.
+     프록시가 깨진 이스케이프에 한 것과 같은 방침: 500 을 의미 있는 상태로 바꾼다. */
+  let form: FormData;
+  try {
+    form = await request.formData();
+  } catch {
+    return backToLogin(request, "badrequest", null);
+  }
+
   const password = String(form.get("password") ?? "");
   const rawNext = String(form.get("next") ?? "");
   // 열린 리다이렉트 방지 — /admin 내부 경로만 허용

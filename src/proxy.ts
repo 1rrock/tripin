@@ -187,8 +187,18 @@ export default async function proxy(request: NextRequest) {
      그 규칙의 의도는 "정적 자산 통과"이지 "인증 면제"가 아니다 — 지금은 admin
      하위에 확정 라우트로 이어지는 dynamic 세그먼트가 `place/[id]`(UUID) 하나뿐이라
      전부 404 로 떨어지지만, 라우트가 하나만 더 생기면 그날로 무인증 노출이다.
-     matcher 쪽에도 같은 구멍이 있었다 — `config.matcher` 주석 참조. */
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+     matcher 쪽에도 같은 구멍이 있었다 — `config.matcher` 주석 참조.
+
+     ⚠️ 세그먼트 경계(`===` 또는 `/` 로 끝나는 접두사)를 반드시 붙인다. 맨 `startsWith`
+     는 `/administrator`·`/admin-panel` 까지 잡아 `/admin/login` 으로 307 을 쏘는데,
+     그건 `(protected)/layout.tsx` 가 401 대신 404 로 "어드민의 존재 자체를 숨긴" 설계를
+     앞단에서 광고해 버리는 짓이다. 경계가 붙어 있으면 그런 경로는 평범한 404 로 간다. */
+  if (
+    pathname === "/admin" ||
+    pathname.startsWith("/admin/") ||
+    pathname === "/api/admin" ||
+    pathname.startsWith("/api/admin/")
+  ) {
     return protectAdmin(request);
   }
 

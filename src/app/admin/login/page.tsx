@@ -2,11 +2,15 @@ import type { Metadata } from "next";
 
 /**
  * 어드민 로그인 — HTML form POST 만으로 동작한다(클라이언트 JS 불필요).
- * 에러 상태는 쿼리스트링으로 돌아온다: wrong / locked / nosecret.
+ * 에러 상태는 쿼리스트링으로 돌아온다: wrong / locked / nosecret / badrequest.
+ *
+ * ⚠️ 키를 여기 안 넣으면 문구가 undefined 가 되어 **아무 설명 없이 폼만 다시 뜬다.**
+ *    route.ts 가 코드를 늘리면 이 표도 같이 늘려라.
  */
 const ERROR_MESSAGES: Record<string, string> = {
   wrong: "비밀번호가 맞지 않습니다.",
   locked: "실패가 5회 누적됐습니다. 60초 뒤에 다시 시도하세요.",
+  badrequest: "로그인 요청 형식이 올바르지 않습니다. 이 페이지의 폼으로 다시 시도하세요.",
   nosecret:
     "ADMIN_SECRET 이 설정되지 않았습니다. .env.local 에 값을 넣고 서버를 재시작하세요. (생성: openssl rand -base64 32)",
 };
