@@ -14,6 +14,9 @@ import { defaultLocale, isLocale } from "@/shared/i18n/config";
  * 핀 필드(이름·좌표·종류)도 같이 싣는다 — `?place=` 딥링크가 1,845곳 캔버스
  * 인덱스를 기다리지 않고 이 응답 하나로 드로어를 세울 수 있게. 캐시 항목이
  * 커지는 게 아니라(캔버스 인덱스는 이미 있는 항목) 응답에서 합칠 뿐이다.
+ *
+ * 검색어(`searchText`)는 여기 없다 — 드로어는 필터를 안 돌린다. 필요하면
+ * 받는 쪽이 `mapSearchText` 로 조립한다(HomeCanvas `fallbackDetailPlace`).
  */
 export async function GET(
   req: Request,

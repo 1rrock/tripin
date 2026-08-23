@@ -1,6 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
-import { chunkedIn } from "@/shared/api/chunked-in";
+import { chunkedIn, fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 
 /**
@@ -79,19 +79,31 @@ function mapUrlFor(p: {
   return null;
 }
 
-async function loadCreator(slug: string): Promise<CreatorHeader | null> {
-  const { data } = await supabase
+/**
+ * 채널 한 줄 — 표시용 헤더 + **id**.
+ *
+ * id 를 같이 돌려주는 이유: 예전엔 헤더만 받고 `creator_id` 가 필요할 때마다
+ * `creators` 를 slug 로 한 번 더 조회했다(같은 행을 두 번). id 는 `CreatorHeader`
+ * 밖에 둔다 — 응답 형태(클라이언트로 나가는 creator)를 바꾸지 않기 위해서다.
+ */
+async function loadCreator(slug: string): Promise<{ id: string; header: CreatorHeader } | null> {
+  const { data, error } = await supabase
     .from("creators")
-    .select("slug, display_name, initials, accent_color, avatar_url")
+    .select("id, slug, display_name, initials, accent_color, avatar_url")
     .eq("slug", slug)
-    .single();
+    .maybeSingle();
+  // 없는 채널(null)은 404 지만, 조회 실패는 404 가 아니다 — 구분해서 던진다
+  if (error) throw new Error(`[videos] creators(${slug}) 조회 실패: ${error.message}`);
   if (!data) return null;
   return {
-    slug: data.slug,
-    displayName: data.display_name,
-    initials: data.initials,
-    accentColor: data.accent_color,
-    avatarUrl: data.avatar_url,
+    id: data.id,
+    header: {
+      slug: data.slug,
+      displayName: data.display_name,
+      initials: data.initials,
+      accentColor: data.accent_color,
+      avatarUrl: data.avatar_url,
+    },
   };
 }
 
@@ -99,22 +111,23 @@ async function loadCreator(slug: string): Promise<CreatorHeader | null> {
 export const loadCreatorVideos = cachePublic(async function loadCreatorVideos(
   creatorSlug: string,
 ): Promise<{ creator: CreatorHeader; videos: VideoSummary[] } | null> {
-  const creator = await loadCreator(creatorSlug);
-  if (!creator) return null;
+  const row = await loadCreator(creatorSlug);
+  if (!row) return null;
+  const { id: creatorId, header: creator } = row;
 
-  const { data: creatorRow } = await supabase
-    .from("creators")
-    .select("id")
-    .eq("slug", creatorSlug)
-    .single();
-  if (!creatorRow) return null;
-
-  const { data: videos } = await supabase
-    .from("videos")
-    .select("id, youtube_video_id, title, published_at, duration_sec")
-    .eq("creator_id", creatorRow.id)
-    .order("published_at", { ascending: false, nullsFirst: false });
-  if (!videos || videos.length === 0) return { creator, videos: [] };
+  /* fetchAll 이다 — `.range()` 가 없으면 PostgREST 가 1000행에서 조용히 자른다.
+     1,094편짜리 채널(곽튜브)의 목록이 그만큼 소리 없이 잘려 나갔다. */
+  const videos = await fetchAll((from, to) =>
+    supabase
+      .from("videos")
+      .select("id, youtube_video_id, title, published_at, duration_sec")
+      .eq("creator_id", creatorId)
+      .order("published_at", { ascending: false, nullsFirst: false })
+      // 동률 타이브레이커 — 없으면 페이지 경계에서 같은 행이 겹치거나 빠진다
+      .order("id")
+      .range(from, to),
+  );
+  if (videos.length === 0) return { creator, videos: [] };
 
   const links = await chunkedIn(
     (ids) =>
@@ -131,16 +144,27 @@ export const loadCreatorVideos = cachePublic(async function loadCreatorVideos(
       )
     : [];
 
-  const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
-  const { data: cities } = cityIds.length
-    ? await supabase.from("cities").select("id, slug, name, name_en").in("id", cityIds)
-    : { data: [] };
-  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
-  const placeById = new Map((places ?? []).map((p) => [p.id, p]));
+  const cityIds = [...new Set(places.map((p) => p.city_id))];
+  const cities = cityIds.length
+    ? await chunkedIn(
+        (ids) => supabase.from("cities").select("id, slug, name, name_en").in("id", ids),
+        cityIds,
+      )
+    : [];
+  const cityById = new Map(cities.map((c) => [c.id, c]));
+  const placeById = new Map(places.map((p) => [p.id, p]));
+
+  // 영상마다 links 전체를 filter 하던 (영상 수 × 링크 수) 를 한 번의 그룹핑으로
+  const linksByVideo = new Map<string, typeof links>();
+  for (const l of links) {
+    const list = linksByVideo.get(l.video_id);
+    if (list) list.push(l);
+    else linksByVideo.set(l.video_id, [l]);
+  }
 
   const out: VideoSummary[] = [];
   for (const v of videos) {
-    const mine = (links ?? []).filter((l) => l.video_id === v.id);
+    const mine = linksByVideo.get(v.id) ?? [];
     const stops = mine.map((l) => placeById.get(l.place_id)).filter(Boolean);
     // 정거장 0개 = 눌러도 빈 화면. 목록에 올리지 않는다.
     if (stops.length === 0) continue;
@@ -173,44 +197,58 @@ export const loadVideoDetail = cachePublic(async function loadVideoDetail(
   creatorSlug: string,
   youtubeId: string,
 ): Promise<{ creator: CreatorHeader; video: VideoDetail } | null> {
-  const creator = await loadCreator(creatorSlug);
-  if (!creator) return null;
-
-  const { data: video } = await supabase
-    .from("videos")
-    .select("id, youtube_video_id, title, published_at, duration_sec, creator_id")
-    .eq("youtube_video_id", youtubeId)
-    .single();
+  /* 채널과 영상은 서로를 기다릴 이유가 없다 — 나란히 띄운다.
+     소유 채널 확인도 별도 조회가 아니다: 예전엔 `creators` 를 slug 로 한 번,
+     영상의 creator_id 로 또 한 번(같은 테이블 두 번) 읽고 slug 를 비교했다.
+     손에 든 creator.id 와 video.creator_id 를 맞춰 보면 같은 판정이다. */
+  const [row, videoRes] = await Promise.all([
+    loadCreator(creatorSlug),
+    supabase
+      .from("videos")
+      .select("id, youtube_video_id, title, published_at, duration_sec, creator_id")
+      .eq("youtube_video_id", youtubeId)
+      .maybeSingle(),
+  ]);
+  if (videoRes.error) {
+    throw new Error(`[videos] videos(${youtubeId}) 조회 실패: ${videoRes.error.message}`);
+  }
+  if (!row) return null;
+  const { id: creatorId, header: creator } = row;
+  const video = videoRes.data;
   if (!video) return null;
-
   // URL 의 채널과 영상의 실제 소유 채널이 다르면 잘못된 조합이다
-  const { data: owner } = await supabase
-    .from("creators")
-    .select("slug")
-    .eq("id", video.creator_id)
-    .single();
-  if (!owner || owner.slug !== creatorSlug) return null;
+  if (video.creator_id !== creatorId) return null;
 
-  const { data: links } = await supabase
+  const { data: links, error: linksError } = await supabase
     .from("video_places")
     .select("place_id, timestamp_sec")
     .eq("video_id", video.id);
+  if (linksError) {
+    throw new Error(`[videos] video_places(${youtubeId}) 조회 실패: ${linksError.message}`);
+  }
   const placeIds = (links ?? []).map((l) => l.place_id);
-  const { data: places } = placeIds.length
-    ? await supabase
-        .from("places")
-        .select(
-          "id, slug, name, name_local, place_type, map_status, address, city_id, summary, summary_bullets, price_hint, google_maps_url, lat, lng",
-        )
-        .in("id", placeIds)
-    : { data: [] };
+  const places = placeIds.length
+    ? await chunkedIn(
+        (ids) =>
+          supabase
+            .from("places")
+            .select(
+              "id, slug, name, name_local, place_type, map_status, address, city_id, summary, summary_bullets, price_hint, google_maps_url, lat, lng",
+            )
+            .in("id", ids),
+        placeIds,
+      )
+    : [];
 
-  const cityIds = [...new Set((places ?? []).map((p) => p.city_id))];
-  const { data: cities } = cityIds.length
-    ? await supabase.from("cities").select("id, slug, name, name_en").in("id", cityIds)
-    : { data: [] };
-  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
-  const placeById = new Map((places ?? []).map((p) => [p.id, p]));
+  const cityIds = [...new Set(places.map((p) => p.city_id))];
+  const cities = cityIds.length
+    ? await chunkedIn(
+        (ids) => supabase.from("cities").select("id, slug, name, name_en").in("id", ids),
+        cityIds,
+      )
+    : [];
+  const cityById = new Map(cities.map((c) => [c.id, c]));
+  const placeById = new Map(places.map((p) => [p.id, p]));
 
   const stops: VideoStop[] = (links ?? [])
     .map((l) => {

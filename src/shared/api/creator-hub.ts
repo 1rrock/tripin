@@ -1,6 +1,6 @@
 import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
-import { chunkedIn } from "@/shared/api/chunked-in";
+import { chunkedIn, fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
 import { primaryMapLink } from "@/shared/lib/map-links";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
@@ -67,20 +67,29 @@ export interface CreatorMapDetail {
 export const loadCreatorMap = cachePublic(async function loadCreatorMap(
   creatorSlug: string,
 ): Promise<CreatorMapDetail | null> {
-  const { data: creator } = await supabase
+  const { data: creator, error: creatorError } = await supabase
     .from("creators")
     .select(
       "id, slug, display_name, initials, accent_color, avatar_url, youtube_channel_id, youtube_handle",
     )
     .eq("slug", creatorSlug)
-    .single();
+    .maybeSingle();
+  // 없는 채널(null)은 404 지만, 조회 실패는 404 가 아니다 — 구분해서 던진다
+  if (creatorError) {
+    throw new Error(`[creator:map] creators(${creatorSlug}) 조회 실패: ${creatorError.message}`);
+  }
   if (!creator) return null;
 
-  const { data: videos } = await supabase
-    .from("videos")
-    .select("id, youtube_video_id, title")
-    .eq("creator_id", creator.id);
-  const videoList = videos ?? [];
+  /* fetchAll 이다 — `.range()` 가 없으면 PostgREST 가 1000행에서 조용히 자른다.
+     1,094편짜리 채널(곽튜브)의 허브 지도가 그만큼 핀을 잃은 채 그려졌다. */
+  const videoList = await fetchAll((from, to) =>
+    supabase
+      .from("videos")
+      .select("id, youtube_video_id, title")
+      .eq("creator_id", creator.id)
+      .order("id")
+      .range(from, to),
+  );
   if (videoList.length === 0) return null;
 
   const videoById = new Map(videoList.map((v) => [v.id, v]));
@@ -112,11 +121,11 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
   if (confirmed.length === 0) return null;
 
   const cityIds = [...new Set(confirmed.map((p) => p.city_id))];
-  const { data: cities } = await supabase
-    .from("cities")
-    .select("id, slug, name, name_en")
-    .in("id", cityIds);
-  const cityById = new Map((cities ?? []).map((c) => [c.id, c]));
+  const cities = await chunkedIn(
+    (ids) => supabase.from("cities").select("id, slug, name, name_en").in("id", ids),
+    cityIds,
+  );
+  const cityById = new Map(cities.map((c) => [c.id, c]));
 
   // 도시별 확정 핀 수 — 공개 게이트와 동일
   const countByCity = new Map<string, number>();
@@ -133,9 +142,11 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
   if (openPlaces.length === 0) return null;
 
   // place → 이 채널 출처 영상들
+  // links 하나마다 openPlaces 를 훑던 O(n²) 를 Set 으로 끊는다
+  const openPlaceIds = new Set(openPlaces.map((p) => p.id));
   const sourcesByPlace = new Map<string, CreatorPlaceSource[]>();
-  for (const link of links ?? []) {
-    if (!openPlaces.some((p) => p.id === link.place_id)) continue;
+  for (const link of links) {
+    if (!openPlaceIds.has(link.place_id)) continue;
     const video = videoById.get(link.video_id);
     if (!video) continue;
     const list = sourcesByPlace.get(link.place_id) ?? [];

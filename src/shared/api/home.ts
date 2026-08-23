@@ -94,6 +94,10 @@ export interface FeedPiece {
 export interface FeedCelebritySpot {
   placeSlug: string;
   placeName: string;
+  /** 현지어 상호. EN 화면이 `displayPlaceName` 으로 이걸 고른다 — 캐시 계약대로
+   *  로더는 `name`·`name_local` 을 **둘 다** 싣고 표시 선택은 캐시 밖에서 한다
+   *  (cache.ts 규칙 1). 이게 없어서 `/en/celebs` 만 한글 상호를 그렸다. */
+  placeNameLocal: string | null;
   personName: string;
   personNameEn: string | null;
   city: { slug: string; name: string; nameEn: string | null };
@@ -123,12 +127,17 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     totals: { creators: 0, cities: 0, places: 0, videos: 0 },
   };
 
-  const { data: creators } = await supabase
+  /* ⚠️ error 를 반드시 받는다. 예전엔 `{ data: creators }` 만 받아서 DB 에러가
+     **진짜 0건과 구분되지 않았다** — 홈이 "곧 열립니다"로 바뀌고 `/channels`·
+     `/celebs`·`/api/search-index` 가 동시에 빈 채로 1시간 캐시에 굳었다.
+     빈 폴백(empty)은 진짜 0건일 때만 쓴다. */
+  const { data: creators, error: creatorsError } = await supabase
     .from("creators")
     .select(
       "id, slug, display_name, display_name_en, celebrity_name, celebrity_name_en, initials, accent_color, avatar_url, youtube_handle, bio",
     )
     .order("place_count", { ascending: false });
+  if (creatorsError) throw new Error(`[home:feed] creators 조회 실패: ${creatorsError.message}`);
   if (!creators || creators.length === 0) return empty;
 
   const [cities, videos, links, places, mentions] = await Promise.all([
@@ -149,7 +158,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       supabase
         .from("places")
         .select(
-          "id, slug, name, city_id, map_status, place_type, summary_bullets, summary_bullets_en",
+          "id, slug, name, name_local, city_id, map_status, place_type, summary_bullets, summary_bullets_en",
         )
         .range(from, to),
     ),
@@ -213,7 +222,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   // spotBaseByPlace 는 모든 보이는 장소(언급(b)의 발판),
   // celebSpotByPlace 는 celebrity_name 채널의 것만 ((a)).
   type SpotBase = {
-    place: { slug: string; name: string };
+    place: { slug: string; name: string; nameLocal: string | null };
     city: { slug: string; name: string; nameEn: string | null };
     cut: { youtubeId: string; title: string };
     publishedAt: string | null;
@@ -235,7 +244,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       if (!city) continue;
       if (!spotBaseByPlace.has(p.id)) {
         spotBaseByPlace.set(p.id, {
-          place: { slug: p.slug, name: p.name },
+          place: { slug: p.slug, name: p.name, nameLocal: p.name_local },
           city: { slug: city.slug, name: city.name, nameEn: city.name_en },
           cut: { youtubeId: v.youtube_video_id, title: v.title },
           publishedAt: v.published_at,
@@ -247,6 +256,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
         celebSpotByPlace.set(p.id, {
           placeSlug: p.slug,
           placeName: p.name,
+          placeNameLocal: p.name_local,
           personName: creator.celebrity_name,
           personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
           city: { slug: city.slug, name: city.name, nameEn: city.name_en },
@@ -308,6 +318,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       celebSpotByPlace.set(place.id, {
         placeSlug: place.slug,
         placeName: place.name,
+        placeNameLocal: place.name_local,
         personName: creator.celebrity_name,
         personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
         city: { slug: city.slug, name: city.name, nameEn: city.name_en },
@@ -328,7 +339,11 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     const vis = spotBaseByPlace.get(m.place_id);
     const celeb = celebSpotByPlace.get(m.place_id);
     if (!vis && !celeb) continue;
-    const place = vis?.place ?? { slug: celeb!.placeSlug, name: celeb!.placeName };
+    const place = vis?.place ?? {
+      slug: celeb!.placeSlug,
+      name: celeb!.placeName,
+      nameLocal: celeb!.placeNameLocal,
+    };
     const city = vis?.city ?? celeb!.city;
     const cut = vis?.cut ?? celeb!.cut;
     const publishedAt = vis?.publishedAt ?? celeb!.publishedAt;
@@ -336,6 +351,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
     spotByPlace.set(m.place_id, {
       placeSlug: place.slug,
       placeName: place.name,
+      placeNameLocal: place.nameLocal,
       personName: m.person_name,
       personNameEn: m.person_name_en,
       city,

@@ -1,4 +1,5 @@
 import { revalidateTag, unstable_cache } from "next/cache";
+import { cache as reactCache } from "react";
 
 /**
  * 공개 데이터 캐시.
@@ -41,6 +42,14 @@ const TTL_SECONDS = 3600;
 const ITEM_SIZE_LIMIT = 2 * 1024 * 1024;
 const ITEM_SIZE_WARN_AT = 0.8;
 
+/**
+ * ⚠️ 반환 함수는 **React `cache()` 로 한 겹 더** 감싸 나간다.
+ *    `unstable_cache` 에는 요청 단위 메모이제이션이 없다 — `generateMetadata` 와
+ *    본문이 같은 로더를 각각 부르면 페이지마다 캐시 조회 + 전체 `JSON.parse` 가
+ *    **두 번** 돈다(MiB 급 항목에서는 그 파싱이 TTFB 를 눈에 띄게 먹는다).
+ *    `cache()` 는 같은 요청 안 두 번째 호출에 첫 promise 를 돌려줘 그 중복을 끊는다.
+ *    라우트 핸들러에서는 no-op 일 수 있지만, 그 경로는 어차피 호출이 한 번이다.
+ */
 export function cachePublic<A extends unknown[], R>(
   loader: (...args: A) => Promise<R>,
   keyParts: string[],
@@ -64,10 +73,12 @@ export function cachePublic<A extends unknown[], R>(
     }
     return out;
   };
-  return unstable_cache(measured, keyParts, {
-    tags: [PUBLIC_DATA_TAG],
-    revalidate: TTL_SECONDS,
-  });
+  return reactCache(
+    unstable_cache(measured, keyParts, {
+      tags: [PUBLIC_DATA_TAG],
+      revalidate: TTL_SECONDS,
+    }),
+  );
 }
 
 /**

@@ -66,7 +66,11 @@ async function _loadAccount(): Promise<AccountView> {
   const linked = isLinkedUser(user);
 
   /* 개수만 필요한 두 질의는 행을 안 가져온다 — head:true 로 count 만 받는다.
-     저장이 수백 개인 유저에게 목록을 통째로 실어 나를 이유가 없다. */
+     저장이 수백 개인 유저에게 목록을 통째로 실어 나를 이유가 없다.
+
+     ⚠️ 네 질의 모두 error 를 확인한다. 예전엔 `?? 0`·`?? []` 로 흘려서 RLS·
+        네트워크 실패가 **"저장 0개, 구독 0개"와 똑같이** 보였다 — 마이페이지가
+        멀쩡한 얼굴로 남의 기록을 지운 것처럼 보인다. 던져서 error.tsx 가 받게 한다. */
   const [subsRes, savedRes, listsRes, recentRes] = await Promise.all([
     sb.from("subscriptions").select("creator_id").order("created_at", { ascending: false }),
     sb.from("saved_places").select("place_id", { count: "exact", head: true }),
@@ -78,14 +82,24 @@ async function _loadAccount(): Promise<AccountView> {
       .limit(8),
   ]);
 
+  for (const [name, res] of [
+    ["subscriptions", subsRes],
+    ["saved_places(count)", savedRes],
+    ["saved_lists(count)", listsRes],
+    ["saved_places(recent)", recentRes],
+  ] as const) {
+    if (res.error) throw new Error(`[loadAccount] ${name} 조회 실패: ${res.error.message}`);
+  }
+
   const creatorIds = (subsRes.data ?? []).map((s) => s.creator_id).filter(Boolean) as string[];
 
   let creators: SubscribedCreator[] = [];
   if (creatorIds.length > 0) {
-    const { data: rows } = await supabase
+    const { data: rows, error } = await supabase
       .from("creators")
       .select("id, slug, display_name, initials, accent_color, avatar_url, youtube_handle")
       .in("id", creatorIds);
+    if (error) throw new Error(`[loadAccount] creators 조회 실패: ${error.message}`);
 
     const byId = new Map((rows ?? []).map((c) => [c.id, c]));
     /* 구독 순서(최근 구독 먼저)를 따른다 — creators 질의는 순서를 보장하지 않는다. */

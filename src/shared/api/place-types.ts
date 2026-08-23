@@ -6,6 +6,7 @@
  */
 
 import { supabase } from "@/shared/api/supabase";
+import { cache as reactCache } from "react";
 import { cachePublic } from "@/shared/api/cache";
 import { fetchAll } from "@/shared/api/chunked-in";
 import type { PlaceType } from "@/shared/api/database.types";
@@ -59,8 +60,17 @@ export interface TypeDetail {
   groups: TypeCityGroup[];
 }
 
-/** 목록·상세가 같은 캐시 항목을 나눠 쓴다 — 로케일 무관한 원본 행만. */
-const loadGraph = cachePublic(async () => {
+/**
+ * 목록·상세가 나눠 쓰는 5테이블 스캔 — 로케일 무관한 원본 행만.
+ *
+ * **cachePublic 을 떼었다.** 소비자가 전부 아래의 캐시된 함수(loadTypeIndex·
+ * loadTypeDetail)뿐인데, unstable_cache 는 중첩되면 **읽기만 우회하고 쓰기는
+ * 그대로 한다** — `place-types:graph` 는 한 번도 읽히지 않으면서 MiB 급 객체를
+ * 매 미스마다 두 번(측정용·저장용) 직렬화하고 버렸다. 캐시는 파생 결과 쪽에
+ * 두는 게 맞다(cities.ts loadGraphRows 와 같은 형태다).
+ * reactCache 는 남긴다 — 한 요청에서 두 소비자가 동시에 미스날 때의 중복만 끊는다.
+ */
+const loadGraph = reactCache(async function loadGraph() {
   const [cities, creators, videos, links, places] = await Promise.all([
     fetchAll((from, to) =>
       supabase.from("cities").select("id, slug, name, name_en").range(from, to),
@@ -89,23 +99,26 @@ const loadGraph = cachePublic(async () => {
   ]);
 
   return { cities, creators, videos, links, places };
-}, ["place-types:graph"]);
+});
 
-/** 종류 목록 — 확정 장소가 있는 유형만, FILTERABLE 순. */
-export async function loadTypeIndex(): Promise<TypeRow[]> {
+/** 종류 목록 — 확정 장소가 있는 유형만, FILTERABLE 순.
+ *  행만이 아니라 **파생 결과**를 캐시한다 — 그래프 순회가 요청마다 다시 돌 이유가 없다. */
+export const loadTypeIndex = cachePublic(async function loadTypeIndex(): Promise<TypeRow[]> {
   const { cities, creators, videos, links, places } = await loadGraph();
   if (places.length === 0) return [];
 
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const videoById = new Map(videos.map((v) => [v.id, v]));
   const cityById = new Map(cities.map((c) => [c.id, c]));
+  // links 루프마다 places 를 훑던 O(n²) 를 끊는다 (링크 수 × 확정 장소 수)
+  const placeIds = new Set(places.map((p) => p.id));
 
   // place → has at least one linked creator (공개 근거)
   const placeCreators = new Map<string, Set<string>>();
   for (const link of links) {
     const video = videoById.get(link.video_id);
     if (!video || !creatorById.has(video.creator_id)) continue;
-    if (!places.some((p) => p.id === link.place_id)) continue;
+    if (!placeIds.has(link.place_id)) continue;
     let set = placeCreators.get(link.place_id);
     if (!set) placeCreators.set(link.place_id, (set = new Set()));
     set.add(video.creator_id);
@@ -122,6 +135,18 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
   }
 
   const typeOfPlace = new Map(places.map((p) => [p.id, p.place_type as PlaceType]));
+
+  /* 아래 recentVideos 의 가중치(= 그 영상이 이 종류의 장소를 몇 곳 다녔나)를
+     links 를 **한 번만** 훑어 미리 집계한다. 예전엔 후보 영상마다 links 전체를
+     filter 해서 (영상 수 × 링크 수) 였다. */
+  const weightByVideo = new Map<string, Map<PlaceType, number>>();
+  for (const link of links) {
+    const t = typeOfPlace.get(link.place_id);
+    if (!t) continue;
+    let byT = weightByVideo.get(link.video_id);
+    if (!byT) weightByVideo.set(link.video_id, (byT = new Map()));
+    byT.set(t, (byT.get(t) ?? 0) + 1);
+  }
 
   const byType = new Map<
     PlaceType,
@@ -164,12 +189,7 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
          세우면, 종류마다 그 종류를 가장 많이 다룬 편이 앞으로 온다. */
       recentVideos: [...b.videos]
         .map((id) => videoById.get(id)!)
-        .map((v) => ({
-          v,
-          weight: links.filter(
-            (l) => l.video_id === v.id && typeOfPlace.get(l.place_id) === type,
-          ).length,
-        }))
+        .map((v) => ({ v, weight: weightByVideo.get(v.id)?.get(type) ?? 0 }))
         .sort(
           (a, b2) =>
             b2.weight - a.weight ||
@@ -185,10 +205,13 @@ export async function loadTypeIndex(): Promise<TypeRow[]> {
         .sort((a, b2) => b2.count - a.count),
     } satisfies TypeRow;
   }).filter((r): r is TypeRow => r !== null);
-}
+}, ["place-types:index"]);
 
-/** 한 종류의 장소 — 도시별 그룹. */
-export async function loadTypeDetail(type: PlaceType): Promise<TypeDetail | null> {
+/** 한 종류의 장소 — 도시별 그룹.
+ *  인자(type)는 unstable_cache 가 키에 자동 포함한다 — 종류별 항목. */
+export const loadTypeDetail = cachePublic(async function loadTypeDetail(
+  type: PlaceType,
+): Promise<TypeDetail | null> {
   if (!FILTERABLE_TYPES.includes(type)) return null;
 
   const { cities, creators, videos, links, places } = await loadGraph();
@@ -198,10 +221,12 @@ export async function loadTypeDetail(type: PlaceType): Promise<TypeDetail | null
   const cityById = new Map(cities.map((c) => [c.id, c]));
   const creatorById = new Map(creators.map((c) => [c.id, c]));
   const videoById = new Map(videos.map((v) => [v.id, v]));
+  // links 루프마다 ofType 을 훑던 O(n²) 를 끊는다
+  const ofTypeIds = new Set(ofType.map((p) => p.id));
 
   const sourcesByPlace = new Map<string, TypePlaceSource[]>();
   for (const link of links) {
-    if (!ofType.some((p) => p.id === link.place_id)) continue;
+    if (!ofTypeIds.has(link.place_id)) continue;
     const video = videoById.get(link.video_id);
     if (!video) continue;
     const creator = creatorById.get(video.creator_id);
@@ -269,7 +294,7 @@ export async function loadTypeDetail(type: PlaceType): Promise<TypeDetail | null
     cityCount: groups.length,
     groups,
   };
-}
+}, ["place-types:detail"]);
 
 export function parsePlaceType(raw: string): PlaceType | null {
   return (FILTERABLE_TYPES as string[]).includes(raw) ? (raw as PlaceType) : null;
