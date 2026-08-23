@@ -142,8 +142,55 @@ async function protectAdmin(request: NextRequest) {
   return NextResponse.redirect(url);
 }
 
+/**
+ * 퍼센트 이스케이프가 깨진 경로 → 500 대신 404.
+ *
+ * Next 는 **params 해석 단계**에서 세그먼트를 디코딩한다. 거기서 터지면 페이지
+ * 코드가 한 줄도 돌기 전에 죽어서 크롬 없는 평문 `Internal Server Error` 가 나갔다
+ * (`/place/%`, `/place/%zz`, `/city/%`, `/c/%` 전부 500). 페이지 안의 try/catch 는
+ * 그래서 한 번도 실행되지 않는다 — 프록시가 params 해석보다 앞이라 이 자리만이
+ * 유일한 방어선이다.
+ *
+ * 크롤러·스캐너가 실제로 만들어 보내고, 장소 slug 에 한글이 많아(`/place/일등집-ej1r`)
+ * 퍼센트 인코딩된 링크가 중간에서 한 번만 잘려도 사람이 여기로 온다.
+ *
+ * 빈 404 를 돌려주지 않고 **디자인된 404 화면**으로 rewrite 한다(주소창은 그대로).
+ * `/type/*` 를 고르는 이유: `parsePlaceType()` 이 닫힌 열거형이라 이 세그먼트는
+ * DB 왕복 없이 곧장 `notFound()` 로 떨어지는, 트리에서 가장 싼 경로다.
+ * (그 라우트의 존재 판정은 `type/[type]/layout.tsx` — 스트리밍 경계 **위** 라
+ * 상태 코드가 제대로 404 로 나간다.)
+ */
+const NOT_FOUND_SEGMENT = "/type/__not-found__";
+
+function isDecodable(pathname: string): boolean {
+  try {
+    decodeURIComponent(pathname);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export default async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
+
+  /* 깨진 이스케이프는 무엇보다 **먼저** 걸러낸다 — 아래 어느 분기로 흘러가도
+     결국 params 해석에서 같은 500 이 난다. */
+  if (!isDecodable(pathname)) {
+    const lang = pathname === "/en" || pathname.startsWith("/en/") ? "/en" : "/ko";
+    return rewriteTo(request, `${lang}${NOT_FOUND_SEGMENT}`);
+  }
+
+  /* 어드민 인증은 **무엇보다 먼저** 판정한다(깨진 이스케이프 다음).
+     아래 정적 자산 분기의 `pathname.includes(".")` 가 이 위에 있던 시절,
+     경로 어디에든 점 하나만 있으면 `/admin/**` 이 인증을 통째로 건너뛰었다.
+     그 규칙의 의도는 "정적 자산 통과"이지 "인증 면제"가 아니다 — 지금은 admin
+     하위에 확정 라우트로 이어지는 dynamic 세그먼트가 `place/[id]`(UUID) 하나뿐이라
+     전부 404 로 떨어지지만, 라우트가 하나만 더 생기면 그날로 무인증 노출이다.
+     matcher 쪽에도 같은 구멍이 있었다 — `config.matcher` 주석 참조. */
+  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
+    return protectAdmin(request);
+  }
 
   // 정적 자산과 루트 메타데이터 파일 규약(점 없는 URL — og 이미지·앱 아이콘)은
   // [lang] 트리 밖에 산다 — ko rewrite 에 휩쓸리면 404 가 된다.
@@ -157,10 +204,6 @@ export default async function proxy(request: NextRequest) {
     pathname.includes(".")
   ) {
     return NextResponse.next();
-  }
-
-  if (pathname.startsWith("/admin") || pathname.startsWith("/api/admin")) {
-    return protectAdmin(request);
   }
 
   if (pathname.startsWith("/api")) {
@@ -218,7 +261,30 @@ export default async function proxy(request: NextRequest) {
 export const config = {
   matcher: [
     /*
-     * 정적 파일·이미지 제외. admin + 공개 페이지 + en 접두사.
+     * ⚠️ 어드민은 **점 제외 규칙 밖**에 따로 세운다. 예전에는 아래 공개 패턴
+     *    하나뿐이었는데, 그 안의 `.*\..*` 부정 전방탐색은 경로 **어디에든** 점이
+     *    있으면 proxy 를 통째로 건너뛴다 — `/admin/x.y` 가 인증 없이 통과했다는 뜻이다.
+     *    "정적 자산은 비켜준다" 는 의도였지 "인증을 면제한다" 가 아니었다.
+     *
+     *    지금 당장 뚫리지는 않는다(admin 하위 dynamic 세그먼트가 UUID 를 받는
+     *    `place/[id]` 하나뿐이라 점 있는 경로는 전부 404 로 떨어진다). 하지만 어드민
+     *    **읽기** 경로의 방어선이 여기 하나뿐이고, 라우트가 하나만 더 늘면 그날로
+     *    무인증 노출이다. 조건이 안 붙은 패턴으로 못박아 둔다.
+     *
+     *    `:path*` 는 빈 세그먼트도 먹어서 `/admin/:path*` 하나로 `/admin` 까지
+     *    잡힌다(path-to-regexp 로 확인: `/^\/admin(?:\/(...))?[\/#\?]?$/i`).
+     *    그래도 루트를 따로 적는다 — 이 줄이 지켜야 할 건 어드민 대시보드 루트이고,
+     *    그게 수량자 기본값에 딸려 오는 부수 효과로 남아 있어선 안 된다.
+     */
+    "/admin",
+    "/admin/:path*",
+    "/api/admin",
+    "/api/admin/:path*",
+    /*
+     * 공개 트리 — 정적 파일·이미지 제외. 공개 페이지 + en 접두사.
+     * 점 제외는 **여기에만** 남는다. 루트 메타데이터 파일 규약(`/opengraph-image`,
+     * `/apple-icon`, `/icon` 등 점 없는 URL)과 `_next` 자산은 지금처럼 통과해야
+     * 한다 — 되돌리면 아이콘·OG 이미지가 404 가 된다.
      */
     "/((?!_next/static|_next/image|.*\\..*).*)",
   ],
