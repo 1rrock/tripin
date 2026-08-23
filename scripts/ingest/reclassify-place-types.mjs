@@ -87,16 +87,22 @@ async function detail(placeId) {
   return res.json();
 }
 
-const rows = await all("places", "id, slug, name, place_type, google_place_id", (q) =>
-  q.eq("place_type", "restaurant").eq("is_published", true).order("slug"),
-);
+/* 기본은 공개 장소만 — 유저 눈에 보이는 것이 먼저다. `--include-unpublished` 를 주면
+   비공개도 같이 고친다. 비공개를 방치하면 공개하는 순간 같은 문제가 되살아난다
+   (실측: 구마모토성이 비공개 상태로 restaurant 이었다). */
+const INCLUDE_UNPUBLISHED = args.includes("--include-unpublished");
+
+const rows = await all("places", "id, slug, name, place_type, google_place_id", (q) => {
+  const base = q.eq("place_type", "restaurant");
+  return (INCLUDE_UNPUBLISHED ? base : base.eq("is_published", true)).order("slug");
+});
 
 const target = rows.filter((r) => r.google_place_id);
 const skippedNoPid = rows.length - target.length;
 const work = LIMIT ? target.slice(0, LIMIT) : target;
 
 console.log(
-  `restaurant·공개 ${rows.length}곳 · place_id 있음 ${target.length}곳` +
+  `restaurant ${rows.length}곳${INCLUDE_UNPUBLISHED ? " (비공개 포함)" : "·공개"} · place_id 있음 ${target.length}곳` +
     `${skippedNoPid ? ` · place_id 없어 제외 ${skippedNoPid}곳` : ""}\n` +
     `이번 대상 ${work.length}곳${APPLY ? "" : " (dry-run — 쓰려면 --apply)"}\n`,
 );
