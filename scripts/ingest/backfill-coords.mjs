@@ -24,7 +24,6 @@ const env = requireEnv(["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"]
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY;
 const H = { apikey: KEY, Authorization: `Bearer ${KEY}`, "Content-Type": "application/json" };
-const UA = "tripin-admin-backfill/1.0 (local tool)";
 
 const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 const isShareLink = isGoogleShareLink;
