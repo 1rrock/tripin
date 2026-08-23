@@ -111,16 +111,25 @@ export async function GET(request: NextRequest) {
   }
 
   const from = request.cookies.get(MERGE_COOKIE)?.value;
+  let mergeFailed = false;
   if (from && from !== user.id && isUserId(from)) {
     try {
       await mergeAnonymousInto(from, user.id);
     } catch (err) {
       console.error("[auth] 익명 저장 이전 실패:", err);
+      mergeFailed = true;
     }
   }
 
-  const done = redirectWith(`${origin}${next}`, pending);
-  done.cookies.set(MERGE_COOKIE, "", { path: "/", maxAge: 0 });
+  /* ⚠️ 병합 실패는 **콘솔에만 두면 안 된다.** 유저는 이미 구글 세션으로 갈아탔고
+     익명 세션으로 돌아갈 길이 없다 — 여기서 MERGE_COOKIE 까지 지우면 옮기지 못한
+     하트·그룹을 다시 시도할 방법이 영영 사라진다. 그래서 실패하면 쿠키를 **남겨**
+     다음 로그인이 한 번 더 시도하게 하고, `auth_error` 로 화면이 말하게 한다. */
+  const done = redirectWith(
+    `${origin}${mergeFailed ? withParam(next, "auth_error", "merge_failed") : next}`,
+    pending,
+  );
+  if (!mergeFailed) done.cookies.set(MERGE_COOKIE, "", { path: "/", maxAge: 0 });
   done.cookies.set(SWITCH_COOKIE, "", { path: "/", maxAge: 0 });
   return done;
 }

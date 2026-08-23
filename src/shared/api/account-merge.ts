@@ -25,6 +25,13 @@ export async function mergeAnonymousInto(fromId: string, toId: string): Promise<
     admin.from("subscriptions").select("creator_id, created_at").eq("user_id", fromId),
   ]);
 
+  /* 읽기 실패를 `?? []` 로 삼키면 그 종류만 안 옮긴 채 아래 deleteUser 까지 도달하고,
+     cascade 가 원본을 지워 복구 수단이 사라진다. 쓰기와 같이 즉시 throw 해서
+     병합을 통째로 중단한다 — 중단하면 삭제에 닿지 않으므로 원본이 남는다. */
+  for (const res of [placesRes, listsRes, membersRes, subsRes]) {
+    if (res.error) throw res.error;
+  }
+
   const places = placesRes.data ?? [];
   if (places.length > 0) {
     const { error } = await admin.from("saved_places").upsert(

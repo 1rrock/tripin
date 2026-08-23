@@ -249,13 +249,24 @@ export async function setInList(
 /** 저장 토글. 성공하면 true. 익명 세션 생성이 막혀 있으면 false. */
 export async function setSaved(placeId: string, next: boolean): Promise<boolean> {
   if (!next) {
+    /* 끄는 것도 쓰기다 — renameList·deleteList·setInList 와 같은 모양으로 맞춘다.
+       세션을 태우고, `.select()` 로 영향 행을 확인한다. RLS 에 막힌 삭제는 에러가
+       아니라 0행이라, `!error` 만 보면 세션 만료 뒤에 하트가 꺼진 것처럼 그려졌다가
+       새로고침에 되살아난다(`:163-166` 주석). */
+    const uid = await ensureSession();
+    if (!uid) return false;
     const sb = supabaseBrowser();
     /* 하트를 끄면 분류도 같이 지운다. saved_list_places 는 saved_places 와
-       FK 가 없어서, 여기 안 지우면 다시 하트를 켤 때 옛 그룹이 유령처럼 돌아온다. */
+       FK 가 없어서, 여기 안 지우면 다시 하트를 켤 때 옛 그룹이 유령처럼 돌아온다.
+       (여기는 0행이 정상이다 — 어느 그룹에도 안 넣은 장소가 대부분이다.) */
     const { error: memErr } = await sb.from("saved_list_places").delete().eq("place_id", placeId);
     if (memErr) return false;
-    const { error } = await sb.from("saved_places").delete().eq("place_id", placeId);
-    return !error;
+    const { data, error } = await sb
+      .from("saved_places")
+      .delete()
+      .eq("place_id", placeId)
+      .select("place_id");
+    return !error && (data?.length ?? 0) > 0;
   }
 
   /* upsert 를 쓰는 이유: 저장을 껐다 켜는 사이에 다른 탭에서 이미 저장했으면
@@ -270,9 +281,16 @@ export async function setSaved(placeId: string, next: boolean): Promise<boolean>
 /** 채널 구독 토글. */
 export async function setSubscribed(creatorId: string, next: boolean): Promise<boolean> {
   if (!next) {
-    const sb = supabaseBrowser();
-    const { error } = await sb.from("subscriptions").delete().eq("creator_id", creatorId);
-    return !error;
+    /* setSaved 와 같은 이유 — 세션을 태우고 `.select()` 로 영향 행을 본다.
+       0행(세션 만료·RLS)을 성공이라 답하면 구독이 풀린 것처럼 보이다가 되돌아온다. */
+    const uid = await ensureSession();
+    if (!uid) return false;
+    const { data, error } = await supabaseBrowser()
+      .from("subscriptions")
+      .delete()
+      .eq("creator_id", creatorId)
+      .select("creator_id");
+    return !error && (data?.length ?? 0) > 0;
   }
   return withSession(async (uid) =>
     supabaseBrowser()
