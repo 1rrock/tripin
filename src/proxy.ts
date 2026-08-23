@@ -162,9 +162,21 @@ async function protectAdmin(request: NextRequest) {
  */
 const NOT_FOUND_SEGMENT = "/type/__not-found__";
 
+/**
+ * ⚠️ **두 번 디코드해 본다.** 한 번만 보면 `%25` 류가 이 문을 통과한다:
+ *    `/place/%25` → 1차 디코드 성공(`/place/%`) → 통과 → 그런데 로케일 rewrite 뒤
+ *    Next 가 라우트 파라미터를 한 번 더 풀다 홀로 남은 `%` 에서 터진다
+ *    ("failed to decode param" → 500). 2026-08-24 프로덕션에서 실측했다 —
+ *    `/place/%25`·`/en/place/%25`·`/place/a%25b` 전부 500 이었다.
+ *    (`/api/*` 는 이 파라미터 해석을 안 타서 원래 404 였다.)
+ *
+ * 진짜 slug 는 이 검사에 안 걸린다: 한글 slug 는 1차 디코드에서 이미 `%` 가
+ * 사라져(`/place/%EB%8C%80` → `/place/대`) 2차는 그대로 통과한다. 걸리는 것은
+ * 디코드하고도 `%` 가 남는 경로뿐이고, 그건 어차피 지금 500 이 나던 입력이다.
+ */
 function isDecodable(pathname: string): boolean {
   try {
-    decodeURIComponent(pathname);
+    decodeURIComponent(decodeURIComponent(pathname));
     return true;
   } catch {
     return false;
