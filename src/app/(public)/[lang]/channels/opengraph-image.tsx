@@ -1,11 +1,12 @@
 import { ImageResponse } from "next/og";
 import { loadHomeFeed } from "@/shared/api/home";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 채널 인덱스 공유 카드 — "여행 유튜버 채널 {n}개" + 대표 채널명 몇 개.
- * 흰 지면(#ffffff), 잉크 타이포, 키 프레이즈에 왁스(#c9441a) 밑줄 바. 사진 없음.
+ * 흰 지면(#ffffff), 잉크 타이포, 키 프레이즈에 왁스(OG_WAX) 밑줄 바. 사진 없음.
  *
  * 대표 채널명(names)은 실제 채널명이라 로케일과 무관하게 한글일 수 있다 —
  * `needsKoreanFont` 로 실제 글자를 보고 폰트 로딩 여부를 가른다(로케일만 보면
@@ -86,7 +87,7 @@ export default async function ChannelsOpengraphImage({
                 <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#171717" }}>
                   {countLine}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
               </div>
             </div>
             {names ? (
@@ -110,9 +111,9 @@ export default async function ChannelsOpengraphImage({
           >
             <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 34, color: "#6b6b6b", marginTop: 34 }}>

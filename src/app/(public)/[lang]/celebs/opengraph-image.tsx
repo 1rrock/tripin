@@ -2,11 +2,12 @@ import { ImageResponse } from "next/og";
 import { loadHomeFeed } from "@/shared/api/home";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 연예인 장소 인덱스 공유 카드 — "연예인이 간 장소 {n}곳" + 대표 인물명 몇 개.
- * 흰 지면(#ffffff), 잉크 타이포, 키 프레이즈에 왁스(#c9441a) 밑줄 바. 사진 없음.
+ * 흰 지면(#ffffff), 잉크 타이포, 키 프레이즈에 왁스(OG_WAX) 밑줄 바. 사진 없음.
  *
  * EN 은 한글 폰트를 아예 안 부른다 — 본문이 라틴뿐이라 satori 기본 폰트로 충분하고,
  * 폰트 로딩 실패 시 물러나는 워드마크 폴백은 ko 전용(라틴은 애초에 폰트가 필요 없다).
@@ -94,7 +95,7 @@ export default async function CelebsOpengraphImage({
                 <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#171717" }}>
                   {countLine}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
               </div>
             </div>
             {namesLine ? (
@@ -118,9 +119,9 @@ export default async function CelebsOpengraphImage({
           >
             <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 34, color: "#6b6b6b", marginTop: 34 }}>

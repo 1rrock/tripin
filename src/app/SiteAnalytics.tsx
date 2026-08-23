@@ -17,8 +17,9 @@ import { Analytics } from "@vercel/analytics/next";
  * 쿠키·UA 로 사람을 특정하지 않는다(개인정보처리방침).
  */
 
-/** 집계에서 뺄 경로 접두사 — `robots.ts` 의 disallow 와 짝을 맞춰 둘 것. */
-const EXCLUDED = ["/admin", "/hero-concepts"];
+/** 집계에서 뺄 경로 접두사 — `robots.ts` 의 disallow 와 짝을 맞춰 둘 것.
+ *  지워진 라우트는 같이 뺀다: `/hero-concepts` 는 `57bc954` 로 사라졌다. */
+const EXCLUDED = ["/admin"];
 
 export function SiteAnalytics() {
   return (

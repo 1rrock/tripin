@@ -16,6 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { Button } from "@/shared/ui/Button";
 import { Avatar, Chip, Frame, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Act, Icon } from "@/shared/ui/icons";
@@ -645,22 +646,26 @@ export function PlaceSheet({
     />
   ) : place.mapLinks.length > 0 ? (
     <div role="group" aria-label={m.map.openInMapApp} className="flex w-full gap-2">
+      {/* 규격은 `Button` 의 것이다 — `/place/[slug]` 의 같은 줄과 한 벌로 선다.
+          `primary`(밀랍)가 아니라 `secondary`(먹색)인 이유도 그쪽과 같다:
+          여기서 고르는 건 "어느 지도 앱으로 나갈까"라 브랜드의 말이 아니다. */}
       {place.mapLinks.map((link, i) => (
-        <OutboundA
+        <Button
           key={link.app}
           href={link.url}
-          className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 font-bold"
-          style={{
-            fontSize: place.mapLinks.length > 2 ? "var(--t-meta)" : "var(--t-body)",
-            borderRadius: "var(--r-frame)",
-            background: i === 0 ? "var(--paper)" : "transparent",
-            color: i === 0 ? "var(--sheet)" : "var(--paper)",
-            boxShadow: i === 0 ? undefined : "inset 0 0 0 1px var(--hairline)",
-          }}
+          variant={i === 0 ? "secondary" : "ghost"}
+          size="lg"
+          className="min-w-0 flex-1"
         >
           {place.mapLinks.length === 1 ? <Icon.out className="size-4" /> : null}
-          <span className="truncate">{m.map.mapApps[link.app]}</span>
-        </OutboundA>
+          {/* 셋이 한 줄에 서면 15px 로는 이름이 잘린다 — 글자만 한 단 내린다 */}
+          <span
+            className="truncate"
+            style={place.mapLinks.length > 2 ? { fontSize: "var(--t-meta)" } : undefined}
+          >
+            {m.map.mapApps[link.app]}
+          </span>
+        </Button>
       ))}
     </div>
   ) : null;

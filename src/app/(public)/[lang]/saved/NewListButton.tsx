@@ -14,6 +14,7 @@ import { useEffect, useRef, useState } from "react";
 import { PlusIcon as Plus } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { useSaved } from "@/shared/ui/SavedContext";
+import { Button } from "@/shared/ui/Button";
 import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";
 
 export function NewListButton({
@@ -148,38 +149,29 @@ export function NewListButton({
           {error}
         </p>
       ) : null}
+      {/* 규격은 `Button` 에만 있다 — h-9·px-3 를 손으로 적던 자리다. 작은 단은
+          `sm`(40px · --r-control) 하나뿐이라 36px 은 여기서 사라진다. */}
       <div className="flex gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
+          size="sm"
           disabled={!name.trim() || busy}
           onClick={() => void submit()}
-          className="h-9 flex-1 cursor-pointer font-bold disabled:opacity-50"
-          style={{
-            fontSize: "var(--t-meta)",
-            borderRadius: "var(--r-control)",
-            background: "var(--paper)",
-            color: "var(--sheet)",
-          }}
+          className="flex-1"
         >
           {m.saved.listCreate}
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="ghost"
+          size="sm"
           onClick={() => {
             setOpen(false);
             setName("");
             setError(null);
           }}
-          className="h-9 cursor-pointer px-3 font-semibold"
-          style={{
-            fontSize: "var(--t-meta)",
-            borderRadius: "var(--r-control)",
-            boxShadow: "inset 0 0 0 1px var(--hairline)",
-            color: "var(--dim)",
-          }}
         >
           {m.saved.listCancel}
-        </button>
+        </Button>
       </div>
     </div>
   );

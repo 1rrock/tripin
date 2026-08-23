@@ -12,6 +12,7 @@ import { authErrorText } from "@/shared/api/auth-error";
 import { clearAuthError, usePersistedAuthError } from "@/shared/api/use-auth-error";
 import { linkGoogle } from "@/shared/api/saved";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { Button } from "@/shared/ui/Button";
 
 const PROVIDERS = [
   { id: "google", live: true },
@@ -66,10 +67,15 @@ export function LoginPanel({
           const waiting = busy === p.id;
           return (
             <li key={p.id}>
-              <button
-                type="button"
+              {/* 면을 차지하는 단추는 `Button` 하나를 지난다 — 예전엔 h-11·px-3.5 를
+                  여기서 손으로 적어서 같은 무게의 단추가 앱 안에서 네 가지 규격으로
+                  갈렸다. 살아 있는 제공자는 먹색 채움(secondary), 자리만 깔아 둔
+                  쪽은 헤어라인 링(ghost)이고 `disabled` 가 잉크를 뺀다. */}
+              <Button
+                variant={live ? "secondary" : "ghost"}
+                size="md"
                 disabled={!live || busy !== null}
-                aria-label={live ? label : `${label} — ${m.account.loginSoon}`}
+                ariaLabel={live ? label : `${label} — ${m.account.loginSoon}`}
                 onClick={
                   live
                     ? async () => {
@@ -84,24 +90,21 @@ export function LoginPanel({
                       }
                     : undefined
                 }
-                className="flex h-11 w-full items-center gap-3 px-3.5 font-bold transition-[transform,opacity] enabled:cursor-pointer enabled:active:scale-[0.99] enabled:hover:opacity-90 disabled:cursor-not-allowed"
-                style={{
-                  fontSize: "var(--t-body)",
-                  borderRadius: "var(--r-frame)",
-                  background: live ? "var(--paper)" : "transparent",
-                  color: live ? "var(--sheet)" : "var(--dim)",
-                  boxShadow: live ? undefined : "inset 0 0 0 1px var(--hairline)",
-                  opacity: !live || (busy && !waiting) ? 0.55 : 1,
-                }}
+                className="w-full"
               >
-                <ProviderMark id={p.id} onInk={live} />
-                <span className="min-w-0 flex-1 text-left">{waiting ? m.account.loggingIn : label}</span>
+                {/* 마크와 이름은 한 덩이로 왼쪽에 붙고, "곧" 배지만 오른쪽 끝으로 밀린다 */}
+                <span className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                  <ProviderMark id={p.id} onInk={live} />
+                  <span className="min-w-0 flex-1 truncate">
+                    {waiting ? m.account.loggingIn : label}
+                  </span>
+                </span>
                 {!live ? (
                   <span className="index shrink-0" style={{ fontWeight: 600 }}>
                     {m.account.loginSoon}
                   </span>
                 ) : null}
-              </button>
+              </Button>
             </li>
           );
         })}

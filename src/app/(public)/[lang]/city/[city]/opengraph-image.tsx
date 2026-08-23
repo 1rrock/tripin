@@ -1,6 +1,7 @@
 import { ImageResponse } from "next/og";
 import { loadCityDetail } from "@/shared/api/cities";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import { displayCityName } from "@/shared/i18n/display";
 import type { Locale } from "@/shared/i18n/config";
 
@@ -98,7 +99,7 @@ export default async function CityOpengraphImage({
               >
                 {cityName}
               </div>
-              <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+              <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
             </div>
             {countLine ? (
               <div
@@ -135,9 +136,9 @@ export default async function CityOpengraphImage({
               }}
             >
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 38, color: "#171717", marginTop: 32 }}>

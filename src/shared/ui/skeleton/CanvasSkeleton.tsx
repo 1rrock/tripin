@@ -99,13 +99,17 @@ function BoneSearchPill({ floating = false }: { floating?: boolean }) {
   );
 }
 
-/** 필터 알약 — `CanvasFilters` 의 `Trigger`. h-9 · rounded-full · px-3.5 · 13px */
+/**
+ * 필터 알약 — `CanvasFilters` 의 `Trigger`.
+ *
+ * 규격을 손으로 베끼지 않고 `.chip .chip-md` 를 **그대로 입는다**(globals.css).
+ * 예전엔 `h-9 · rounded-full · px-3.5 · text-[13px]` 로 다시 적어 뒀는데, 높이·
+ * 패딩은 맞아도 글꼴만 13px 로 박혀 있어서 `--t-meta` 를 바꾸면 뼈와 실물이
+ * 어긋났다. 뼈는 실화면을 따라가야 뼈다.
+ */
 function BoneFilterTrigger({ w }: { w: string }) {
   return (
-    <span
-      className="flex h-9 min-w-0 items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold tracking-[-0.02em]"
-      style={{ background: "var(--ground)", boxShadow: "inset 0 0 0 1px var(--hairline)" }}
-    >
+    <span className="chip chip-md min-w-0">
       <span className="truncate">
         <Bone w={w} />
       </span>

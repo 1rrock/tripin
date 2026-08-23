@@ -13,8 +13,10 @@ import { publicEnv } from "@/shared/config/env";
  */
 /** 로케일 트리 **밖**이라 `/en` 짝이 없다 — proxy 가 로케일 판정보다 먼저 가로챈다 */
 const OUTSIDE_LOCALE = ["/admin", "/api"];
-/** `(public)/[lang]/` 안의 화면 — ko(무접두사)와 en 두 경로로 존재한다 */
-const IN_LOCALE = ["/hero-concepts", "/login"];
+/** `(public)/[lang]/` 안의 화면 — ko(무접두사)와 en 두 경로로 존재한다.
+ *  ⚠️ **살아 있는 라우트만** 적는다. `/hero-concepts` 는 `57bc954` 가 지웠는데
+ *     규칙이 남아 있어 죽은 줄 2개(`/hero-concepts`·`/en/hero-concepts`)가 나갔다. */
+const IN_LOCALE = ["/login"];
 
 export default function robots(): MetadataRoute.Robots {
   return {

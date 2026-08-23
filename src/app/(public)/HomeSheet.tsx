@@ -13,6 +13,7 @@ import { localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { Chip } from "@/shared/ui/frame";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
+import { loadTypeIndex } from "@/shared/api/place-types";
 import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
 import { CelebrityFeed, ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
 import { HomeSearchButton } from "./HomeSearchButton";
@@ -39,13 +40,22 @@ export async function HomeSheet({
   const rail = cities.slice(0, RAIL);
   const grid = cities.slice(0, GRID);
 
+  /* 종류별 장소 수 — `CategoryGrid` 가 0건인 종류의 타일을 안 깔게 하려고 넘긴다.
+     예전엔 개수를 안 봐서 `viewpoint`(DB 0행) 타일이 늘 서 있었고, 누르면 결과가
+     0건이었다(`/map` 필터는 이미 `n === 0` 을 걸러내던 터라 두 화면 규칙이 갈렸다).
+     `loadTypeIndex` 는 `cachePublic` 이라 새 쿼리가 아니고, `searchParams` 도
+     안 읽으므로 이 페이지의 ISR 은 그대로다. */
+  const typeCounts = Object.fromEntries(
+    (await loadTypeIndex()).map((t) => [t.type, t.placeCount]),
+  );
+
   return (
     <div>
       <FieldHero cities={cities} locale={locale} />
 
       <div className="mx-auto w-full max-w-lg lg:max-w-5xl">
         <div className="lg:hidden">
-          <CategoryGrid />
+          <CategoryGrid counts={typeCounts} />
           <hr className="rule mx-(--gutter)" />
           <DestinationRail cities={rail} locale={locale} messages={m} />
         </div>

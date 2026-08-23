@@ -16,17 +16,24 @@ import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState, useTransition, type ReactNode } from "react";
 import { deleteAccount, signOut } from "@/shared/api/saved";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { Button } from "@/shared/ui/Button";
 import { Icon } from "@/shared/ui/icons";
 import { LoginPanel } from "@/shared/ui/LoginPanel";
 import { RowItem, RowLabel, RowList, RowSection, rowShellClass } from "./rows";
 
-/** 위험은 색이 아니라 굵기·아이콘·확인 단계로 말한다 — rows.tsx 의 tone 주석 참고 */
+/**
+ * 위험 문구 — 굵기·아이콘·확인 단계에 **색까지** 더한다(`--alert`).
+ *
+ * 예전에는 먹색이었다. 이 앱의 다른 `role="alert"` 다섯 곳이 전부 `--alert` 인데
+ * 되돌릴 수 없는 행동(탈퇴)의 확인 질문만 본문과 같은 색이라, 화면에서 가장
+ * 위험한 문장이 가장 조용했다. 산호(--wax)가 아닌 이유는 rows.tsx 에 적혀 있다.
+ */
 function Alert({ children }: { children: ReactNode }) {
   return (
     <p
       role="alert"
       className="flex items-start gap-1.5"
-      style={{ fontSize: "var(--t-meta)", fontWeight: 700, color: "var(--paper)" }}
+      style={{ fontSize: "var(--t-meta)", fontWeight: 700, color: "var(--alert)" }}
     >
       <Warn />
       <span>{children}</span>
@@ -103,34 +110,16 @@ function Confirm({
       }}
     >
       <Alert>{question}</Alert>
+      {/* 규격은 `Button` 의 것이다 — h-9·px-3.5 를 손으로 적던 자리다.
+          확정은 먹색 채움, 취소는 헤어라인 링. 확정에 산호를 쓰지 않는 이유는
+          `Button.tsx` 에 적혀 있다(산호는 브랜드지 위험이 아니다). */}
       <div className="flex gap-1.5">
-        <button
-          type="button"
-          onClick={onConfirm}
-          className="h-9 flex-1 cursor-pointer font-bold"
-          style={{
-            fontSize: "var(--t-meta)",
-            borderRadius: "var(--r-control)",
-            background: "var(--paper)",
-            color: "var(--sheet)",
-          }}
-        >
+        <Button variant="secondary" size="sm" onClick={onConfirm} className="flex-1">
           {confirmLabel}
-        </button>
-        <button
-          ref={cancelRef}
-          type="button"
-          onClick={onCancel}
-          className="h-9 cursor-pointer px-3.5 font-semibold"
-          style={{
-            fontSize: "var(--t-meta)",
-            borderRadius: "var(--r-control)",
-            boxShadow: "inset 0 0 0 1px var(--hairline)",
-            color: "var(--dim)",
-          }}
-        >
+        </Button>
+        <Button ref={cancelRef} variant="ghost" size="sm" onClick={onCancel}>
           {cancelLabel}
-        </button>
+        </Button>
       </div>
     </div>
   );
@@ -228,7 +217,9 @@ export function SessionRows({
             onClick={() => setAsking((cur) => (cur === "delete" ? null : "delete"))}
             className={`${rowShellClass} cursor-pointer disabled:opacity-60`}
           >
-            <Icon.trash className="size-4 shrink-0" />
+            {/* 라벨이 --alert 를 입었으니 바로 옆 글리프도 같은 색이어야 한다 —
+                한 덩이인데 색이 갈리면 아이콘이 딸린 다른 행처럼 읽힌다 */}
+            <Icon.trash className="size-4 shrink-0" style={{ color: "var(--alert)" }} />
             <RowLabel tone="danger">
               {busy === "delete" ? m.account.deleting : m.account.deleteAccount}
             </RowLabel>

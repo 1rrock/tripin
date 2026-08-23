@@ -51,6 +51,7 @@ export function Button({
   disabled,
   title,
   ariaLabel,
+  ref,
   className = "",
   children,
 }: {
@@ -63,6 +64,12 @@ export function Button({
   disabled?: boolean;
   title?: string;
   ariaLabel?: string;
+  /**
+   * 초점을 손으로 옮겨야 하는 자리에만. 파괴적 확인 판은 열자마자 "취소"에
+   * 초점이 서야 해서(`SessionRows`) 이 손잡이가 없으면 호출부가 단추를 다시
+   * 손으로 그리게 된다 — 규격이 갈리는 길이다. `href` 를 쓰면 무시된다.
+   */
+  ref?: React.Ref<HTMLButtonElement>;
   /** 레이아웃 전용(flex-1·w-full·mt-*). 규격을 덮어쓰는 용도가 아니다. */
   className?: string;
   children: ReactNode;
@@ -101,6 +108,7 @@ export function Button({
 
   return (
     <button
+      ref={ref}
       type={type}
       onClick={onClick}
       disabled={disabled}

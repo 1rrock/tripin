@@ -3,12 +3,13 @@ import { supabase } from "@/shared/api/supabase";
 import { cachePublic } from "@/shared/api/cache";
 import { chunkedIn } from "@/shared/api/chunked-in";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import { displayCityName } from "@/shared/i18n/display";
 import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 조각(채널×도시) 공유 카드 — "{크리에이터}의 {도시}" + "간 곳 {n}곳".
- * 흰 지면(#ffffff), 잉크 타이포, 도시명에 왁스(#c9441a) 밑줄 바. 사진 없음.
+ * 흰 지면(#ffffff), 잉크 타이포, 도시명에 왁스(OG_WAX) 밑줄 바. 사진 없음.
  *
  * 채널명·도시명은 실제 표시명이라 로케일과 무관하게 한글일 수 있다(도시는
  * `name_en` 이 없으면 `displayCityName` 이 원문으로 물러난다) — `needsKoreanFont`
@@ -150,7 +151,7 @@ export default async function PieceOpengraphImage({
                 >
                   {cityName}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
               </div>
             </div>
             <div
@@ -178,9 +179,9 @@ export default async function PieceOpengraphImage({
           >
             <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 38, color: "#171717", marginTop: 32 }}>

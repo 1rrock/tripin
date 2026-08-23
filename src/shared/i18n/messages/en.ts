@@ -313,6 +313,8 @@ export const en: Messages = {
     errMissing: "We lost the way back from Google. Please try signing in again.",
     errNotLinked: "Google signed in, but it didn't attach to this device. Please try again.",
     errGeneric: "Couldn't sign in. Please try again shortly.",
+    errMergeFailed:
+      "You're signed in, but we couldn't move what you saved on this device. Sign in again and we'll retry.",
     cancel: "Cancel",
   },
   apply: {

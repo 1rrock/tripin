@@ -1,11 +1,12 @@
 import { ImageResponse } from "next/og";
 import { loadCreatorMap } from "@/shared/api/creator-hub";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 채널 허브 공유 카드 — "{크리에이터}" + "간 곳 {n}곳 · 도시 {m}곳".
- * 흰 지면(#ffffff), 잉크 타이포, 채널명에 왁스(#c9441a) 밑줄 바. 사진 없음.
+ * 흰 지면(#ffffff), 잉크 타이포, 채널명에 왁스(OG_WAX) 밑줄 바. 사진 없음.
  *
  * 조각(`[creator]/[city]/opengraph-image.tsx`)이 채널×도시 한 켤레를 다룬다면,
  * 이 카드는 그 채널의 전체 지도를 대표한다 — 도시가 아니라 사람이 헤드라인이다.
@@ -91,7 +92,7 @@ export default async function CreatorHubOpengraphImage({
               <div style={{ display: "flex", fontSize: titleSize, fontWeight: 800, color: "#171717" }}>
                 {creatorName}
               </div>
-              <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+              <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
             </div>
             {placeCount > 0 ? (
               <div
@@ -120,9 +121,9 @@ export default async function CreatorHubOpengraphImage({
           >
             <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 38, color: "#171717", marginTop: 32 }}>

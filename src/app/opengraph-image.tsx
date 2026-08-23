@@ -1,8 +1,9 @@
 import { ImageResponse } from "next/og";
 import { loadKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 
 /**
- * 기본 공유 카드 — 흰 지면(#ffffff) + 잉크 타이포 + 왁스(#c9441a) 밑줄 바.
+ * 기본 공유 카드 — 흰 지면(#ffffff) + 잉크 타이포 + 왁스(OG_WAX) 밑줄 바.
  * 사진·그라디언트 없음. 지면과 타이포 위계만으로 선다.
  */
 export const alt = "여행 유튜버가 간 곳만 지도로 — Eatripin";
@@ -65,7 +66,7 @@ export default async function OpengraphImage() {
                 <div style={{ display: "flex", fontSize: 82, fontWeight: 800, color: "#171717" }}>
                   {HEAD_B}
                 </div>
-                <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+                <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
               </div>
               <div
                 style={{
@@ -99,9 +100,9 @@ export default async function OpengraphImage() {
             {/* 라틴 폴백 — EATRIPIN, 공유 T·P 왁스 */}
             <div style={{ display: "flex", fontSize: 72, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 34, color: "#6b6b6b", marginTop: 34 }}>

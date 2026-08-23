@@ -15,6 +15,7 @@
 import { useId, useState } from "react";
 import { track } from "@vercel/analytics";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { Button } from "@/shared/ui/Button";
 
 /* 16px 미만이면 iOS 가 입력할 때 화면을 확대한다 — PRODUCT.md 접근성 */
 const field = {
@@ -206,20 +207,11 @@ export function ApplyForm() {
         </p>
       ) : null}
 
-      {/* 이 화면에서 산호로 채우는 면은 이 버튼 하나다 — "여기를 누르라"의 유일한 표시 */}
-      <button
-        type="submit"
-        disabled={state === "sending"}
-        className="h-12 w-full cursor-pointer font-bold transition-transform active:scale-[0.99] disabled:cursor-default disabled:opacity-60"
-        style={{
-          fontSize: "var(--t-body)",
-          borderRadius: "var(--r-frame)",
-          background: "var(--wax)",
-          color: "#fff",
-        }}
-      >
+      {/* 이 화면에서 산호로 채우는 면은 이 버튼 하나다 — "여기를 누르라"의 유일한 표시.
+          `primary` 가 곧 밀랍이다(Button.tsx 의 계약) — 색을 여기서 다시 적지 않는다. */}
+      <Button type="submit" size="lg" disabled={state === "sending"} className="w-full">
         {state === "sending" ? copy.submitting : copy.submit}
-      </button>
+      </Button>
     </form>
   );
 }

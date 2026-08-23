@@ -29,8 +29,11 @@ export const rowShellClass = "roll -mx-2 flex h-13 w-full items-center gap-3 rou
  *
  * ⚠️ `tone="danger"` 는 **밀랍색(--wax)이 아니다.** 브랜드색은 워드마크·주 CTA·
  *    활성 표시의 것이고(PRODUCT.md), "회원 탈퇴"가 푸터 브랜드 마크와 같은 색이면
- *    위험이 브랜드처럼 읽힌다. 위험은 색이 아니라 **굵기 + 아이콘 + 확인 단계**로
- *    말한다. globals.css 에 위험 전용 토큰(`--alert`)이 생기면 그때 색을 준다.
+ *    위험이 브랜드처럼 읽힌다. 위험 전용 토큰은 `--alert`(globals.css) 다 —
+ *    굵기 + 아이콘 + 확인 단계에 그 색까지 얹어 세 신호로 말한다.
+ *    (예전 주석은 "토큰이 생기면 그때 색을 준다"였는데, 토큰이 생긴 뒤에도
+ *     굵기만 남아서 되돌릴 수 **없는** 탈퇴가 되돌릴 수 있는 리스트 삭제보다
+ *     조용했다 — 표기가 뒤집혀 있었다.)
  */
 export function RowLabel({ children, tone }: { children: ReactNode; tone?: "danger" | "dim" }) {
   return (
@@ -39,7 +42,8 @@ export function RowLabel({ children, tone }: { children: ReactNode; tone?: "dang
       style={{
         fontSize: "var(--t-body)",
         fontWeight: tone === "danger" ? 800 : 600,
-        color: tone === "dim" ? "var(--dim)" : undefined,
+        color:
+          tone === "danger" ? "var(--alert)" : tone === "dim" ? "var(--dim)" : undefined,
       }}
     >
       {children}

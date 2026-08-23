@@ -3,6 +3,7 @@ import { loadPlaceBySlug } from "@/shared/api/places";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { displayPlaceName, displayCityName } from "@/shared/i18n/display";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import { thumbMax, thumbSmall } from "@/shared/lib/youtube";
 import type { Locale } from "@/shared/i18n/config";
 
@@ -151,7 +152,7 @@ export default async function PlaceOpengraphImage({
                     display: "flex",
                     height: 16,
                     alignSelf: "stretch",
-                    background: "#c9441a",
+                    background: OG_WAX,
                     marginTop: 6,
                   }}
                 />
@@ -182,9 +183,9 @@ export default async function PlaceOpengraphImage({
                   }}
                 >
                   <span>EA</span>
-                  <span style={{ color: "#c9441a" }}>T</span>
+                  <span style={{ color: OG_WAX }}>T</span>
                   <span>RI</span>
-                  <span style={{ color: "#c9441a" }}>P</span>
+                  <span style={{ color: OG_WAX }}>P</span>
                   <span>IN</span>
                 </div>
                 <div style={{ display: "flex", fontSize: 34, color: "#6b6b6b", marginTop: 28 }}>

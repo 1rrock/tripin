@@ -20,6 +20,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { CreatorCityOption } from "@/shared/api/creator-hub";
+import { EmptyState } from "@/shared/ui/EmptyState";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -277,9 +278,12 @@ export function CreatorExplorer({
              거짓말이다. 자리를 비워 두고 도착을 기다린다(대개 한 프레임). */
           <span aria-hidden />
         ) : shown.length === 0 ? (
-          <div className="flex flex-col items-start gap-2 pt-2">
-            <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>{m.hub.noMatch}</p>
+          /* 빈 화면 문법은 `EmptyState` 하나다 — 다음 행동(필터 지우기)은 이미
+             있었으니 상자만 갈아 끼운다. `/city/[city]`·`/c/[creator]/[city]` 의
+             같은 자리와 판형·칩 크기(36px)가 한 벌로 선다. */
+          <EmptyState message={m.hub.noMatch} className="pt-8 pb-10">
             <Chip
+              size="md"
               onClick={() => {
                 setType(null);
                 setCity(null);
@@ -288,7 +292,7 @@ export function CreatorExplorer({
             >
               {m.hub.clearFilters}
             </Chip>
-          </div>
+          </EmptyState>
         ) : (
           <ol>
             {shown.map((place, index) => {

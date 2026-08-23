@@ -350,6 +350,9 @@ export const ko = {
     errMissing: "구글에서 돌아오는 길을 놓쳤어요. 다시 로그인해 주세요.",
     errNotLinked: "구글 로그인은 됐는데 이 기기에 붙지는 않았어요. 다시 시도해 주세요.",
     errGeneric: "로그인하지 못했어요. 잠시 뒤 다시 시도해 주세요.",
+    /* 로그인은 성공했다 — 옮기기만 실패했다. errGeneric 과 섞으면 안 된다. */
+    errMergeFailed:
+      "로그인은 됐는데 이 기기에 모아둔 것을 옮기지 못했어요. 다시 로그인하면 한 번 더 시도해요.",
   },
   /* 채널 등록 신청(/apply). 이 화면만 사전을 우회해 페이지 안에 KO/EN 인라인
      사전과 삼항을 들고 있었다 — 카피 한 줄 고치려면 두 곳을 봐야 했다.
@@ -817,6 +820,7 @@ export type Messages = {
     errMissing: string;
     errNotLinked: string;
     errGeneric: string;
+    errMergeFailed: string;
     cancel: string;
   };
   apply: {

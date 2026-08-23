@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/shared/ui/Button";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Icon } from "@/shared/ui/icons";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -35,19 +36,10 @@ export default function NotFound() {
           기본 py-20 을 그대로 두면 제목과 본문이 한 덩이로 안 읽힌다. */}
       <EmptyState message={m.notFound.body} className="pt-4 pb-24">
         <div className="flex flex-wrap items-center justify-center gap-2">
-          <Link
-            href={href("/map")}
-            className="inline-flex h-11 items-center gap-1.5 px-4 font-bold"
-            style={{
-              fontSize: "var(--t-body)",
-              borderRadius: "var(--r-frame)",
-              background: "var(--paper)",
-              color: "var(--sheet)",
-            }}
-          >
+          <Button variant="secondary" size="md" href={href("/map")}>
             <Icon.map className="size-4" />
             {m.notFound.toMap}
-          </Link>
+          </Button>
           <Link
             href={href("/")}
             className="index inline-flex items-center gap-1.5 px-2 underline-offset-4 hover:underline"

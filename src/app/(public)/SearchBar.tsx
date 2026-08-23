@@ -70,6 +70,10 @@ export function SearchBar() {
     setOpen(false);
     setQuery("");
     setCursor(0);
+    /* 실패도 함께 되돌린다 — 안 그러면 닫았다 다시 열었을 때 재요청은 나가는데
+       응답이 올 때까지 힌트 자리에 **지난번** 오류 문구가 서 있다. 아직 아무것도
+       못 해 본 화면이 이미 실패한 것처럼 보인다. */
+    setIndexError(false);
   }, []);
 
   /* 색인은 처음 열 때 한 번만.
@@ -396,6 +400,20 @@ export function SearchBar() {
                   <p className="mt-1.5" style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>
                     {m.error.body}
                   </p>
+                  {/* 나갈 길 — 0건 화면과 같은 회복 CTA 다(`EmptyState.tsx:6`:
+                      다음 행동 없는 빈 화면 금지). 검색이 불가능해도 지도는 산다.
+                      "다시 시도"를 두지 않는 이유도 같다 — 닫았다 열면 색인은
+                      알아서 한 번 더 받아 온다. 일을 떠넘기지 않는다. */}
+                  <button
+                    type="button"
+                    onClick={() => {
+                      close();
+                      router.push(href("/map"));
+                    }}
+                    className="index mt-3 cursor-pointer text-(--wax) underline-offset-4 hover:underline"
+                  >
+                    {m.search.emptyCta}
+                  </button>
                 </div>
               ) : !deferred.trim() || index === null ? (
                 /* 색인이 아직 오는 중이면 힌트를 계속 둔다 — 예전엔 이 사이에

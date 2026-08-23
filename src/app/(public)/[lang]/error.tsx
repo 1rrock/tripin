@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Button } from "@/shared/ui/Button";
 import { Icon } from "@/shared/ui/icons";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 
@@ -37,19 +38,11 @@ export default function ErrorPage({
         {m.error.body}
       </p>
       <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={reset}
-          className="inline-flex h-11 items-center px-5 font-bold active:scale-[0.98]"
-          style={{
-            fontSize: "var(--t-body)",
-            borderRadius: "var(--r-frame)",
-            background: "var(--paper)",
-            color: "var(--sheet)",
-          }}
-        >
+        {/* 규격은 `Button` 에만 있다 — 예전엔 h-11·px-5 를 손으로 적어서 같은
+            "먹색 채움" 단추가 화면마다 다른 폭으로 섰다(2026-08-24 감사). */}
+        <Button variant="secondary" size="md" onClick={reset}>
           {m.error.retry}
-        </button>
+        </Button>
         <Link
           href={href("/")}
           className="index inline-flex items-center gap-1.5 px-2 underline-offset-4 hover:underline"

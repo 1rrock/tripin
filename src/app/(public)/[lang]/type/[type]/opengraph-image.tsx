@@ -2,11 +2,12 @@ import { ImageResponse } from "next/og";
 import { loadTypeDetail, parsePlaceType } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { loadKoreanFont, needsKoreanFont } from "@/shared/seo/og-font";
+import { OG_WAX } from "@/shared/seo/og-brand";
 import type { Locale } from "@/shared/i18n/config";
 
 /**
  * 종류 상세 공유 카드 — "{종류}" + "{n}곳 · 도시 {m}".
- * 흰 지면(#ffffff), 잉크 타이포, 종류 라벨에 왁스(#c9441a) 밑줄 바. 사진 없음.
+ * 흰 지면(#ffffff), 잉크 타이포, 종류 라벨에 왁스(OG_WAX) 밑줄 바. 사진 없음.
  * 알 수 없는 type 파라미터도 죽지 않고 일반 카드로 물러난다 — 크롤러가 임의 경로로 찔러본다.
  *
  * EN 은 한글 폰트를 아예 안 부른다 — 본문이 라틴뿐이라 satori 기본 폰트로 충분하고,
@@ -94,7 +95,7 @@ export default async function TypeOpengraphImage({
               <div style={{ display: "flex", fontSize: 96, fontWeight: 800, color: "#171717" }}>
                 {label}
               </div>
-              <div style={{ display: "flex", height: 18, background: "#c9441a", marginTop: 4 }} />
+              <div style={{ display: "flex", height: 18, background: OG_WAX, marginTop: 4 }} />
             </div>
             {placeCount > 0 ? (
               <div
@@ -123,9 +124,9 @@ export default async function TypeOpengraphImage({
           >
             <div style={{ display: "flex", fontSize: 64, fontWeight: 700, letterSpacing: "0.18em", color: "#171717" }}>
               <span>EA</span>
-              <span style={{ color: "#c9441a" }}>T</span>
+              <span style={{ color: OG_WAX }}>T</span>
               <span>RI</span>
-              <span style={{ color: "#c9441a" }}>P</span>
+              <span style={{ color: OG_WAX }}>P</span>
               <span>IN</span>
             </div>
             <div style={{ display: "flex", fontSize: 38, color: "#171717", marginTop: 32 }}>
