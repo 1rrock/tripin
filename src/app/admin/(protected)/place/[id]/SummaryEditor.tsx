@@ -10,7 +10,13 @@
 
 import { useActionState, useEffect, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { checkTranscriptOverlap, savePlaceSummary, type SaveResult } from "./actions";
+import { hasUnsavedChanges } from "../../_ui/form";
+import {
+  checkTranscriptOverlap,
+  clearPlaceSummary,
+  savePlaceSummary,
+  type SaveResult,
+} from "./actions";
 
 const BANNED_WORDS = ["진짜", "미쳤", "인생", "존맛", "대박", "JMT"];
 const JUDGEMENT_WORDS = ["맛있", "맛없", "불친절", "별로"];
@@ -108,13 +114,29 @@ export function SummaryEditor({
     { bulletIndex: number; snippet: string }[] | null | "unavailable"
   >(null);
 
+  // 요약 지우기 — 2단계 확인(실수로 비우는 것과 구분한다)
+  const [clearing, startClear] = useTransition();
+  const [clearArmed, setClearArmed] = useState(false);
+  const [clearResult, setClearResult] = useState<SaveResult>({});
+
+  /**
+   * "저장 후 다음"이 같은 화면의 `PlaceEditForm`(별도 폼·별도 저장 버튼) 입력을 말없이
+   * 버리는 걸 막는다. 그 폼에 저장 안 한 변경이 있으면 **이동하지 않고** 알린다 —
+   * 넘어갈지는 사람이 정한다.
+   *
+   * 판정은 effect 가 아니라 **제출 순간**(이벤트 핸들러)에 한다. effect 안에서 setState 를
+   * 하면 연쇄 렌더가 되고 lint 도 막는다(react-hooks/set-state-in-effect).
+   */
+  const [holdNext, setHoldNext] = useState(false);
+  const heldBack = holdNext && Boolean(result.ok) && goNext && Boolean(nextId);
+
   const navigatedFor = useRef<string | undefined>(undefined);
   useEffect(() => {
     if (result.ok && result.ok !== navigatedFor.current) {
       navigatedFor.current = result.ok;
-      if (goNext && nextId) router.push(`/admin/place/${nextId}`);
+      if (goNext && nextId && !holdNext) router.push(`/admin/place/${nextId}`);
     }
-  }, [result.ok, goNext, nextId, router]);
+  }, [result.ok, goNext, nextId, holdNext, router]);
 
   const filled = bullets.map((b) => b.trim()).filter(Boolean);
   const checks = runLocalChecks(bullets, filled);
@@ -129,7 +151,15 @@ export function SummaryEditor({
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-[1fr_320px] lg:items-start">
-      <form action={action} className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm">
+      <form
+        action={action}
+        // 제출 순간의 형제 폼 상태를 잡아 둔다 — 저장이 끝난 뒤엔 이미 늦다
+        onSubmit={() => {
+          const placeForm = document.querySelector<HTMLFormElement>("form[data-place-edit]");
+          setHoldNext(Boolean(placeForm && hasUnsavedChanges(placeForm)));
+        }}
+        className="rounded-lg border border-neutral-200 bg-white p-5 shadow-sm"
+      >
         <input type="hidden" name="placeId" value={placeId} />
         <input type="hidden" name="shotYm" value={shotYm} />
         <input type="hidden" name="publicPath" value={publicPath} />
@@ -243,6 +273,29 @@ export function SummaryEditor({
             {goNext && !nextId ? " — 미작성 장소가 더 없습니다 🎉" : ""}
           </p>
         ) : null}
+        {clearResult.error ? (
+          <p role="alert" className="mt-3 rounded-md bg-red-50 px-3 py-2 text-sm text-red-800">
+            {clearResult.error}
+          </p>
+        ) : null}
+        {clearResult.ok ? (
+          <p className="mt-3 rounded-md bg-green-50 px-3 py-2 text-sm text-green-800">
+            {clearResult.ok}
+          </p>
+        ) : null}
+        {heldBack && nextId ? (
+          <p role="alert" className="mt-3 rounded-md bg-amber-50 px-3 py-2 text-sm text-amber-900">
+            요약은 저장했습니다. 위 <strong>장소 정보 수정</strong>에 저장하지 않은 변경이 있어
+            다음 장소로 넘어가지 않았습니다 — 거기서 저장하거나,{" "}
+            <button
+              type="button"
+              onClick={() => router.push(`/admin/place/${nextId}`)}
+              className="font-semibold underline underline-offset-2"
+            >
+              버리고 다음으로 →
+            </button>
+          </p>
+        ) : null}
 
         <div className="mt-4 flex items-center justify-between">
           <label className="flex items-center gap-1.5 text-sm text-neutral-600">
@@ -256,6 +309,48 @@ export function SummaryEditor({
           >
             {pending ? "저장 중…" : nextId ? "저장 후 다음 →" : "저장"}
           </button>
+        </div>
+
+        {/* 지우기는 저장과 같은 무게로 보이면 안 된다 — 줄을 나누고 2단계로 잠근다.
+            (빈 저장은 여전히 거부된다. 실수로 비우는 길과 일부러 지우는 길을 갈라 둔다.) */}
+        <div className="mt-3 flex flex-wrap items-center justify-end gap-2 border-t border-neutral-100 pt-3">
+          {clearArmed ? (
+            <>
+              <span className="text-xs text-red-700">
+                불릿·문단을 모두 지웁니다. 되돌릴 수 없습니다.
+              </span>
+              <button
+                type="button"
+                onClick={() => setClearArmed(false)}
+                className="rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-xs font-medium hover:bg-neutral-100"
+              >
+                취소
+              </button>
+              <button
+                type="button"
+                disabled={clearing}
+                onClick={() =>
+                  startClear(async () => {
+                    const r = await clearPlaceSummary(placeId, publicPath);
+                    setClearResult(r);
+                    setClearArmed(false);
+                    if (r.ok) setBullets(["", "", ""]);
+                  })
+                }
+                className="rounded-md bg-red-600 px-3 py-1.5 text-xs font-semibold text-white hover:bg-red-700 disabled:opacity-50"
+              >
+                {clearing ? "지우는 중…" : "정말 지우기"}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => setClearArmed(true)}
+              className="rounded-md px-3 py-1.5 text-xs font-medium text-red-700 hover:bg-red-50"
+            >
+              요약 지우기
+            </button>
+          )}
         </div>
       </form>
 

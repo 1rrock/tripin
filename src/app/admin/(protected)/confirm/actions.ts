@@ -25,6 +25,15 @@ const slugSchema = z
   .min(2, "슬러그는 2자 이상")
   .regex(/^[a-z0-9]+(-[a-z0-9]+)*$/, "슬러그는 영소문자·숫자·하이픈만 (예: marushichi-tonkatsu)");
 
+/**
+ * 수정 결과에는 **저장 직후의 `updated_at`** 이 같이 실려 나간다.
+ * 폼이 그 값을 hidden 에 되받아야 같은 탭에서 연속으로 저장할 때
+ * 자기 자신과 낙관적 잠금 충돌이 나지 않는다 (updatePlace 주석 참조).
+ */
+export interface UpdatePlaceResult extends ActionResult {
+  updatedAt?: string;
+}
+
 function fail(error: string): ActionResult {
   return { error };
 }
@@ -345,8 +354,20 @@ export async function createPlace(_: ActionResult, form: FormData): Promise<Acti
   return { ok: `"${d.name}" ${d.mapStatus === "confirmed" ? "확정" : "보류"} 저장됨` };
 }
 
-/** 기존 장소 수정 — 후보(candidate)를 검수해 확정으로 올리는 핵심 경로. */
-export async function updatePlace(_: ActionResult, form: FormData): Promise<ActionResult> {
+/**
+ * 기존 장소 수정 — 후보(candidate)를 검수해 확정으로 올리는 핵심 경로.
+ *
+ * ⚠️ 낙관적 잠금. 이 폼은 **전체 필드**를 보내므로 조건 없는 update 는 탭 두 개가
+ *    같은 장소를 열어 두기만 해도 서로를 덮는다 — 탭 A 가 좌표·근거를 채워 저장한 뒤
+ *    탭 B 가 이름만 고쳐 저장하면 A 의 좌표·근거·지도 링크가 B 가 들고 있던 옛 빈 값으로
+ *    되돌아가고(확정 잠금까지 풀린다) 두 저장 다 초록 "수정됨"이 뜬다.
+ *    그래서 폼이 실어 보낸 `updatedAt` 을 조건에 걸고, 0행이면 실패로 돌려준다.
+ *    (`places_touch` BEFORE UPDATE 트리거가 있어 `updated_at` 은 실제로 움직인다.)
+ */
+export async function updatePlace(
+  _: UpdatePlaceResult,
+  form: FormData,
+): Promise<UpdatePlaceResult> {
   await requireAdmin();
   const parsed = z
     .object({
@@ -382,9 +403,20 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   const nameLocal = String(form.get("nameLocal") ?? "").trim() || null;
   const address = String(form.get("address") ?? "").trim() || null;
   const sourceNote = String(form.get("sourceNote") ?? "").trim() || null;
+  /**
+   * ⚠️ 구글은 **URL 과 place_id 를 각각** 받는다. 예전에는 한 칸이었고
+   *    "URL 이면 url, 아니면 place_id" 로 갈랐다 — 둘 다 있는 1,300행을 한 번만
+   *    수정해도 `google_place_id` 가 null 로 덮였다. 공개 링크는 URL 우선이라
+   *    (`shared/lib/map-links.ts`) 즉시 깨지진 않지만, 잃는 건 **안정 식별자**다:
+   *    공유 URL 이 만료되면 폴백이 없고, 오확정 검토 중인 그룹의 대조 키가 사라진다.
+   *    칸을 비우면 여전히 null 이 된다 — 사람이 일부러 지우는 길은 남긴다.
+   */
   const googleRaw = String(form.get("googleMaps") ?? "").trim();
-  const googleMapsUrl = /^https?:\/\//.test(googleRaw) ? googleRaw : null;
-  const googlePlaceId = !googleMapsUrl && googleRaw ? googleRaw : null;
+  if (googleRaw && !/^https?:\/\//.test(googleRaw)) {
+    return fail("구글 공유 링크 칸에는 http(s) 주소만 넣으세요 — ChIJ… 는 아래 place_id 칸입니다");
+  }
+  const googleMapsUrl = googleRaw || null;
+  const googlePlaceId = String(form.get("googlePlaceId") ?? "").trim() || null;
   const kakaoRaw = String(form.get("kakaoPlace") ?? "").trim();
   const naverRaw = String(form.get("naverPlace") ?? "").trim();
   const linkIds = parseMapLinkIds(kakaoRaw, naverRaw);
@@ -394,6 +426,10 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
   let coords = latlngRaw ? parseLatLng(latlngRaw) : null;
   const timestampRaw = String(form.get("timestamp") ?? "").trim();
   const timestampSec = parseTimestamp(timestampRaw);
+  // 타임스탬프가 어느 영상의 것인지 — 폼이 지금 보고 있는 출처 영상
+  const videoId = String(form.get("videoId") ?? "").trim();
+  // 낙관적 잠금 기준 시각 — 폼이 렌더될 때의 places.updated_at
+  const expectedUpdatedAt = String(form.get("updatedAt") ?? "").trim();
 
   if (latlngRaw && !coords) return fail('좌표는 "위도, 경도" 형식입니다 (예: 35.6812, 139.7671)');
   if (timestampRaw && timestampSec === null) return fail('타임스탬프는 "12:40" 또는 초 단위 숫자');
@@ -428,16 +464,17 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
     .select("map_status, is_published")
     .eq("id", d.placeId)
     .single();
+  if (!prev) return fail("장소를 찾을 수 없습니다 — 이미 삭제됐을 수 있습니다");
   let nextPublished: boolean;
   if (d.mapStatus === "candidate") {
     nextPublished = false;
-  } else if (prev?.map_status === "confirmed") {
+  } else if (prev.map_status === "confirmed") {
     nextPublished = prev.is_published; // 이미 확정이면 수동 비공개 유지
   } else {
     nextPublished = true; // 후보 → 확정 승격
   }
 
-  const { error } = await db
+  let write = db
     .from("places")
     .update({
       name: d.name,
@@ -455,11 +492,30 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
       source_note: sourceNote,
     })
     .eq("id", d.placeId);
+  // 폼이 화면을 그릴 때의 updated_at — 그 사이 다른 곳에서 저장됐으면 0행이 된다
+  if (expectedUpdatedAt) write = write.eq("updated_at", expectedUpdatedAt);
+  const { data: saved, error } = await write.select("updated_at").maybeSingle();
   if (error) return fail(error.message);
+  if (!saved) {
+    return fail(
+      "다른 곳에서 먼저 저장됐습니다 — 새로고침해서 최신 값을 확인한 뒤 다시 수정하세요 (이 저장은 반영되지 않았습니다)",
+    );
+  }
 
-  // 언급 타임스탬프는 video_places 에 산다 — 이 장소의 링크(통상 1개)를 갱신
+  // 언급 타임스탬프는 video_places 에 산다.
+  // ⚠️ **그 영상의 링크만** 갱신한다. 예전 주석은 "통상 1개"라고 했지만 실제로는
+  //    143곳이 2편 이상에 걸려 있어, place_id 로만 지우면 한 영상 기준 타임코드가
+  //    나머지 영상에도 박혔다.
   if (timestampRaw) {
-    await db.from("video_places").update({ timestamp_sec: timestampSec }).eq("place_id", d.placeId);
+    if (!videoId) {
+      return fail("타임스탬프를 저장할 출처 영상을 알 수 없습니다 — 장소 정보는 저장됐습니다");
+    }
+    const { error: tsError } = await db
+      .from("video_places")
+      .update({ timestamp_sec: timestampSec })
+      .eq("place_id", d.placeId)
+      .eq("video_id", videoId);
+    if (tsError) return fail(`타임스탬프 저장 실패: ${tsError.message} (장소 정보는 저장됐습니다)`);
   }
 
   await recountStats();
@@ -474,7 +530,8 @@ export async function updatePlace(_: ActionResult, form: FormData): Promise<Acti
         ? "확정·공개"
         : "확정(비공개 유지)"
       : "보류(비공개)";
-  return { ok: `"${d.name}" ${label}로 수정됨` };
+  // 새 updated_at 을 폼에 돌려준다 — 안 돌려주면 같은 탭의 두 번째 저장이 자기 자신과 충돌한다
+  return { ok: `"${d.name}" ${label}로 수정됨`, updatedAt: saved.updated_at };
 }
 
 // deletePlace 는 `admin/actions.ts` 의 deletePlaceById 로 옮겼다 —

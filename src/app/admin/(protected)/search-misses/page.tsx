@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { Card } from "../_ui/kit";
-import { dismissSearchMissForm } from "./actions";
+import { DismissButton } from "./DismissButton";
 
 export const metadata: Metadata = { title: "검색 실패어 — Eatripin 어드민" };
 
@@ -64,14 +64,7 @@ export default async function SearchMissesPage() {
                     {formatSeoul(r.last_seen_at)}
                   </td>
                   <td className="px-4 py-2.5 text-right">
-                    <form action={dismissSearchMissForm.bind(null, r.query)}>
-                      <button
-                        type="submit"
-                        className="rounded-md px-2 py-1 text-xs text-neutral-500 transition hover:bg-red-50 hover:text-red-700"
-                      >
-                        지우기
-                      </button>
-                    </form>
+                    <DismissButton query={r.query} />
                   </td>
                 </tr>
               ))}

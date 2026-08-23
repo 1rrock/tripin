@@ -85,6 +85,33 @@ export function readConfirmLock(form: HTMLFormElement): boolean {
   return hasPlace && get("sourceNote").trim().length > 0;
 }
 
+/**
+ * uncontrolled 폼에 **저장하지 않은 변경**이 있는가 — `readConfirmLock` 과 같은 결로
+ * DOM 을 직접 읽는다(입력이 defaultValue 기반이라 상태가 아니라 DOM 이 진실이다).
+ *
+ * 쓰는 곳: `/admin/place/[id]` 의 "저장 후 다음". 요약을 저장하면 다음 장소로 넘어가는데,
+ * 같은 화면 `details` 안의 `PlaceEditForm`(별도 폼·별도 저장 버튼)에 입력해 둔 값은
+ * 그 이동으로 말없이 사라졌다.
+ */
+export function hasUnsavedChanges(form: HTMLFormElement): boolean {
+  for (const el of Array.from(form.elements)) {
+    if (el instanceof HTMLInputElement) {
+      if (el.type === "hidden") continue;
+      if (el.type === "checkbox" || el.type === "radio") {
+        if (el.checked !== el.defaultChecked) return true;
+      } else if (el.value !== el.defaultValue) {
+        return true;
+      }
+    } else if (el instanceof HTMLTextAreaElement) {
+      if (el.value !== el.defaultValue) return true;
+    } else if (el instanceof HTMLSelectElement) {
+      const selected = Array.from(el.options).some((o) => o.selected !== o.defaultSelected);
+      if (selected) return true;
+    }
+  }
+  return false;
+}
+
 export function StatusRadios({
   canConfirm,
   confirmedDefault,

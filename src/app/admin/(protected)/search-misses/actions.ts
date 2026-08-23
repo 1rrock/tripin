@@ -18,7 +18,5 @@ export async function dismissSearchMiss(query: string): Promise<ActionResult> {
   return { ok: "삭제됨" };
 }
 
-/** `<form action>` 은 반환값이 void 여야 한다 — 폼에서 쓰는 래퍼 */
-export async function dismissSearchMissForm(query: string): Promise<void> {
-  await dismissSearchMiss(query);
-}
+// void 를 돌려주던 `<form action>` 래퍼는 걷어냈다 — 그 래퍼가 위 `{ error }` 를 삼켜서
+// 삭제 실패가 화면에 아무 흔적도 남기지 않았다. 호출은 `DismissButton.tsx` 가 한다.

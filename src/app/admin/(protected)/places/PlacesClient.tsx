@@ -11,6 +11,13 @@ import { Pill } from "../_ui/kit";
 
 type SortKey = "name" | "source" | "creator" | "city";
 
+/**
+ * 한 번에 그리는 행 수. 필터를 안 걸면 1,903행이 한 문서에 들어가고, 행마다 펼침
+ * 패널·버튼이 달려 있어 첫 조작까지가 눈에 띄게 굼떴다. 거르기·검색은 **전체**를
+ * 대상으로 그대로 돌고, 화면에 올리는 것만 자른다.
+ */
+const PAGE = 100;
+
 /** 대시보드에서 넘어오는 `?missing=summary` 같은 딥링크를 초기 필터로 받는다. */
 function useInitialFilters() {
   const q = useSearchParams();
@@ -93,6 +100,15 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
     };
     return out.sort(by[sort]);
   }, [places, q, creator, city, status, type, missing, flag, sort]);
+
+  /**
+   * 보이는 행 수. 조건이 바뀌면 렌더 중에 PAGE 로 되돌아간다 —
+   * effect 에서 setState 로 되돌리는 패턴(react-hooks/set-state-in-effect)을 피한다.
+   */
+  const filterKey = `${q}|${creator}|${city}|${status}|${type}|${missing}|${flag}|${sort}`;
+  const [shown, setShown] = useState({ key: filterKey, n: PAGE });
+  const limit = shown.key === filterKey ? shown.n : PAGE;
+  const visible = rows.slice(0, limit);
 
   const reset = () => {
     setQ("");
@@ -195,7 +211,7 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
           <p className="py-12 text-center text-sm text-neutral-500">조건에 맞는 장소가 없습니다.</p>
         ) : (
           <ul>
-            {rows.map((p) => {
+            {visible.map((p) => {
               const expanded = open === p.id;
               return (
                 <li key={p.id} className="border-b border-neutral-100 last:border-0">
@@ -375,6 +391,21 @@ export function PlacesClient({ places }: { places: AdminPlaceRow[] }) {
             })}
           </ul>
         )}
+        {rows.length > visible.length ? (
+          <div className="border-t border-neutral-100 bg-neutral-50 px-4 py-3 text-center">
+            <p className="text-xs text-neutral-500 tabular-nums">
+              {visible.length} / {rows.length} 표시 중 — 검색·필터는 전체 {places.length}건을
+              대상으로 돕니다
+            </p>
+            <button
+              type="button"
+              onClick={() => setShown({ key: filterKey, n: limit + PAGE * 4 })}
+              className="mt-1.5 rounded-md border border-neutral-300 bg-white px-3 py-1.5 text-sm font-medium text-neutral-700 transition hover:bg-neutral-100"
+            >
+              더 보기 (+{Math.min(PAGE * 4, rows.length - visible.length)})
+            </button>
+          </div>
+        ) : null}
       </div>
     </main>
   );

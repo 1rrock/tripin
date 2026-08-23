@@ -22,10 +22,5 @@ export async function setApplicationStatus(id: string, status: "done" | "dismiss
   return { ok: status === "done" ? "등록됨으로 표시" : "보류로 표시" };
 }
 
-/** `<form action>` 은 반환값이 void 여야 한다 — 폼에서 쓰는 래퍼 */
-export async function setApplicationStatusForm(
-  id: string,
-  status: "done" | "dismissed",
-): Promise<void> {
-  await setApplicationStatus(id, status);
-}
+// void 를 돌려주던 `<form action>` 래퍼는 걷어냈다 — 그 래퍼가 위 `{ error }` 를 삼켜서
+// DB 오류가 화면에 아무 흔적도 남기지 않았다. 호출은 `ApplicationActions.tsx` 가 한다.

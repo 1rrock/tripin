@@ -30,7 +30,10 @@ export async function savePlaceSummary(_: SaveResult, form: FormData): Promise<S
     .getAll("bullet")
     .map((b) => String(b).trim())
     .filter(Boolean);
-  if (bullets.length === 0) return { error: "불릿을 1개 이상 입력하세요" };
+  // 빈 저장은 여전히 막는다 — 실수로 비우는 경로다. 일부러 지우는 건 clearPlaceSummary.
+  if (bullets.length === 0) {
+    return { error: "불릿을 1개 이상 입력하세요 — 정말 지우려면 아래 '요약 지우기'를 쓰세요" };
+  }
 
   // 가격·영업 정보에는 촬영 시점 표기가 자동으로 붙는다 — 오정보 리스크 완화 (LEGAL.md 4.6)
   let priceHint = String(form.get("priceHint") ?? "").trim() || null;
@@ -55,6 +58,40 @@ export async function savePlaceSummary(_: SaveResult, form: FormData): Promise<S
   if (publicPath.startsWith("/c/")) revalidatePath(publicPath);
 
   return { ok: `요약 ${bullets.length}개 불릿 저장됨` };
+}
+
+/**
+ * 요약을 **일부러** 비운다 — 잘못 쓴 요약을 되돌리는 유일한 길.
+ *
+ * 저장 액션이 불릿 0개를 거부하는 건 실수로 비우는 걸 막기 위해서지, 지울 수 없어야
+ * 한다는 뜻이 아니었다. 그동안 어드민에서 잘못 쓴 요약을 내릴 방법이 아예 없었다.
+ * 실수와 구분하려고 별도 액션 + 화면의 2단계 확인으로 둔다.
+ *
+ * 불릿과 문단을 함께 비운다 — 둘 중 하나라도 남으면 "요약 있음"(_lib/shared.ts
+ * `hasSummary`)이라 미작성 큐로도 안 돌아오고 공개 화면에도 반쪽이 남는다.
+ * 가격 정보는 건드리지 않는다(그건 칸을 비우고 저장하면 지워진다).
+ */
+export async function clearPlaceSummary(placeId: string, publicPath: string): Promise<SaveResult> {
+  await requireAdmin();
+  if (!placeId) return { error: "잘못된 요청" };
+
+  const db = getSupabaseAdmin();
+  const { data, error } = await db
+    .from("places")
+    .update({ summary_bullets: [], summary: null })
+    .eq("id", placeId)
+    .select("id")
+    .maybeSingle();
+  if (error) return { error: error.message };
+  if (!data) return { error: "장소를 찾을 수 없습니다 — 이미 삭제됐을 수 있습니다" };
+
+  revalidatePath("/admin");
+  revalidatePath("/admin/confirm");
+  revalidatePath(`/admin/place/${placeId}`);
+  purgePublicData();
+  if (publicPath.startsWith("/c/")) revalidatePath(publicPath);
+
+  return { ok: "요약을 지웠습니다 — 이 장소는 다시 '요약 없음'입니다" };
 }
 
 /**

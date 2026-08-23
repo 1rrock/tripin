@@ -11,14 +11,20 @@ export const dynamic = "force-dynamic";
  * ⚠️ 이 화면이 없던 동안 `takedown_requests` 는 **누구나 INSERT 할 수 있는데
  *    읽는 곳이 없었다.** 제출이 들어와도 운영자가 볼 방법이 없었고,
  *    그 사이 §44조의2④ 의 30일 시계는 돈다.
+ *
+ * ⚠️ 조회 `error` 를 반드시 받는다 — supabase-js 는 throw 하지 않으므로 아래 catch 는
+ *    `getSupabaseAdmin()` 이 env 없이 던질 때만 걸린다. `error` 를 안 받던 동안
+ *    조회 실패가 빈 배열이 되어 화면에 "처리할 요청이 없습니다."로 나갔다.
+ *    형제 화면(applications·search-misses)과 같은 모양으로 맞춘다.
  */
 async function load(): Promise<{ rows: TakedownRow[]; error: string | null }> {
   try {
     const db = getSupabaseAdmin();
-    const { data } = await db
+    const { data, error } = await db
       .from("takedown_requests")
       .select("*")
       .order("created_at", { ascending: true });
+    if (error) return { rows: [], error: error.message };
     const rows = data ?? [];
 
     // 대상 이름을 붙인다 — id 만 보고는 무엇에 대한 요청인지 알 수 없다

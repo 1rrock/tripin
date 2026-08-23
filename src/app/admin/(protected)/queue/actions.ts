@@ -26,6 +26,11 @@ import type { ActionResult } from "../_lib/action-result";
  *   place    — 그 장소만
  *   creator  — 채널 전체 (RLS 가 creators.is_published 로 즉시 차단한다)
  *   video    — 그 영상에 걸린 장소 전부
+ *
+ * ⚠️ 대상이 실제로 있었는지(`targetFound`)를 켠 장소 수(`touched`)와 따로 센다.
+ *    예전에는 대상이 이미 없어도 status 를 'blinded' 로 마감했다 — 임시조치가 된 적이
+ *    없는 요청이 처리된 것처럼 큐에서 사라지고, §44조의2④ 의 30일 시계만 돈다.
+ *    (영상이 걸린 장소가 0곳인 채널은 정상이므로, 채널은 채널 행의 존재로 판단한다.)
  */
 export async function blindTarget(id: string): Promise<ActionResult> {
   await requireAdmin();
@@ -40,6 +45,8 @@ export async function blindTarget(id: string): Promise<ActionResult> {
 
   const now = new Date().toISOString();
   let touched = 0;
+  /** 대상 자체가 존재했는가 — 0 이면 마감하지 않는다 */
+  let targetFound = false;
 
   if (req.target_type === "place") {
     const { error, count } = await db
@@ -48,12 +55,14 @@ export async function blindTarget(id: string): Promise<ActionResult> {
       .eq("id", req.target_id);
     if (error) return { error: error.message };
     touched = count ?? 0;
+    targetFound = touched > 0;
   } else if (req.target_type === "creator") {
-    const { error } = await db
+    const { error, count } = await db
       .from("creators")
-      .update({ is_published: false })
+      .update({ is_published: false }, { count: "exact" })
       .eq("id", req.target_id);
     if (error) return { error: error.message };
+    targetFound = (count ?? 0) > 0;
     // 채널 비공개는 RLS 가 막지만, 장소도 같이 내려 이중으로 확실히 한다
     const { data: videos } = await db.from("videos").select("id").eq("creator_id", req.target_id);
     const videoIds = (videos ?? []).map((v) => v.id);
@@ -89,15 +98,29 @@ export async function blindTarget(id: string): Promise<ActionResult> {
         .in("id", placeIds);
       touched = count ?? 0;
     }
+    targetFound = touched > 0;
   } else {
     return { error: `알 수 없는 대상 타입: ${req.target_type}` };
   }
 
-  const { error: statusError } = await db
+  // 아무것도 못 내렸으면 마감하지 않는다 — 요청은 큐에 남아 손으로 처리해야 한다
+  if (!targetFound) {
+    return {
+      error:
+        "내릴 대상을 찾지 못했습니다 (이미 삭제됐거나 대상 ID가 어긋납니다) — 요청은 마감하지 않았습니다. 손으로 확인하세요.",
+    };
+  }
+
+  const { error: statusError, count: statusCount } = await db
     .from("takedown_requests")
-    .update({ status: "blinded", blinded_at: now })
+    .update({ status: "blinded", blinded_at: now }, { count: "exact" })
     .eq("id", id);
   if (statusError) return { error: statusError.message };
+  if (!statusCount) {
+    return {
+      error: `대상 ${touched}곳은 비공개로 내렸지만 요청 상태를 바꾸지 못했습니다 (요청 행이 사라졌습니다) — 손으로 확인하세요`,
+    };
+  }
 
   await db.rpc("recount_stats");
   revalidatePath("/admin", "layout");
@@ -114,11 +137,13 @@ export async function closeRequest(
   status: "resolved" | "rejected",
 ): Promise<ActionResult> {
   await requireAdmin();
-  const { error } = await getSupabaseAdmin()
+  const { error, count } = await getSupabaseAdmin()
     .from("takedown_requests")
-    .update({ status, resolved_at: new Date().toISOString() })
+    .update({ status, resolved_at: new Date().toISOString() }, { count: "exact" })
     .eq("id", id);
   if (error) return { error: error.message };
+  // 0행이면 마감된 게 아니다 — "처리했습니다"로 넘어가면 요청이 조용히 미결로 남는다
+  if (!count) return { error: "요청을 찾을 수 없습니다 — 마감되지 않았습니다. 새로고침 후 다시" };
   revalidatePath("/admin", "layout");
   return { ok: status === "resolved" ? "해결 처리했습니다" : "반려 처리했습니다" };
 }

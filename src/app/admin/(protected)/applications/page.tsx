@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { getSupabaseAdmin } from "@/shared/api/supabase";
 import { Card } from "../_ui/kit";
-import { setApplicationStatusForm } from "./actions";
+import { ApplicationActions } from "./ApplicationActions";
 
 export const metadata: Metadata = { title: "채널 신청 — Eatripin 어드민" };
 
@@ -73,26 +73,7 @@ export default async function ApplicationsPage() {
                     ) : null}
                   </p>
                 </div>
-                {r.status === "new" ? (
-                  <div className="flex shrink-0 gap-2">
-                    <form action={setApplicationStatusForm.bind(null, r.id, "done")}>
-                      <button
-                        type="submit"
-                        className="rounded-md bg-neutral-900 px-3 py-1.5 text-xs font-medium text-white transition hover:bg-neutral-700"
-                      >
-                        등록됨
-                      </button>
-                    </form>
-                    <form action={setApplicationStatusForm.bind(null, r.id, "dismissed")}>
-                      <button
-                        type="submit"
-                        className="rounded-md px-3 py-1.5 text-xs text-neutral-500 transition hover:bg-red-50 hover:text-red-700"
-                      >
-                        보류
-                      </button>
-                    </form>
-                  </div>
-                ) : null}
+                {r.status === "new" ? <ApplicationActions id={r.id} /> : null}
               </div>
               {r.video_urls ? (
                 <p className="mt-2 text-sm break-all whitespace-pre-wrap text-neutral-600">

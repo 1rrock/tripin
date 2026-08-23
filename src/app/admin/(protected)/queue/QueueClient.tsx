@@ -80,14 +80,16 @@ export function QueueClient({
 
       {loadError ? (
         <p role="alert" className="mt-4 rounded-md bg-red-50 px-4 py-3 text-sm text-red-800">
-          조회 실패: {loadError}
+          조회 실패: {loadError} — <strong>요청이 없다는 뜻이 아닙니다.</strong> 새로고침해도 같은
+          오류면 접수분이 보이지 않는 상태이므로 30일 기한(§44조의2④)을 손으로 확인하세요.
         </p>
       ) : null}
       {toast ? (
         <p className="mt-4 rounded-md bg-neutral-100 px-3 py-2 text-sm text-neutral-700">{toast}</p>
       ) : null}
 
-      {open.length === 0 ? (
+      {/* 조회가 실패했을 때 "없습니다"를 그리지 않는다 — 빈손과 못 읽음은 다른 상태다 */}
+      {loadError ? null : open.length === 0 ? (
         <p className="mt-6 rounded-lg border border-neutral-200 bg-white py-12 text-center text-sm text-neutral-500 shadow-sm">
           처리할 요청이 없습니다.
         </p>

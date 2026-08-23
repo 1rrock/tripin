@@ -70,6 +70,9 @@ async function loadEditorData(placeId: string) {
     videoTitle: video?.title ?? null,
     youtubeVideoId: video?.youtube_video_id ?? null,
     videoPublishedAt: video?.published_at ?? null,
+    // 타임스탬프는 이 링크(=이 영상)의 것이다 — 수정 폼이 어느 영상인지 같이 보내야
+    // 같은 장소가 걸린 다른 영상의 타임코드까지 덮지 않는다
+    videoRowId: link?.video_id ?? null,
     timestampSec: link?.timestamp_sec ?? null,
     mentionNote: link?.mention_note ?? null,
     progressDone: done,
@@ -139,6 +142,8 @@ export default async function PlaceSummaryPage({
                 naverPlaceId: data.place.naver_place_id,
                 sourceNote: data.place.source_note,
                 timestampSec: data.timestampSec,
+                videoId: data.videoRowId,
+                updatedAt: data.place.updated_at,
               }}
             />
           </div>
