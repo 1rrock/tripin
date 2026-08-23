@@ -1,7 +1,13 @@
 import { cachePublic } from "@/shared/api/cache";
 import { fetchAll } from "@/shared/api/chunked-in";
 import { supabase } from "@/shared/api/supabase";
-import { loadHomeMap, type PlaceSource } from "@/shared/api/cities";
+import {
+  loadHomeMap,
+  loadMapCanvasIndex,
+  loadMapPlace,
+  type PlaceSource,
+} from "@/shared/api/cities";
+import { decodeMapPin } from "@/shared/lib/map-filters";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { MapLink } from "@/shared/lib/map-links";
 import type { SummaryDisplay } from "@/shared/i18n/display";
@@ -20,7 +26,8 @@ import type { Locale } from "@/shared/i18n/config";
  *    cities.ts `loadMapPlace` 주석과 같은 이유다 — 캐시된 함수 안의 캐시된 함수는
  *    바깥이 miss 인 동안 그냥 실행된다. slug 마다 캐시 키가 갈리므로 처음 열리는
  *    장소 1732곳이 각각 `loadHomeMap → loadGraph` 를 통째로 다시 돌린다.
- *    캐시는 아래 인덱스 하나(로케일당 1항목)뿐이고, 조회는 그 위에서 한다.
+ *    이 함수는 **맨 바깥에서** 캐시된 지도 인덱스 둘을 읽는다 — 그래야 진짜
+ *    캐시 히트가 난다(`/api/map/place/[id]` 라우트와 같은 모양).
  */
 
 export interface PlaceDetail {
@@ -54,39 +61,6 @@ export interface NearbyPlace {
 }
 
 /**
- * slug → 상세. 로케일당 항목 하나.
- *
- * `loadHomeMap` 이 이미 확정 장소 전부를 요약·출처·지도링크까지 들고 있으므로
- * 여기서는 slug 로 다시 색인하는 일만 한다. 새 쿼리는 없다.
- */
-const loadPlaceIndex = cachePublic(async function loadPlaceIndex(
-  locale: Locale,
-): Promise<Record<string, PlaceDetail>> {
-  const all = await loadHomeMap(locale);
-  const out: Record<string, PlaceDetail> = {};
-  for (const p of all) {
-    out[p.slug] = {
-      id: p.id,
-      slug: p.slug,
-      name: p.name,
-      nameLocal: p.nameLocal,
-      placeType: p.placeType,
-      lat: p.lat,
-      lng: p.lng,
-      address: p.address,
-      mapLinks: p.mapLinks,
-      citySlug: p.citySlug,
-      cityName: p.cityName,
-      cityNameEn: p.cityNameEn,
-      countryCode: p.countryCode,
-      summary: p.summary,
-      sources: p.sources,
-    };
-  }
-  return out;
-}, ["places:slug-index"]);
-
-/**
  * 도시 slug → 그 도시의 장소 목록(가벼운 형태).
  *
  * 로케일 무관이라 항목 하나다 — 이름은 원본, 정렬도 `localeCompare("ko")` 고정.
@@ -110,13 +84,67 @@ const loadCityPlaceIndex = cachePublic(async function loadCityPlaceIndex(): Prom
   return out;
 }, ["places:by-city"]);
 
-/** 캐시하지 마라 — 위 주석의 이유로, 감싸는 순간 인덱스가 캐시를 못 탄다. */
+/**
+ * slug → 상세. **자기 캐시 항목이 없다** — 지도가 이미 들고 있는 것으로 조립한다.
+ *
+ * 예전엔 `places:slug-index` 라는 파생 항목을 로케일당 하나씩 만들었다. 확정 장소
+ * 전부의 **상세**를 한 덩이에 담는 모양이라 실측 ko 1.98MiB · en 1.93MiB, 2MiB
+ * 상한의 99%·97% 였다 — 장소당 ~1,125B 니 남은 여유가 13~23곳. 넘는 순간 Next 가
+ * **조용히** 캐시를 버리고 `/place/[slug]`(사이트맵 2,023 URL 중 1,845개, 유입
+ * 본진)가 매 요청 풀스캔이 된다. 확정 장소를 쌓는 게 이 제품의 지표라, 정상적으로
+ * 일하면 반드시 넘는 항목이었다.
+ *
+ * 쪼개는 대신 **없앴다.** 필요한 재료가 이미 두 캐시에 다 있기 때문이다(실측):
+ *   · `map:canvas-index` — id·slug·이름·좌표·종류·도시. 0.27MiB(13%), 로케일 무관
+ *   · `map:detail-index` — 주소·요약·지도링크·출처. ko 1.57MiB(79%)·en 1.53MiB(76%)
+ * 둘의 합집합이 **정확히** `PlaceDetail` 이다. `loadHomeMap` 에서 로케일을 타는
+ * 필드는 `summary` 하나뿐이고(cities.ts:741) 그건 detail 쪽에 있으니, ko 로 구운
+ * 캔버스 인덱스를 EN 에 써도 표시가 안 갈린다 — 옛 인덱스와 값이 바이트까지 같은
+ * 것을 ko·en 양쪽에서 확인했다. 둘 다 `/map` 이 이미 굽는 항목이라 이 길에는
+ * **새 캐시 항목도 새 전수 스캔도 0** 이다.
+ *
+ * 샤딩을 안 고른 이유가 이것이다 — 샤드는 miss 마다 `loadHomeMap → loadGraph` 를
+ * 통째로 다시 돌리므로(cities.ts:639) 전수 스캔이 샤드 수만큼 늘어난다.
+ *
+ * ⚠️ 이제 상한을 재는 자리는 `map:detail-index`(ko 79%) 하나다. 경고선이 80% 라
+ *    아직 안 울리지만 여유는 장소당 ~898B 기준 **약 490곳**이다. 다음에 넘칠 것도
+ *    거기이니, 필드를 늘릴 때는 `MapPlaceDetail`(cities.ts:620) 을 먼저 보라.
+ *
+ * 훑기가 선형인 것은 `loadMapCanvasPlace`(cities.ts:556)와 같은 판단이다 — 요청당
+ * 한 번 쓰고 버릴 사전을 1,845번 삽입해 만드는 쪽이 더 비싸다. slug 는 인코딩을
+ * 안 탄다: 행에 실린 것도 인자로 오는 것도 `loadHomeMap` 이 낸 원문이라(호출부가
+ * `routeSlug()` 로 이미 디코딩한다) 옛 `index[slug]` 와 같은 비교다.
+ * 행의 자리번호를 여기서 읽는 것은 slug 하나(2번)뿐이고, 값을 세우는 일은 그대로
+ * `decodeMapPin` 에 맡긴다.
+ */
 export async function loadPlaceBySlug(
   slug: string,
   locale: Locale,
 ): Promise<PlaceDetail | null> {
-  const index = await loadPlaceIndex(locale);
-  return index[slug] ?? null;
+  const payload = await loadMapCanvasIndex();
+  /* MapIndexRow 2번 자리가 slug (cities.ts MapIndexRow 주석) */
+  const row = payload.places.find((r) => r[2] === slug);
+  if (!row) return null;
+  const pin = decodeMapPin(payload, row);
+  const detail = await loadMapPlace(pin.id, locale);
+  if (!detail) return null;
+  return {
+    id: pin.id,
+    slug: pin.slug,
+    name: pin.name,
+    nameLocal: pin.nameLocal,
+    placeType: pin.placeType,
+    lat: pin.lat,
+    lng: pin.lng,
+    address: detail.address,
+    mapLinks: detail.mapLinks,
+    citySlug: pin.citySlug,
+    cityName: pin.cityName,
+    cityNameEn: pin.cityNameEn,
+    countryCode: pin.countryCode,
+    summary: detail.summary,
+    sources: detail.sources,
+  };
 }
 
 /**
@@ -139,8 +167,8 @@ export async function loadNearbyPlaces(
  * 장소 slug → 생성·수정 시각. **별도 쿼리다.**
  *
  * `loadHomeMap`(HomeMapPlace)에 얹지 않는 이유가 있다 — 그 타입은 2MiB 상한
- * 근처의 파생 캐시 항목들(`map:detail-index`·`places:slug-index`)의 재료라,
- * 필드 하나가 1,845배로 불어난다. 실제로 여기 두 필드를 거기 넣었더니 2.11MB
+ * 근처의 파생 캐시 항목(`map:detail-index`)의 재료라, 필드 하나가 1,845배로
+ * 불어난다. 실제로 여기 두 필드를 거기 넣었더니 2.11MB
  * 가 되어 **캐시가 조용히 꺼졌다**(빌드 로그의 "items over 2MB can not be
  * cached" 한 줄이 유일한 신호였고, 그 뒤로는 요청마다 풀스캔이 나간다).
  *

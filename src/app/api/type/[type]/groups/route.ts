@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_DATA_TAG } from "@/shared/api/cache";
+import { NOT_FOUND_CACHE_HEADERS } from "@/shared/api/route-cache";
 import { loadTypeDetail, parsePlaceType } from "@/shared/api/place-types";
 import { toTypeListGroup } from "@/app/(public)/[lang]/type/[type]/list-payload";
 
@@ -23,9 +24,12 @@ export async function GET(
 ) {
   const { type: typeParam } = await params;
   const type = parsePlaceType(typeParam);
-  if (!type) return NextResponse.json({ groups: [] }, { status: 404 });
+  // 404 도 CDN 에 앉힌다 — 없는 종류·slug 마다 오리진이 깨는 걸 막는다(route-cache.ts)
+  if (!type)
+    return NextResponse.json({ groups: [] }, { status: 404, headers: NOT_FOUND_CACHE_HEADERS });
   const data = await loadTypeDetail(type);
-  if (!data) return NextResponse.json({ groups: [] }, { status: 404 });
+  if (!data)
+    return NextResponse.json({ groups: [] }, { status: 404, headers: NOT_FOUND_CACHE_HEADERS });
   return NextResponse.json(
     { groups: data.groups.map(toTypeListGroup) },
     {

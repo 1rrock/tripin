@@ -347,8 +347,13 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
  *    직접 캐시(`cities:home-map`)는 2026-08-23 에 없앴다: 상한(2MiB)의 93.7%
  *    까지 차 있었는데, 소비자 전부가 자기 `cachePublic` 안에서 부르는 탓에
  *    중첩 우회로 실효도 없었다(unstable_cache 는 중첩되면 안쪽을 건너뛴다).
- *    지금 상한을 견디는 것은 파생 항목들이다 — `map:detail-index`(72%),
- *    `places:slug-index`. 상한을 넘으면 Next 가 **조용히 캐시를 포기한다** —
+ *    지금 상한을 견디는 것은 파생 항목 `map:detail-index`(72%) 하나다.
+ *    `places:slug-index`(ko 99% · en 97%)도 2026-08-24 에 없앴다 — 장소당
+ *    ~1,125B 라 남은 여유가 13~23곳뿐이었고, 확정 장소를 쌓는 게 이 제품의
+ *    지표라 정상적으로 일하면 반드시 넘을 항목이었다. 쪼개는 대신 없앴다:
+ *    필요한 재료가 `map:canvas-index` + `map:detail-index` 에 이미 다 있어
+ *    조립만 하면 된다(places.ts `loadPlaceBySlug`). 상한을 넘으면 Next 가
+ *    **조용히 캐시를 포기한다** —
  *    빌드 로그에 "items over 2MB can not be cached" 한 줄만 남고 그 뒤로는
  *    요청마다 풀스캔이다. 실제로 `createdAt`·`updatedAt` 를 얹었다가 2.11MB 로
  *    캐시가 꺼진 적이 있다(타임스탬프는 places.ts 의 경량 로더로 뺐다).

@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { PUBLIC_DATA_TAG } from "@/shared/api/cache";
 import { loadSearchIndex, pickLocale } from "@/shared/api/search";
 import { isLocale } from "@/shared/i18n/config";
 
@@ -27,6 +28,12 @@ export async function GET(req: Request): Promise<NextResponse> {
     headers: {
       // 색인은 조각을 공개할 때만 바뀐다 — 몇 분 묵어도 무해하다
       "Cache-Control": "public, max-age=300, s-maxage=3600, stale-while-revalidate=86400",
+      /* 이 한 줄이 없으면 `purgePublicData()` 가 서버 캐시만 비운다 — 어드민
+         화면엔 성공으로 보이는데 CDN 사본이 남아, 삭제 요청으로 비공개한 가게가
+         ⌘K 결과에 최대 한 시간(SWR 포함 하루) 더 뜬다. 임시조치는 법정 요건이라
+         (cache.ts `purgePublicData`) 지연 자체가 문제다. 나머지 7개 공개 JSON
+         라우트와 같은 태그여야 `vercel cache invalidate --tag` 가 같이 지운다. */
+      "Cache-Tag": PUBLIC_DATA_TAG,
     },
   });
 }

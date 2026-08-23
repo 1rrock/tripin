@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_DATA_TAG } from "@/shared/api/cache";
+import { NOT_FOUND_CACHE_HEADERS } from "@/shared/api/route-cache";
 import { loadMapCanvasPlace, loadMapPlace } from "@/shared/api/cities";
 import { loadPlaceCelebrities } from "@/shared/api/celebs";
 import { defaultLocale, isLocale } from "@/shared/i18n/config";
@@ -26,7 +27,8 @@ export async function GET(
   const asked = new URL(req.url).searchParams.get("l");
   const locale = asked && isLocale(asked) ? asked : defaultLocale;
   const [place, pin] = await Promise.all([loadMapPlace(id, locale), loadMapCanvasPlace(id)]);
-  if (!place) return NextResponse.json(null, { status: 404 });
+  // 404 도 CDN 에 앉힌다 — 없는 id 마다 오리진이 깨는 걸 막는다(route-cache.ts)
+  if (!place) return NextResponse.json(null, { status: 404, headers: NOT_FOUND_CACHE_HEADERS });
   // 연예인 배지는 캐시된 인덱스에 안 실린다(cities.ts MapPlaceDetail 주석 —
   // 2MB 상한). 여기서 따로 조회해 붙인다 — CDN s-maxage 가 이 비용을 흡수한다.
   const celebrities = await loadPlaceCelebrities(

@@ -36,7 +36,9 @@ export const MIN_CONFIRMED_PINS =
  *
  * ⚠️ 한 상수로 묶으면 안 된다. `cities.ts` 의 도시 색인이 게이트를 통과 못 하면
  *    그 도시가 `loadHomeMap` 의 `publishedCities` 에서 빠지고(cities.ts:495),
- *    `loadPlaceIndex` 가 그 위에 얹혀 있어 **장소 상세가 통째로 404 가 된다.**
+ *    `loadPlaceBySlug` 가 그 위에 얹혀 있어 **장소 상세가 통째로 404 가 된다.**
+ *    (2026-08-24 까지는 `loadPlaceIndex` 라는 파생 캐시 항목이 그 자리였다 —
+ *    2MiB 상한 때문에 없앴고, 불변식 자체는 그대로다.)
  *    2026-08-21 에 조각 게이트를 2 로 올렸더니 장소 1곳뿐인 도시 42개의
  *    상세 페이지 42개가 404 로 떨어졌다(실측). 이미 색인된 URL 이라 SEO 손해다.
  *

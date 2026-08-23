@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { PUBLIC_DATA_TAG } from "@/shared/api/cache";
+import { NOT_FOUND_CACHE_HEADERS } from "@/shared/api/route-cache";
 import { loadPiece, toPublicPlace } from "@/app/(public)/[lang]/c/[creator]/[city]/loader";
 
 /**
@@ -23,7 +24,9 @@ export async function GET(
 ) {
   const { city, creator } = await params;
   const data = await loadPiece({ creator, city });
-  if (!data) return NextResponse.json({ places: [] }, { status: 404 });
+  // 404 도 CDN 에 앉힌다 — 없는 slug 마다 오리진이 깨는 걸 막는다(route-cache.ts)
+  if (!data)
+    return NextResponse.json({ places: [] }, { status: 404, headers: NOT_FOUND_CACHE_HEADERS });
   return NextResponse.json(
     { places: data.places.map(toPublicPlace) },
     {
