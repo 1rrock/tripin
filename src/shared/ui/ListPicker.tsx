@@ -17,6 +17,7 @@ import { useEffect, useRef, useState, useSyncExternalStore } from "react";
 import { createPortal } from "react-dom";
 import { BookmarkSimpleIcon as BookmarkSimple, HeartIcon as Heart, PlusIcon as Plus } from "@phosphor-icons/react";
 import type { ReactNode } from "react";
+import { Button } from "@/shared/ui/Button";
 import { Icon } from "@/shared/ui/icons";
 import { ROW_BODY, RowIcon, RowText } from "@/shared/ui/SavedRow";
 import { useSaved } from "@/shared/ui/SavedContext";
@@ -255,41 +256,38 @@ export function ListPicker({
                   boxShadow: "inset 0 0 0 1px var(--hairline)",
                 }}
               />
+              {/* 실패는 --alert 다. 산호(--wax)를 쓰면 "켜졌다"와 "잘못됐다"가
+                  한 색으로 겹친다 — 바로 위 Check 가 켜질 때 쓰는 색이다. */}
               {error ? (
-                <p role="alert" className="mt-1.5 px-0.5" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
+                <p
+                  role="alert"
+                  className="mt-1.5 px-0.5"
+                  style={{ fontSize: "var(--t-meta)", color: "var(--alert)" }}
+                >
                   {error}
                 </p>
               ) : null}
               <div className="mt-2 flex gap-2">
-                <button
-                  type="button"
+                <Button
+                  variant="secondary"
+                  size="sm"
                   disabled={!name.trim() || busy}
                   onClick={() => void submit()}
-                  className="h-10 flex-1 cursor-pointer rounded-lg font-bold disabled:opacity-40"
-                  style={{
-                    fontSize: "var(--t-body)",
-                    background: "var(--paper)",
-                    color: "var(--sheet)",
-                  }}
+                  className="flex-1"
                 >
                   {m.saved.listCreate}
-                </button>
-                <button
-                  type="button"
+                </Button>
+                <Button
+                  variant="ghost"
+                  size="sm"
                   onClick={() => {
                     setCreating(false);
                     setName("");
                     setError(null);
                   }}
-                  className="h-10 cursor-pointer rounded-lg px-4 font-semibold"
-                  style={{
-                    fontSize: "var(--t-body)",
-                    color: "var(--dim)",
-                    boxShadow: "inset 0 0 0 1px var(--hairline)",
-                  }}
                 >
                   {m.saved.listCancel}
-                </button>
+                </Button>
               </div>
             </div>
           ) : (
@@ -316,18 +314,9 @@ export function ListPicker({
           className="shrink-0 border-t px-4 pt-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))]"
           style={{ borderColor: "var(--hairline)" }}
         >
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-12 w-full cursor-pointer items-center justify-center rounded-xl font-bold"
-            style={{
-              fontSize: "var(--t-body)",
-              background: "var(--paper)",
-              color: "var(--sheet)",
-            }}
-          >
+          <Button variant="secondary" size="lg" onClick={onClose} className="w-full">
             {m.saved.listDone}
-          </button>
+          </Button>
         </div>
       </div>
     </div>,

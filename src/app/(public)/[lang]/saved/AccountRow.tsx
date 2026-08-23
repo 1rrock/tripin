@@ -58,7 +58,7 @@ export function AccountRow({
       name={copy === "restore" ? m.saved.restoreCta : m.saved.connect}
       meta={
         storedError ? (
-          <span role="alert" style={{ color: "var(--wax)" }}>
+          <span role="alert" style={{ color: "var(--alert)" }}>
             {authErrorText(storedError, m)}
           </span>
         ) : copy === "restore" ? (

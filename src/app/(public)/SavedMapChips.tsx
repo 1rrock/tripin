@@ -11,13 +11,15 @@
  *    방문자 대부분은 검색으로 들어와 한 번 보고 나가는 사람이고,
  *    그들에게 늘 비어 있는 필터 줄은 자리만 먹는 소음이다.
  *
- * ⚠️ 규격은 `CanvasFilters` 의 `Trigger` 를 그대로 따른다 —
- *    h-9 · rounded-full · px-3.5 · 13px · 활성은 --paper 바탕.
- *    같은 줄에 서는 칩이라 하나라도 어긋나면 줄이 깨져 보인다(실제로 겪음).
+ * 규격은 봉인된 `Chip`(size="md") 이 든다. 예전에는 이 파일이 `Trigger` 의
+ * h-9·px-3.5·13px 를 손으로 베껴 적고 "하나라도 어긋나면 줄이 깨져 보인다
+ * (실제로 겪음)" 는 경고를 주석으로 달아 뒀다 — 비용을 치르고도 고치지 않은
+ * 자리였다. 이제 두 줄이 같은 컴포넌트를 지나므로 어긋날 방법이 없다.
  */
 
 import { HeartIcon as Heart } from "@phosphor-icons/react";
 import { useLocale } from "@/shared/i18n/LocaleContext";
+import { Chip } from "@/shared/ui/frame";
 import { useSaved } from "@/shared/ui/SavedContext";
 
 export function SavedMapChips({
@@ -42,18 +44,7 @@ export function SavedMapChips({
     onClick: () => void,
     heart = false,
   ) => (
-    <button
-      key={key}
-      type="button"
-      onClick={onClick}
-      aria-pressed={on}
-      className="flex h-9 min-w-0 items-center gap-1.5 rounded-full px-3.5 text-[13px] font-semibold tracking-[-0.02em]"
-      style={{
-        background: on ? "var(--paper)" : "var(--ground)",
-        color: on ? "#fff" : "var(--paper)",
-        boxShadow: on ? "none" : "inset 0 0 0 1px var(--hairline)",
-      }}
-    >
+    <Chip key={key} size="md" active={on} onClick={onClick} className="min-w-0 shrink">
       {heart ? (
         <Heart
           className="size-3.5 shrink-0"
@@ -66,7 +57,7 @@ export function SavedMapChips({
       <span className="tnum shrink-0" style={{ opacity: 0.6 }}>
         {n}
       </span>
-    </button>
+    </Chip>
   );
 
   return (

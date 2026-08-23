@@ -83,7 +83,9 @@ export function ListRowMenu({
       style={{
         fontSize: "var(--t-meta)",
         fontWeight: 600,
-        color: danger ? "var(--wax)" : "var(--paper)",
+        /* 파괴 액션은 --alert 다. 브랜드색(--wax)은 워드마크·주 CTA·활성 표시 전용이라
+           "지우기"와 "이게 우리 색"이 같은 색이면 강조가 서로를 취소한다. */
+        color: danger ? "var(--alert)" : "var(--paper)",
       }}
     >
       {label}
@@ -171,7 +173,7 @@ export function ListRowMenu({
             }}
           />
           {error ? (
-            <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
+            <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--alert)" }}>
               {error}
             </p>
           ) : null}

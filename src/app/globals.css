@@ -19,6 +19,7 @@
   --ground: #ffffff;
   --sheet: #ffffff;
   --hover: #f5f5f5;
+  --sunk: #ededed;          /* --hover 에서 한 단 더 내려앉은 바닥 — 포커스·눌림 */
   --hairline: #e6e6e6;
   --edge: #a3a3a3;
 
@@ -27,10 +28,18 @@
   --dim: #6b6b6b;           /* 2차 정보. ground 대비 ~5.5:1 */
 
   /* 산호 — 이 월드의 유일한 채도. 핀에만 쓴다 */
-  --wax: #c9441a;           /* hsl(14 77% 45%). ground 대비 ~5.4:1 */
+  --wax: #c9441a;           /* hsl(14 77% 45%). ground 대비 4.86:1 */
   --wax-light: #d45a32;
   --halo: #faf4f1;          /* hue 14, 명도 96% — 회색과 명도가 같고 hue 만 산호 */
-  --halo-ink: #8a3a22;
+  --halo-ink: #8a3a22;      /* --halo 위 7.75:1. 산호 글자가 12·13px 로 앉는 자리 */
+
+  /* 경보 — 위험·파괴·실패. **산호가 아니다.**
+     산호는 브랜드(워드마크·주 CTA·활성 표시)라 오류에 같은 색을 쓰면
+     "켜졌다"와 "잘못됐다"가 한 색으로 겹친다. hue 358(크림슨)로 산호(hue 14)에서
+     떼어 놓고, 명도도 45%→36%로 내려 옆에 놓아도 갈린다.
+     ground 대비 7.75:1 — 12px 본문에도 AA(4.5)를 넘고 AAA(7)까지 든다.
+     🔴 넓은 면을 칠하지 말 것. 경보도 글자·테두리·작은 표식으로만 말한다. */
+  --alert: #a4161a;
 
   /* 라이트박스 — 지도. 같은 흰 축 */
   --lightbox: #ffffff;
@@ -85,6 +94,7 @@
   --color-dim: var(--dim);
   --color-wax: var(--wax);
   --color-halo: var(--halo);
+  --color-alert: var(--alert);
   --color-lightbox: var(--lightbox);
   --radius-frame: var(--r-frame);
   --radius-control: var(--r-control);
@@ -141,7 +151,7 @@ body {
   transition: background-color 0.15s ease;
 }
 .field:focus-within {
-  background: #ededed;
+  background: var(--sunk);
 }
 .field input:focus-visible {
   outline: none;
@@ -304,13 +314,26 @@ body {
   border-radius: var(--r-round);
 }
 
-/* 칩 — 활성은 잉크 채움. 산호를 안 쓰는 이유: 한 줄에 여러 개가 동시에 켜질 수 있다 */
+/* ── 칩 — 이 앱의 알약. **규격은 여기서만 정한다** ────────────────────
+   🔴 호출부에서 알약을 다시 그리지 말 것 — 패딩·높이·굵기·바탕색을 손으로
+      적는 순간 한 벌이 두 벌이 된다. 실제로 같은 역할의 알약이 9벌로 갈라져
+      계산 높이가 28/32/36/37px 로 흩어졌고, `/c/[creator]/v/[videoId]` 하단
+      "다음 행동" 줄에서 28px 칩과 37px 칩이 같은 flex-wrap 에 섞여 밑선이
+      어긋났다(2026-08-23 감사).
+   🔴 새 모양이 필요하면 여기에 size/tone 을 **더하고**, 호출부는 prop 만 쓴다.
+      `shared/ui/frame.tsx` 의 `Chip` 이 유일한 문이다.
+
+   size: 기본(sm) 28px · `.chip-md` 36px — 두 단뿐이다. 한 줄에 섞지 말 것.
+   tone: 기본(neutral) · soft · quiet · wax
+   활성이 잉크 채움인 이유: 한 줄에 여러 개가 동시에 켜질 수 있어서 산호를
+   못 쓴다(산호는 핀이다). 유일한 예외가 wax 인데, 그건 토글이 아니라 CTA 다. */
 .chip {
   display: inline-flex;
   align-items: center;
   gap: 0.375rem;
   flex-shrink: 0;
   white-space: nowrap;
+  min-height: 28px;
   padding: 6px 12px;
   font-size: var(--t-meta);
   font-weight: 500;
@@ -334,10 +357,43 @@ body {
 }
 .chip:active { transform: scale(0.95); }
 @media (hover: hover) {
-  .chip:hover:not([aria-pressed="true"]):not([data-active="true"]) {
+  .chip:hover:not([aria-pressed="true"]):not([data-active="true"]):not(.chip-wax) {
     background: var(--hover);
     color: var(--paper);
   }
+}
+
+/* 36px 단 — 필터 트리거처럼 **누를 자리**로 서는 알약. 28px 은 라벨에 가깝다 */
+.chip-md {
+  min-height: 36px;
+  height: 36px;
+  padding: 0 14px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+/* soft — 바탕이 이미 깔린 보조 행동(Act). 링 대신 회색 면으로 선다 */
+.chip-soft {
+  background: var(--hover);
+  color: var(--paper);
+  box-shadow: none;
+}
+
+/* quiet — **이미 끝난 토글**(구독중). 켜지면 잉크로 타오르는 게 아니라 물러난다.
+   "구독"보다 "구독중"이 시끄러우면 목록에서 읽을 순서가 뒤집힌다. */
+.chip-quiet[aria-pressed="true"],
+.chip-quiet[data-active="true"] {
+  color: var(--dim);
+  background: var(--hover);
+  box-shadow: none;
+}
+
+/* wax — 밀랍 CTA. 토글이 아니라 링크라 활성 상태가 없다(항상 채움) */
+.chip-wax {
+  color: #fff;
+  background: var(--wax);
+  box-shadow: none;
+  font-weight: 700;
 }
 
 .nav-item {
@@ -539,7 +595,10 @@ html:has(.canvas-root) .site-header {
   }
   .canvas-root.canvas-page {
     position: fixed;
-    /* 헤더가 없다 — 지도가 화면 맨 위부터. 아래는 탭바 h-14 + safe-area 만큼만 비운다 */
+    /* 헤더가 없다 — 지도가 화면 맨 위부터. 아래는 탭바 h-14 + safe-area 만큼만 비운다.
+       ⚠️ 이 값은 **탭바가 떠 있을 때만** 맞다. 탭바는 `md:hidden` 이라 768px 부터
+       사라지므로, 아래 md 블록에서 bottom 을 0 으로 되돌린다 — 안 그러면 태블릿
+       구간(768–1023)에서 지도 아래 56px 흰 띠가 남는다. */
     top: 0;
     left: 0;
     right: 0;
@@ -553,6 +612,13 @@ html:has(.canvas-root) .site-header {
   /* 상세가 열리면 탭바 자리까지 캔버스가 내려간다 — 아래에 빈 띠가 남지 않게 */
   .canvas-root.is-place-open {
     bottom: 0;
+  }
+  /* 태블릿(768–1023): 탭바가 `md:hidden` 으로 사라졌으니 그 자리를 비워둘 이유가 없다.
+     이 블록이 없으면 지도 아래에 56px 흰 띠가 남는다. */
+  @media (min-width: 768px) {
+    .canvas-root.canvas-page {
+      bottom: 0;
+    }
   }
   .canvas-root .canvas-map {
     position: absolute;

@@ -5,7 +5,7 @@ import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
 import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/icons";
-import { ApplyForm, type ApplyFormCopy } from "./ApplyForm";
+import { ApplyForm } from "./ApplyForm";
 
 /**
  * 채널 등록 신청 — 크리에이터가 들어오는 문.
@@ -14,6 +14,10 @@ import { ApplyForm, type ApplyFormCopy } from "./ApplyForm";
  * 어드민 확정 큐로 처리한다("유저 참여는 폼이지 게시판이 아니다" — ROADMAP).
  * 그래서 이 화면의 약속도 "검토 후 순차 등록"까지다 — 받아놓고 처리가 밀리면
  * 신뢰를 잃으므로, 즉시 등록을 약속하지 않는다.
+ *
+ * 카피는 전부 `messages/{ko,en}.ts` 의 `apply` 네임스페이스다. 예전엔 이 파일이
+ * 인라인 사전 + `ko ? … : …` 삼항으로 문구를 들고 있어, /about·/policy 와 달리
+ * 이 화면만 사전 밖에 있었다.
  */
 
 const h2 = {
@@ -35,12 +39,13 @@ export async function generateMetadata({
   params: Promise<{ lang: Locale }>;
 }): Promise<Metadata> {
   const { lang: locale } = await params;
-  const title = locale === "ko" ? "채널 등록 신청" : "Add your channel";
-  const description =
-    locale === "ko"
-      ? "여행 유튜브 채널의 영상 속 장소를 지도로 정리해 드립니다. 채널 주소만 남기면 검토 후 순차 등록됩니다."
-      : "We map the places in your travel videos. Leave your channel URL and we'll review and add it.";
-  return publicMeta({ locale, title, description, bare: "/apply" });
+  const m = getDictionary(locale);
+  return publicMeta({
+    locale,
+    title: m.apply.title,
+    description: m.apply.metaDescription,
+    bare: "/apply",
+  });
 }
 
 export default async function ApplyPage({
@@ -50,42 +55,6 @@ export default async function ApplyPage({
 }) {
   const { lang: locale } = await params;
   const m = getDictionary(locale);
-  const ko = locale === "ko";
-  const title = ko ? "채널 등록 신청" : "Add your channel";
-
-  const copy: ApplyFormCopy = ko
-    ? {
-        channelLabel: "유튜브 채널 주소",
-        channelPlaceholder: "https://www.youtube.com/@channel",
-        emailLabel: "회신받을 이메일",
-        emailPlaceholder: "you@example.com",
-        videosLabel: "대표 영상 링크 (선택, 2~3개)",
-        videosPlaceholder: "장소가 나오는 영상이면 검토가 빨라져요",
-        noteLabel: "하고 싶은 말 (선택)",
-        submit: "신청하기",
-        submitting: "보내는 중…",
-        doneTitle: "신청을 받았어요.",
-        doneBody:
-          "검토 후 순차적으로 등록하고 있어요. 등록되거나 어려운 경우 남겨주신 이메일로 알려드릴게요.",
-        errorInvalid: "유튜브 채널 주소와 이메일을 확인해 주세요.",
-        errorFailed: "잠시 후 다시 시도해 주세요.",
-      }
-    : {
-        channelLabel: "YouTube channel URL",
-        channelPlaceholder: "https://www.youtube.com/@channel",
-        emailLabel: "Email for replies",
-        emailPlaceholder: "you@example.com",
-        videosLabel: "Sample video links (optional, 2–3)",
-        videosPlaceholder: "Videos that feature places speed up the review",
-        noteLabel: "Anything else (optional)",
-        submit: "Submit",
-        submitting: "Sending…",
-        doneTitle: "Application received.",
-        doneBody:
-          "We review and add channels in order. We'll email you when it's live — or if we can't add it.",
-        errorInvalid: "Please check the YouTube channel URL and email.",
-        errorFailed: "Something went wrong. Please try again shortly.",
-      };
 
   return (
     <main className="mx-auto flex w-full max-w-lg flex-col gap-(--block) px-(--gutter) pt-4">
@@ -95,44 +64,30 @@ export default async function ApplyPage({
             {m.common.home}
           </Link>
           <Icon.chevron className="size-2.5" />
-          <span style={{ color: "var(--paper)" }}>{title}</span>
+          <span style={{ color: "var(--paper)" }}>{m.apply.title}</span>
         </nav>
         <h1
           className="font-black"
           style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
         >
-          {title}
+          {m.apply.title}
         </h1>
       </header>
 
       <div className="flex max-w-[64ch] flex-col gap-(--block)">
         <section className="flex flex-col gap-3">
-          <p style={body}>
-            {ko
-              ? "여행 영상 속 장소들을 상호명·타임스탬프·지도 링크로 정리해, 도시·장소 검색으로 영상이 계속 발견되게 합니다. 채널 주소만 남겨주시면 영상 설명란을 바탕으로 저희가 직접 정리해 등록합니다."
-              : "We turn the places in your travel videos into a map — verified names, timestamps, and map links — so your videos keep getting discovered through city and place searches. Just leave your channel URL and we'll do the rest from your video descriptions."}
-          </p>
+          <p style={body}>{m.apply.intro}</p>
         </section>
 
-        <ApplyForm copy={copy} />
+        <ApplyForm />
 
         <section className="flex flex-col gap-3">
-          <h2 style={h2}>{ko ? "등록 절차" : "How it works"}</h2>
+          <h2 style={h2}>{m.apply.stepsHeading}</h2>
           <ul className="flex flex-col gap-2.5">
-            {(ko
-              ? [
-                  "접수 — 채널과 영상을 확인합니다. 장소가 나오는 여행 콘텐츠인지가 기준입니다.",
-                  "정리 — 영상 설명란을 바탕으로 장소를 추출하고, 상호·주소·지도 링크를 하나하나 확인합니다.",
-                  "등록 — 확인이 끝난 장소만 공개됩니다. 등록되면 이메일로 알려드립니다.",
-                ]
-              : [
-                  "Review — we check that the channel is travel content that features places.",
-                  "Mapping — we extract places from video descriptions and verify each name, address, and map link.",
-                  "Live — only verified places are published. We'll email you when it's up.",
-                ]
-            ).map((line, i) => (
+            {m.apply.steps.map((line, i) => (
               <li key={line} className="flex gap-2.5" style={body}>
-                <span className="tnum shrink-0" style={{ color: "var(--wax)" }}>
+                {/* 순번은 자릿수지 강조가 아니다 — 산호는 주 CTA(신청하기)에만 남긴다 */}
+                <span className="tnum shrink-0" style={{ color: "var(--dim)" }}>
                   {i + 1}
                 </span>
                 <span>{line}</span>
@@ -140,31 +95,15 @@ export default async function ApplyPage({
             ))}
           </ul>
           <p style={{ ...body, fontSize: "var(--t-meta)" }}>
-            {ko ? (
-              <>
-                등록 후 언제든{" "}
-                <Link
-                  href={localePath("/takedown", locale)}
-                  className="underline underline-offset-4"
-                  style={{ color: "var(--paper)" }}
-                >
-                  삭제 요청
-                </Link>
-                으로 채널 전체를 내릴 수 있습니다.
-              </>
-            ) : (
-              <>
-                You can take your channel down at any time via{" "}
-                <Link
-                  href={localePath("/takedown", locale)}
-                  className="underline underline-offset-4"
-                  style={{ color: "var(--paper)" }}
-                >
-                  removal request
-                </Link>
-                .
-              </>
-            )}
+            {m.apply.takedownBefore}
+            <Link
+              href={localePath("/takedown", locale)}
+              className="underline underline-offset-4"
+              style={{ color: "var(--paper)" }}
+            >
+              {m.apply.takedownLink}
+            </Link>
+            {m.apply.takedownAfter}
           </p>
         </section>
       </div>

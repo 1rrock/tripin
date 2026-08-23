@@ -24,14 +24,22 @@ export function RowItem({ children }: { children: ReactNode }) {
 /** 행 내부 공통 — 높이·정렬·호버. 링크/버튼이 이걸 두른다. */
 export const rowShellClass = "roll -mx-2 flex h-13 w-full items-center gap-3 rounded-(--r-control) px-2";
 
-export function RowLabel({ children, tone }: { children: ReactNode; tone?: "wax" | "dim" }) {
+/**
+ * 행 라벨.
+ *
+ * ⚠️ `tone="danger"` 는 **밀랍색(--wax)이 아니다.** 브랜드색은 워드마크·주 CTA·
+ *    활성 표시의 것이고(PRODUCT.md), "회원 탈퇴"가 푸터 브랜드 마크와 같은 색이면
+ *    위험이 브랜드처럼 읽힌다. 위험은 색이 아니라 **굵기 + 아이콘 + 확인 단계**로
+ *    말한다. globals.css 에 위험 전용 토큰(`--alert`)이 생기면 그때 색을 준다.
+ */
+export function RowLabel({ children, tone }: { children: ReactNode; tone?: "danger" | "dim" }) {
   return (
     <span
       className="min-w-0 flex-1 truncate text-left"
       style={{
         fontSize: "var(--t-body)",
-        fontWeight: 600,
-        color: tone === "wax" ? "var(--wax)" : tone === "dim" ? "var(--dim)" : undefined,
+        fontWeight: tone === "danger" ? 800 : 600,
+        color: tone === "dim" ? "var(--dim)" : undefined,
       }}
     >
       {children}

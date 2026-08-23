@@ -6,17 +6,14 @@
  */
 
 import Link from "next/link";
-import type { PlaceType } from "@/shared/api/database.types";
 import { Frame } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
-import { TYPE_COLOR } from "@/shared/ui/type-icons";
 
 export function ResultRow({
   href,
   youtubeId,
   thumbAlt,
   eyebrow,
-  eyebrowType,
   title,
   meta,
   eager,
@@ -24,14 +21,13 @@ export function ResultRow({
   href: string;
   youtubeId: string | null;
   thumbAlt: string;
+  /* 눈썹은 늘 --dim 이다. 종류별 색(`eyebrowType`)은 걷어냈다 —
+     한 화면에 열 종류가 깔리는 목록이라 색표가 붙으면 무지개가 된다. */
   eyebrow?: string;
-  eyebrowType?: PlaceType;
   title: string;
   meta: string;
   eager?: boolean;
 }) {
-  const color = eyebrowType ? TYPE_COLOR[eyebrowType] : null;
-
   return (
     <Link
       href={href}
@@ -42,9 +38,7 @@ export function ResultRow({
       </Frame>
       <span className="min-w-0 flex-1">
         {eyebrow ? (
-          <span className={`block text-[12px] font-medium ${color?.fg ?? "text-(--dim)"}`}>
-            {eyebrow}
-          </span>
+          <span className="block text-[12px] font-medium text-(--dim)">{eyebrow}</span>
         ) : null}
         <span className="mt-0.5 block truncate text-[15px] font-semibold tracking-[-0.01em]">
           {title}

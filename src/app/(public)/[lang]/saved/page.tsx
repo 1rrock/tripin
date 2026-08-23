@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { loadSavedView } from "@/shared/api/saved-server";
 import type { Locale } from "@/shared/i18n/config";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
+import { Button } from "@/shared/ui/Button";
+import { EmptyState } from "@/shared/ui/EmptyState";
 import { Icon } from "@/shared/ui/icons";
 import { AccountRow } from "./AccountRow";
 import { NewListButton } from "./NewListButton";
@@ -56,26 +57,23 @@ export default async function SavedPage({
         <>
           <SavedHeader action={false} />
 
-          {/* 빈 화면은 글부터 시작한다 — 헤어라인에 글줄이 붙지 않게 위 여백을 준다
-              (목록 화면과 달리 헤더의 선을 이어받을 목록이 여기엔 없다).
-              데스크톱에서는 글줄이 화면 폭만큼 늘어나지 않게 한 단(34rem)으로 묶는다. */}
-          <div className="flex max-w-[34rem] flex-col items-start gap-2 pt-4 pb-2 lg:pt-0">
-            <p style={{ fontSize: "var(--t-body)", fontWeight: 700 }}>{m.saved.empty}</p>
-            <p style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}>{m.saved.emptyHint}</p>
-            <Link
-              href={localePath("/map", locale)}
-              className="mt-2 inline-flex h-10 items-center gap-1.5 px-4 font-bold lg:h-11"
-              style={{
-                fontSize: "var(--t-body)",
-                borderRadius: "var(--r-frame)",
-                background: "var(--paper)",
-                color: "var(--sheet)",
-              }}
-            >
+          {/* 빈 화면은 `EmptyState` 가 든다 — 이 앱의 빈 화면 문법 하나로 모은다.
+              두 문장을 한 문단으로 합치는 이유: `EmptyState` 는 message 가 하나고,
+              둘은 원래 "없다 + 어떻게 채우나" 로 이어 읽는 한 덩어리였다.
+              단추도 손으로 그리지 않는다 — 먹색 채움은 `Button secondary` 다.
+              데스크톱에서 글줄이 화면 폭만큼 늘어나지 않게 한 단(34rem)으로 묶는다. */}
+          <EmptyState
+            message={`${m.saved.empty} ${m.saved.emptyHint}`}
+            /* `py-20` 을 덮을 때는 `pt-`/`pb-` 를 쓴다 — 같은 `px-` 끼리는
+               Tailwind 출력 순서에 기대게 되고, 방향 단위는 축 단위보다
+               항상 뒤에 깔려 확실히 이긴다. */
+            className="mx-auto max-w-[34rem] pt-4 pb-2 lg:pt-0"
+          >
+            <Button variant="secondary" size="sm" href={localePath("/map", locale)}>
               <Icon.map className="size-4" />
               {m.saved.emptyCta}
-            </Link>
-          </div>
+            </Button>
+          </EmptyState>
 
           {/* 빈 화면에도 같은 두 행은 남는다 — 그룹을 먼저 만드는 길과,
               다른 기기에 저장이 있는 사람이 그것을 되찾는 길.

@@ -108,7 +108,7 @@ export function LoginPanel({
       </ul>
 
       {message ? (
-        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
+        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--alert)" }}>
           {message}
         </p>
       ) : null}

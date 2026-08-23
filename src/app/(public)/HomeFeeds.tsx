@@ -18,7 +18,8 @@ import type { Locale } from "@/shared/i18n/config";
 import type { Messages } from "@/shared/i18n/messages/ko";
 import { t } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/paths";
-import { displayCityName } from "@/shared/i18n/display";
+import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
+import { placePath } from "@/shared/lib/place-path";
 import { Frame, Avatar, Index } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { CoverThumb } from "@/shared/ui/CoverThumb";
@@ -36,24 +37,20 @@ function Head({
   title,
   moreHref,
   moreLabel,
-  waxed = false,
 }: {
   id: string;
   title: string;
   /** 없으면 제목만 — 연예인 레일처럼 v1 에 더보기 목적지가 없는 섹션용 */
   moreHref?: string;
   moreLabel?: string;
-  /** 킥커 바 색 — 주인공 섹션(연예인)만 밀랍색으로 세운다 */
-  waxed?: boolean;
 }) {
   return (
     <div className="flex items-center justify-between gap-3 px-(--gutter)">
       <span className="flex items-center gap-2">
-        <span
-          aria-hidden
-          className="h-[3px] w-[18px]"
-          style={{ background: waxed ? "var(--wax)" : "var(--paper)" }}
-        />
+        {/* 킥커 바는 늘 중성이다. 예전엔 연예인 섹션만 밀랍색이었는데, 산호는
+            "핀"이라 섹션 머리마다 켜지면 강조가 강조를 취소한다(PRODUCT.md).
+            홈에서 산호를 쓰는 자리는 히어로 핀·제목 강조·커버 배지뿐이다. */}
+        <span aria-hidden className="h-[3px] w-[18px]" style={{ background: "var(--paper)" }} />
         <h2 id={id} className="text-xl font-bold tracking-[-0.03em] lg:text-2xl">
           {title}
         </h2>
@@ -103,6 +100,10 @@ export function CelebrityFeed({
   const href = (path: string) => localePath(path, locale);
   const person = (s: FeedCelebritySpot) =>
     locale === "ko" ? s.personName : (s.personNameEn ?? s.personName);
+  /* 장소명은 앱의 다른 29곳과 같은 규칙으로 고른다 — 원본 `name` 을 그대로
+     그리면 `/en` 홈만 한글 상호를, 같은 장소의 `/en/place/…` 는 현지어를 보인다. */
+  const place = (s: FeedCelebritySpot) =>
+    displayPlaceName({ name: s.placeName, nameLocal: s.placeNameLocal }, locale);
   // 커버 로테이션은 로더(home.ts)가 한다 — 여기선 첫 장이 곧 오늘의 표지다.
   const [cover, ...rest] = spots;
   if (!cover) return null;
@@ -115,11 +116,10 @@ export function CelebrityFeed({
         title={m.home.celebHeading}
         moreHref={href("/celebs")}
         moreLabel={m.home.moreFeed}
-        waxed
       />
       <div className="mt-4 px-(--gutter) lg:grid lg:grid-cols-2 lg:gap-6">
         <Link
-          href={href(`/place/${cover.placeSlug}`)}
+          href={href(placePath(cover.placeSlug))}
           className="block active:scale-[0.99]"
         >
           <Frame className="block w-full">
@@ -127,14 +127,20 @@ export function CelebrityFeed({
             <CoverThumb youtubeId={cover.cut.youtubeId} alt={cover.cut.title} />
           </Frame>
           <span className="mt-3 flex flex-col items-start gap-1.5">
-            <span
-              className="rounded-full px-2.5 py-1 text-[12px] font-bold text-white"
-              style={{ background: "var(--wax)" }}
-            >
+            {/* 홈에서 산호로 **채우는** 면은 이 배지 하나뿐이다 — 오늘의 표지를
+                가리키는 핀. 나머지 배지·순번·킥커는 중성으로 물러난다.
+                `globals.css:12` 가 금지하는 "넓은 면 산호"의 유일한 예외로 이미
+                합의된 자리라, 흡수하면서도 채움을 그대로 둔다(= `chip-wax`).
+
+                컴포넌트(`Chip`)가 아니라 클래스를 쓰는 이유 하나뿐이다 —
+                이 배지는 카드 전체를 덮는 `<Link>` 안에 있어서 `Chip` 이 내는
+                `<button>`·`<a>` 를 넣으면 링크 안에 링크가 된다. 규격은 그대로
+                `.chip*` 한 곳에서만 온다(직접 적는 padding·height 가 없다). */}
+            <span className="chip chip-wax">
               {person(cover)} · {displayCityName(cover.city, locale)}
             </span>
             <span className="text-[22px] leading-tight font-black tracking-[-0.03em] lg:text-[26px]">
-              {cover.placeName}
+              {place(cover)}
             </span>
             <span className="line-clamp-1 text-[13px] text-(--dim)">{cover.cut.title}</span>
           </span>
@@ -143,12 +149,12 @@ export function CelebrityFeed({
           <ul className="mt-6 grid grid-cols-2 gap-x-3 gap-y-5 lg:mt-0 lg:content-start">
             {grid.map((s) => (
               <li key={s.placeSlug} className="min-w-0">
-                <Link href={href(`/place/${s.placeSlug}`)} className="block active:scale-[0.99]">
+                <Link href={href(placePath(s.placeSlug))} className="block active:scale-[0.99]">
                   <Frame className="block w-full">
                     <Thumb youtubeId={s.cut.youtubeId} alt={s.cut.title} />
                   </Frame>
                   <p className="mt-2 truncate text-[14px] font-semibold tracking-[-0.01em]">
-                    {s.placeName}
+                    {place(s)}
                   </p>
                   <p className="mt-0.5 truncate text-[12px] text-(--dim)">
                     {person(s)} · {displayCityName(s.city, locale)}
@@ -281,9 +287,11 @@ export function PieceFeed({
               href={href(`/c/${p.creatorSlug}/${p.city.slug}`)}
               className="flex items-center gap-3.5 py-3.5 active:bg-(--hover)"
             >
+              {/* 순번은 서열이 아니라 자릿수다 — 08 개가 전부 산호면 목록 전체가
+                  강조가 되어 정작 눌러야 할 것이 안 보인다. 중성으로 내린다. */}
               <span
                 className="w-[26px] text-[15px] font-black tabular-nums"
-                style={{ color: "var(--wax)" }}
+                style={{ color: "var(--dim)" }}
               >
                 {String(i + 1).padStart(2, "0")}
               </span>

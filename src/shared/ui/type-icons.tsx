@@ -54,18 +54,13 @@ export const HOME_TYPES: PlaceType[] = [
   "viewpoint",
 ];
 
-export const TYPE_COLOR: Record<PlaceType, { fg: string; softBg: string; solid: string }> = {
-  restaurant: { fg: "text-red-600", softBg: "bg-red-500/10", solid: "bg-red-600" },
-  cafe: { fg: "text-amber-700", softBg: "bg-amber-600/10", solid: "bg-amber-700" },
-  hotel: { fg: "text-indigo-600", softBg: "bg-indigo-500/10", solid: "bg-indigo-500" },
-  attraction: { fg: "text-teal-700", softBg: "bg-teal-500/10", solid: "bg-teal-600" },
-  bar: { fg: "text-violet-700", softBg: "bg-violet-500/10", solid: "bg-violet-600" },
-  shop: { fg: "text-yellow-700", softBg: "bg-yellow-500/10", solid: "bg-yellow-600" },
-  viewpoint: { fg: "text-purple-700", softBg: "bg-purple-500/10", solid: "bg-purple-600" },
-  fishing: { fg: "text-cyan-700", softBg: "bg-cyan-500/10", solid: "bg-cyan-600" },
-  other: { fg: "text-slate-500", softBg: "bg-slate-500/10", solid: "bg-slate-500" },
-  unknown: { fg: "text-slate-500", softBg: "bg-slate-500/10", solid: "bg-slate-500" },
-};
+/* 🔴 종류별 색표(`TYPE_COLOR`, Tailwind 10색)를 되살리지 말 것.
+   `globals.css` 의 "한 화면에 3개 이상 동시에 깔리는 칸에 제각각 색을 주지
+   않는다(무지개)" 가 정확히 이것이다. 종류 목록은 한 화면에 열 종류가
+   동시에 깔리는 자리라, 색표가 붙는 순간 목록 전체가 무지개가 된다.
+   삭제 시점(2026-08-23)에 이미 참조처는 `ResultRow` 하나였고 그 prop 을
+   넘기는 호출자는 0개였다 — 보이지 않는 채로 장전만 돼 있던 총이다.
+   종류는 **글리프**로 가른다. 색이 아니라. */
 
 export const TOOL_ICON = {
   region: GlyphMap,

@@ -12,6 +12,7 @@
 
 import { useState } from "react";
 import { track } from "@vercel/analytics";
+import { Chip } from "@/shared/ui/frame";
 import { Icon } from "@/shared/ui/icons";
 import { ListPicker } from "@/shared/ui/ListPicker";
 import { useSaved } from "@/shared/ui/SavedContext";
@@ -73,7 +74,14 @@ export function SaveButton({
   );
 }
 
-/** 채널 구독 토글. */
+/**
+ * 채널 구독 토글.
+ *
+ * 예전에는 이것만 `r-frame`(둥근 사각)이라, 알약들 사이에서 혼자 다른 몸을
+ * 하고 있었다. 지금은 봉인된 `Chip`(size="md", tone="quiet") 이다 —
+ * quiet 인 이유: 켜진 상태("구독중")는 이미 끝난 일이라 잉크로 타오르면
+ * 목록에서 읽을 순서가 뒤집힌다. 켜지면 회색으로 물러난다.
+ */
 export function SubscribeButton({
   creatorId,
   creatorName,
@@ -88,28 +96,21 @@ export function SubscribeButton({
   const on = isSubscribed(creatorId);
 
   return (
-    <button
-      type="button"
+    <Chip
+      size="md"
+      tone="quiet"
+      active={on}
       onClick={(e) => {
         e.stopPropagation();
         e.preventDefault();
         void toggleSubscribed(creatorId);
       }}
-      aria-pressed={on}
-      aria-label={t(on ? m.saved.unsubscribeAria : m.saved.subscribeAria, {
+      ariaLabel={t(on ? m.saved.unsubscribeAria : m.saved.subscribeAria, {
         name: creatorName,
       })}
-      className={`inline-flex h-9 shrink-0 cursor-pointer items-center gap-1.5 px-3.5 transition-transform active:scale-95 ${className}`}
-      style={{
-        borderRadius: "var(--r-frame)",
-        fontSize: "var(--t-meta)",
-        fontWeight: 700,
-        boxShadow: on ? "none" : "inset 0 0 0 1px var(--hairline)",
-        background: on ? "var(--hover)" : "transparent",
-        color: on ? "var(--dim)" : "var(--paper)",
-      }}
+      className={className}
     >
       {on ? m.saved.subscribed : m.saved.subscribe}
-    </button>
+    </Chip>
   );
 }

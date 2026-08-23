@@ -16,7 +16,7 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import { Avatar, Frame, Rule } from "@/shared/ui/frame";
+import { Avatar, Chip, Frame, Rule } from "@/shared/ui/frame";
 import { Thumb } from "@/shared/ui/Thumb";
 import { Act, Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
@@ -544,23 +544,20 @@ export function PlaceSheet({
    *   · 대표 컷이 이미 보여 준 영상이면 썸네일을 다시 깔지 않는다
    *   · 행동은 둘 다 버튼으로 세운다 — 유튜브(왁스)와 우리 영상 화면(외곽선)
    */
-  /* 연예인 역링크 — 장소 상세 페이지의 "OO 간 곳 전부 보기" 칩과 같은 문법.
-     지도가 주요 발견 경로인데 드로어에서만 이 신호가 사라지면 안 된다. */
+  /* 연예인 역링크 — 장소 상세 페이지·영상 페이지의 "OO 간 곳 전부 보기" 칩과
+     같은 문법(`size="md" tone="wax"`). 지도가 주요 발견 경로인데 드로어에서만
+     이 신호가 사라지면 안 된다. 손으로 적던 사본은 계산 높이가 32px 이라
+     같은 역할의 칩이 화면마다 32/36 으로 갈렸다 — 봉인된 규격으로 맞춘다. */
   const celebBlock =
     place.celebrities && place.celebrities.length > 0 ? (
       <div className="mt-4 flex flex-wrap gap-2">
         {place.celebrities.map((c) => (
-          <Link
-            key={c.name}
-            href={href(`/celebs#${celebAnchor(c.name)}`)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
-            style={{ background: "var(--wax)" }}
-          >
+          <Chip key={c.name} size="md" tone="wax" href={href(`/celebs#${celebAnchor(c.name)}`)}>
             {t(m.placeDetail.celebMore, {
               person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
             })}
             <Icon.chevron className="size-2.5" />
-          </Link>
+          </Chip>
         ))}
       </div>
     ) : null;
@@ -591,13 +588,9 @@ export function PlaceSheet({
                   <Icon.chevron className="size-2.5 shrink-0" style={{ color: "var(--dim)" }} />
                 </Link>
                 {onSelectChannel ? (
-                  <button
-                    type="button"
-                    onClick={() => onSelectChannel(s.creatorSlug)}
-                    className="chip shrink-0"
-                  >
+                  <Chip className="shrink-0" onClick={() => onSelectChannel(s.creatorSlug)}>
                     {m.map.filterByChannel}
-                  </button>
+                  </Chip>
                 ) : null}
               </div>
 

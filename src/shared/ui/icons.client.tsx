@@ -11,7 +11,6 @@
  *    그래서 글리프는 낱개 export 로 두고, 묶는 일은 서버에서 되는 ./icons 가 한다.
  */
 
-import Link from "next/link";
 import type { ReactNode, SVGProps } from "react";
 import {
   ArrowLeftIcon as ArrowLeft,
@@ -38,7 +37,7 @@ import {
 } from "@phosphor-icons/react";
 /* 홈·지도·하트·유저는 브랜드 글리프(라운드 키라인) — 탭독과 같은 손 */
 import { GlyphHeart, GlyphHome, GlyphMap, GlyphUser } from "@/shared/ui/glyphs";
-import { OutboundA } from "@/shared/ui/OutboundA";
+import { Chip } from "@/shared/ui/frame";
 
 type IconProps = SVGProps<SVGSVGElement> & { weight?: IconWeight };
 
@@ -108,6 +107,15 @@ const GLYPH = {
 
 export type IconName = keyof typeof GLYPH;
 
+/**
+ * 글리프가 앞에 붙는 행동 알약 — 봉인된 `Chip` 의 얼굴 하나다.
+ *
+ * 🔴 여기서 크기·색을 다시 정하지 말 것. Act 는 "글리프를 고르는 일"만 하고,
+ *    규격은 `Chip`(→ `globals.css` 의 `.chip*`) 이 전부 든다. 예전에는 이 파일이
+ *    px-3/py-1.5/13px/w500 을 손으로 적어 아홉 벌 중 한 벌이었고, 휴지 상태만
+ *    혼자 회색 **채움**이라 다른 칩들과 반전돼 보였다 — 그 어긋남은 `tone="soft"`
+ *    라는 이름을 얻어 규격 안으로 들어왔다.
+ */
 export function Act({
   icon,
   children,
@@ -124,40 +132,10 @@ export function Act({
   title?: string;
 }) {
   const Glyph = GLYPH[icon] ?? IconOut;
-  const cls =
-    "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[13px] font-medium transition-transform active:scale-95";
-  const style: React.CSSProperties = pressed
-    ? { color: "#fff", background: "var(--paper)" }
-    : { color: "var(--paper)", background: "var(--hover)" };
-  const body = (
-    <>
+  return (
+    <Chip tone="soft" active={pressed} href={href} onClick={onClick} title={title}>
       <Glyph className="size-4 shrink-0" weight={pressed ? "fill" : "regular"} />
       <span>{children}</span>
-    </>
-  );
-
-  if (href) {
-    const external = href.startsWith("http");
-    return external ? (
-      <OutboundA href={href} title={title} className={cls} style={style}>
-        {body}
-      </OutboundA>
-    ) : (
-      <Link href={href} title={title} className={cls} style={style}>
-        {body}
-      </Link>
-    );
-  }
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      aria-pressed={pressed}
-      title={title}
-      className={`${cls} cursor-pointer`}
-      style={style}
-    >
-      {body}
-    </button>
+    </Chip>
   );
 }

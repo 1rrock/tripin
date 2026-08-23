@@ -15,7 +15,7 @@ import type { FeedCreator } from "@/shared/api/home";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName } from "@/shared/i18n/display";
-import { Avatar } from "@/shared/ui/frame";
+import { Avatar, Chip } from "@/shared/ui/frame";
 import { HOME_TYPES, typeIcon } from "@/shared/ui/type-icons";
 import { textMatchesQuery } from "@/shared/lib/search";
 import type { HomeRegionId } from "@/shared/lib/geo-regions";
@@ -34,6 +34,8 @@ export type CityOption = {
 
 export type RegionGroup = { id: HomeRegionId; items: CityOption[] };
 
+/** 필터를 여는 알약. 규격은 봉인된 `Chip`(size="md") 이 든다 —
+ *  여기서 높이·패딩·색을 다시 적으면 옆에 서는 저장 칩과 밑선이 어긋난다. */
 function Trigger({
   label,
   active,
@@ -48,21 +50,19 @@ function Trigger({
   buttonRef: React.Ref<HTMLButtonElement>;
 }) {
   return (
-    <button
-      ref={buttonRef}
-      type="button"
-      aria-expanded={open}
+    <Chip
+      size="md"
+      active={open || active}
+      expanded={open}
       onClick={onClick}
-      className="flex h-9 min-w-0 items-center gap-1 rounded-full px-3.5 text-[13px] font-semibold tracking-[-0.02em]"
-      style={{
-        background: open || active ? "var(--paper)" : "var(--ground)",
-        color: open || active ? "#fff" : "var(--paper)",
-        boxShadow: open || active ? "none" : "inset 0 0 0 1px var(--hairline)",
-      }}
+      buttonRef={buttonRef}
+      /* 시트 모드에서 줄이 좁으면 라벨이 줄어들며 잘린다 — 칩 기본값은
+         shrink-0 이라 여기서만 되돌린다(레이아웃이지 규격이 아니다). */
+      className="min-w-0 shrink"
     >
       <span className="truncate">{label}</span>
       <CaretDown className={`size-3.5 shrink-0 ${open ? "rotate-180" : ""}`} />
-    </button>
+    </Chip>
   );
 }
 
@@ -314,7 +314,7 @@ export function CanvasFilters({
                 className="flex w-full px-3 py-2.5 text-left text-[13px] font-semibold"
                 style={{
                   background: !region && !city ? "var(--halo)" : undefined,
-                  color: !region && !city ? "var(--wax)" : "var(--paper)",
+                  color: !region && !city ? "var(--halo-ink)" : "var(--paper)",
                 }}
               >
                 {m.home.regionAll}
@@ -330,7 +330,7 @@ export function CanvasFilters({
                   className="flex w-full items-center justify-between gap-1 px-3 py-2.5 text-left text-[13px] font-semibold"
                   style={{
                     background: pane === g.id ? "var(--halo)" : undefined,
-                    color: pane === g.id ? "var(--wax)" : "var(--paper)",
+                    color: pane === g.id ? "var(--halo-ink)" : "var(--paper)",
                   }}
                 >
                   <span className="min-w-0 truncate">{m.home.homeRegions[g.id]}</span>
@@ -351,7 +351,7 @@ export function CanvasFilters({
                   className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px] font-semibold"
                   style={{
                     background: region === wholePane.id && !city ? "var(--halo)" : undefined,
-                    color: region === wholePane.id && !city ? "var(--wax)" : "var(--paper)",
+                    color: region === wholePane.id && !city ? "var(--halo-ink)" : "var(--paper)",
                   }}
                 >
                   <span>{t(m.home.regionWhole, { name: m.home.homeRegions[wholePane.id] })}</span>
@@ -376,7 +376,7 @@ export function CanvasFilters({
                     className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left text-[13px]"
                     style={{
                       background: on ? "var(--halo)" : undefined,
-                      color: on ? "var(--wax)" : "var(--paper)",
+                      color: on ? "var(--halo-ink)" : "var(--paper)",
                       fontWeight: on ? 700 : 500,
                     }}
                   >
@@ -403,7 +403,7 @@ export function CanvasFilters({
               className="flex w-full px-4 py-2.5 text-left text-[13px] font-semibold"
               style={{
                 background: type === null ? "var(--halo)" : undefined,
-                color: type === null ? "var(--wax)" : "var(--paper)",
+                color: type === null ? "var(--halo-ink)" : "var(--paper)",
               }}
             >
               {m.home.typeAll}
@@ -426,7 +426,7 @@ export function CanvasFilters({
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left text-[13px]"
                   style={{
                     background: on ? "var(--halo)" : undefined,
-                    color: on ? "var(--wax)" : "var(--paper)",
+                    color: on ? "var(--halo-ink)" : "var(--paper)",
                     fontWeight: on ? 700 : 500,
                   }}
                 >
@@ -453,7 +453,7 @@ export function CanvasFilters({
               className="flex w-full px-4 py-2.5 text-left text-[13px] font-semibold"
               style={{
                 background: channel === null ? "var(--halo)" : undefined,
-                color: channel === null ? "var(--wax)" : "var(--paper)",
+                color: channel === null ? "var(--halo-ink)" : "var(--paper)",
               }}
             >
               {m.cityDetail.allChannels}
@@ -471,7 +471,7 @@ export function CanvasFilters({
                   className="flex w-full items-center gap-2.5 px-4 py-2.5 text-left"
                   style={{
                     background: on ? "var(--halo)" : undefined,
-                    color: on ? "var(--wax)" : "var(--paper)",
+                    color: on ? "var(--halo-ink)" : "var(--paper)",
                   }}
                 >
                   <Avatar initials={c.initials} accent={c.accentColor} src={c.avatarUrl} size={28} />

@@ -144,7 +144,7 @@ export function NewListButton({
         }}
       />
       {error ? (
-        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--wax)" }}>
+        <p role="alert" style={{ fontSize: "var(--t-meta)", color: "var(--alert)" }}>
           {error}
         </p>
       ) : null}

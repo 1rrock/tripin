@@ -7,7 +7,8 @@ import { localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
-import { Avatar, Rule } from "@/shared/ui/frame";
+import { EmptyState } from "@/shared/ui/EmptyState";
+import { Avatar, Chip, Rule } from "@/shared/ui/frame";
 import { Icon } from "@/shared/ui/icons";
 import { SubscribeButton } from "@/shared/ui/SaveButton";
 
@@ -95,9 +96,17 @@ export default async function ChannelsPage({
       </header>
 
       {creators.length === 0 ? (
-        <p className="pt-2" style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-          {m.channels.empty}
-        </p>
+        /* 예전에는 여기가 문장 하나로 끝나는 막다른 화면이었다 —
+           `EmptyState.tsx` 가 스스로 금지한 그것이다. 다음 행동은 "채널 신청"
+           하나로 충분하다: 채널이 하나도 없는 화면에서 지도·홈으로 보내 봐야
+           거기도 비어 있고, 이 화면을 채울 수 있는 사람은 채널 주인뿐이다.
+           (그래서 아래 상시 신청 줄은 이때 접는다 — 같은 링크가 두 번 서지 않게.) */
+        <EmptyState message={m.channels.empty}>
+          <Chip size="md" href={localePath("/apply", locale)}>
+            {m.channels.applyCta}
+            <Icon.chevron className="size-2.5" />
+          </Chip>
+        </EmptyState>
       ) : (
         <ul className="flex flex-col">
           {creators.map((c, i) => {
@@ -175,17 +184,20 @@ export default async function ChannelsPage({
         </ul>
       )}
 
-      {/* 크리에이터가 들어오는 문 — 채널 목록을 보는 사람 중에 채널 주인이 섞여 있다 */}
-      <p className="mt-6">
-        <Link
-          href={localePath("/apply", locale)}
-          className="index inline-flex items-center gap-0.5 underline-offset-4 hover:underline"
-          style={{ color: "var(--dim)" }}
-        >
-          {m.channels.applyCta}
-          <Icon.chevron className="size-2.5" />
-        </Link>
-      </p>
+      {/* 크리에이터가 들어오는 문 — 채널 목록을 보는 사람 중에 채널 주인이 섞여 있다.
+          목록이 비면 빈 화면의 다음 행동이 이미 같은 문이라 여기는 접는다. */}
+      {creators.length > 0 ? (
+        <p className="mt-6">
+          <Link
+            href={localePath("/apply", locale)}
+            className="index inline-flex items-center gap-0.5 underline-offset-4 hover:underline"
+            style={{ color: "var(--dim)" }}
+          >
+            {m.channels.applyCta}
+            <Icon.chevron className="size-2.5" />
+          </Link>
+        </p>
+      ) : null}
     </main>
   );
 }

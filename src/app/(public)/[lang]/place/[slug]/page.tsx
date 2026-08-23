@@ -11,7 +11,8 @@ import { localePath } from "@/shared/i18n/locale";
 import { thumbSmall, watchUrl } from "@/shared/lib/youtube";
 import { absoluteUrl, publicMeta, siteOrigin } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeNode } from "@/shared/seo/json-ld";
-import { Avatar, Frame } from "@/shared/ui/frame";
+import { Button } from "@/shared/ui/Button";
+import { Avatar, Chip, Frame } from "@/shared/ui/frame";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { SaveButton } from "@/shared/ui/SaveButton";
@@ -225,23 +226,29 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
           </h2>
           {/* 지도는 하나로 정하지 않고 고르게 한다 — 구글엔 사진·영업시간이,
               네이버엔 한글 리뷰·길찾기가 있다. 첫 번째가 그 나라의 기본이라 칠한다. */}
+          {/* 첫 번째가 그 나라의 기본이라 채워 세운다 — 다만 `primary`(밀랍)가
+              아니라 `secondary`(먹색)다. 산호는 브랜드가 시키는 일에 쓰는 색이고
+              여기서 고르는 건 "어느 지도 앱으로 나갈까"라 브랜드의 말이 아니다. */}
           <div className="mt-2 flex w-full gap-2">
             {place.mapLinks.map((link, i) => (
-              <OutboundA
+              <Button
                 key={link.app}
                 href={link.url}
-                className="flex h-12 min-w-0 flex-1 items-center justify-center gap-1.5 font-bold"
-                style={{
-                  fontSize: place.mapLinks.length > 2 ? "var(--t-meta)" : "var(--t-body)",
-                  borderRadius: "var(--r-frame)",
-                  background: i === 0 ? "var(--paper)" : "transparent",
-                  color: i === 0 ? "var(--ground)" : "var(--paper)",
-                  boxShadow: i === 0 ? undefined : "inset 0 0 0 1px var(--hairline)",
-                }}
+                variant={i === 0 ? "secondary" : "ghost"}
+                size="lg"
+                className="min-w-0 flex-1"
               >
                 {place.mapLinks.length === 1 ? <Icon.out className="size-4" /> : null}
-                <span className="truncate">{m.map.mapApps[link.app]}</span>
-              </OutboundA>
+                {/* 셋이 한 줄에 서면 15px 로는 이름이 잘린다 — 글자만 한 단 내린다 */}
+                <span
+                  className="truncate"
+                  style={
+                    place.mapLinks.length > 2 ? { fontSize: "var(--t-meta)" } : undefined
+                  }
+                >
+                  {m.map.mapApps[link.app]}
+                </span>
+              </Button>
             ))}
           </div>
         </section>
@@ -315,17 +322,17 @@ export default async function PlacePage({ params }: { params: Promise<Params> })
       {celebrities.length > 0 ? (
         <div className="mt-8 flex flex-wrap gap-2">
           {celebrities.map((c) => (
-            <Link
+            <Chip
               key={c.name}
+              size="md"
+              tone="wax"
               href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}
-              className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
-              style={{ background: "var(--wax)" }}
             >
               {t(m.placeDetail.celebMore, {
                 person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
               })}
               <Icon.chevron className="size-2.5" />
-            </Link>
+            </Chip>
           ))}
         </div>
       ) : null}

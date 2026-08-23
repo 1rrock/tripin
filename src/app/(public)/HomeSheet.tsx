@@ -5,13 +5,13 @@
  * 제목·지면 사진이 JS 뒤에 왔고, Lighthouse LCP 가 그 사진을 17초 기다렸다.
  */
 
-import Link from "next/link";
 import type { FeedCelebritySpot, FeedCreator, FeedPiece, FeedVideo } from "@/shared/api/home";
 import type { CityRow } from "@/shared/api/cities";
 import type { Locale } from "@/shared/i18n/config";
 import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
 import { displayCityName } from "@/shared/i18n/display";
+import { Chip } from "@/shared/ui/frame";
 import { CategoryGrid } from "@/shared/ui/CategoryGrid";
 import { DestinationGrid, DestinationRail } from "@/shared/ui/DestinationRail";
 import { CelebrityFeed, ChannelFeed, PieceFeed, VideoFeed } from "./HomeFeeds";
@@ -115,29 +115,18 @@ async function FieldHero({ cities, locale }: { cities: CityRow[]; locale: Locale
             aria-label={m.home.citiesAria}
             className="no-scrollbar mt-3.5 -mr-(--gutter) flex gap-1.5 overflow-x-auto pr-(--gutter) pb-0.5 lg:mt-[18px] lg:mr-0 lg:flex-wrap lg:pr-0"
           >
-            {chips.map((city, i) => {
-              const name = displayCityName(city, locale);
-              const on = i === 0;
-              return (
-                <Link
-                  key={city.slug}
-                  href={localePath(`/map?city=${city.slug}`, locale)}
-                  prefetch={false}
-                  className="inline-flex shrink-0 items-center rounded-full px-3 py-1.5 text-[13px] font-medium"
-                  style={
-                    on
-                      ? { background: "var(--paper)", color: "#fff" }
-                      : {
-                          background: "var(--ground)",
-                          color: "#383838",
-                          boxShadow: "inset 0 0 0 1px var(--hairline)",
-                        }
-                  }
-                >
-                  {name} {city.placeCount}
-                </Link>
-              );
-            })}
+            {/* 네 칩은 전부 같은 꼴이다. 예전엔 첫 칩만 채워 그렸는데(i === 0),
+                아무 필터도 안 걸린 홈에서 "선택됨"으로 읽히고 눌러도 나머지와
+                똑같이 동작했다 — 활성 표시는 실제 상태가 있을 때만 쓴다.
+                규격은 손으로 적지 않는다(globals.css `.chip`) — 여기 있던
+                px-3/py-1.5/13px 사본은 계산 높이가 28px 로 같았을 뿐 한 벌이
+                더 있던 것이다. ⚠️ `prefetch={false}` 는 Chip 에 그 prop 이
+                없어 함께 사라졌다 — /map 프리페치가 다시 켜진다. */}
+            {chips.map((city) => (
+              <Chip key={city.slug} href={localePath(`/map?city=${city.slug}`, locale)}>
+                {displayCityName(city, locale)} {city.placeCount}
+              </Chip>
+            ))}
           </nav>
         ) : null}
       </div>
