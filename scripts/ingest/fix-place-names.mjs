@@ -3,8 +3,14 @@
  * 상호에 섞여 들어간 설명 문구를 걷어낸다.
  *
  * 사용:
- *   node scripts/ingest/fix-place-names.mjs [--dry]   기본은 의심 이름만 훑는다
+ *   node scripts/ingest/fix-place-names.mjs           미리보기 (의심 이름만 훑는다)
+ *   node scripts/ingest/fix-place-names.mjs --apply   실제로 고친다
  *   node scripts/ingest/fix-place-names.mjs --all     google_place_id 가진 전부 훑기(호출 많음)
+ *
+ * ⚠️⚠️ **2026-08-24 변경 — 인자 없이 돌리면 이제 dry-run 이다.**
+ *      예전엔 인자 없이 돌리면 **즉시 DB 에 썼고** `--dry` 를 붙여야 안 썼다.
+ *      리포의 다른 스크립트 절반은 반대(`--apply` 필요)라 손버릇이 사고를 냈다.
+ *      전 스크립트를 `--apply` 기본으로 통일했다. `--dry` 는 계속 받는다(기본과 같다).
  *
  * 왜 이게 있나 — `parse-description.mjs` 는 지도 링크 위쪽 줄을 상호로 본다.
  * 크리에이터가 링크 앞에 설명을 써 두면 그 문장이 통째로 상호가 된다:
@@ -28,7 +34,8 @@
 import { requireEnv } from "./_lib/env.mjs";
 
 const args = process.argv.slice(2);
-const DRY = args.includes("--dry");
+// 기본이 dry-run 이다 — 쓰려면 --apply. (`--dry` 는 옛 손버릇을 위해 계속 받는다)
+const DRY = !args.includes("--apply");
 const ALL = args.includes("--all");
 
 const env = requireEnv([
@@ -196,6 +203,6 @@ if (review.length) {
 }
 console.log(
   DRY
-    ? `\ndry-run 끝 — ${fixed}곳이 바뀔 예정 · 지점명이라 그대로 둔 곳 ${kept}. 실제로 쓰려면 --dry 를 빼라`
+    ? `\ndry-run 끝 — ${fixed}곳이 바뀔 예정 · 지점명이라 그대로 둔 곳 ${kept}. 실제로 쓰려면 --apply`
     : `\n${fixed}곳 이름 정리 · 지점명이라 그대로 둔 곳 ${kept} — 공개 화면 반영은 배포 또는 캐시 만료(1시간) 후`,
 );

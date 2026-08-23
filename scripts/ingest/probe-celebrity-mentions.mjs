@@ -66,7 +66,20 @@ async function linkedVideos() {
     headers: { ...H, Range: "0-1999", Prefer: "count=exact" },
   });
   if (!res.ok) throw new Error(`videos 조회 실패 ${res.status}`);
-  return res.json();
+  const rows = await res.json();
+  /* ⚠️ Range 가 2000행 고정이다. count=exact 를 요청해 놓고 총량을 안 보면, 영상이
+     2000편을 넘는 순간 꼬리가 **조용히** 빠진 채 보고서가 완전한 것처럼 나온다.
+     (2026-08-24 현재 1,282편이라 아직 안 닿았지만, 닿는 날 티가 안 나는 게 문제다)
+     받은 길이와 Content-Range 총량이 다르면 여기서 멈춘다 — 늘릴 때는 Range 를
+     키우기보다 offset 페이지네이션으로 바꾸는 게 맞다. */
+  const total = Number(res.headers.get("content-range")?.split("/")[1]);
+  if (Number.isFinite(total) && total !== rows.length) {
+    throw new Error(
+      `videos 총 ${total}편 중 ${rows.length}편만 받았다 — Range 상한(2000)에 걸렸다. ` +
+        `linkedVideos() 를 페이지네이션으로 고쳐야 보고서가 완전해진다.`,
+    );
+  }
+  return rows;
 }
 
 function scan(text) {

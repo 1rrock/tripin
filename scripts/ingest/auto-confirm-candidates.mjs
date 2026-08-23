@@ -8,9 +8,19 @@
  *      · CLOSED_* / NOT_FOUND → is_published=false (확정은 하되 비공개)
  *
  * 사용:
- *   node scripts/ingest/auto-confirm-candidates.mjs           # 실행
- *   node scripts/ingest/auto-confirm-candidates.mjs --dry-run # 미리보기
+ *   node scripts/ingest/auto-confirm-candidates.mjs           # 미리보기 (아무것도 안 쓴다)
+ *   node scripts/ingest/auto-confirm-candidates.mjs --apply   # 실제로 쓴다
  *   node scripts/ingest/auto-confirm-candidates.mjs --limit 5
+ *
+ * ⚠️⚠️ **2026-08-24 변경 — 인자 없이 돌리면 이제 dry-run 이다.**
+ *      예전엔 인자 없이 돌리면 **즉시 DB 에 썼고** `--dry-run` 을 붙여야 안 썼다.
+ *      리포의 다른 스크립트 절반은 반대(`--apply` 필요)라, "미리보기하려고" 인자 없이
+ *      돌린 손이 그대로 쓰기를 실행하는 사고가 나기 좋았다. 전 스크립트를
+ *      `--apply` 기본으로 통일했다. `--dry-run` 은 그대로 받는다(이제 기본과 같다).
+ *
+ * ⚠️ `--reclassify` — 이미 `restaurant` 인 행도 Places 응답으로 다시 분류한다.
+ *    기본은 꺼져 있다. 이유는 아래 placeType 판정 주석 참조(사람이 고른 값과
+ *    파서 기본값을 스키마로 구분할 수 없다).
  *
  * ⛔ 대사 인용·평가·별점 금지. 공개 요약은 자체 작성 사실 불릿만.
  */
@@ -33,7 +43,9 @@ function loadEnvLocal() {
 }
 const env = { ...loadEnvLocal(), ...process.env };
 const args = process.argv.slice(2);
-const DRY = args.includes("--dry-run");
+// 기본이 dry-run 이다 — 쓰려면 --apply. (`--dry-run` 은 옛 손버릇을 위해 계속 받는다)
+const DRY = !args.includes("--apply");
+const RECLASSIFY = args.includes("--reclassify");
 const LIMIT = (() => {
   const i = args.indexOf("--limit");
   return i >= 0 && args[i + 1] ? Number(args[i + 1]) : 0;
@@ -58,19 +70,57 @@ const PLACES_HEADERS = {
 
 const BANNED = ["진짜", "미쳤", "인생", "존맛", "대박", "JMT", "맛있", "맛없", "불친절", "별로"];
 
+/**
+ * Google 타입 → 우리 place_type.
+ *
+ * ⚠️ 순서가 곧 우선순위다. **구체적인 것이 위, 범용이 아래.** 예전엔 restaurant 규칙이
+ *    맨 위에 있으면서 `food` 를 물고 있었는데, Google 은 `food` 를 호텔·시장·역·백화점·
+ *    박물관에도 붙인다. 현실적인 타입 배열로 돌려 보면 9종이 restaurant 로 뭉개졌다.
+ *    `food`·`point_of_interest`·`establishment` 같은 범용 토큰은 맨 아래 폴백에만 둔다.
+ *
+ * 반환값은 DB enum 에 있는 것만 — restaurant, cafe, attraction, hotel, bar, shop,
+ * viewpoint, other, unknown (0001_init.sql:83) + fishing (0012).
+ * 역·터미널은 enum 에 없다. `other` 로 접는다 — 우리 유저는 "가 볼 곳"을 찾는데
+ * 역은 그 자체가 목적지가 아니라 경유지다. `attraction`(명소·관광)으로 넣으면
+ * 도쿄역처럼 관광지인 역 몇 개 때문에 평범한 환승역이 명소 목록을 오염시킨다.
+ */
 const TYPE_MAP = [
-  [/sushi|ramen|restaurant|meal_takeaway|meal_delivery|food/i, "restaurant"],
-  [/cafe|coffee|bakery/i, "cafe"],
-  [/bar|night_club|pub/i, "bar"],
-  [/lodging|hotel|resort|inn/i, "hotel"],
-  [/supermarket|convenience|shopping|store|book_store|department/i, "shop"],
-  [/tourist|museum|park|temple|shrine|zoo|aquarium|point_of_interest/i, "attraction"],
-  [/fishing|fish_farm|marina|campground/i, "fishing"],
+  [/\b(lodging|hotel|motel|resort_hotel|inn|guest_house|hostel|bed_and_breakfast|japanese_inn|ryokan|campground|rv_park)\b/i, "hotel"],
+  [/\b(train_station|subway_station|light_rail_station|transit_station|bus_station|airport|ferry_terminal)\b/i, "other"],
+  [/\b(fishing|fish_farm|marina)\b/i, "fishing"],
+  [/\b(tourist_attraction|museum|art_gallery|park|national_park|temple|shrine|church|zoo|aquarium|amusement_park|historical_landmark|historical_place|monument|castle|observation_deck)\b/i, "attraction"],
+  [/\b(market|farmers_market|supermarket|grocery_store|convenience_store|shopping_mall|department_store|book_store|clothing_store|gift_shop|store)\b/i, "shop"],
+  [/\b(cafe|coffee_shop|bakery|tea_house|dessert_shop|ice_cream_shop|juice_shop)\b/i, "cafe"],
+  [/\b(bar|pub|night_club|wine_bar|bar_and_grill|liquor_store)\b/i, "bar"],
+  [/\b(restaurant|sushi_restaurant|ramen_restaurant|meal_takeaway|meal_delivery|fast_food_restaurant|steak_house|barbecue_restaurant|pizza_restaurant|sandwich_shop|breakfast_restaurant|brunch_restaurant)\b/i, "restaurant"],
 ];
 
+/** 범용 토큰 — 위 구체 규칙이 **하나도** 안 걸렸을 때만 본다. */
+const TYPE_FALLBACK = [
+  [/\b(sushi|ramen|food|dining)\b/i, "restaurant"],
+  [/\b(point_of_interest|tourist)\b/i, "attraction"],
+];
+
+/**
+ * `primaryType` 을 먼저, 그것만으로 본다.
+ * Google 의 primaryType 은 그 장소를 한 마디로 뭐라 부르는지다 — 가장 구체적이라
+ * 여기서 걸리면 그게 답이다. 안 걸릴 때만 `types` 배열을 본다.
+ *
+ * ⚠️ types 를 한 문자열로 이어 붙여 검사하면 안 된다. 그러면 배열 어디에 있든
+ *    "먼저 걸린 규칙"이 이기는 게 아니라 "먼저 걸린 **토큰**"이 이기고,
+ *    호텔의 `food` 하나 때문에 restaurant 이 된다. 규칙을 바깥 루프로 돌려
+ *    **구체적인 규칙이 배열 전체를 먼저 훑게** 한다.
+ */
 function mapPlaceType(types = [], primary) {
-  const all = [primary, ...types].filter(Boolean).join(" ");
-  for (const [re, t] of TYPE_MAP) if (re.test(all)) return t;
+  const list = (types ?? []).filter(Boolean);
+  // 1) primaryType 을 구체 규칙으로 — 여기서 걸리면 그게 답이다
+  if (primary) {
+    for (const [re, t] of TYPE_MAP) if (re.test(primary)) return t;
+  }
+  // 2) types 배열을 구체 규칙으로 (규칙이 바깥 루프 — 구체적인 규칙이 배열 전체를 먼저 훑는다)
+  for (const [re, t] of TYPE_MAP) if (list.some((x) => re.test(x))) return t;
+  // 3) 그래도 모르면 범용 토큰
+  for (const [re, t] of TYPE_FALLBACK) if ((primary && re.test(primary)) || list.some((x) => re.test(x))) return t;
   return "unknown";
 }
 
@@ -282,7 +332,8 @@ async function main() {
   }
 
   console.log(
-    `대상 ${places.length}곳${DRY ? " (dry-run)" : ""} · Places 보강 → 요약 → 확정\n`,
+    `대상 ${places.length}곳${DRY ? " (dry-run — 쓰려면 --apply)" : ""}${RECLASSIFY ? " · restaurant 재분류 켜짐" : ""}` +
+      ` · Places 보강 → 요약 → 확정\n`,
   );
 
   const report = {
@@ -315,28 +366,49 @@ async function main() {
             },
           },
         );
-        if (res.ok) {
-          const d = await res.json();
-          enriched = {
-            placeId: p.google_place_id,
-            googleName: d.displayName?.text || null,
-            address: d.formattedAddress || p.address,
-            businessStatus: d.businessStatus || "UNKNOWN",
-            types: d.types || [],
-            primaryType: d.primaryType || null,
-            lat: d.location?.latitude ?? p.lat,
-            lng: d.location?.longitude ?? p.lng,
-          };
+        /* ⚠️ 실패(403 리퍼러·429 쿼터·5xx)면 **여기서 끝낸다.** 예전엔 res.ok 만 보고
+           떨어지면 아래 텍스트 검색 폴백으로 흘러갔는데, 그 폴백은 최근접 후보가
+           1.5km 밖이어도 상호 앞 4글자만 겹치면 통과한다(enrichPlace 참조).
+           사람이 확인해 붙인 place_id 위에 그 결과가 덮이면 2026-08-18 후쿠오카
+           오확정 무더기가 그대로 재현된다. 키가 죽은 건 이 건의 문제가 아니므로
+           확정을 미루고 failed 로 보고한다. */
+        if (!res.ok) {
+          throw new Error(`Places 상세 ${res.status}: ${(await res.text()).slice(0, 120)} — 확정 보류(폴백 검색 안 함)`);
         }
-      }
-      if (!enriched) {
+        const d = await res.json();
+        enriched = {
+          placeId: p.google_place_id,
+          googleName: d.displayName?.text || null,
+          address: d.formattedAddress || p.address,
+          businessStatus: d.businessStatus || "UNKNOWN",
+          types: d.types || [],
+          primaryType: d.primaryType || null,
+          lat: d.location?.latitude ?? p.lat,
+          lng: d.location?.longitude ?? p.lng,
+        };
+      } else {
+        // place_id 가 아직 없을 때만 텍스트 검색으로 찾는다.
         enriched = await enrichPlace(p.name, p.cities?.name, p.lat, p.lng);
       }
 
+      /* 업종 판정.
+         기본은 예전과 같다 — `unknown` 일 때만 Places 응답으로 채우고, 그 외에는 손대지 않는다.
+
+         ⚠️ `--reclassify` 를 주면 `restaurant` 도 다시 분류한다. 왜 플래그 뒤에 두는가:
+            `insert-candidates.mjs` 가 한동안 기본값을 `restaurant` 로 넣어서, DB 의
+            restaurant 1,724행에는 **파서가 모르고 넣은 값**과 **어드민에서 사람이 고른
+            값**이 섞여 있다. places 스키마에 그 둘을 가르는 컬럼이 없다(0001_init.sql —
+            place_type 은 값 하나뿐, 출처·수정자 기록이 없다). 즉 기계가 구분할 방법이
+            없으므로 기본으로 켜면 사람 손을 되돌릴 위험이 있다. 운영자가 의도해서
+            켤 때만 돈다.
+            분류기가 `unknown` 을 돌려주면 기존 값을 유지한다 — 모르는데 덮지 않는다. */
+      const classified = mapPlaceType(enriched?.types, enriched?.primaryType);
       const placeType =
-        p.place_type && p.place_type !== "unknown"
-          ? p.place_type
-          : mapPlaceType(enriched?.types, enriched?.primaryType);
+        !p.place_type || p.place_type === "unknown"
+          ? classified
+          : RECLASSIFY && p.place_type === "restaurant" && classified !== "unknown"
+            ? classified
+            : p.place_type;
 
       const businessStatus = enriched?.businessStatus || "UNKNOWN";
       const closed =
@@ -372,7 +444,10 @@ async function main() {
         summary_bullets: bullets,
         updated_at: new Date().toISOString(),
       };
-      if (enriched?.placeId) patch.google_place_id = enriched.placeId;
+      /* ⚠️ 기존 google_place_id 는 **절대 덮지 않는다** — 없을 때만 채운다.
+         이미 붙어 있는 ID 는 사람이 확인했거나 상세 조회로 검증된 값이고,
+         덮을 후보는 텍스트 검색 결과다. 검색이 더 나을 이유가 없다. */
+      if (!p.google_place_id && enriched?.placeId) patch.google_place_id = enriched.placeId;
       if (enriched?.address && !p.address) patch.address = enriched.address;
       else if (enriched?.address && (!p.address || p.address.length < 8))
         patch.address = enriched.address;
@@ -430,6 +505,7 @@ async function main() {
   console.log(`  스킵        ${report.skipped.length}`);
   console.log(`  실패        ${report.failed.length}`);
   console.log(`리포트: ${out}`);
+  if (DRY) console.log("(dry-run — 아무것도 쓰지 않았습니다. 실제로 쓰려면 --apply)");
 }
 
 main().catch((e) => {

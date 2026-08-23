@@ -18,6 +18,8 @@
  * `--hide` 를 권한다. `--delete` 는 `video_places` 를 CASCADE 로 같이 지워서
  * "이 채널이 여기 갔었다"는 사실 자체가 사라진다. 되살리려면 수집을 다시 해야 한다.
  * 비공개는 유저에게 안 보이는 효과가 같으면서 되돌릴 수 있다.
+ * `--delete` 는 지우기 전에 대상 행을 **전 컬럼** 그대로 `tmp-closed-deleted-*.json` 에
+ * 떠 둔다 — 장소 자체는 그 파일로 손으로 되살릴 수 있다(영상 연결은 못 되살린다).
  *
  * 약관: `place_id` 는 무기한 보관이 명시적으로 면제돼 있고(LEGAL.md 4장),
  * 여기서 받은 `businessStatus` 는 **화면에 표시하지 않는다** — 내부 판단에만 쓴다.
@@ -105,14 +107,39 @@ async function fetchStatus(placeId) {
   };
 }
 
+/**
+ * 장소 전량을 페이지네이션으로 읽는다.
+ *
+ * ⚠️ PostgREST 는 `db-max-rows` 기본값 1000 에서 응답을 **조용히** 자른다. 예전엔
+ *    `.select().order()` 한 번으로 끝내서 1,903곳 중 이름순 1000곳만 검사하고도
+ *    "전체 1000곳"이라 찍혔다 — 뒤쪽 903곳은 폐업 검사를 영영 못 받았다.
+ *    `merge-duplicate-places.mjs` 의 `all()` 과 같은 처방(1000행 offset 페이지네이션)이다.
+ */
+async function allPlaces(limit) {
+  const out = [];
+  const PAGE = 1000;
+  for (let offset = 0; ; offset += PAGE) {
+    // --limit 은 "앞에서 N 곳만" 이라는 뜻 그대로 — 남은 몫만 더 받는다.
+    const want = limit ? Math.min(PAGE, limit - out.length) : PAGE;
+    if (want <= 0) break;
+    const { data, error } = await db
+      .from("places")
+      .select("id, name, google_place_id, is_published, map_status")
+      .order("name")
+      // 동명이점이 실제로 있다 — 2차 정렬이 없으면 페이지 경계에서 순서가 흔들려
+      // 한 곳이 두 번 조사되거나 아예 빠진다(probe-celebrity-mentions.mjs 와 같은 처방)
+      .order("id")
+      .range(offset, offset + want - 1);
+    if (error) throw error;
+    if (!Array.isArray(data)) throw new Error(`places 조회 실패: ${JSON.stringify(data)}`);
+    out.push(...data);
+    if (data.length < want) break;
+  }
+  return out;
+}
+
 async function run() {
-  let q = db
-    .from("places")
-    .select("id, name, google_place_id, is_published, map_status")
-    .order("name");
-  if (LIMIT) q = q.limit(LIMIT);
-  const { data: places, error } = await q;
-  if (error) throw error;
+  const places = await allPlaces(LIMIT);
 
   const checkable = places.filter((p) => p.google_place_id);
   const unchecked = places.filter((p) => !p.google_place_id);
@@ -207,9 +234,23 @@ async function run() {
     if (e) throw e;
     console.log(`\n✔ ${ids.length}곳을 비공개로 내렸습니다. 되돌리려면 어드민에서 공개로 전환하세요.`);
   } else {
+    /* 지우기 **전에** 대상 행을 통째로 떠 둔다.
+       삭제는 되돌릴 수 없는데(파일 머리 §7·§19), 위 리포트에는 name·googleName·
+       isPublished 세 개뿐이라 손으로 재입력할 재료조차 남지 않았다. slug 는 URL 이고
+       lat/lng·summary_bullets 는 다시 만들려면 사람 손이 든다 — 전 컬럼을 남긴다. */
+    const { data: full, error: fe } = await db.from("places").select("*").in("id", ids);
+    if (fe) throw fe;
+    const backupPath = join(ROOT, `tmp-closed-deleted-${Date.now()}.json`);
+    writeFileSync(backupPath, JSON.stringify({ deletedAt: new Date().toISOString(), places: full }, null, 2), "utf8");
+    console.log(`\n삭제 전 백업: ${backupPath} (${full?.length ?? 0}행 · 전 컬럼)`);
+    if ((full?.length ?? 0) !== ids.length) {
+      throw new Error(`백업 행 수(${full?.length ?? 0})가 삭제 대상(${ids.length})과 다릅니다 — 삭제를 중단합니다.`);
+    }
+
     const { error: e } = await db.from("places").delete().in("id", ids);
     if (e) throw e;
-    console.log(`\n✔ ${ids.length}곳을 삭제했습니다. video_places 도 CASCADE 로 함께 지워졌습니다.`);
+    console.log(`✔ ${ids.length}곳을 삭제했습니다. video_places 도 CASCADE 로 함께 지워졌습니다.`);
+    console.log("  되살리려면 위 백업 JSON 을 보고 어드민에서 다시 만드세요 — 영상 연결은 수집을 다시 해야 합니다.");
   }
 
   /* 통계 캐시는 어드민 액션 경로에서만 갱신된다 — CLI 로 바꿨으면 여기서 불러야 한다.

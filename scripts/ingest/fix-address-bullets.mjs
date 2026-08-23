@@ -3,9 +3,14 @@
  * 요약 불릿의 주소줄을 places.address 로 다시 쓴다 — 로마자 주소 정리.
  *
  * 사용:
- *   node scripts/ingest/fix-address-bullets.mjs --dry-run
- *   node scripts/ingest/fix-address-bullets.mjs
+ *   node scripts/ingest/fix-address-bullets.mjs             미리보기 (아무것도 안 쓴다)
+ *   node scripts/ingest/fix-address-bullets.mjs --apply     실제로 고친다
  *   node scripts/ingest/fix-address-bullets.mjs --country JP   # 기본 KR
+ *
+ * ⚠️⚠️ **2026-08-24 변경 — 인자 없이 돌리면 이제 dry-run 이다.**
+ *      예전엔 인자 없이 돌리면 **즉시 DB 에 썼고** `--dry-run` 을 붙여야 안 썼다.
+ *      리포의 다른 스크립트 절반은 반대(`--apply` 필요)라 손버릇이 사고를 냈다.
+ *      전 스크립트를 `--apply` 기본으로 통일했다. `--dry-run` 은 계속 받는다(기본과 같다).
  *
  * 왜 필요한가:
  *   `auto-confirm-candidates.mjs` 가 google_place_id 가 이미 붙은 후보의 Places
@@ -28,7 +33,8 @@
 import { loadEnv } from "./_lib/env.mjs";
 
 const args = process.argv.slice(2);
-const DRY = args.includes("--dry-run");
+// 기본이 dry-run 이다 — 쓰려면 --apply. (`--dry-run` 은 옛 손버릇을 위해 계속 받는다)
+const DRY = !args.includes("--apply");
 /**
  * 도시명만 고친다 — 주소 본문은 손대지 않는다.
  * 해외 장소에 쓴다: 방콕 가게가 "서울 · 442 ซอย 9…" 로 나가는 행이 19곳 있었다.
@@ -161,6 +167,7 @@ console.log(`\n── 집계 ──`);
 console.log(`  고침            ${fixed}`);
 console.log(`  address 도 로마자 ${skippedLatinAddr}  ← 별도 처리 필요`);
 console.log(`  손댈 것 없음      ${untouched}`);
+if (DRY) console.log("\n(dry-run — 아무것도 쓰지 않았습니다. 실제로 쓰려면 --apply)");
 if (!DRY && fixed > 0) {
   console.log(`\n⚠ 공개 페이지는 최대 1시간 캐시된다 — 즉시 반영하려면 어드민에서 공개 토글.`);
 }

@@ -5,12 +5,20 @@
  * - 주소가 있으면 GSI(일본) 재시도
  * - google_maps_url 있으면 공유링크 핀 재해석
  *
- * 사용: node scripts/ingest/fix-bad-coords.mjs [--dry]
+ * 사용:
+ *   node scripts/ingest/fix-bad-coords.mjs           미리보기 (아무것도 안 쓴다)
+ *   node scripts/ingest/fix-bad-coords.mjs --apply   실제로 고친다
+ *
+ * ⚠️⚠️ **2026-08-24 변경 — 인자 없이 돌리면 이제 dry-run 이다.**
+ *      예전엔 인자 없이 돌리면 **즉시 DB 에 썼고** `--dry` 를 붙여야 안 썼다.
+ *      리포의 다른 스크립트 절반은 반대(`--apply` 필요)라 손버릇이 사고를 냈다.
+ *      전 스크립트를 `--apply` 기본으로 통일했다. `--dry` 는 계속 받는다(기본과 같다).
  */
 import { loadEnv } from "./_lib/env.mjs";
 import { fromGsi, fromShareLink, inAU, inES, inJP, inKR } from "./_lib/geocode.mjs";
 
-const DRY = process.argv.includes("--dry");
+// 기본이 dry-run 이다 — 쓰려면 --apply. (`--dry` 는 옛 손버릇을 위해 계속 받는다)
+const DRY = !process.argv.includes("--apply");
 const env = loadEnv();
 const URL_ = env.NEXT_PUBLIC_SUPABASE_URL;
 const KEY = env.SUPABASE_SERVICE_ROLE_KEY;
@@ -132,3 +140,4 @@ for (const p of places) {
 }
 
 console.log(`\ndone cleared=${cleared} fixed=${fixed} left=${left} dry=${DRY}`);
+if (DRY) console.log("(dry-run — 아무것도 쓰지 않았습니다. 실제로 쓰려면 --apply)");

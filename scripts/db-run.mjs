@@ -13,11 +13,16 @@
  *    Tripin 은 별도 계정이라 `supabase link` 가 안 된다. psql 직결이면 계정 전환이 필요 없다.
  *
  * 적용 이력은 _migrations 테이블에 남는다 — 같은 파일을 두 번 돌리지 않는다.
+ *
+ * ⚠️ 이력에 남는 건 `supabase/migrations/` **안**의 파일뿐이다. 임시 SQL 을 이 도구로
+ *    돌려도 이력을 더럽히지 않는다. 키는 리포 기준 상대경로다(예전엔 basename 이라
+ *    `q.sql` 같은 임시 파일이 26건 쌓였고, 같은 이름의 정식 마이그레이션이 조용히
+ *    스킵됐다). 그 오염 행을 지우는 SQL 은 `scripts/clean-migration-ledger.sql`.
  */
 import { execFileSync } from "node:child_process";
 import { existsSync, readFileSync, readdirSync } from "node:fs";
 import { fileURLToPath } from "node:url";
-import { dirname, join, basename } from "node:path";
+import { dirname, join, basename, relative, resolve, sep } from "node:path";
 
 const ROOT = dirname(dirname(fileURLToPath(import.meta.url)));
 const MIGRATIONS_DIR = join(ROOT, "supabase", "migrations");
@@ -129,12 +134,40 @@ function appliedSet() {
   );
 }
 
+/**
+ * 이력에 남길 키 — `supabase/migrations/` **안**의 파일만, 그것도 **상대경로**로.
+ *
+ * ⚠️ 예전엔 아무 파일이나 basename 으로 넣었다. 그래서 `q.sql`·`check.sql` 같은
+ *    임시 파일 26건이 이력을 채웠고(실측 44행 중 26행), 나중에 같은 basename 의
+ *    정식 마이그레이션이 들어오면 "이미 적용됨"으로 **조용히 스킵**됐다.
+ *    임시 SQL 은 이력에 남길 대상이 아니고, 키가 basename 이면 서로 다른 디렉터리의
+ *    같은 이름이 충돌한다.
+ * 정리용 SQL 은 `scripts/clean-migration-ledger.sql` 에 있다 — 사람이 직접 돌린다.
+ */
+function ledgerKey(file) {
+  const abs = resolve(file);
+  const rel = relative(MIGRATIONS_DIR, abs);
+  if (!rel || rel.startsWith("..") || rel.includes(sep)) return null; // 디렉터리 밖 = 이력 대상 아님
+  return relative(ROOT, abs).split(sep).join("/");
+}
+
 function apply(file) {
-  const name = basename(file);
-  console.log(`\n▶ ${name}`);
+  const label = basename(file);
+  const key = ledgerKey(file);
+  console.log(`\n▶ ${label}`);
   run(["-f", file], { inherit: true });
-  psql(["-q", "-c", `insert into _migrations(name) values ('${name}') on conflict do nothing`]);
-  console.log(`✔ ${name} 적용 완료`);
+  if (key) {
+    /* 값을 SQL 문자열에 보간하지 않는다 — psql 변수로 넘기고 `:'v'` 로 인용시킨다.
+       파일명에 따옴표가 들어가면 보간은 그대로 깨진다(그리고 그 자리는 SQL 이다). */
+    psql([
+      "-q",
+      "-v", `mname=${key}`,
+      "-c", "insert into _migrations(name) values (:'mname') on conflict do nothing",
+    ]);
+  } else {
+    console.log("  (supabase/migrations 밖의 파일이라 적용 이력에 남기지 않습니다)");
+  }
+  console.log(`✔ ${label} 적용 완료`);
 }
 
 const args = process.argv.slice(2);
@@ -155,7 +188,9 @@ if (args.length > 0) {
   const pending = readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort()
-    .filter((f) => !done.has(f));
+    // 키를 상대경로로 바꾸기 전 이력은 basename 으로 들어 있다 — 둘 다 적용된 것으로 본다.
+    // (안 그러면 이미 적용된 마이그레이션이 전부 다시 돌아간다)
+    .filter((f) => !done.has(ledgerKey(join(MIGRATIONS_DIR, f))) && !done.has(f));
 
   if (pending.length === 0) {
     console.log("✔ 적용할 마이그레이션이 없습니다. (최신 상태)");
