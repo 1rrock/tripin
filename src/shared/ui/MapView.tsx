@@ -212,6 +212,44 @@ function pinNode(pin: MapPin, active: boolean, mode: "index" | "dot" | "name"): 
 }
 
 /**
+ * 핀 세트의 지문 — "내용이 같으면 일하지 말자" 의 판정값.
+ *
+ * 예전엔 1,845개를 템플릿 문자열로 만들어 `join("|")` 했다. 판정 한 번에 74KB
+ * 짜리 문자열과 그만큼의 임시 조각을 만들어 버렸는데, 아끼려던 일보다 재는
+ * 값이 더 비쌌다. 지금은 아무것도 할당하지 않고 32비트 FNV-1a 로 섞는다.
+ *
+ * 참조 비교로 바꾸지 않는 이유: 호출부가 매 렌더 **내용이 같은 새 배열**을
+ * 정상적으로 만든다(useMemo 키 하나만 흔들려도 그렇다). 참조로 재면 그때마다
+ * 마커를 다시 만들고 뷰포트를 되돌린다 — 그게 원래 이 지문이 막던 버그다.
+ */
+function pinsFingerprint(pins: MapPin[], cluster: boolean, nameWhenClose: boolean): string {
+  let h = 0x811c9dc5;
+  const mix = (n: number) => {
+    h = Math.imul(h ^ n, 0x01000193);
+  };
+  const mixText = (s: string | undefined) => {
+    if (s === undefined) {
+      mix(0x7fffffff); // undefined 와 "" 를 가른다
+      return;
+    }
+    for (let i = 0; i < s.length; i += 1) mix(s.charCodeAt(i));
+    mix(s.length);
+  };
+  mix(cluster ? 1 : 2);
+  mix(nameWhenClose ? 1 : 2);
+  for (const p of pins) {
+    mixText(p.id);
+    /* 좌표는 소수 6자리(≈11cm)까지만 본다 — 부동소수 끝자리가 흔들려도 같은 핀이다 */
+    mix(Math.round(p.lat * 1e6));
+    mix(Math.round(p.lng * 1e6));
+    mix(p.index ?? -1);
+    mixText(p.label);
+    mixText(p.name);
+  }
+  return `${pins.length}:${(h >>> 0).toString(36)}`;
+}
+
+/**
  * 묶인 핀 — **겹쳐 쌓인 프레임**. 낱개 마커와 같은 각진 칩인데 뒤에 한 장이
  * 어긋나게 깔려 "여러 컷"임을 형태로 말한다. 색을 바꾸거나 크기를 키워서
  * 구분하지 않는 이유는, 이 월드에서 왁스는 *표시*이고 발광은 금지이기 때문이다.
@@ -283,6 +321,15 @@ export function MapView({
   // 핀 배열은 호출부에서 매 렌더 새로 만들어진다 — 내용이 같으면 마커 재생성·뷰포트
   // 리셋을 건너뛰기 위한 시그니처 (리스트 선택이 지도를 되돌리는 버그 방지)
   const pinsSigRef = useRef<string>("");
+  /**
+   * 뷰포트 페인트 리스너 — **이펙트보다 오래 산다.**
+   *
+   * 이펙트 지역 변수로 두고 정리에서 떼던 것이 `/map` 의 핀이 사라지던 원인이다.
+   * 정리는 "다시 걸린다" 를 보장하지 못한다(아래 sig 일치 갈래는 다시 걸기 전에
+   * 빠져나간다). 그래서 소유권을 ref 로 올리고, **다시 그리기로 결정한 그 자리**
+   * 와 언마운트·재시도에서만 뗀다.
+   */
+  const idleRef = useRef<{ listener: google.maps.MapsEventListener; sig: string } | null>(null);
   const namedRef = useRef(false);
   const pinsLiveRef = useRef(pins);
   const onMapClickRef = useRef(onMapClick);
@@ -334,6 +381,7 @@ export function MapView({
     let cancelled = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
     let tilesListener: google.maps.MapsEventListener | undefined;
+    let clickListener: google.maps.MapsEventListener | undefined;
     let raf = 0;
     let started = false;
     const start = () => {
@@ -361,7 +409,8 @@ export function MapView({
         });
         mapRef.current = map;
         // 배경 클릭(핀 아님) — 상세 드로어 접기. 핀 gmp-click 은 버블되지 않는다.
-        map.addListener("click", () => {
+        // 정리에서 반드시 뗀다 — 안 떼면 "다시 시도" 를 누를 때마다 겹쳐 쌓인다.
+        clickListener = map.addListener("click", () => {
           onMapClickRef.current?.();
         });
         // 지도 객체 생성 ≠ 지도가 보임 — 타일이 실제로 그려진 시점에만 로딩을 해제한다.
@@ -409,6 +458,7 @@ export function MapView({
       document.removeEventListener("visibilitychange", onVisible);
       if (timer) clearTimeout(timer);
       tilesListener?.remove();
+      clickListener?.remove();
     };
   }, [attempt]);
 
@@ -416,6 +466,8 @@ export function MapView({
     mapRef.current = null;
     clustererRef.current?.setMap(null);
     clustererRef.current = null;
+    idleRef.current?.listener.remove();
+    idleRef.current = null;
     markersRef.current.clear();
     pinsSigRef.current = "";
     setFailed(false);
@@ -427,7 +479,6 @@ export function MapView({
   useEffect(() => {
     if (failed) return;
     let cancelled = false;
-    let idleListener: google.maps.MapsEventListener | undefined;
     const { maps, marker } = loadSdk();
     Promise.all([
       maps,
@@ -440,11 +491,16 @@ export function MapView({
 
         // 내용이 같은 배열(호출부의 매 렌더 재생성)이면 아무것도 하지 않는다 —
         // 재생성·fitBounds 를 다시 돌리면 사용자가 옮긴 뷰포트가 튕긴다
-        const sig =
-          `${cluster}:${nameWhenClose}#` +
-          pins.map((p) => `${p.id}:${p.lat}:${p.lng}:${p.index}:${p.label}:${p.name}`).join("|");
+        const sig = pinsFingerprint(pins, cluster, nameWhenClose);
+        /* 여기서 빠져나갈 때 **뷰포트 리스너는 그대로 살려 둔다.** 정리 함수가
+           떼 버리면 이 갈래가 다시 걸어 주지 않아 지도가 그 순간 죽는다
+           (하트 토글 → 내용 같은 새 pins → 여기 → 마커가 더는 안 그려짐). */
         if (sig === pinsSigRef.current) return;
         pinsSigRef.current = sig;
+        /* 다시 그리기로 결정한 자리 — 낡은 리스너는 여기서만 뗀다. 이 아래로는
+           클러스터 갈래면 반드시 새로 걸고, 아니면 리스너 자체가 필요 없다. */
+        idleRef.current?.listener.remove();
+        idleRef.current = null;
 
         // 뷰포트: 전체 bounds + 패딩 / 핀 1개면 고정 줌 (CONCEPT.md 4.3)
         const fitAll = () => {
@@ -512,6 +568,9 @@ export function MapView({
             );
             const byId = new Map(pins.map((p) => [p.id, p]));
             const paintVisible = () => {
+              /* 이 리스너보다 새 핀 세트가 먼저 도착했으면 아무것도 하지 않는다 —
+                 낡은 index·byId 로 마커를 되살리지 않게. 곧 뒤따라 떼인다. */
+              if (pinsSigRef.current !== sig) return;
               const bounds = map.getBounds();
               if (!bounds) return;
               const ne = bounds.getNorthEast();
@@ -577,8 +636,12 @@ export function MapView({
                 markersRef.current.delete(key);
               }
             };
-            idleListener = map.addListener("idle", paintVisible);
+            idleRef.current = { listener: map.addListener("idle", paintVisible), sig };
             paintVisible();
+          }).catch(() => {
+            /* 청크가 안 오면 지도는 **핀 없는 지도**로 조용히 남는다 —
+               실패 화면으로 넘겨야 "다시 시도" 라도 손에 쥔다. */
+            if (!cancelled) setFailed(true);
           });
           return;
         }
@@ -639,9 +702,11 @@ export function MapView({
         applyFit();
       })
       .catch(() => setFailed(true));
+    /* 여기서 뷰포트 리스너를 떼지 않는다 — 이 정리는 "곧 다시 걸린다" 를 보장하지
+       못한다. 소유권은 idleRef 에 있고, 다시 그리는 자리(위 sig 갱신)와
+       언마운트·retry 에서만 뗀다. */
     return () => {
       cancelled = true;
-      idleListener?.remove();
     };
     // activeId 는 아래 하이라이트 효과에서 따로 처리 — 핀 재생성 없이
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -736,11 +801,13 @@ export function MapView({
        지도에서 열리던 두 번째 이유다. */
   }, [activeId, pins, nameWhenClose, loaded, focusActiveOnMount]);
 
-  // 언마운트 시 클러스터러가 잡고 있는 지도 리스너를 놓아준다
+  // 언마운트 시 클러스터러와 뷰포트 리스너가 잡고 있는 지도 리스너를 놓아준다
   useEffect(
     () => () => {
       clustererRef.current?.setMap(null);
       clustererRef.current = null;
+      idleRef.current?.listener.remove();
+      idleRef.current = null;
     },
     [],
   );
@@ -765,7 +832,14 @@ export function MapView({
           viewBox="0 0 600 600"
           preserveAspectRatio="xMidYMid slice"
         >
-          <g stroke="#e6e6e6" strokeWidth="7" fill="none" strokeLinecap="round">
+          {/* 색은 토큰으로 — 프레젠테이션 속성에는 var() 가 안 먹어 style 로 준다
+              (같은 파일 아래 "전체 핀 보기" 아이콘과 같은 문법) */}
+          <g
+            style={{ stroke: "var(--lightbox-edge)" }}
+            strokeWidth="7"
+            fill="none"
+            strokeLinecap="round"
+          >
             <path d="M-20 170 C 140 140, 320 210, 620 150" />
             <path d="M-20 400 C 180 370, 380 450, 620 380" />
             <path d="M170 -20 C 190 180, 140 400, 190 620" />
@@ -803,16 +877,40 @@ export function MapView({
     <div className={`on-lightbox relative overflow-hidden ${className ?? ""}`} style={frame}>
       <div ref={containerRef} aria-busy={!loaded} className="h-full w-full" />
       {!loaded ? (
-        <div aria-hidden className="pointer-events-none absolute inset-0 animate-pulse">
+        <div aria-hidden className="pointer-events-none absolute inset-0">
           {/* 문구 대신 형태로 기다린다 — 지도의 뼈대(도로선·핀 자리) 스켈레톤.
-              라이트박스 위이므로 밝은 지면에 회색 선이다 */}
-          <div className="absolute top-1/3 left-0 h-1.5 w-full bg-[#e6e6e6]" />
-          <div className="absolute top-2/3 left-0 h-1 w-full bg-[#e6e6e6]" />
-          <div className="absolute top-0 left-1/3 h-full w-1.5 bg-[#e6e6e6]" />
-          <div className="absolute top-0 left-2/3 h-full w-1 bg-[#e6e6e6]" />
-          <div
-            className="absolute top-1/2 left-1/2 h-7 w-7 -translate-x-1/2 -translate-y-1/2 bg-[#ededed]"
-            style={{ borderRadius: "var(--r-frame)" }}
+              라이트박스 위이므로 밝은 지면에 회색 선이다.
+
+              `.bone-line` 을 쓴다 — pulse 는 globals.css 의 스켈레톤 규칙이 금지하고
+              (§"스켈레톤 — 시머. pulse 금지"), 무엇보다 reduced-motion 블록이
+              `.bone*` 만 다뤄서 animate-pulse 는 그 사용자에게도 계속 깜빡였다.
+
+              크기·위치를 클래스가 아니라 인라인으로 준다 — globals.css 는 layer
+              밖이라 `.bone-line` 의 position/height/border-radius 가 Tailwind
+              유틸리티를 이긴다(bones.tsx 주석과 같은 이유). */}
+          {[
+            { top: "33.333%", left: 0, width: "100%", height: 6 },
+            { top: "66.666%", left: 0, width: "100%", height: 4 },
+            { top: 0, left: "33.333%", width: 6, height: "100%" },
+            { top: 0, left: "66.666%", width: 4, height: "100%" },
+          ].map((box, i) => (
+            <span
+              key={i}
+              className="bone-line"
+              style={{ position: "absolute", borderRadius: 0, ...box }}
+            />
+          ))}
+          <span
+            className="bone-line"
+            style={{
+              position: "absolute",
+              top: "50%",
+              left: "50%",
+              width: 28,
+              height: 28,
+              transform: "translate(-50%, -50%)",
+              borderRadius: "var(--r-frame)",
+            }}
           />
         </div>
       ) : null}

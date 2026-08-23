@@ -18,7 +18,13 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } fr
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { MagnifyingGlassIcon as MagnifyingGlass, XIcon as X } from "@phosphor-icons/react";
 import type { FeedCreator } from "@/shared/api/home";
-import type { CityRow, MapCanvasPlace, MapPlaceDetail } from "@/shared/api/cities";
+import type {
+  CityRow,
+  MapCanvasPin,
+  MapCanvasPlace,
+  MapIndexPayload,
+  MapPlaceDetail,
+} from "@/shared/api/cities";
 import type { PlaceType } from "@/shared/api/database.types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
 import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
@@ -27,6 +33,7 @@ import { Thumb } from "@/shared/ui/Thumb";
 import { Icon } from "@/shared/ui/icons";
 import dynamic from "next/dynamic";
 import { PlaceSheet, type PlaceDrawerSnap } from "@/shared/ui/PlaceSheet";
+import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { EmptyState } from "@/shared/ui/EmptyState";
 import { Bone, BoneFrame } from "@/shared/ui/skeleton/bones";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -37,10 +44,13 @@ import {
   type HomeRegionId,
 } from "@/shared/lib/geo-regions";
 import {
+  decodeMapIndex,
   keepAxesForApply,
+  mapSearchText,
   placeMatchesMapFilter,
+  prepareMapFilter,
   reconcileMapFilter,
-  type MapFilterAxes,
+  type PreparedMapFilter,
 } from "@/shared/lib/map-filters";
 import { CanvasFilters } from "./CanvasFilters";
 import { SavedMapChips } from "./SavedMapChips";
@@ -51,8 +61,9 @@ const MapView = dynamic(
   { ssr: false },
 );
 
-/** 드로어 상세 — 핀 필드(이름·좌표·종류)가 응답에 같이 실려 온다(라우트 주석). */
-type PlaceDetailRow = MapPlaceDetail & Partial<MapCanvasPlace>;
+/** 드로어 상세 — 핀 필드(이름·좌표·종류)가 응답에 같이 실려 온다(라우트 주석).
+ *  `searchText` 는 안 온다 — 아래 `fallbackDetailPlace` 가 조립한다. */
+type PlaceDetailRow = MapPlaceDetail & Partial<MapCanvasPin>;
 
 /* 모듈 스코프 상세 캐시 — 같은 세션에서 같은 장소를 다시 열면 네트워크를 안 탄다.
    CDN 키가 장소×로케일로 흩어져 미스가 잦은 것을 브라우저 쪽에서 흡수한다.
@@ -114,21 +125,35 @@ export function ExplorerCanvas({
   );
   const livePlaces = fetchedPlaces ?? places;
   const placesReady = surface !== "page" || fetchedPlaces !== null;
+  /* 인덱스를 못 받았다 — 씨앗은 그대로 두고 재시도만 연다(아래 이펙트 주석) */
+  const [indexFailed, setIndexFailed] = useState(false);
+  const [indexAttempt, setIndexAttempt] = useState(0);
   useEffect(() => {
     if (surface !== "page") return;
     let alive = true;
     fetch("/api/map/index")
-      .then((res) => (res.ok ? res.json() : { places: [] }))
-      .then((data: { places?: MapCanvasPlace[] }) => {
-        if (alive) setFetchedPlaces(data.places ?? []);
+      .then((res) => {
+        if (!res.ok) throw new Error(`map index ${res.status}`);
+        return res.json();
+      })
+      .then((data: MapIndexPayload | null) => {
+        if (!alive) return;
+        /* 응답은 정규화된 사전 + 자리번호다(cities.ts `MapIndexPayload`).
+           여기서 원래 행으로 되세운다 — 검색어도 이때 조립된다. */
+        setFetchedPlaces(data && Array.isArray(data.places) ? decodeMapIndex(data) : []);
+        setIndexFailed(false);
       })
       .catch(() => {
-        if (alive) setFetchedPlaces([]);
+        /* 여기서 `[]` 로 덮지 않는다. 서버가 HTML 에 이미 그려 둔 씨앗 6곳까지
+           같이 지워져 지도도 목록도 통째로 빈 화면이 됐다 — 인덱스는 있으면
+           더 보이는 것이지, 없다고 화면이 사라져야 할 것이 아니다.
+           대신 실패를 상태로 남기고 목록 머리에 재시도를 세운다. */
+        if (alive) setIndexFailed(true);
       });
     return () => {
       alive = false;
     };
-  }, [surface]);
+  }, [surface, indexAttempt]);
 
   const city = sp.get("city");
   const regionRaw = sp.get("region");
@@ -255,10 +280,38 @@ export function ExplorerCanvas({
   const { isSaved, listsOf, ready: savedReady, lists: savedLists } = useSaved();
   /** 첫 진입의 시작점 — 현재 위치. 못 받으면 null 이고 평소대로 전체 핀에 맞춘다. */
   const [here, setHere] = useState<{ lat: number; lng: number } | null>(null);
+  const geoAskedRef = useRef(false);
+  const aliveRef = useRef(true);
+  useEffect(
+    () => () => {
+      aliveRef.current = false;
+    },
+    [],
+  );
+  /**
+   * 위치를 **딱 한 번** 묻는다. 부르는 자리가 둘이라 함수로 뺐다:
+   * 첫 진입(아래 이펙트)과, 없는 장소 링크에서 빠져나온 직후(그 전까지는
+   * `?place=` 때문에 안 물었으니 그 화면은 시작점도 없이 남는다).
+   */
+  const askHere = useCallback(() => {
+    if (surface !== "page") return;
+    if (geoAskedRef.current) return;
+    if (typeof navigator === "undefined" || !navigator.geolocation) return;
+    geoAskedRef.current = true;
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        if (aliveRef.current) setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude });
+      },
+      () => {},
+      { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 },
+    );
+  }, [surface]);
 
   const saved = useMemo(() => ({ isSaved, listsOf }), [isSaved, listsOf]);
-  const axes = useMemo<MapFilterAxes>(
-    () => ({ city, region, channel, type, q, savedOnly, listId }),
+  /* 질의 변이(접미 정규화·초성 판정)는 여기서 **한 번** 만든다 — 아래 네 memo 가
+     같은 축으로 1,845곳을 훑으므로, 장소마다 다시 만들면 필터 한 번에 7,400번이다. */
+  const axes = useMemo<PreparedMapFilter>(
+    () => prepareMapFilter({ city, region, channel, type, q, savedOnly, listId }),
     [city, region, channel, type, q, savedOnly, listId],
   );
 
@@ -334,20 +387,8 @@ export function ExplorerCanvas({
    * 묻지 않는다(권한 팝업이 남의 링크를 열자마자 뜨는 것도 무례하다).
    */
   useEffect(() => {
-    if (surface !== "page") return;
     if (city || region || channel || type || q.trim() || savedOnly || listId || placeParam) return;
-    if (typeof navigator === "undefined" || !navigator.geolocation) return;
-    let alive = true;
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        if (alive) setHere({ lat: pos.coords.latitude, lng: pos.coords.longitude });
-      },
-      () => {},
-      { enableHighAccuracy: false, timeout: 8000, maximumAge: 10 * 60 * 1000 },
-    );
-    return () => {
-      alive = false;
-    };
+    askHere();
     /* 첫 진입 한 번 — 이후 필터가 바뀐다고 다시 물으면 팝업이 반복된다 */
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -378,9 +419,12 @@ export function ExplorerCanvas({
     if (typeof d.name !== "string" || typeof d.lat !== "number" || typeof d.lng !== "number") {
       return null;
     }
-    return {
+    const pin: MapCanvasPin = {
       id: localPlace,
       name: d.name,
+      /* 상세 응답은 `slug` 를 늘 싣는다(MapPlaceDetail) — 인덱스가 오기 전이라도
+         이 행의 목록 링크가 진짜 주소를 갖는다 */
+      slug: d.slug,
       nameLocal: d.nameLocal ?? null,
       placeType: d.placeType ?? "restaurant",
       lat: d.lat,
@@ -391,8 +435,12 @@ export function ExplorerCanvas({
       countryCode: d.countryCode ?? "",
       youtubeId: d.youtubeId ?? null,
       sources: d.sources.map((s) => ({ creatorSlug: s.creatorSlug })),
-      searchText: d.searchText ?? "",
     };
+    /* 이 행은 인덱스가 도착하기 전의 임시 자리라 필터를 안 탄다. 그래도 빈
+       문자열로 두지 않는다 — 상세 응답의 `sources` 가 채널 이름까지 들고 있어
+       인덱스와 **똑같은** 건초더미를 만들 수 있다(`mapSearchText` 가 dedup 한다).
+       인덱스가 오면 진짜 행이 이 자리를 대신하고, 그때도 값이 같다. */
+    return { ...pin, searchText: mapSearchText(pin, d.sources.map((s) => s.creatorName)) };
   }, [localPlace, placeDetail, detailSettledFor]);
 
   const detailPlace =
@@ -543,6 +591,39 @@ export function ExplorerCanvas({
       url,
     );
   }, [buildUrl]);
+
+  /**
+   * 없는 장소로 들어온 링크 — 막다른 길에서 꺼낸다.
+   *
+   * 비공개로 내린 장소의 공유·북마크가 정확히 이 상태다. 예전엔 드로어도 에러도
+   * 안 뜨고 URL 에 `?place=` 만 남았다. 게다가 위 시작점 이펙트가 `placeParam`
+   * 때문에 스킵돼 현재 위치조차 안 물었다 — 문이 둘 다 닫힌 화면이었다.
+   *
+   * 조회가 **끝났는데**(settled) 인덱스 행도, 상세 응답으로 세운 대체 행도 없으면
+   * 그 id 는 없는 것이다. 알리고 `?place=` 를 걷어내 지도를 평소로 돌린 뒤,
+   * 그제야 시작점을 묻는다. id 당 한 번만 처리한다 — `history.back()` 갈래는
+   * localPlace 가 popstate 뒤에야 비므로 두 번 부르면 히스토리를 두 칸 넘는다.
+   */
+  const [placeMissing, setPlaceMissing] = useState(false);
+  const missingHandledRef = useRef<string | null>(null);
+  useEffect(() => {
+    if (!localPlace) return;
+    if (detailSettledFor !== localPlace) return;
+    if (detailPlace) return;
+    if (missingHandledRef.current === localPlace) return;
+    missingHandledRef.current = localPlace;
+    setPlaceMissing(true);
+    setActiveId(null);
+    closeDetail();
+    askHere();
+  }, [localPlace, detailSettledFor, detailPlace, closeDetail, askHere]);
+
+  /* 알림은 잠깐이면 된다 — 목록 머리에 영영 붙어 있을 줄이 아니다 */
+  useEffect(() => {
+    if (!placeMissing) return;
+    const timer = window.setTimeout(() => setPlaceMissing(false), 6000);
+    return () => window.clearTimeout(timer);
+  }, [placeMissing]);
 
   /**
    * 핀·목록 공통 — 드로어를 즉시 mid 로 연다. Next 라우터는 타지 않는다.
@@ -804,6 +885,39 @@ export function ExplorerCanvas({
     </div>
   );
 
+  /**
+   * 알림 줄 — 목록 머리에 한 줄. 지도 위에 띄우지 않는다: `.canvas-map` 안은
+   * 쌓임 맥락이라 시트 밑에 깔리고(아래 canvas-topbar 주석), 밖에 띄우면
+   * 상세 드로어·검색 줄과 자리를 다툰다.
+   */
+  const noticeRow = (
+    text: string,
+    sub: string | null,
+    action: { label: string; onClick: () => void } | null,
+  ) => (
+    <div role="status" className="flex items-start justify-between gap-3 px-4 pb-2">
+      <div className="min-w-0">
+        <p className="index" style={{ color: "var(--paper)" }}>
+          {text}
+        </p>
+        {sub ? (
+          <p className="index" style={{ color: "var(--dim)" }}>
+            {sub}
+          </p>
+        ) : null}
+      </div>
+      {action ? (
+        <button
+          type="button"
+          className="index shrink-0 cursor-pointer text-(--wax) underline-offset-4 hover:underline"
+          onClick={action.onClick}
+        >
+          {action.label}
+        </button>
+      ) : null}
+    </div>
+  );
+
   const title =
     lead === "region" ? m.nav.region : lead === "channel" ? m.nav.channel : lead === "type" ? m.nav.type : m.home.srHeading;
 
@@ -994,8 +1108,9 @@ export function ExplorerCanvas({
             index={detailIndex + 1}
             place={{
               id: detailPlace.id,
-              /* 캔버스 인덱스는 slug 를 안 실어(payload 예산) 상세 응답에서 받는다 */
-              slug: placeDetail?.slug ?? null,
+              /* 인덱스가 이제 slug 를 싣는다 — 공유 링크가 상세 응답을 안 기다린다.
+                 상세가 먼저 온 딥링크(인덱스 미도착)는 그쪽에서 받는다. */
+              slug: detailPlace.slug || (placeDetail?.slug ?? null),
               name: displayPlaceName(detailPlace, locale),
               nameLocal: detailPlace.nameLocal,
               typeLabel: m.placeTypes[detailPlace.placeType],
@@ -1113,6 +1228,22 @@ export function ExplorerCanvas({
 
           <div className="hidden lg:block">{filters("sheet")}</div>
 
+          {/* 없는 장소 링크 — 위 recovery 이펙트가 `?place=` 를 이미 걷어냈다.
+              i18n 은 다른 소유자라 기존 키를 그대로 쓴다("이 장소를 찾을 수
+              없어요" 전용 키가 생기면 그쪽이 더 맞다 — 보고서에 적어 뒀다). */}
+          {placeMissing ? noticeRow(m.notFound.title, m.notFound.body, null) : null}
+
+          {/* 인덱스를 못 받았다 — 씨앗은 화면에 남아 있고, 여기가 다시 여는 문이다 */}
+          {indexFailed
+            ? noticeRow(m.error.title, m.error.body, {
+                label: m.error.retry,
+                onClick: () => {
+                  setIndexFailed(false);
+                  setIndexAttempt((n) => n + 1);
+                },
+              })
+            : null}
+
           <div className="flex items-center justify-between gap-3 px-4 pb-2">
             {/* 머리말이 이미 개수를 들고 있으면 같은 숫자를 두 번 쓰지 않는다.
                 개수는 인덱스가 온 뒤에만 — 씨앗 6곳만 든 순간의 filtered.length 는
@@ -1148,9 +1279,11 @@ export function ExplorerCanvas({
             ) : null}
           </div>
 
-          {!placesReady && livePlaces.length === 0 ? (
+          {!placesReady && !indexFailed && livePlaces.length === 0 ? (
             /* 인덱스가 오기 전 — 필터를 달고 들어오면 SSR 씨앗이 비어 있다.
-               여기서 null 을 두면 목록 자리가 통째로 흰 화면이 된다. */
+               여기서 null 을 두면 목록 자리가 통째로 흰 화면이 된다.
+               실패는 여기 오면 안 된다 — 영영 안 걷히는 뼈가 된다. 위 알림 줄이
+               받고 아래 빈 상태로 내려간다. */
             <ul className="px-4 pb-6" aria-busy="true">
               {[0, 1, 2, 3].map((i) => (
                 <li key={i} className={i > 0 ? "mt-5" : ""}>
@@ -1197,11 +1330,15 @@ export function ExplorerCanvas({
                 const on = p.id === activeId;
                 return (
                   <li key={p.id} className={i > 0 ? "mt-5" : ""}>
-                    <button
-                      type="button"
-                      onClick={() => onRowClick(p.id)}
-                      aria-pressed={on}
-                      className="w-full text-left"
+                    {/* 문서에는 링크, 손에는 드로어 — 도시·조각 목록과 같은 문법이다
+                        (PlaceRowLink 주석). 좌클릭은 지금까지처럼 드로어를 열고,
+                        ⌘·가운데 클릭은 장소 페이지를 새 탭으로 연다. 이 행들이
+                        `/map` 에서 장소로 가는 **첫 내부 링크**다. */}
+                    <PlaceRowLink
+                      slug={p.slug}
+                      onOpen={() => onRowClick(p.id)}
+                      active={on}
+                      className="block w-full text-left"
                     >
                       <Frame className={`block w-full ${on ? "waxed" : ""}`}>
                         {p.youtubeId ? (
@@ -1220,7 +1357,7 @@ export function ExplorerCanvas({
                         {" · "}
                         {displayCityName({ name: p.cityName, nameEn: p.cityNameEn }, locale)}
                       </span>
-                    </button>
+                    </PlaceRowLink>
                   </li>
                 );
               })}

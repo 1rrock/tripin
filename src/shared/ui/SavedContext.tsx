@@ -15,6 +15,8 @@ import {
   useCallback,
   useContext,
   useEffect,
+  useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
@@ -78,12 +80,29 @@ export function SavedProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
+  /**
+   * 최신 스냅샷을 **이벤트 콜백에서** 읽는 창구.
+   *
+   * 토글 함수가 `snap` 을 의존성으로 들면 하트 한 번에 네 함수의 신원이 전부
+   * 바뀐다. 이 프로바이더는 루트 레이아웃에 있어서 그 파장이 모든 소비자
+   * (SaveButton·ListPicker·SavedMapChips·TabDock·HomeCanvas·SavedIndex)로 간다.
+   * 아래 useMemo 도 같이 무의미해진다.
+   *
+   * 렌더 중이 아니라 이펙트에서 넣는다(react-hooks/refs). 읽는 곳은 전부 사용자
+   * 이벤트 핸들러라 커밋 뒤다 — MapView·HomeCanvas 의 ref 들과 같은 계약.
+   */
+  const snapRef = useRef(snap);
+  useEffect(() => {
+    snapRef.current = snap;
+  });
+
   const toggleSavedCb = useCallback(
     async (placeId: string) => {
-      const next = !snap.places.has(placeId);
+      const cur = snapRef.current;
+      const next = !cur.places.has(placeId);
       /* 낙관적 갱신 — 하트는 누른 즉시 켜져야 한다.
          끌 때는 그룹 담김도 같이 비운다(setSaved 가 DB 에서도 같이 지운다). */
-      const prevMembership = snap.membership.get(placeId);
+      const prevMembership = cur.membership.get(placeId);
       setSnap((s) => {
         const membership = new Map(s.membership);
         if (!next) membership.delete(placeId);
@@ -99,12 +118,12 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         });
       }
     },
-    [snap.places, snap.membership],
+    [],
   );
 
   const toggleSubscribedCb = useCallback(
     async (creatorId: string) => {
-      const next = !snap.creators.has(creatorId);
+      const next = !snapRef.current.creators.has(creatorId);
       setSnap((s) => ({ ...s, creators: toggled(s.creators, creatorId, next) }));
 
       const ok = await setSubscribed(creatorId, next);
@@ -112,7 +131,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         setSnap((s) => ({ ...s, creators: toggled(s.creators, creatorId, !next) }));
       }
     },
-    [snap.creators],
+    [],
   );
 
   const addListCb = useCallback(async (name: string) => {
@@ -157,7 +176,7 @@ export function SavedProvider({ children }: { children: ReactNode }) {
 
   const toggleInListCb = useCallback(
     async (listId: string, placeId: string) => {
-      const next = !(snap.membership.get(placeId)?.has(listId) ?? false);
+      const next = !(snapRef.current.membership.get(placeId)?.has(listId) ?? false);
 
       setSnap((s) => {
         const membership = new Map(s.membership);
@@ -185,34 +204,76 @@ export function SavedProvider({ children }: { children: ReactNode }) {
         });
       }
     },
+    [],
+  );
+
+  /**
+   * 읽기 함수는 **자기가 실제로 읽는 조각만** 의존성으로 든다.
+   *
+   * 예전엔 넷 다 value 객체 안의 인라인 화살표였다. 그러면 어떤 이유로든 이
+   * 컴포넌트가 다시 그려질 때마다 네 함수가 전부 새 신원을 얻는다. 그 신원을
+   * memo 키로 쓰는 화면이 있다 — `/map` 의 `saved` → `filtered` → `pins` 가
+   * 그것이고, 구독 토글 한 번에 1,845곳을 네 번 훑고 지도에 내용이 같은 새
+   * 핀 배열을 밀어 넣었다(MapView 의 뷰포트 리스너가 그 자리에서 사라졌다).
+   *
+   * 이제 구독 토글은 `snap.creators` 만 바꾸므로 `isSaved`·`listsOf` 는 그대로다.
+   * 하트 토글은 `snap.places` 를 바꾸니 `isSaved` 가 바뀌는데, 그건 저장 필터
+   * (`?saved=1`·`?list=`)의 결과가 실제로 달라지기 때문에 **바뀌어야 맞다**.
+   */
+  const isSaved = useCallback((placeId: string) => snap.places.has(placeId), [snap.places]);
+  const isSubscribed = useCallback(
+    (creatorId: string) => snap.creators.has(creatorId),
+    [snap.creators],
+  );
+  const listsOf = useCallback(
+    (placeId: string) => snap.membership.get(placeId) ?? new Set<string>(),
+    [snap.membership],
+  );
+  const countIn = useCallback(
+    (listId: string) => {
+      let n = 0;
+      for (const ids of snap.membership.values()) if (ids.has(listId)) n += 1;
+      return n;
+    },
     [snap.membership],
   );
 
-  return (
-    <SavedContext.Provider
-      value={{
-        ready,
-        isSaved: (id) => snap.places.has(id),
-        isSubscribed: (id) => snap.creators.has(id),
-        savedCount: snap.places.size,
-        toggleSaved: toggleSavedCb,
-        toggleSubscribed: toggleSubscribedCb,
-        lists: snap.lists,
-        listsOf: (placeId) => snap.membership.get(placeId) ?? new Set(),
-        countIn: (listId) => {
-          let n = 0;
-          for (const ids of snap.membership.values()) if (ids.has(listId)) n += 1;
-          return n;
-        },
-        addList: addListCb,
-        editList: editListCb,
-        removeList: removeListCb,
-        toggleInList: toggleInListCb,
-      }}
-    >
-      {children}
-    </SavedContext.Provider>
+  /* value 를 객체 리터럴로 두면 이 컴포넌트의 모든 렌더가 컨텍스트 변경으로
+     읽힌다 — 프로바이더가 루트 레이아웃에 있으니 화면 전체가 대상이다. */
+  const value = useMemo<Ctx>(
+    () => ({
+      ready,
+      isSaved,
+      isSubscribed,
+      savedCount: snap.places.size,
+      toggleSaved: toggleSavedCb,
+      toggleSubscribed: toggleSubscribedCb,
+      lists: snap.lists,
+      listsOf,
+      countIn,
+      addList: addListCb,
+      editList: editListCb,
+      removeList: removeListCb,
+      toggleInList: toggleInListCb,
+    }),
+    [
+      ready,
+      isSaved,
+      isSubscribed,
+      snap.places,
+      snap.lists,
+      listsOf,
+      countIn,
+      toggleSavedCb,
+      toggleSubscribedCb,
+      addListCb,
+      editListCb,
+      removeListCb,
+      toggleInListCb,
+    ],
   );
+
+  return <SavedContext.Provider value={value}>{children}</SavedContext.Provider>;
 }
 
 /**
@@ -223,21 +284,24 @@ export function SavedProvider({ children }: { children: ReactNode }) {
  * "동작하지 않음" 이 "화면이 안 뜸" 보다 낫다.
  */
 export function useSaved(): Ctx {
-  return (
-    useContext(SavedContext) ?? {
-      ready: false,
-      isSaved: () => false,
-      isSubscribed: () => false,
-      savedCount: 0,
-      toggleSaved: async () => {},
-      toggleSubscribed: async () => {},
-      lists: [],
-      listsOf: () => new Set<string>(),
-      countIn: () => 0,
-      addList: async () => ({ ok: false, reason: "failed" }),
-      editList: async () => ({ ok: false, reason: "failed" }),
-      removeList: async () => {},
-      toggleInList: async () => {},
-    }
-  );
+  return useContext(SavedContext) ?? OUTSIDE_PROVIDER;
 }
+
+/* 모듈 스코프에 한 벌만 둔다 — 훅 안에서 리터럴로 만들면 프로바이더 밖 화면에서
+   `isSaved` 신원이 매 렌더 바뀌어, 이걸 memo 키로 쓰는 쪽(/map)이 매 렌더 다시
+   계산한다. 값이 전부 상수라 공유해도 위험이 없다. */
+const OUTSIDE_PROVIDER: Ctx = {
+  ready: false,
+  isSaved: () => false,
+  isSubscribed: () => false,
+  savedCount: 0,
+  toggleSaved: async () => {},
+  toggleSubscribed: async () => {},
+  lists: [],
+  listsOf: () => new Set<string>(),
+  countIn: () => 0,
+  addList: async () => ({ ok: false, reason: "failed" }),
+  editList: async () => ({ ok: false, reason: "failed" }),
+  removeList: async () => {},
+  toggleInList: async () => {},
+};
