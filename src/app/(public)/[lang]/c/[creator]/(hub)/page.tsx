@@ -4,10 +4,16 @@ import { notFound } from "next/navigation";
 import { loadCreatorVideos } from "@/shared/api/videos";
 import { loadCreatorMap } from "@/shared/api/creator-hub";
 import { VideoList } from "../VideoList";
-import { CreatorExplorer, type CreatorPlace } from "../CreatorExplorer";
-import type { PlaceType } from "@/shared/api/database.types";
-import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
+import { CreatorExplorer } from "../CreatorExplorer";
+import {
+  HUB_PLACE_HEAD,
+  HUB_VIDEO_HEAD,
+  toCreatorPlace,
+  toHubVideo,
+  type HubVideo,
+} from "../hub-payload";
 import { Avatar } from "@/shared/ui/frame"
+import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { Act, Icon } from "@/shared/ui/icons";
 import { SubscribeButton } from "@/shared/ui/SaveButton";
 import { ShareButton } from "@/shared/ui/ShareButton";
@@ -24,15 +30,19 @@ import { JsonLd, breadcrumbList, linkList } from "@/shared/seo/json-ld";
  * 지도가 본체: 이 유튜버가 간 모든 장소를 한 지도에 올리고,
  * 지역·종류 칩으로 걸러 본다(도시 교차 화면의 대칭).
  * 영상 목록은 그 아래 2차 축.
+ *
+ * ⚠️ 여기서 `searchParams` 를 읽지 마라 — `map/page.tsx:14` 와 같은 규율이다.
+ *    읽는 순간 이 페이지가 ISR 에서 빠져 **매 진입이 람다 SSR** 이 된다
+ *    (실측 TTFB 20~35ms vs ISR 2~3ms). `?type=`·`?city=` 는 이미 클라이언트인
+ *    `CreatorExplorer` 가 하이드레이션 뒤에 읽어 그대로 건다.
+ *
+ * 존재 판정은 `(hub)/layout.tsx` 가 맡는다 — `loading.tsx` 의 Suspense 경계
+ * **위** 라야 404 가 제대로 나간다(그 파일 주석).
  */
 
-function parseType(v: string | undefined): PlaceType | null {
-  return v && (FILTERABLE_TYPES as string[]).includes(v) ? (v as PlaceType) : null;
-}
-
-function parseCity(v: string | undefined, cities: { slug: string }[]): string | null {
-  if (!v) return null;
-  return cities.some((c) => c.slug === v) ? v : null;
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
@@ -42,7 +52,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: locale, creator: creatorSlug } = await params;
   const data = await loadCreatorMap(creatorSlug);
-  if (!data) return { title: "Not found" };
+  /* 여기까지 오는 일은 없다 — 존재 판정은 `layout.tsx` 가 경계 위에서 끝낸다.
+     라우트마다 제각각이던 not-found 제목은 `m.notFound.metaTitle` 하나로 모았다. */
+  if (!data) return { title: getDictionary(locale).notFound.metaTitle };
   /* 제목·설명 모두 검색결과에서 잘린다(제목 ~60자, 설명은 한글 ~80자).
      비밀이야는 도시가 13곳이라 전부 나열하면 제목은 브랜드 접미사(`| Eatripin`)가,
      설명은 끝의 가치 문구("출처 영상 링크")가 통째로 밀려 나갔다. 둘 다 상한을 둔다. */
@@ -67,17 +79,16 @@ export async function generateMetadata({
 
 export default async function CreatorHubPage({
   params,
-  searchParams,
 }: {
   params: Promise<{ lang: Locale; creator: string }>;
-  searchParams: Promise<{ type?: string; city?: string }>;
 }) {
-  const [{ lang: locale, creator: creatorSlug }, sp] = await Promise.all([params, searchParams]);
+  const { lang: locale, creator: creatorSlug } = await params;
   const m = getDictionary(locale);
   const [data, videoData] = await Promise.all([
     loadCreatorMap(creatorSlug),
     loadCreatorVideos(creatorSlug),
   ]);
+  /* 존재 판정은 layout 이 이미 끝냈다. 남긴 건 타입 좁히기용. */
   if (!data) notFound();
 
   const { creator, cities } = data;
@@ -86,17 +97,27 @@ export default async function CreatorHubPage({
     ? `https://www.youtube.com/${creator.youtube_handle}`
     : `https://www.youtube.com/channel/${creator.youtube_channel_id}`;
 
-  const places: CreatorPlace[] = data.places.map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    nameLocal: p.nameLocal,
-    placeType: p.placeType,
-    citySlug: p.citySlug,
-    cityName: p.cityName,
-    cityNameEn: p.cityNameEn,
-    firstVideoId: p.sources[0]?.youtubeId ?? null,
-  }));
+  /* 이 화면에는 무제한 목록이 **둘** 있었다 — 장소(후쿠오카 아저씨 647곳)와
+     영상(정육왕 414편, 곽튜브 1,094편). 둘 다 클라이언트 컴포넌트 props 라 HTML
+     마크업 한 벌 + RSC 플라이트 한 벌로 두 번 실렸고, 그게 1.07MB raw /
+     108.9KB gzip 이었다. `/map` 이 씨앗 6곳으로 푼 처방을 그대로 옮긴다 —
+     문서에는 앞줄만, 나머지는 마운트 뒤 `/api/creator/[creator]/…` 로 받는다.
+
+     `videos.ts` 의 1000편 절단이 고쳐졌으니 영상 축은 앞으로 **더 자란다**.
+     상한 없이 두면 이 문서는 채널이 부지런할수록 무거워진다. */
+  const headPlaces = data.places.slice(0, HUB_PLACE_HEAD).map(toCreatorPlace);
+  const headVideos: HubVideo[] = videos.slice(0, HUB_VIDEO_HEAD).map(toHubVideo);
+
+  /* 필터 칩은 **전체** 기준으로 서버가 미리 센다. 앞줄에서 뽑으면 꼬리가 도착할 때
+     칩 줄이 늘어나 필터가 튄다 — 무엇을 몇 개 그리느냐만 바꾸는 게 이 작업의
+     규율이라, 필터의 모양은 자르기 전과 같아야 한다. */
+  const presentTypes = FILTERABLE_TYPES.filter((pt) =>
+    data.places.some((p) => p.placeType === pt),
+  );
+  const videoCities = [
+    ...new Map(videos.flatMap((v) => v.cities).map((c) => [c.slug, c])).values(),
+  ];
+  const videoTypes = [...new Set(videos.flatMap((v) => v.types))];
 
   return (
     <main className="flex flex-col gap-(--stack)">
@@ -152,8 +173,9 @@ export default async function CreatorHubPage({
               {creator.display_name}
             </h1>
             <p className="index tnum mt-1.5" style={{ color: "var(--dim)" }}>
+              {/* 통계는 전체 수 그대로다 — 잘랐다고 페이지가 스스로를 작게 말하지 않는다 */}
               {t(m.hub.stats, {
-                places: places.length,
+                places: data.places.length,
                 cities: cities.length,
                 videos: videos.length,
               })}
@@ -173,10 +195,10 @@ export default async function CreatorHubPage({
 
       <CreatorExplorer
         creatorSlug={creatorSlug}
-        places={places}
+        places={headPlaces}
+        total={data.places.length}
+        presentTypes={presentTypes}
         cities={cities}
-        initialType={parseType(sp.type)}
-        initialCity={parseCity(sp.city, cities)}
       />
 
       {videos.length > 0 ? (
@@ -187,7 +209,13 @@ export default async function CreatorHubPage({
           <h2 id="video-h" className="index" style={{ color: "var(--dim)" }}>
             {t(m.hub.videosHeading, { n: videos.length })}
           </h2>
-          <VideoList videos={videos} creatorSlug={creatorSlug} />
+          <VideoList
+            videos={headVideos}
+            total={videos.length}
+            cityOptions={videoCities}
+            typeOptions={videoTypes}
+            creatorSlug={creatorSlug}
+          />
         </section>
       ) : null}
     </main>

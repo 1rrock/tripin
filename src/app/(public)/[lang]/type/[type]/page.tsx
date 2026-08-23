@@ -1,26 +1,26 @@
 import type { Metadata } from "next";
-import type { CSSProperties } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadTypeDetail, parsePlaceType } from "@/shared/api/place-types";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
-import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import { displayCityName, displayPlaceName } from "@/shared/i18n/display";
 import type { Locale } from "@/shared/i18n/config";
 import { localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
-import { placePath } from "@/shared/lib/place-path";
-import { Chip, Frame, Index, Rule } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
-import { Thumb } from "@/shared/ui/Thumb";
+import { TypeCityGroupSection } from "./TypeCityGroup";
+import { TypeMoreCities } from "./TypeMoreCities";
+import { VISIBLE_CITY_GROUPS, toTypeListGroup, type TypeRestCity } from "./list-payload";
 
+/**
+ * ⚠️ 여기서 `searchParams` 를 읽지 마라 — `map/page.tsx:14` 와 같은 규율이다.
+ *    읽는 순간 이 페이지가 ISR 에서 빠져 **매 진입이 람다 SSR** 이 된다.
+ */
 export const revalidate = 3600;
 export function generateStaticParams() {
   return [];
 }
-
-/** 도시당 펼쳐 보여줄 상한. 나머지는 렌더하지 않고 도시 지도로 넘긴다(무게). */
-const VISIBLE_PER_CITY = 12;
 
 interface Params {
   lang: Locale;
@@ -35,9 +35,11 @@ export async function generateMetadata({
   const { lang: locale, type: typeParam } = await params;
   const m = getDictionary(locale);
   const type = parsePlaceType(typeParam);
-  if (!type) return { title: "Not found" };
+  /* 여기까지 오는 일은 없다 — 존재 판정은 `layout.tsx` 가 경계 위에서 끝낸다.
+     라우트마다 제각각이던 not-found 제목은 `m.notFound.metaTitle` 하나로 모았다. */
+  if (!type) return { title: m.notFound.metaTitle };
   const data = await loadTypeDetail(type);
-  if (!data) return { title: "Not found" };
+  if (!data) return { title: m.notFound.metaTitle };
   const label = m.placeTypes[type];
   const cities = data.groups
     .slice(0, 4)
@@ -60,6 +62,7 @@ export async function generateMetadata({
 export default async function TypeDetailPage({ params }: { params: Promise<Params> }) {
   const { lang: locale, type: typeParam } = await params;
   const m = getDictionary(locale);
+  /* 존재 판정은 layout 이 이미 끝냈다. 남긴 건 타입 좁히기용. */
   const type = parsePlaceType(typeParam);
   if (!type) notFound();
   const data = await loadTypeDetail(type);
@@ -67,8 +70,26 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
 
   const label = m.placeTypes[type];
 
-  const schemaPlaces = data.groups.flatMap((g) =>
-    g.places.slice(0, VISIBLE_PER_CITY).map((p) => ({
+  /* 문서에 행으로 그리는 건 앞 3개 도시뿐이다(`VISIBLE_CITY_GROUPS`).
+     예전에는 도시당 12곳 상한(`VISIBLE_PER_CITY`)만 있고 **그룹 수에는 상한이
+     없어서** 도시 46곳 × 12 = 552행이 HTML 마크업 한 벌 + RSC 플라이트 한 벌로
+     두 번 실렸다 — gzip 244KB(원본 1.91MB). 캡이 있는데 아무것도 안 자르고 있었다.
+     남은 도시는 아래 `TypeMoreCities` 가 실링크 칩으로 전부 문서에 남기고,
+     행은 "더 보기"가 `/api/type/[type]/groups` 로 받아 이어붙인다. */
+  const headGroups = data.groups.slice(0, VISIBLE_CITY_GROUPS).map(toTypeListGroup);
+  const restCities: TypeRestCity[] = data.groups.slice(VISIBLE_CITY_GROUPS).map((g) => ({
+    citySlug: g.citySlug,
+    cityName: g.cityName,
+    cityNameEn: g.cityNameEn,
+    count: g.places.length,
+  }));
+
+  /* ⚠️ 문서에 그린 **앞 그룹과 같은 목록**이어야 한다. 문서에 없는 장소를 구조화
+     데이터로 광고하면 크롤러가 보는 것과 신호가 엇갈린다. 꼬리로 가는 길은 따로
+     있다 — 사이트맵이 `/place/[slug]` 를 전부 싣고, 아래 도시 칩이 `/city/[city]`
+     전체 지도로 이어진다. */
+  const schemaPlaces = headGroups.flatMap((g) =>
+    g.places.map((p) => ({
       name: displayPlaceName(p, locale),
       address: p.address,
     })),
@@ -114,111 +135,18 @@ export default async function TypeDetailPage({ params }: { params: Promise<Param
       </header>
 
       <div className="flex flex-col gap-(--block)">
-        {data.groups.map((g, gi) => {
-          const cityLabel = displayCityName(
-            { name: g.cityName, nameEn: g.cityNameEn },
-            locale,
-          );
-          return (
-            <section key={g.citySlug} className="flex flex-col gap-3">
-              <div className="flex items-baseline justify-between gap-3">
-                <h2
-                  className="font-bold"
-                  style={{ fontSize: "var(--t-title)", letterSpacing: "-0.025em" }}
-                >
-                  {cityLabel}
-                  <span className="index tnum ml-2 font-normal" style={{ color: "var(--dim)" }}>
-                    {t(m.typeDetail.placesUnit, { n: g.places.length })}
-                  </span>
-                </h2>
-                <Chip href={localePath(`/city/${g.citySlug}?type=${type}`, locale)}>
-                  {m.typeDetail.viewOnMap}
-                </Chip>
-              </div>
-
-              <ol className="flex flex-col">
-                {g.places.slice(0, VISIBLE_PER_CITY).map((place, i) => {
-                  /* 대표 컷 — 이 장소를 실은 첫 출처 영상. 썸네일이 이 월드의 서명인데
-                     이 화면만 텍스트 목록이었다. 컷은 원본 그대로여야 하므로
-                     프레임 비율(16:9)을 건드리지 않는다(LEGAL.md 4.5) */
-                  const cut = place.sources[0];
-                  return (
-                    <li key={place.id} className="develop" style={{ "--i": i } as CSSProperties}>
-                      <Rule />
-                      {/* 행 전체가 장소 페이지 링크다. 예전에는 여기에 출처·지도
-                          링크가 장소마다 붙어 /type/restaurant 이 3030KB 였고,
-                          정작 `/place` 링크는 하나도 없어서 크롤러가 이 페이지에서
-                          장소로 갈 길이 없었다. 도시·조각 목록과 같은 규율로 맞춘다 —
-                          아웃링크는 장소 페이지가 맡는다. */}
-                      <Link
-                        href={localePath(placePath(place.slug), locale)}
-                        className="flex items-start gap-3.5 py-(--stack)"
-                      >
-                        {cut ? (
-                          /* 첫 도시의 첫 장소 컷만 eager — 이 페이지의 LCP 후보 */
-                          <span className="w-[104px] shrink-0 sm:w-[132px]">
-                            <Frame>
-                              <Thumb
-                                youtubeId={cut.youtubeId}
-                                alt={cut.videoTitle}
-                                eager={gi === 0 && i === 0}
-                              />
-                            </Frame>
-                          </span>
-                        ) : null}
-
-                        <span className="min-w-0 flex-1">
-                          <span className="flex items-baseline gap-2">
-                            <Index tone="wax" className="tnum shrink-0">
-                              {String(i + 1).padStart(2, "0")}
-                            </Index>
-                            <span
-                              className="min-w-0 font-bold"
-                              style={{
-                                fontSize: "var(--t-title)",
-                                letterSpacing: "-0.025em",
-                                lineHeight: 1.3,
-                              }}
-                            >
-                              {displayPlaceName(place, locale)}
-                            </span>
-                          </span>
-                          {displayPlaceSecondary(place, locale) ? (
-                            <span
-                              className="mt-1 block"
-                              style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                            >
-                              {displayPlaceSecondary(place, locale)}
-                            </span>
-                          ) : null}
-                          {place.address ? (
-                            <span
-                              className="mt-0.5 block"
-                              style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                            >
-                              {place.address}
-                            </span>
-                          ) : null}
-                        </span>
-                      </Link>
-                    </li>
-                  );
-                })}
-                {g.places.length > VISIBLE_PER_CITY ? (
-                  <li>
-                    <Rule />
-                    <div className="py-(--stack)">
-                      <Chip href={localePath(`/city/${g.citySlug}?type=${type}`, locale)}>
-                        {t(m.typeDetail.moreInCity, { n: g.places.length - VISIBLE_PER_CITY })}
-                      </Chip>
-                    </div>
-                  </li>
-                ) : null}
-                <Rule />
-              </ol>
-            </section>
-          );
-        })}
+        {headGroups.map((g, gi) => (
+          <TypeCityGroupSection
+            key={g.citySlug}
+            group={g}
+            type={type}
+            locale={locale}
+            m={m}
+            /* 첫 도시의 첫 장소 컷만 eager — 이 페이지의 LCP 후보 */
+            eagerFirstCut={gi === 0}
+          />
+        ))}
+        {restCities.length > 0 ? <TypeMoreCities type={type} rest={restCities} /> : null}
       </div>
 
       {/* 다른 종류로 가는 길 — 목록이 홈 카테고리 그리드로 옮겨졌으므로 홈으로 보낸다 */}

@@ -1,249 +1,36 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { supabase } from "@/shared/api/supabase";
-import { cachePublic } from "@/shared/api/cache";
-import { chunkedIn } from "@/shared/api/chunked-in";
-import type { PlaceType } from "@/shared/api/database.types";
 import { MIN_CONFIRMED_PINS } from "@/shared/config/publish";
 import { getDictionary, t } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
 import type { Locale } from "@/shared/i18n/config";
 import { displayCityName, displayIntro } from "@/shared/i18n/display";
-import type { EnSource } from "@/shared/i18n/display";
 import { Chip } from "@/shared/ui/frame"
 import { Icon } from "@/shared/ui/icons";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { placePath } from "@/shared/lib/place-path";
-import { Explorer, type PublicPlace, type RelatedPiece } from "./Explorer";
+import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
+import { Explorer, type RelatedPiece } from "./Explorer";
+import { loadPiece, toPublicPlace, PIECE_HEAD, type PageParams } from "./loader";
 
 /**
  * ★ 채널×도시 — 이 서비스의 핵심 페이지 (CONCEPT.md 4.3).
- * anon 클라이언트 → RLS 가 공개(is_published) 데이터만 내려준다.
+ * 로더는 `loader.ts` — layout(존재 판정)·page·generateMetadata 셋이 나눠 쓴다.
+ *
+ * ⚠️ 여기서 `searchParams` 를 읽지 마라 — `map/page.tsx:14` 와 같은 규율이다.
+ *    읽는 순간 이 페이지가 ISR 에서 빠져 **매 진입이 람다 SSR** 이 된다
+ *    (실측 TTFB 20~35ms vs ISR 2~3ms). 종류 필터는 이미 클라이언트인 `Explorer`
+ *    가 하이드레이션 뒤 `?type=` 을 읽어 그대로 건다.
+ *
+ * 존재 판정은 `layout.tsx` 가 맡는다 — `loading.tsx` 의 Suspense 경계 **위** 라야
+ * 404 가 제대로 나간다(그 파일 주석).
  */
 
-interface PageParams {
-  creator: string;
-  city: string;
-}
-
-/**
- * 캐시에 로케일을 넣지 않는다 — 도시명은 `name`·`name_en` 을 그대로 실어 보내고
- * 표시 문자열은 호출부에서 고른다. 그래야 EN 요청이 KO 캐시를 맞지 않는다.
- */
-interface RelatedCityRow {
-  slug: string;
-  name: string;
-  nameEn: string | null;
-  count: number;
-}
-
-/**
- * 로더가 돌려주는 장소 원본 — ko/en 요약을 **둘 다** 싣는다(로케일 무관, 캐시 규칙).
- * `PublicPlace`(Explorer.tsx) 와 다르다 — 그건 로케일로 이미 확정된 표시용 형태다.
- * 이 원본을 그대로 Explorer(클라이언트)에 넘기면 props 직렬화로 EN 페이지 HTML 에
- * 한국어 원문이 새어 나간다. `CreatorCityPage` 가 로케일을 안 뒤 `displaySummary()` 로 변환한다.
- */
-interface LoadedPlace {
-  id: string;
-  slug: string;
-  name: string;
-  nameLocal: string | null;
-  placeType: PublicPlace["placeType"];
-  mapStatus: PublicPlace["mapStatus"];
-  lat: number | null;
-  lng: number | null;
-  address: string | null;
-  googlePlaceId: string | null;
-  googleMapsUrl: string | null;
-  kakaoPlaceId: string | null;
-  naverPlaceId: string | null;
-  /** 지도 앱 링크 순서용 — 이 조각은 도시 하나로 고정이라 city.country_code 를 그대로 쓴다. */
-  countryCode: string | null;
-  summary: string | null;
-  summaryBullets: string[];
-  priceHint: string | null;
-  summaryEn: string | null;
-  summaryBulletsEn: string[];
-  priceHintEn: string | null;
-  enSource: EnSource;
-  videoTitle: string | null;
-  youtubeVideoId: string | null;
-  timestampSec: number | null;
-}
-
-/** generateMetadata 와 페이지가 같은 캐시 항목을 나눠 쓴다. */
-const loadPiece = cachePublic(async function loadPiece(params: PageParams) {
-  const [{ data: creator }, { data: city }] = await Promise.all([
-    supabase.from("creators").select("*").eq("slug", params.creator).single(),
-    supabase.from("cities").select("*").eq("slug", params.city).single(),
-  ]);
-  if (!creator || !city) return null;
-
-  const { data: videos } = await supabase
-    .from("videos")
-    .select("id, title, youtube_video_id")
-    .eq("creator_id", creator.id);
-  const videoById = new Map((videos ?? []).map((v) => [v.id, v]));
-
-  const videoIds = (videos ?? []).map((v) => v.id);
-  const links = videoIds.length
-    ? await chunkedIn(
-        (ids) =>
-          supabase
-            .from("video_places")
-            .select("video_id, place_id, timestamp_sec")
-            .in("video_id", ids),
-        videoIds,
-      )
-    : [];
-
-  const placeIds = [...new Set(links.map((l) => l.place_id))];
-  const places = placeIds.length
-    ? await chunkedIn(
-        (ids) =>
-          supabase
-            .from("places")
-            .select(
-              "id, slug, name, name_local, place_type, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_place_id, google_maps_url, kakao_place_id, naver_place_id",
-            )
-            .in("id", ids)
-            .eq("city_id", city.id)
-            .order("created_at", { ascending: true }),
-        placeIds,
-      )
-    : [];
-
-  const loadedPlaces: LoadedPlace[] = places.map((p) => {
-    const link = links.find((l) => l.place_id === p.id);
-    const video = link ? videoById.get(link.video_id) : undefined;
-    return {
-      id: p.id,
-      slug: p.slug,
-      name: p.name,
-      nameLocal: p.name_local,
-      placeType: p.place_type,
-      mapStatus: p.map_status,
-      lat: p.lat,
-      lng: p.lng,
-      address: p.address,
-      googlePlaceId: p.google_place_id,
-      googleMapsUrl: p.google_maps_url,
-      kakaoPlaceId: p.kakao_place_id,
-      naverPlaceId: p.naver_place_id,
-      countryCode: city.country_code,
-      summary: p.summary,
-      summaryBullets: p.summary_bullets,
-      priceHint: p.price_hint,
-      summaryEn: p.summary_en,
-      summaryBulletsEn: p.summary_bullets_en,
-      priceHintEn: p.price_hint_en,
-      enSource: p.en_source,
-      videoTitle: video?.title ?? null,
-      youtubeVideoId: video?.youtube_video_id ?? null,
-      timestampSec: link?.timestamp_sec ?? null,
-    };
-  });
-
-  const { data: piece } = await supabase
-    .from("creator_cities")
-    .select("intro_text, intro_text_en")
-    .eq("creator_id", creator.id)
-    .eq("city_id", city.id)
-    .maybeSingle();
-
-  const [otherCities, otherCreators] = await Promise.all([
-    loadOtherCities(placeIds, city.id),
-    loadOtherCreators(creator.id, city.id),
-  ]);
-
-  return {
-    creator,
-    city,
-    places: loadedPlaces,
-    introText: piece?.intro_text ?? null,
-    introTextEn: piece?.intro_text_en ?? null,
-    otherCities,
-    otherCreators,
-  };
-}, ["piece"]);
-
-/** 이 크리에이터의 확정 장소가 있는 다른 도시 — 다음 행동 칩용. */
-async function loadOtherCities(
-  placeIds: string[],
-  currentCityId: string,
-): Promise<RelatedCityRow[]> {
-  if (placeIds.length === 0) return [];
-  const allPlaces = await chunkedIn(
-    (ids) => supabase.from("places").select("id, city_id, map_status").in("id", ids),
-    placeIds,
-  );
-  const countByCity = new Map<string, number>();
-  for (const p of allPlaces) {
-    if (p.map_status !== "confirmed" || p.city_id === currentCityId) continue;
-    countByCity.set(p.city_id, (countByCity.get(p.city_id) ?? 0) + 1);
-  }
-  if (countByCity.size === 0) return [];
-  const { data: cities } = await supabase
-    .from("cities")
-    .select("id, slug, name, name_en")
-    .in("id", [...countByCity.keys()]);
-  return (cities ?? [])
-    .map((c) => ({
-      slug: c.slug,
-      name: c.name,
-      nameEn: c.name_en,
-      count: countByCity.get(c.id) ?? 0,
-    }))
-    .sort((a, b) => b.count - a.count);
-}
-
-/** 같은 도시에 확정 장소가 있는 다른 크리에이터 — 교차 뷰로 가는 유일한 입구. */
-async function loadOtherCreators(
-  currentCreatorId: string,
-  cityId: string,
-): Promise<RelatedPiece[]> {
-  const { data: cityPlaces } = await supabase
-    .from("places")
-    .select("id")
-    .eq("city_id", cityId)
-    .eq("map_status", "confirmed");
-  const cityPlaceIds = (cityPlaces ?? []).map((p) => p.id);
-  if (cityPlaceIds.length === 0) return [];
-
-  const cityLinks = await chunkedIn(
-    (ids) => supabase.from("video_places").select("video_id, place_id").in("place_id", ids),
-    cityPlaceIds,
-  );
-  const cityVideoIds = [...new Set(cityLinks.map((l) => l.video_id))];
-  if (cityVideoIds.length === 0) return [];
-
-  const cityVideos = await chunkedIn(
-    (ids) => supabase.from("videos").select("id, creator_id").in("id", ids),
-    cityVideoIds,
-  );
-  const creatorByVideo = new Map(cityVideos.map((v) => [v.id, v.creator_id]));
-  const placesByCreator = new Map<string, Set<string>>();
-  for (const link of cityLinks) {
-    const creatorId = creatorByVideo.get(link.video_id);
-    if (!creatorId || creatorId === currentCreatorId) continue;
-    if (!placesByCreator.has(creatorId)) placesByCreator.set(creatorId, new Set());
-    placesByCreator.get(creatorId)!.add(link.place_id);
-  }
-  if (placesByCreator.size === 0) return [];
-
-  const { data: creators } = await supabase
-    .from("creators")
-    .select("id, slug, display_name")
-    .in("id", [...placesByCreator.keys()]);
-  return (creators ?? [])
-    .map((c) => ({
-      slug: c.slug,
-      name: c.display_name,
-      count: placesByCreator.get(c.id)?.size ?? 0,
-    }))
-    .sort((a, b) => b.count - a.count);
+export const revalidate = 3600;
+export function generateStaticParams() {
+  return [];
 }
 
 export async function generateMetadata({
@@ -253,7 +40,9 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: locale, ...routeParams } = await params;
   const data = await loadPiece(routeParams);
-  if (!data) return { title: locale === "en" ? "Not found" : "찾을 수 없는 페이지" };
+  /* 여기까지 오는 일은 없다 — 존재 판정은 `layout.tsx` 가 경계 위에서 끝낸다.
+     라우트마다 제각각이던 not-found 제목은 `m.notFound.metaTitle` 하나로 모았다. */
+  if (!data) return { title: getDictionary(locale).notFound.metaTitle };
   const confirmed = data.places.filter((p) => p.mapStatus === "confirmed");
   const topNames = confirmed.slice(0, 3).map((p) => p.name).join(", ");
   const bare = `/c/${routeParams.creator}/${routeParams.city}`;
@@ -339,13 +128,12 @@ function PendingPiece({
 
 export default async function CreatorCityPage({
   params,
-  searchParams,
 }: {
   params: Promise<PageParams & { lang: Locale }>;
-  searchParams: Promise<{ type?: string }>;
 }) {
-  const [{ lang: locale, ...routeParams }, query] = await Promise.all([params, searchParams]);
+  const { lang: locale, ...routeParams } = await params;
   const data = await loadPiece(routeParams);
+  /* 존재 판정은 layout 이 이미 끝냈다. 남긴 건 타입 좁히기용. */
   if (!data) notFound();
   const cityName = displayCityName({ name: data.city.name, nameEn: data.city.name_en }, locale);
 
@@ -366,29 +154,36 @@ export default async function CreatorCityPage({
      `/api/map/place/[id]` 로 받는다(Explorer `PublicPlace` 주석). 예전에는 여기서
      전부 넘겨서 후쿠오카 아저씨×후쿠오카 535곳이 HTML 3.2MB 였다.
 
+     **그리고 이제는 그 최소 형태조차 전부 싣지 않는다.** 필드를 줄인 뒤에도 296곳이
+     HTML 마크업 한 벌 + RSC 플라이트 한 벌로 두 번 실려 gzip 105KB(원본 866KB)였고,
+     그 수치는 확정 장소가 늘수록 정비례로 자란다. `/map` 이 씨앗 6곳으로 푼 것과
+     같은 처방으로, 문서에는 앞줄 `PIECE_HEAD` 곳만 남기고 나머지는 Explorer 가
+     마운트 뒤 `/api/city/[city]/c/[creator]` 로 받아 이어붙인다.
+
      ⚠️ 여기를 되돌리면 DOM 이 아니라 **RSC 페이로드**가 다시 부푼다. `.map()` 을
      거치면 초과 속성 검사가 안 걸려서 tsc 가 잡아 주지 않는다 — 필드를 늘리기 전에
      535를 곱해 보고, 정말 목록·핀·필터에 필요한지 따져라.
 
      로케일 문제도 같이 사라진다 — 넘기는 값에 요약이 없으니 EN 페이지 HTML 에
      한국어 원문이 샐 자리가 없다(예전에 실제로 걸렸던 검증 항목이다). */
-  const places: PublicPlace[] = data.places.map((p) => ({
-    id: p.id,
-    slug: p.slug,
-    name: p.name,
-    nameLocal: p.nameLocal,
-    placeType: p.placeType,
-    mapStatus: p.mapStatus,
-    lat: p.lat,
-    lng: p.lng,
-    address: p.address,
-    youtubeVideoId: p.youtubeVideoId,
-    timestampSec: p.timestampSec,
-  }));
+  const headPlaces = data.places.slice(0, PIECE_HEAD).map(toPublicPlace);
+
+  /* 통계 줄과 종류 칩은 **전체** 기준으로 서버가 미리 센다. 앞줄 36곳에서 뽑으면
+     꼬리가 도착할 때 숫자가 뛰고 칩 줄이 늘어난다 — 무엇을 몇 개 그리느냐만
+     바꾸는 게 이 작업의 규율이라, 통계·필터의 모양은 자르기 전과 같아야 한다. */
+  const totalConfirmed = confirmedCount;
+  const totalCandidates = data.places.filter((p) => p.mapStatus === "candidate").length;
+  const presentTypes = FILTERABLE_TYPES.filter((pt) =>
+    data.places.some((p) => p.placeType === pt),
+  );
 
   const m = getDictionary(locale);
   const bare = `/c/${routeParams.creator}/${routeParams.city}`;
-  const confirmedPlaces = places.filter((p) => p.mapStatus === "confirmed");
+  /* ⚠️ 문서에 그린 **앞줄과 같은 목록**이어야 한다. 문서에 없는 장소를 구조화
+     데이터로 광고하면 크롤러가 보는 것과 신호가 엇갈린다. 꼬리로 가는 길은 따로
+     있다 — 사이트맵이 `/place/[slug]` 를 전부 싣고, 이 화면 아래 칩이
+     `/city/[city]` 전체 지도와 다른 조각으로 이어진다. */
+  const confirmedPlaces = headPlaces.filter((p) => p.mapStatus === "confirmed");
   const listName =
     locale === "en"
       ? `${cityName} by ${data.creator.display_name}`
@@ -427,8 +222,11 @@ export default async function CreatorCityPage({
         accentColor={data.creator.accent_color}
         cityName={cityName}
         introText={displayIntro(data, locale)}
-        places={places}
-        activeType={(query.type as PlaceType | undefined) ?? null}
+        places={headPlaces}
+        total={data.places.length}
+        totalConfirmed={totalConfirmed}
+        totalCandidates={totalCandidates}
+        presentTypes={presentTypes}
         basePath={bare}
         otherCities={data.otherCities.map(
           (c): RelatedPiece => ({

@@ -14,6 +14,10 @@
  *
  * 필터는 클라이언트. `?type=`·`?channel=` 은 replace 로 동기화해 공유·뒤로가기가 된다.
  * 지도 뷰포트 초기화를 피하려고 풀 네비게이션은 쓰지 않는다.
+ *
+ * **초기값도 클라이언트에서 읽는다.** 서버에서 `searchParams` 를 읽으면 이 페이지가
+ * ISR 에서 빠져 매 진입이 람다 SSR 이 된다(`page.tsx` 머리 주석).
+ * `useSearchParams()` 를 쓰지 않는 이유는 `readInitialFilter()` 주석에 있다.
  */
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
@@ -26,6 +30,7 @@ import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { ShareButton } from "@/shared/ui/ShareButton";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { EmptyState } from "@/shared/ui/EmptyState";
 import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
@@ -56,6 +61,30 @@ const EMPTY_SUMMARY: SummaryDisplay = {
   original: null,
 };
 
+/**
+ * 첫 진입의 쿼리 — `useSearchParams()` 를 **쓰지 않는다.**
+ *
+ * 그 훅은 정적(ISR) 프리렌더 중에 `BailoutToCSRError` 를 던져, 가장 가까운
+ * Suspense 경계(= 이 라우트의 `loading.tsx`) 아래를 통째로 클라이언트 렌더로
+ * 돌린다. 그러면 이 도시의 장소 목록이 서버 HTML 에서 통째로 사라진다 —
+ * 검색 유입이 본업인 페이지에서 그건 필터 하나와 바꿀 값이 아니다.
+ *
+ * 그래서 하이드레이션 뒤 `window.location.search` 를 한 번 읽는다. 첫 페인트는
+ * 필터 없는 전체 목록이고, 깊은 링크의 필터는 그 다음 프레임에 걸린다.
+ */
+function readInitialFilter(): URLSearchParams {
+  return new URLSearchParams(window.location.search);
+}
+
+function parseType(v: string | null): PlaceType | null {
+  return v && (FILTERABLE_TYPES as string[]).includes(v) ? (v as PlaceType) : null;
+}
+
+function parseChannel(v: string | null, creators: { slug: string }[]): string | null {
+  if (!v) return null;
+  return creators.some((c) => c.slug === v) ? v : null;
+}
+
 export interface CityPlace {
   id: string;
   slug: string;
@@ -74,26 +103,75 @@ export interface CityPlace {
 export function CityExplorer({
   cityName,
   citySlug,
-  places,
+  places: headPlaces,
+  total,
+  presentTypes,
   creators,
-  initialType,
-  initialChannel,
 }: {
   cityName: string;
   citySlug: string;
+  /** 서버가 문서에 그린 **앞줄**만(`list-payload.ts` `CITY_HEAD`). 전체가 아니다 */
   places: CityPlace[];
+  /** 이 도시의 확정 장소 전체 수 — 개수 라벨이 앞줄만 세지 않게 서버가 넘긴다 */
+  total: number;
+  /** 전체 기준으로 서버가 센 종류 칩 — 꼬리가 와도 칩 줄이 안 튄다 */
+  presentTypes: PlaceType[];
   creators: CityCreator[];
-  initialType: PlaceType | null;
-  initialChannel: string | null;
 }) {
   const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
   const pathname = usePathname();
-  const [type, setType] = useState<PlaceType | null>(initialType);
-  const [channel, setChannel] = useState<string | null>(initialChannel);
+  const [type, setType] = useState<PlaceType | null>(null);
+  const [channel, setChannel] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const rowRefs = useRef<globalThis.Map<string, HTMLLIElement>>(new globalThis.Map());
+
+  /**
+   * 목록의 꼬리 — 문서에는 앞줄 `CITY_HEAD` 곳만 실린다(`list-payload.ts`).
+   * 마운트 즉시, 기본 우선순위로 한 번 받아 통째로 갈아 끼운다. `/map` 이
+   * 씨앗 6곳에 `/api/map/index` 를 얹는 방식과 같다(HomeCanvas 주석).
+   *
+   * 실패해도 `[]` 로 덮지 않는다 — 서버가 이미 그려 둔 앞줄까지 지우면 지도도
+   * 목록도 통째로 빈 화면이 된다. 꼬리는 있으면 더 보이는 것이지, 없다고
+   * 화면이 사라져야 할 것이 아니다.
+   */
+  const [fetchedPlaces, setFetchedPlaces] = useState<CityPlace[] | null>(null);
+  const places = fetchedPlaces ?? headPlaces;
+  /** 앞줄이 곧 전체인 작은 도시는 처음부터 준비된 상태다 */
+  const placesReady = fetchedPlaces !== null || headPlaces.length >= total;
+  useEffect(() => {
+    if (headPlaces.length >= total) return;
+    let alive = true;
+    fetch(`/api/city/${citySlug}/places`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { places?: CityPlace[] } | null) => {
+        if (alive && data?.places?.length) setFetchedPlaces(data.places);
+      })
+      .catch(() => {
+        /* 앞줄은 그대로 둔다 — 위 주석 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [citySlug, headPlaces.length, total]);
+
+  /* 깊은 링크(`/type/[type]` 의 "지도에서 보기" 칩이 `?type=` 을 실어 보낸다)를
+     하이드레이션 직후 한 번 적용한다. 마운트 이후라 첫 HTML 은 필터 없는 전체
+     목록이고, 그게 이 페이지가 검색엔진에 보여야 할 모습이다. */
+  useEffect(() => {
+    const q = readInitialFilter();
+    const t0 = parseType(q.get("type"));
+    const c0 = parseChannel(q.get("channel"), creators);
+    /* eslint-disable react-hooks/set-state-in-effect --
+       마운트 직후 1회. 서버는 이 값을 읽을 수 없다(readInitialFilter 주석) —
+       "외부 시스템(주소창)에서 한 번 구독해 온다" 가 정확히 이 훅의 용례다. */
+    if (t0) setType(t0);
+    if (c0) setChannel(c0);
+    /* eslint-enable react-hooks/set-state-in-effect */
+    // 이후 필터 변경은 아래 select* 가 상태와 URL 을 함께 움직인다
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   /** 지도 뷰포트 유지 — scroll:false replace */
   const syncQuery = useCallback(
@@ -161,8 +239,6 @@ export function CityExplorer({
       })),
     [shown],
   );
-
-  const presentTypes = FILTERABLE_TYPES.filter((t) => places.some((p) => p.placeType === t));
 
   /** 지도 핀 → 상세 시트. 지도에는 이름 말고 들어갈 자리가 없다 */
   const onPinClick = useCallback(
@@ -323,9 +399,13 @@ export function CityExplorer({
 
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
             <p className="index tnum" style={{ color: "var(--dim)" }}>
-              {shown.length === places.length
-                ? t(m.cityDetail.placesAll, { n: places.length })
-                : t(m.cityDetail.placesFiltered, { shown: shown.length, total: places.length })}
+              {/* 개수는 늘 **전체**(서버가 센 total)를 기준으로 말한다. 필터를 건
+                  숫자 짝은 꼬리가 도착한 뒤에만 — 앞줄 36곳만 든 순간의 shown 은
+                  "몇 곳이 걸렸나"의 답이 아니라, 잠깐 12곳이 떴다 뛰는 값이 된다
+                  (`/map` 이 씨앗 6곳에서 겪은 그 버그다). */}
+              {!placesReady || shown.length === places.length
+                ? t(m.cityDetail.placesAll, { n: total })
+                : t(m.cityDetail.placesFiltered, { shown: shown.length, total })}
               {m.cityDetail.pinHint}
             </p>
             {channel ? (
@@ -341,12 +421,17 @@ export function CityExplorer({
         </div>
 
         <div className="flex flex-col gap-(--block) px-(--gutter) pb-10">
-          {shown.length === 0 ? (
-            <div className="flex flex-col items-start gap-3">
-              <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                {m.cityDetail.noMatch}
-              </p>
+          {shown.length === 0 && !placesReady ? (
+            /* 꼬리가 오기 전 — 깊은 링크 필터가 앞줄 36곳에서만 안 걸린 것일 수
+               있다. "찾는 곳이 없어요" 를 띄웠다가 곧 목록이 차면 그건 거짓말이다.
+               자리를 비워 두고 도착을 기다린다(대개 한 프레임). */
+            <span aria-hidden />
+          ) : shown.length === 0 ? (
+            /* 빈 화면 문법은 `EmptyState` 하나다 — 다음 행동(필터 지우기)은
+               이미 있었으니 상자만 갈아 끼운다. */
+            <EmptyState message={m.cityDetail.noMatch} className="pt-8 pb-10">
               <Chip
+                size="md"
                 onClick={() => {
                   setType(null);
                   setChannel(null);
@@ -355,7 +440,7 @@ export function CityExplorer({
               >
                 {m.cityDetail.clearFilters}
               </Chip>
-            </div>
+            </EmptyState>
           ) : (
             <ol>
               {shown.map((place, index) => {
@@ -373,7 +458,11 @@ export function CityExplorer({
                     <div
                       className="-mx-2.5 flex flex-col gap-3 px-2.5 py-4 transition-colors"
                       style={{
-                        background: active ? "var(--sheet)" : undefined,
+                        /* `--halo` 다. 예전엔 `--sheet` 였는데 `--ground` 와 둘 다
+                           #ffffff 라 지도 핀을 눌러도 목록에서 아무 일도 안 일어났다
+                           — 보이는 건 번호 원뿐이고 그건 스크롤하면 화면 밖으로
+                           나간다. `--halo` 가 이 시스템에서 "지금 이것"의 면이다. */
+                        background: active ? "var(--halo)" : undefined,
                         borderRadius: active ? "var(--r-control)" : undefined,
                       }}
                     >

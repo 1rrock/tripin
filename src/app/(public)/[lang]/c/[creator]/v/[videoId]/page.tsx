@@ -50,9 +50,11 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { lang: locale, creator, videoId } = await params;
   const data = await loadVideoDetail(creator, videoId);
+  /* 여기까지 오는 일은 없다 — 존재 판정은 `layout.tsx` 가 경계 위에서 끝낸다.
+     라우트마다 제각각이던 not-found 제목은 `m.notFound.metaTitle` 하나로 모았다. */
   if (!data)
     return {
-      title: locale === "en" ? "Not found" : "찾을 수 없는 페이지",
+      title: getDictionary(locale).notFound.metaTitle,
       robots: { index: false, follow: false },
     };
   const names = data.video.stops
@@ -85,6 +87,7 @@ export default async function VideoPage({
   const { lang: locale, creator, videoId } = await params;
   const m = getDictionary(locale);
   const data = await loadVideoDetail(creator, videoId);
+  /* 존재 판정은 layout 이 이미 끝냈다. 남긴 건 타입 좁히기용. */
   if (!data) notFound();
 
   const { creator: ch, video } = data;
@@ -189,30 +192,34 @@ export default async function VideoPage({
 
       <Timeline video={video} creatorName={ch.displayName} />
 
-      {/* 다음 행동 — 1페이지 이탈을 막는 조각 간 연결 */}
+      {/* 다음 행동 — 1페이지 이탈을 막는 조각 간 연결.
+          ⚠️ 이 줄은 **전부 size="md"** 다. 예전에는 기본 칩(28px)과 손으로 그린
+          연예인 칩(37px)이 같은 flex-wrap 에 섞여 밑선이 눈에 띄게 어긋났다
+          (2026-08-23 감사). 한 줄에 두 단을 섞지 않는다 — 여기서는 누를 자리로
+          서는 줄이므로 큰 단으로 맞춘다. */}
       <section className="flex flex-wrap gap-2">
-        <Chip href={localePath(`/c/${ch.slug}`, locale)}>
+        <Chip size="md" href={localePath(`/c/${ch.slug}`, locale)}>
           {t(m.video.otherVideos, { creator: ch.displayName })}
         </Chip>
         {video.cities.length === 1 && video.stops[0]?.citySlug ? (
-          <Chip href={localePath(`/c/${ch.slug}/${video.stops[0].citySlug}`, locale)}>
+          <Chip size="md" href={localePath(`/c/${ch.slug}/${video.stops[0].citySlug}`, locale)}>
             {t(m.video.viewCityMap, { city: displayCityName(video.cities[0], locale) })}
           </Chip>
         ) : null}
-        {/* 연예인 칩만 밀랍색 — 장소 상세·지도 드로어와 같은 강조 문법.
-            회색 Chip 사이에 두면 이 기능의 후크가 묻힌다(2026-08-23 UX 점검). */}
+        {/* 연예인 칩만 밀랍색 — 장소 상세와 같은 강조 문법(같은 `tone="wax"`).
+            회색 칩 사이에 두면 이 기능의 후크가 묻힌다(2026-08-23 UX 점검). */}
         {celebrities.map((c) => (
-          <Link
+          <Chip
             key={c.name}
+            size="md"
+            tone="wax"
             href={localePath(`/celebs#${celebAnchor(c.name)}`, locale)}
-            className="inline-flex items-center gap-1.5 rounded-full px-3.5 py-2 text-[13px] font-bold text-white active:scale-[0.98]"
-            style={{ background: "var(--wax)" }}
           >
             {t(m.placeDetail.celebMore, {
               person: locale === "ko" ? c.name : (c.nameEn ?? c.name),
             })}
             <Icon.chevron className="size-2.5" />
-          </Link>
+          </Chip>
         ))}
       </section>
     </main>

@@ -20,12 +20,14 @@
 
 import { useEffect, useMemo, useRef, useState } from "react";
 import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import type { MapStatus, PlaceType } from "@/shared/api/database.types";
 import type { MapPlaceDetail } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
 import { PlaceSheet, type SheetPlace } from "@/shared/ui/PlaceSheet";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
+import { EmptyState } from "@/shared/ui/EmptyState";
 import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
@@ -87,11 +89,32 @@ interface ExplorerProps {
   accentColor: string;
   cityName: string;
   introText: string | null;
+  /** 서버가 문서에 그린 **앞줄**만(`loader.ts` `PIECE_HEAD`). 전체가 아니다 */
   places: PublicPlace[];
-  activeType: PlaceType | null;
+  /** 이 조각의 장소 전체 수 — 꼬리를 받아야 하는지 판정한다 */
+  total: number;
+  /** 통계 줄이 앞줄만 세지 않게 서버가 전체 기준으로 넘긴다 */
+  totalConfirmed: number;
+  totalCandidates: number;
+  /** 전체 기준으로 서버가 센 종류 칩 — 꼬리가 와도 칩 줄이 안 튄다 */
+  presentTypes: PlaceType[];
   basePath: string;
   otherCities?: RelatedPiece[];
   otherCreators?: RelatedPiece[];
+}
+
+/**
+ * 첫 진입의 `?type=` — `useSearchParams()` 를 **쓰지 않는다.**
+ *
+ * 그 훅은 정적(ISR) 프리렌더 중에 `BailoutToCSRError` 를 던져, 가장 가까운
+ * Suspense 경계(= 이 라우트의 `loading.tsx`) 아래를 통째로 클라이언트 렌더로
+ * 돌린다. 그러면 이 조각의 장소 목록이 서버 HTML 에서 통째로 사라진다 —
+ * 검색 유입이 본업인 페이지에서 그건 필터 하나와 바꿀 값이 아니다.
+ * 그래서 하이드레이션 뒤 `window.location.search` 를 한 번 읽는다.
+ */
+function readInitialType(): PlaceType | null {
+  const v = new URLSearchParams(window.location.search).get("type");
+  return v && (FILTERABLE_TYPES as string[]).includes(v) ? (v as PlaceType) : null;
 }
 
 /** 아웃링크 — 유튜브는 타임스탬프 포함 (&t=초). */
@@ -104,13 +127,73 @@ export function Explorer({
   accentColor,
   cityName,
   introText,
-  places,
-  activeType,
+  places: headPlaces,
+  total,
+  totalConfirmed,
+  totalCandidates,
+  presentTypes,
   basePath,
   otherCities = [],
   otherCreators = [],
 }: ExplorerProps) {
   const { messages: m, href, t, locale } = useLocale();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  // basePath = /c/[creator]/[city] — 다음 행동 칩의 교차 링크와 꼬리 요청에 재사용
+  const [, , creatorSlug, citySlug] = basePath.split("/");
+
+  /**
+   * 목록의 꼬리 — 문서에는 앞줄 `PIECE_HEAD` 곳만 실린다(`loader.ts`).
+   * 마운트 즉시, 기본 우선순위로 한 번 받아 통째로 갈아 끼운다. `/map` 이
+   * 씨앗 6곳에 `/api/map/index` 를 얹는 방식과 같다(HomeCanvas 주석).
+   *
+   * 실패해도 `[]` 로 덮지 않는다 — 서버가 이미 그려 둔 앞줄까지 지우면 지도도
+   * 목록도 통째로 빈 화면이 된다.
+   */
+  const [fetchedPlaces, setFetchedPlaces] = useState<PublicPlace[] | null>(null);
+  const places = fetchedPlaces ?? headPlaces;
+  /** 앞줄이 곧 전체인 작은 조각은 처음부터 준비된 상태다 */
+  const placesReady = fetchedPlaces !== null || headPlaces.length >= total;
+  useEffect(() => {
+    if (headPlaces.length >= total) return;
+    let alive = true;
+    fetch(`/api/city/${citySlug}/c/${creatorSlug}`)
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { places?: PublicPlace[] } | null) => {
+        if (alive && data?.places?.length) setFetchedPlaces(data.places);
+      })
+      .catch(() => {
+        /* 앞줄은 그대로 둔다 — 위 주석 */
+      });
+    return () => {
+      alive = false;
+    };
+  }, [citySlug, creatorSlug, headPlaces.length, total]);
+
+  /**
+   * 종류 필터는 이제 **클라이언트 상태**다.
+   *
+   * 예전에는 서버가 `searchParams.type` 을 읽고 칩이 풀 네비게이션(`<Chip href>`)
+   * 으로 그 값을 바꿨다. 그 한 줄 때문에 이 페이지가 ISR 에서 빠져 매 진입이
+   * 람다 SSR 이었다(TTFB 20~35ms vs 2~3ms). 페이지가 정적이 된 지금은 같은 URL 로
+   * 이동해도 서버 응답이 그대로라 필터가 안 걸린다 — 그래서 상태로 옮기고
+   * URL 은 `replace` 로 따라오게 한다(공유·새로고침은 그대로 된다).
+   * 도시 지도(`CityExplorer`)가 이미 쓰는 문법이다.
+   */
+  const [activeType, setActiveType] = useState<PlaceType | null>(null);
+  useEffect(() => {
+    const t0 = readInitialType();
+    /* eslint-disable-next-line react-hooks/set-state-in-effect --
+       마운트 직후 1회. 서버는 이 값을 읽을 수 없다(readInitialType 주석). */
+    if (t0) setActiveType(t0);
+    // 이후 변경은 selectType 이 상태와 URL 을 함께 움직인다
+  }, []);
+
+  const selectType = (next: PlaceType | null) => {
+    setActiveType(next);
+    router.replace(next ? `${pathname}?type=${next}` : pathname, { scroll: false });
+  };
   /**
    * 첫 화면은 **아무것도 안 고른 상태**다.
    *
@@ -150,22 +233,16 @@ export function Explorer({
     [places, activeType, accentColor],
   );
 
-  // 이 조각에 실제로 존재하는 타입만 필터 칩으로 노출
-  const presentTypes = FILTERABLE_TYPES.filter((pt) => places.some((p) => p.placeType === pt));
-  /** 얇은 조각은 교차 채널을 접힌 아래에 두면 "없다"로 읽힌다 — 헤더로 올린다 */
-  const thinPiece = confirmed.length <= 4;
+  /* 통계 줄의 숫자 — 꼬리가 오기 전에는 서버가 센 전체를 쓴다. 앞줄 36곳만 든
+     순간의 confirmed.length 는 "몇 곳인가"의 답이 아니라, 잠깐 36곳이 떴다
+     296곳으로 뛰는 값이 된다(`/map` 이 씨앗 6곳에서 겪은 그 버그다). */
+  const statsConfirmed = placesReady ? confirmed.length : totalConfirmed;
+  const statsCandidates = placesReady ? candidates.length : totalCandidates;
 
-  // basePath = /c/[creator]/[city] — 다음 행동 칩의 교차 링크에 재사용
-  const [, , creatorSlug, citySlug] = basePath.split("/");
-
-  /** 필터 칩 href. basePath 는 로케일 없는 내부 경로라 href() 로 접두사를 붙인다. */
-  const buildUrl = (type: PlaceType | null) => {
-    const params = new URLSearchParams();
-    if (type) params.set("type", type);
-    const qs = params.toString();
-    const path = href(basePath);
-    return qs ? `${path}?${qs}` : path;
-  };
+  /** 얇은 조각은 교차 채널을 접힌 아래에 두면 "없다"로 읽힌다 — 헤더로 올린다.
+   *  기준은 통계 줄과 같은 수다(= 꼬리가 오기 전에는 서버가 센 전체). 앞줄만 세면
+   *  296곳짜리 조각이 잠깐 "얇은 조각" 으로 잡혀 헤더 블록이 떴다 사라진다. */
+  const thinPiece = statsConfirmed <= 4;
 
   /** 선택된 행이 화면 밖이면 끌어온다. 이미 보이면 건드리지 않는다 */
   const revealRow = (id: string) => {
@@ -313,8 +390,8 @@ export function Explorer({
             </div>
 
             <p className="index tnum" style={{ color: "var(--dim)" }}>
-              {t(m.piece.statsConfirmed, { n: confirmed.length })}
-              {candidates.length > 0 ? t(m.piece.statsCandidates, { n: candidates.length }) : ""}
+              {t(m.piece.statsConfirmed, { n: statsConfirmed })}
+              {statsCandidates > 0 ? t(m.piece.statsCandidates, { n: statsCandidates }) : ""}
               {t(m.piece.statsTypes, { n: presentTypes.length })}
             </p>
 
@@ -347,15 +424,14 @@ export function Explorer({
 
             {presentTypes.length > 1 ? (
               <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
-                <Chip href={buildUrl(null)} active={activeType === null} scroll={false}>
+                <Chip active={activeType === null} onClick={() => selectType(null)}>
                   {m.piece.filterAll}
                 </Chip>
                 {presentTypes.map((pt) => (
                   <Chip
                     key={pt}
-                    href={buildUrl(pt)}
                     active={activeType === pt}
-                    scroll={false}
+                    onClick={() => selectType(activeType === pt ? null : pt)}
                   >
                     {m.placeTypes[pt]}
                   </Chip>
@@ -365,10 +441,31 @@ export function Explorer({
           </header>
 
           <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
-            {confirmed.length === 0 ? (
-              <p style={{ fontSize: "var(--t-body)", color: "var(--dim)" }}>
-                {activeType ? m.piece.emptyFiltered : m.piece.emptyAll}
-              </p>
+            {confirmed.length === 0 && !placesReady ? (
+              /* 꼬리가 오기 전 — 앞줄 36곳에 확정 장소가 안 걸렸거나 깊은 링크
+                 필터가 아직 못 만난 것일 수 있다. "아직 없어요" 를 띄웠다가 곧
+                 목록이 차면 그건 거짓말이다. 자리를 비워 두고 도착을 기다린다. */
+              <span aria-hidden />
+            ) : confirmed.length === 0 ? (
+              /* 문장 하나로 끝나던 막다른 화면(`EmptyState.tsx:6`) — 다음 행동을
+                 붙인다. 갈래는 원인이 정한다: 필터 때문에 비었으면 필터를 풀고,
+                 이 조각 자체가 비었으면 같은 도시의 전체 지도로 보낸다(그쪽엔
+                 다른 채널의 장소가 있다). 억지 CTA 가 아니라 둘 다 이 화면이
+                 실제로 막힌 지점을 푸는 행동이다. */
+              <EmptyState
+                message={activeType ? m.piece.emptyFiltered : m.piece.emptyAll}
+                className="pt-8 pb-10"
+              >
+                {activeType ? (
+                  <Chip size="md" onClick={() => selectType(null)}>
+                    {m.cityDetail.clearFilters}
+                  </Chip>
+                ) : (
+                  <Chip size="md" href={href(`/city/${citySlug}`)}>
+                    {t(m.piece.cityWide, { city: cityName })}
+                  </Chip>
+                )}
+              </EmptyState>
             ) : (
               <ol>
                 {confirmed.map((place, index) => {
@@ -387,7 +484,11 @@ export function Explorer({
                       <div
                         className="-mx-2.5 flex flex-col gap-3 px-2.5 py-4 transition-colors"
                         style={{
-                          background: active ? "var(--sheet)" : undefined,
+                          /* `--halo` 다. 예전엔 `--sheet` 였는데 `--ground` 와 둘 다
+                             #ffffff 라 지도 핀을 눌러도 목록에서 아무 일도 안 일어났다
+                             — 보이는 건 번호 원뿐이고 그건 스크롤하면 화면 밖으로
+                             나간다. `--halo` 가 이 시스템에서 "지금 이것"의 면이다. */
+                          background: active ? "var(--halo)" : undefined,
                           borderRadius: active ? "var(--r-control)" : undefined,
                         }}
                       >
