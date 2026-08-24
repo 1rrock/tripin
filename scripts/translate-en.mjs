@@ -415,9 +415,18 @@ async function runNames() {
   const { data: cities } = await db.from("cities").select("id, name, name_en, country_code");
   const city = new Map((cities ?? []).map((c) => [c.id, c]));
 
-  let targets = places.filter(
-    (p) => hasHangul(p.name) && !(p.name_en ?? "").trim(),
-  );
+  /* ⚠️ **이름 순으로 정렬한 뒤 자른다.** 배치는 서로를 못 보므로, 같은 체인의
+     지점들이 다른 배치에 흩어지면 표기가 갈린다 — 실측으로 당했다:
+       교우자노 캇짱 → Kat-chan / Kacchan / Katchan  (세 지점, 세 표기)
+       스케상우동    → Sukesan / Sukesang
+       야요이켄      → Yayoi-ken / Yayoiken
+     한글 이름 순으로 세우면 "교우자노 캇짱 니시진점/텐진점/하카타점" 이 붙어 서서
+     같은 요청 안에 들어가고, 모델이 한 번에 보고 같은 표기를 고른다.
+     완전한 보장은 아니다(체인이 배치 경계에 걸칠 수 있다) — 돌린 뒤 같은 기본명의
+     영문이 갈렸는지 한 번 훑어라. */
+  let targets = places
+    .filter((p) => hasHangul(p.name) && !(p.name_en ?? "").trim())
+    .sort((a, b) => a.name.localeCompare(b.name, "ko"));
   if (LIMIT) targets = targets.slice(0, LIMIT);
 
   const skippedLatin = places.filter((p) => !hasHangul(p.name)).length;
