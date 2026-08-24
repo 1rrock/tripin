@@ -393,6 +393,33 @@ export const ko = {
     takedownLink: "삭제 요청",
     takedownAfter: "으로 채널 전체를 내릴 수 있습니다.",
   },
+  /* 삭제·정정 요청 폼(`/takedown`). 이 화면의 설명 문구는 아직 페이지 안에 인라인이고
+     여기엔 **폼 카피만** 있다 — 폼이 나중에 생겨서 갈렸다. 옮길 때 같이 옮길 것. */
+  takedownForm: {
+    heading: "바로 접수하기",
+    lead: "아래로 보내주시면 처리 큐에 바로 쌓입니다.",
+    /** `{email}` — 폼이 죽어도 접수할 길을 화면에서 치우지 않는다. */
+    mailAlt: "메일이 편하시면 {email} 로 보내주셔도 됩니다 — 같은 절차로 처리됩니다.",
+    urlLabel: "해당 채널 또는 장소의 URL (선택)",
+    urlPlaceholder: "https://eatripin.com/place/…",
+    emailLabel: "회신받을 이메일",
+    emailPlaceholder: "you@example.com",
+    /* 필수인 이유를 적는다 — 법이 요구하는 통지를 할 유일한 창구다 */
+    emailHint: "처리 결과를 알려드릴 유일한 창구입니다. 다른 곳에 쓰지 않습니다.",
+    reasonLabel: "요청 사유",
+    reasonPlaceholder: "무엇이 사실과 다른지, 또는 왜 내려야 하는지 적어주세요.",
+    submit: "요청 보내기",
+    submitting: "보내는 중…",
+    doneTitle: "요청을 접수했어요.",
+    doneBody:
+      "지체 없이 확인해 조치하고, 결과를 남겨주신 이메일로 알려드립니다. 임시로 비공개 처리한 경우 30일 안에 결론을 냅니다.",
+    errEmail: "이메일 주소를 확인해 주세요.",
+    errReason: "요청 사유를 적어주세요.",
+    errorInvalid: "이메일 주소와 요청 사유를 확인해 주세요.",
+    errorRateLimited: "요청이 너무 잦아요. 잠시 뒤 다시 시도해 주세요.",
+    /* 🔴 500 은 "접수가 어디에도 안 남았다"는 뜻이다. 남은 길(메일)을 반드시 준다. */
+    errorFailed: "접수에 실패했어요. {email} 로 보내주시면 같은 절차로 처리됩니다.",
+  },
   hub: {
     channelNav: "채널",
     stats: "{places}곳 · 도시 {cities} · 검수한 영상 {videos}",
@@ -849,6 +876,29 @@ export type Messages = {
     takedownBefore: string;
     takedownLink: string;
     takedownAfter: string;
+  };
+  takedownForm: {
+    heading: string;
+    lead: string;
+    /** `{email}` */
+    mailAlt: string;
+    urlLabel: string;
+    urlPlaceholder: string;
+    emailLabel: string;
+    emailPlaceholder: string;
+    emailHint: string;
+    reasonLabel: string;
+    reasonPlaceholder: string;
+    submit: string;
+    submitting: string;
+    doneTitle: string;
+    doneBody: string;
+    errEmail: string;
+    errReason: string;
+    errorInvalid: string;
+    errorRateLimited: string;
+    /** `{email}` — 접수가 실패했을 때 남는 유일한 길. 문구에서 빼지 말 것. */
+    errorFailed: string;
   };
   hub: {
     channelNav: string;

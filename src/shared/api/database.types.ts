@@ -311,6 +311,17 @@ export type Database = {
         };
         Returns: undefined;
       };
+      /** 삭제·정정 요청 접수 — 0021. anon 실행 권한은 잠겨 있다(service_role 전용) */
+      submit_takedown_request: {
+        Args: {
+          p_target_type: string;
+          p_target_id: string | null;
+          p_target_url: string | null;
+          p_requester_email: string | null;
+          p_reason: string;
+        };
+        Returns: undefined;
+      };
     };
     Enums: {
       place_type: PlaceType;

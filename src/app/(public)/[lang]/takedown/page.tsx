@@ -6,6 +6,7 @@ import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { localePath } from "@/shared/i18n/locale";
 import { publicMeta } from "@/shared/seo/page-meta";
 import { Icon } from "@/shared/ui/icons";
+import { TakedownForm } from "./TakedownForm";
 
 
 const h2 = {
@@ -76,37 +77,51 @@ export default async function TakedownPage({
       </header>
 
       <div className="flex max-w-[64ch] flex-col gap-(--block)">
+        {/* 무엇을 요청할 수 있나 — 폼보다 먼저 온다. 무엇을 쓰는 칸인지 모르는 채로
+            입력창을 만나면 대개 되돌아 나간다. */}
+        <section className="flex flex-col gap-3">
+          <h2 style={h2}>{locale === "ko" ? "무엇을 요청할 수 있나요" : "What you can request"}</h2>
+          <p style={body}>
+            {locale === "ko"
+              ? "장소 정보가 사실과 다르거나, 엉뚱한 지점으로 표시되었거나, 삭제를 원하시는 경우 접수해 주세요. 크리에이터 본인이시라면 채널 전체를 즉시 비공개로 전환해 드릴 수도 있습니다."
+              : "Let us know if a place is factually wrong, mapped to the wrong branch, or if you’d like it removed. If you’re the creator, we can also take an entire channel down immediately at your request."}
+          </p>
+        </section>
+
+        {/* 🔴 접수 창구. 이게 없던 동안 `takedown_requests` 는 읽는 곳만 있고 쓰는 곳이
+            없어 실측 행이 0이었고, 운영자는 빈 큐를 "요청 없음"으로 읽었다.
+            메일 주소는 아래에 그대로 남긴다 — 폼이 죽어도 길이 하나는 있어야 한다. */}
+        <section className="flex flex-col gap-3">
+          <h2 style={h2}>{m.takedownForm.heading}</h2>
+          <p style={body}>{m.takedownForm.lead}</p>
+          <TakedownForm email={email} />
+          <p style={body}>
+            {(() => {
+              const [before, after] = m.takedownForm.mailAlt.split("{email}");
+              return (
+                <>
+                  {before}
+                  <a
+                    href={`mailto:${email}`}
+                    className="underline underline-offset-4"
+                    style={{ color: "var(--paper)" }}
+                  >
+                    {email}
+                  </a>
+                  {after}
+                </>
+              );
+            })()}
+          </p>
+        </section>
+
         {locale === "ko" ? (
           <>
-            <section className="flex flex-col gap-3">
-              <h2 style={h2}>무엇을 요청할 수 있나요</h2>
-              <p style={body}>
-                장소 정보가 사실과 다르거나, 엉뚱한 지점으로 표시되었거나, 삭제를 원하시는 경우
-                접수해 주세요. 크리에이터 본인이시라면 채널 전체를 즉시 비공개로 전환해 드릴 수도
-                있습니다.
-              </p>
-            </section>
-
-            <section className="flex flex-col gap-3">
-              <h2 style={h2}>접수 방법</h2>
-              <p style={body}>
-                <a
-                  href={`mailto:${email}`}
-                  className="underline underline-offset-4"
-                  style={{ color: "var(--paper)" }}
-                >
-                  {email}
-                </a>
-                {" "}로 보내주세요. 내용은 세 가지면 됩니다 — 해당 채널 또는 장소의 URL, 요청
-                사유, 회신받을 연락처.
-              </p>
-            </section>
-
             <section className="flex flex-col gap-3">
               <h2 style={h2}>처리 절차</h2>
               <ul className="flex flex-col gap-2.5">
                 {[
-                  "접수 — 메일을 받으면 신청 내용을 확인합니다.",
+                  "접수 — 요청을 받으면 내용을 확인합니다. 폼으로 보내신 것과 메일로 보내신 것이 같은 큐에 모입니다.",
                   "조치 — 지체 없이 해당 정보를 비공개로 전환하거나 수정합니다. 판단이 바로 서지 않는 경우에도 우선 비공개로 돌린 뒤 검토합니다.",
                   "통지 — 신청하신 분과 게시된 정보의 대상(크리에이터·채널) 양쪽 모두에게 처리 결과를 알려드립니다.",
                   "결론 — 임시로 비공개 처리한 경우, 30일 안에 복원하거나 영구 삭제할지 결론을 냅니다.",
@@ -139,35 +154,10 @@ export default async function TakedownPage({
         ) : (
           <>
             <section className="flex flex-col gap-3">
-              <h2 style={h2}>What you can request</h2>
-              <p style={body}>
-                Let us know if a place is factually wrong, mapped to the wrong branch, or if
-                you&rsquo;d like it removed. If you&rsquo;re the creator, we can also take an entire
-                channel down immediately at your request.
-              </p>
-            </section>
-
-            <section className="flex flex-col gap-3">
-              <h2 style={h2}>How to submit</h2>
-              <p style={body}>
-                Email{" "}
-                <a
-                  href={`mailto:${email}`}
-                  className="underline underline-offset-4"
-                  style={{ color: "var(--paper)" }}
-                >
-                  {email}
-                </a>{" "}
-                with three things: the channel or place URL, the reason for your request, and a
-                contact for a reply.
-              </p>
-            </section>
-
-            <section className="flex flex-col gap-3">
               <h2 style={h2}>What happens next</h2>
               <ul className="flex flex-col gap-2.5">
                 {[
-                  "Received — we log the request as soon as it arrives.",
+                  "Received — we log the request as soon as it arrives. Form and email land in the same queue.",
                   "Action — the item is unpublished or corrected without delay. If it isn't immediately clear-cut, we still unpublish first and review after.",
                   "Notice — both you and the party the content is about (the creator/channel) are notified of the outcome.",
                   "Resolution — if something was temporarily unpublished, we decide within 30 days whether to restore it or remove it permanently.",

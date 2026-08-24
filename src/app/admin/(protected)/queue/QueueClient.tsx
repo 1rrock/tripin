@@ -21,10 +21,16 @@ export interface TakedownRow {
 /** 임시조치 기간 — 정보통신망법 §44조의2④. */
 const TEMP_MEASURE_DAYS = 30;
 
+/**
+ * `other` 는 `/api/takedown` 이 붙인다 — 붙여넣은 URL 이 우리 라우트로 해석되지
+ * 않은 접수다(구글 지도 링크, 오타, URL 없음). 접수를 막지 않는 대신 여기서
+ * "확인 필요"로 보인다. 라벨이 없으면 이 칸이 빈 채로 나가 종류를 알 수 없다.
+ */
 const TARGET_LABEL: Record<string, string> = {
   place: "장소",
   creator: "채널",
   video: "영상",
+  other: "미상",
 };
 
 const STATUS_LABEL: Record<string, string> = {
