@@ -8,6 +8,8 @@ Next.js 16 App Router + Supabase + Google Maps.
 1. `PRODUCT.md` — 제품 원칙·유저·브랜드 규칙. **여기가 판단 기준이다.**
 2. `docs/HANDOFF.md` — 현재 상태, 그리고 **지뢰 목록**. 코드를 만지기 전에 §3 을 읽어라.
 3. `ROADMAP.md` — 다음에 할 것.
+4. `docs/ADMIN.md` — 어드민 설계 근거(인증·확정 잠금·요약 규칙·삭제요청 큐).
+   어드민을 만지기 전에. 주석 14곳이 이 파일의 장 번호를 가리킨다.
 
 `docs/RE-AUDIT-PROMPT.md` 는 새 세션에 전체 재점검을 시킬 때 쓰는 프롬프트다.
 
