@@ -98,6 +98,8 @@ export interface FeedCelebritySpot {
    *  로더는 `name`·`name_local` 을 **둘 다** 싣고 표시 선택은 캐시 밖에서 한다
    *  (cache.ts 규칙 1). 이게 없어서 `/en/celebs` 만 한글 상호를 그렸다. */
   placeNameLocal: string | null;
+  /** 영문 상호 — EN 에서 `nameLocal` 보다 **위**다(display.ts). 같은 캐시 계약. */
+  placeNameEn: string | null;
   personName: string;
   personNameEn: string | null;
   city: { slug: string; name: string; nameEn: string | null };
@@ -158,7 +160,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, city_id, map_status, place_type, summary_bullets, summary_bullets_en",
+          "id, slug, name, name_local, name_en, city_id, map_status, place_type, summary_bullets, summary_bullets_en",
         )
         .range(from, to),
     ),
@@ -222,7 +224,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
   // spotBaseByPlace 는 모든 보이는 장소(언급(b)의 발판),
   // celebSpotByPlace 는 celebrity_name 채널의 것만 ((a)).
   type SpotBase = {
-    place: { slug: string; name: string; nameLocal: string | null };
+    place: { slug: string; name: string; nameLocal: string | null; nameEn: string | null };
     city: { slug: string; name: string; nameEn: string | null };
     cut: { youtubeId: string; title: string };
     publishedAt: string | null;
@@ -244,7 +246,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       if (!city) continue;
       if (!spotBaseByPlace.has(p.id)) {
         spotBaseByPlace.set(p.id, {
-          place: { slug: p.slug, name: p.name, nameLocal: p.name_local },
+          place: { slug: p.slug, name: p.name, nameLocal: p.name_local, nameEn: p.name_en },
           city: { slug: city.slug, name: city.name, nameEn: city.name_en },
           cut: { youtubeId: v.youtube_video_id, title: v.title },
           publishedAt: v.published_at,
@@ -257,6 +259,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
           placeSlug: p.slug,
           placeName: p.name,
           placeNameLocal: p.name_local,
+          placeNameEn: p.name_en,
           personName: creator.celebrity_name,
           personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
           city: { slug: city.slug, name: city.name, nameEn: city.name_en },
@@ -319,6 +322,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
         placeSlug: place.slug,
         placeName: place.name,
         placeNameLocal: place.name_local,
+        placeNameEn: place.name_en,
         personName: creator.celebrity_name,
         personNameEn: creator.celebrity_name_en ?? creator.display_name_en,
         city: { slug: city.slug, name: city.name, nameEn: city.name_en },
@@ -343,6 +347,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       slug: celeb!.placeSlug,
       name: celeb!.placeName,
       nameLocal: celeb!.placeNameLocal,
+      nameEn: celeb!.placeNameEn,
     };
     const city = vis?.city ?? celeb!.city;
     const cut = vis?.cut ?? celeb!.cut;
@@ -352,6 +357,7 @@ export const loadHomeFeed = cachePublic(async (): Promise<HomeFeed> => {
       placeSlug: place.slug,
       placeName: place.name,
       placeNameLocal: place.nameLocal,
+      placeNameEn: place.nameEn,
       personName: m.person_name,
       personNameEn: m.person_name_en,
       city,

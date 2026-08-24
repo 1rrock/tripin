@@ -19,6 +19,7 @@ export interface VideoStop {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   /** confirmed 만 지도 링크가 검수된 딥링크다. candidate 는 이름 검색 URL. */
   confirmed: boolean;
@@ -233,7 +234,7 @@ export const loadVideoDetail = cachePublic(async function loadVideoDetail(
           supabase
             .from("places")
             .select(
-              "id, slug, name, name_local, place_type, map_status, address, city_id, summary, summary_bullets, price_hint, google_maps_url, lat, lng",
+              "id, slug, name, name_local, name_en, place_type, map_status, address, city_id, summary, summary_bullets, price_hint, google_maps_url, lat, lng",
             )
             .in("id", ids),
         placeIds,
@@ -260,6 +261,7 @@ export const loadVideoDetail = cachePublic(async function loadVideoDetail(
         slug: p.slug,
         name: p.name,
         nameLocal: p.name_local,
+        nameEn: p.name_en,
         placeType: p.place_type,
         confirmed: p.map_status === "confirmed",
         address: p.address,

@@ -103,7 +103,10 @@ export function CelebrityFeed({
   /* 장소명은 앱의 다른 29곳과 같은 규칙으로 고른다 — 원본 `name` 을 그대로
      그리면 `/en` 홈만 한글 상호를, 같은 장소의 `/en/place/…` 는 현지어를 보인다. */
   const place = (s: FeedCelebritySpot) =>
-    displayPlaceName({ name: s.placeName, nameLocal: s.placeNameLocal }, locale);
+    displayPlaceName(
+      { name: s.placeName, nameLocal: s.placeNameLocal, nameEn: s.placeNameEn },
+      locale,
+    );
   // 커버 로테이션은 로더(home.ts)가 한다 — 여기선 첫 장이 곧 오늘의 표지다.
   const [cover, ...rest] = spots;
   if (!cover) return null;

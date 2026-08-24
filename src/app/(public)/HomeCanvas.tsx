@@ -464,6 +464,7 @@ export function ExplorerCanvas({
          이 행의 목록 링크가 진짜 주소를 갖는다 */
       slug: d.slug,
       nameLocal: d.nameLocal ?? null,
+      nameEn: d.nameEn ?? null,
       placeType: d.placeType ?? "restaurant",
       lat: d.lat,
       lng: d.lng,

@@ -41,6 +41,7 @@ export interface LoadedPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PublicPlace["placeType"];
   mapStatus: PublicPlace["mapStatus"];
   lat: number | null;
@@ -92,6 +93,7 @@ export function toPublicPlace(p: LoadedPlace): PublicPlace {
     slug: p.slug,
     name: p.name,
     nameLocal: p.nameLocal,
+    nameEn: p.nameEn,
     placeType: p.placeType,
     mapStatus: p.mapStatus,
     lat: p.lat,
@@ -135,7 +137,7 @@ export const loadPiece = cachePublic(async function loadPiece(params: PageParams
           supabase
             .from("places")
             .select(
-              "id, slug, name, name_local, place_type, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_place_id, google_maps_url, kakao_place_id, naver_place_id",
+              "id, slug, name, name_local, name_en, place_type, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_place_id, google_maps_url, kakao_place_id, naver_place_id",
             )
             .in("id", ids)
             .eq("city_id", city.id)
@@ -152,6 +154,7 @@ export const loadPiece = cachePublic(async function loadPiece(params: PageParams
       slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
+      nameEn: p.name_en,
       placeType: p.place_type,
       mapStatus: p.map_status,
       lat: p.lat,

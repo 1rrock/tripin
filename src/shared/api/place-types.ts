@@ -38,6 +38,7 @@ export interface TypePlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   address: string | null;
   mapUrl: string | null;
@@ -91,7 +92,7 @@ const loadGraph = reactCache(async function loadGraph() {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, country_code, lat, lng, address, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, name_en, place_type, city_id, country_code, lat, lng, address, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .eq("map_status", "confirmed")
         .range(from, to),
@@ -262,6 +263,7 @@ export const loadTypeDetail = cachePublic(async function loadTypeDetail(
       slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
+      nameEn: p.name_en,
       placeType: p.place_type as PlaceType,
       address: p.address,
       mapUrl: map?.url ?? null,

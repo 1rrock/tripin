@@ -32,7 +32,11 @@ import { Icon } from "@/shared/ui/icons";
 import { OutboundA } from "@/shared/ui/OutboundA";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
-import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import {
+  displayPlaceName,
+  displayPlaceSecondary,
+  displayPlaceSecondaryLang,
+} from "@/shared/i18n/display";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 import { SaveButton } from "@/shared/ui/SaveButton";
 import { ShareButton } from "@/shared/ui/ShareButton";
@@ -67,6 +71,7 @@ export interface PublicPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   mapStatus: MapStatus;
   lat: number | null;
@@ -519,7 +524,7 @@ export function Explorer({
                               {displayPlaceSecondary(place, locale) ? (
                                 <>
                                   {" · "}
-                                  <span lang={locale === "en" ? "ko" : "ja"}>
+                                  <span lang={displayPlaceSecondaryLang(place, locale)}>
                                     {displayPlaceSecondary(place, locale)}
                                   </span>
                                 </>
@@ -579,7 +584,7 @@ export function Explorer({
                         {displayPlaceName(place, locale)}
                       </span>
                       {displayPlaceSecondary(place, locale) ? (
-                        <span lang={locale === "en" ? "ko" : "ja"}>
+                        <span lang={displayPlaceSecondaryLang(place, locale)}>
                           {displayPlaceSecondary(place, locale)}
                         </span>
                       ) : null}

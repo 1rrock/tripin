@@ -29,6 +29,7 @@ import {
   displayCityName,
   displayPlaceName,
   displayPlaceSecondary,
+  displayPlaceSecondaryLang,
 } from "@/shared/i18n/display";
 
 /**
@@ -48,6 +49,8 @@ export interface CreatorPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  /** EN 표시명. `displayPlaceName` 이 EN 에서 이걸 먼저 본다(display.ts). */
+  nameEn: string | null;
   placeType: PlaceType;
   citySlug: string;
   cityName: string;
@@ -333,7 +336,7 @@ export function CreatorExplorer({
                         {secondary ? (
                           <>
                             {" · "}
-                            <span lang={locale === "en" ? "ko" : "ja"}>{secondary}</span>
+                            <span lang={displayPlaceSecondaryLang(place, locale)}>{secondary}</span>
                           </>
                         ) : null}
                       </span>

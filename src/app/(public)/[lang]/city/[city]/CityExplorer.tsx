@@ -34,7 +34,11 @@ import { EmptyState } from "@/shared/ui/EmptyState";
 import { Icon } from "@/shared/ui/icons";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { useLocale } from "@/shared/i18n/LocaleContext";
-import { displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import {
+  displayPlaceName,
+  displayPlaceSecondary,
+  displayPlaceSecondaryLang,
+} from "@/shared/i18n/display";
 import type { SummaryDisplay } from "@/shared/i18n/display";
 
 /**
@@ -90,6 +94,7 @@ export interface CityPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -492,7 +497,7 @@ export function CityExplorer({
                             {displayPlaceSecondary(place, locale) ? (
                               <>
                                 {" · "}
-                                <span lang={locale === "en" ? "ko" : "ja"}>
+                                <span lang={displayPlaceSecondaryLang(place, locale)}>
                                   {displayPlaceSecondary(place, locale)}
                                 </span>
                               </>

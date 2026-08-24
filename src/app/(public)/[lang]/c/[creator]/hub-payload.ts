@@ -44,6 +44,7 @@ export function toCreatorPlace(p: CreatorMapPlaceRaw): CreatorPlace {
     slug: p.slug,
     name: p.name,
     nameLocal: p.nameLocal,
+    nameEn: p.nameEn,
     placeType: p.placeType,
     citySlug: p.citySlug,
     cityName: p.cityName,

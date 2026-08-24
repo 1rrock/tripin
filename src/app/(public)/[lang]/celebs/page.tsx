@@ -77,7 +77,10 @@ export default async function CelebsPage({
      그리면 `/en/celebs` 만 한글 상호를, 같은 장소의 `/en/place/…` 는 현지어를
      보여 같은 장소가 화면마다 다른 이름으로 뜬다. */
   const place = (s: FeedCelebritySpot) =>
-    displayPlaceName({ name: s.placeName, nameLocal: s.placeNameLocal }, locale);
+    displayPlaceName(
+      { name: s.placeName, nameLocal: s.placeNameLocal, nameEn: s.placeNameEn },
+      locale,
+    );
 
   if (groups.length === 0) {
     return (

@@ -9,6 +9,16 @@
  *   npm run translate:en -- --limit 5     소량 시험
  *   npm run translate:en -- --dry-run     API 호출 없이 대상만 세기
  *   npm run translate:en -- --redo        기계 초벌(machine)을 다시 번역
+ *   npm run translate:en -- --names       **상호명만** (places.name_en) — 아래 참조
+ *
+ * ⚠️ `--names` 는 위 산문 번역과 **완전히 다른 일**이고 서로를 건드리지 않는다.
+ *    · 대상: 공개 장소 중 이름에 한글이 섞였고 `name_en` 이 빈 행 (실측 1,456곳)
+ *    · `en_source` 를 **건드리지 않는다.** 그 컬럼은 산문(요약·불릿·가격힌트)의
+ *      출처 표시이고 `displaySummary` 가 그걸로 "자동 번역" 배지와 원문 토글을
+ *      가른다. 이름만 채우고 `machine` 을 찍으면 번역되지도 않은 빈 요약이
+ *      "자동 번역된 요약"으로 나가고, 산문 번역 대상(en_source is null)에서도
+ *      영영 빠진다.
+ *    · 이미 라틴 문자인 이름(285곳)은 대상이 아니다 — 번역할 것이 없다.
  *
  * 왜 스크립트인가 (런타임 번역이 아니라):
  *   · 브라우저 내장 번역 API 는 **모바일 미지원** — 이 제품 유입은 대부분 모바일 검색이다
@@ -58,6 +68,7 @@ const value = (name, fallback) => {
 
 const DRY_RUN = flag("dry-run");
 const REDO = flag("redo");
+const NAMES = flag("names");
 const LIMIT = Number(value("limit", "0")) || null;
 
 /* --dry-run 은 대상만 세므로 번역 키가 없어도 돌아야 한다 — 분량·비용을 먼저 보고
@@ -132,7 +143,7 @@ function parseJSON(raw) {
 
 const RETRYABLE = /rate.?limit|429|quota|timeout|ECONNRESET|502|503|504|overloaded/i;
 
-async function callJSON(schemaName, schema, userContent) {
+async function callJSON(schemaName, schema, userContent, system = SYSTEM) {
   let lastErr;
   for (let attempt = 0; attempt < 5; attempt += 1) {
     try {
@@ -140,7 +151,7 @@ async function callJSON(schemaName, schema, userContent) {
         model: MODEL,
         temperature: 0,
         messages: [
-          { role: "system", content: SYSTEM },
+          { role: "system", content: system },
           { role: "user", content: userContent },
         ],
         response_format:
@@ -211,15 +222,17 @@ async function translatePlace(p) {
 }
 
 async function run() {
-  let q = db
-    .from("places")
-    .select("id, name, name_local, place_type, summary, summary_bullets, price_hint, city_id, en_source")
-    .order("updated_at", { ascending: true });
-  q = REDO ? q.eq("en_source", "machine") : q.is("en_source", null);
-  if (LIMIT) q = q.limit(LIMIT);
-
-  const { data: places, error } = await q;
-  if (error) throw error;
+  /* ⚠️ `selectAll` 로 도는 이유는 그 함수 주석에 있다 — 여기도 대상이 1,000행을
+     넘는다(미번역 1,942곳). `.limit()` 를 걸면 그건 의도한 절단이라 그대로 둔다. */
+  const all = await selectAll(
+    "places",
+    "id, name, name_local, place_type, summary, summary_bullets, price_hint, city_id, en_source",
+    (q) =>
+      (REDO ? q.eq("en_source", "machine") : q.is("en_source", null)).order("updated_at", {
+        ascending: true,
+      }),
+  );
+  const places = LIMIT ? all.slice(0, LIMIT) : all;
 
   const { data: cities } = await db.from("cities").select("id, name, name_en");
   const cityName = new Map((cities ?? []).map((c) => [c.id, c.name]));
@@ -318,7 +331,176 @@ async function run() {
   console.log(`\n전부 en_source='machine' 입니다. 어드민에서 검수하면 'human' 이 됩니다.`);
 }
 
-run().catch((e) => {
+/* ────────────────────────── 상호명 (--names) ────────────────────────── */
+
+/**
+ * 이름은 **번역이 아니라 표기 선택**이다. "다리위오징어"를 "Squid on the Bridge"로
+ * 옮기면 그 가게를 아무도 못 찾는다 — 지도 앱·구글에 그런 이름이 없기 때문이다.
+ * 그래서 규칙의 대부분이 "지어내지 마라"에 쓰여 있다.
+ *
+ * 도시를 같이 주는 이유: 한국 유튜버가 일본 가게를 한글로 음차해 적은 이름이 많다
+ * ("키스이마루 하카타점" ← 喜水丸 博多店). 도시를 알면 어느 언어의 라틴 표기로
+ * 되돌려야 하는지가 정해진다. 도시가 한국이면 국어의 로마자 표기법이다.
+ */
+const SYSTEM_NAMES = `You give the English (Latin-script) form of business names for a travel directory.
+
+These are real places that Korean travel YouTubers visited. The Korean text is often a Korean *transcription* of a foreign shop name, not a Korean name. Your job is to recover the name a traveler would actually see, type, or search — not to translate its meaning.
+
+Rules:
+- Never translate meaning. "다리위오징어" is "Dariwi Ojingeo", not "Squid on the Bridge". "할머니국밥" is "Halmeoni Gukbap", not "Grandmother's Soup".
+- If the name is a known international or chain brand, use that brand's own spelling: 스타벅스 → Starbucks, 이치란 → Ichiran, 돈키호테 → Don Quijote, 코메다커피 → Komeda's Coffee.
+- If the city is in Japan, the Korean is usually a transcription of Japanese — return the standard Hepburn romanization: 키스이마루 → Kisuimaru, 이치방 → Ichiban. Same idea for Chinese (pinyin), Thai, Spanish, etc.
+- If the city is in Korea, use Revised Romanization: 광장시장 → Gwangjang Market, 서초 광시 → Seocho Gwangsi.
+- Branch suffixes become plain English words, not romanized: 하카타점 → "Hakata", 본점 → "Main", 강남점 → "Gangnam". Do not write "Hakata-jeom".
+- Generic category words that are part of the sign may stay translated when they are English on the sign itself: 마르쉐 → Marché, 시장 → Market, 신사 → Shrine, 공원 → Park.
+- Keep any Latin letters that already appear in the source exactly as they are.
+- Capitalize as a proper name. No quotes, no trailing period, no explanations, no parenthetical glosses.
+- If you genuinely cannot tell, romanize the Korean as-is. Never return an empty string.
+
+Reply with JSON only — no prose, no markdown fence.`;
+
+const NAMES_SCHEMA = {
+  type: "object",
+  properties: {
+    names: {
+      type: "array",
+      items: {
+        type: "object",
+        properties: { i: { type: "integer" }, name_en: { type: "string" } },
+        required: ["i", "name_en"],
+        additionalProperties: false,
+      },
+    },
+  },
+  required: ["names"],
+  additionalProperties: false,
+};
+
+/* 한 번에 보내는 이름 수. 이름은 한 줄짜리라 산문처럼 1건씩 부르면 1,456번을
+   1.2초 간격으로 돈다(≈30분). 묶으면 37회로 끝난다. 40 은 응답이 잘리지 않으면서
+   실패 시 되돌릴 단위가 너무 크지 않은 지점이다. */
+const NAME_BATCH = 40;
+
+/** 이름에 한글이 섞여 있는가 — 이미 라틴 문자인 이름은 손댈 것이 없다. */
+const hasHangul = (s) => /[가-힣]/.test(s ?? "");
+
+/**
+ * ⚠️ PostgREST 는 한 번에 **1,000행**까지만 준다. `.range()` 로 끝까지 돌지 않으면
+ *    공개 1,884곳 중 1,000곳만 보고 "다 했다"로 끝난다 — 실제로 처음에 그랬다.
+ *    조용한 유실이라 출력만 보면 정상으로 보인다(HANDOFF §3-7 과 같은 모양).
+ *    `error` 를 반드시 받아 던진다: 중간 실패가 부분 배열로 둔갑하면 안 된다.
+ */
+async function selectAll(table, columns, tweak = (q) => q) {
+  const PAGE = 1000;
+  const out = [];
+  for (let from = 0; ; from += PAGE) {
+    const { data, error } = await tweak(db.from(table).select(columns)).range(
+      from,
+      from + PAGE - 1,
+    );
+    if (error) throw new Error(`${table} 조회 실패: ${error.message}`);
+    out.push(...(data ?? []));
+    if (!data || data.length < PAGE) return out;
+  }
+}
+
+async function runNames() {
+  /* 공개 장소만. 비공개 행은 화면에 안 나가므로 번역 비용을 쓸 이유가 없다. */
+  const places = await selectAll(
+    "places",
+    "id, name, name_en, name_local, place_type, city_id, is_published",
+    (q) => q.eq("is_published", true).order("updated_at", { ascending: true }),
+  );
+
+  const { data: cities } = await db.from("cities").select("id, name, name_en, country_code");
+  const city = new Map((cities ?? []).map((c) => [c.id, c]));
+
+  let targets = places.filter(
+    (p) => hasHangul(p.name) && !(p.name_en ?? "").trim(),
+  );
+  if (LIMIT) targets = targets.slice(0, LIMIT);
+
+  const skippedLatin = places.filter((p) => !hasHangul(p.name)).length;
+  const already = places.filter((p) => (p.name_en ?? "").trim()).length;
+  console.log(
+    `대상 ${targets.length}곳 (공개 ${places.length} · 이미 라틴 ${skippedLatin} · 이미 영문 있음 ${already})`,
+  );
+  console.log(`원문 분량 약 ${targets.reduce((n, p) => n + p.name.length, 0).toLocaleString()}자`);
+  console.log(`요청 ${Math.ceil(targets.length / NAME_BATCH)}회 (배치 ${NAME_BATCH})`);
+  if (DRY_RUN) {
+    for (const p of targets.slice(0, 10)) {
+      console.log(`  · ${p.name}  [${city.get(p.city_id)?.name ?? "?"}]`);
+    }
+    return console.log("(--dry-run: API 호출 없이 종료)");
+  }
+  if (!targets.length) return;
+
+  console.log(`모델 ${MODEL}${env.OPENAI_BASE_URL ? ` @ ${env.OPENAI_BASE_URL}` : ""}\n`);
+
+  let ok = 0;
+  const failed = [];
+  for (let start = 0; start < targets.length; start += NAME_BATCH) {
+    const batch = targets.slice(start, start + NAME_BATCH);
+    const label = `[${start + 1}–${start + batch.length}/${targets.length}]`;
+    try {
+      const lines = batch.map((p, i) => {
+        const c = city.get(p.city_id);
+        return `${i}\t${p.name}\t${c?.name_en ?? c?.name ?? "unknown"}${c?.country_code ? ` (${c.country_code})` : ""}${p.name_local ? `\tlocal: ${p.name_local}` : ""}`;
+      });
+      const out = await callJSON(
+        "place_names",
+        NAMES_SCHEMA,
+        `Give the Latin-script name for each row.\nColumns are: index, Korean name, city, [local-script name if known].\n\n${lines.join("\n")}`,
+        SYSTEM_NAMES,
+      );
+
+      /* 인덱스로 되맞춘다 — 순서로 맞추면 모델이 한 줄을 빠뜨렸을 때 그 뒤가
+         전부 **다른 가게 이름**으로 저장된다. 조용한 오염이라 눈에 안 띈다. */
+      const byIndex = new Map(
+        (Array.isArray(out.names) ? out.names : [])
+          .filter((r) => Number.isInteger(r?.i) && typeof r?.name_en === "string")
+          .map((r) => [r.i, r.name_en.trim()]),
+      );
+      for (const [i, p] of batch.entries()) {
+        const en = byIndex.get(i);
+        if (!en) {
+          failed.push({ name: p.name, reason: "응답에 없음" });
+          continue;
+        }
+        /* 한글이 그대로 돌아왔으면 표기 선택에 실패한 것이다 — 저장하지 않는다.
+           그 행은 다음 실행에서 다시 대상이 된다(name_en 이 비어 있으므로). */
+        if (hasHangul(en)) {
+          failed.push({ name: p.name, reason: `한글이 남음: ${en}` });
+          continue;
+        }
+        const { error: upErr } = await db.from("places").update({ name_en: en }).eq("id", p.id);
+        if (upErr) {
+          failed.push({ name: p.name, reason: upErr.message });
+          continue;
+        }
+        ok += 1;
+      }
+      console.log(`  ✔ ${label} — 누적 ${ok}건`);
+    } catch (e) {
+      for (const p of batch) failed.push({ name: p.name, reason: e.message });
+      console.log(`  ✖ ${label} — ${e.message}`);
+    }
+    await sleep(1200);
+  }
+
+  console.log(`\n완료: ${ok}/${targets.length}`);
+  if (failed.length) {
+    console.log(`실패 ${failed.length}건 — 다시 돌리면 실패분만 재시도합니다:`);
+    for (const f of failed.slice(0, 40)) console.log(`  · ${f.name}: ${f.reason}`);
+    if (failed.length > 40) console.log(`  … 외 ${failed.length - 40}건`);
+  }
+  console.log(
+    `\n⚠️ en_source 는 건드리지 않았습니다 — 산문(요약) 번역은 여전히 미실행입니다.`,
+  );
+  console.log(`⚠️ 공개 캐시는 안 비워집니다: vercel cache invalidate --tag public-data`);
+}
+
+(NAMES ? runNames() : run()).catch((e) => {
   console.error("✖", e.message);
   process.exit(1);
 });

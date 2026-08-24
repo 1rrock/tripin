@@ -147,8 +147,21 @@ export const loadSearchIndex = cachePublic(async (): Promise<SearchDocRaw[]> => 
         kind: "place",
         slug: p.slug,
         ko: { name: p.name, sub: city.name, hay: [p.name, p.name_en ?? "", bulletsKo] },
-        // 장소명은 번역하지 않는다(§2-4) — EN 에서도 원문 상호명이다
-        en: { name: p.name, sub: city.name_en || city.name, hay: [p.name, p.name_en ?? "", bulletsEn] },
+        /* EN 표시명은 `name_en` 이 있으면 그것 — 착지 화면(`displayPlaceName`)과
+           같은 규칙이어야 한다. 예전 주석은 "장소명은 번역하지 않는다"였고 EN 에도
+           `p.name` 을 실었는데, 그러면 결과 줄에는 "잇케이 JRJP 하카타점"이 뜨고
+           눌러서 들어간 페이지 제목은 "Ikkei JRJP Hakata" 가 되어 같은 화면 안에서
+           이름이 갈린다(PRODUCT.md 접근성: 한 화면에서 두 이름이 갈리면 안 된다).
+           검색 자체는 그대로다 — 건초더미에 원문·영문이 **둘 다** 들어 있어
+           "잇케이"로도 "Ikkei"로도 찾힌다.
+           ⚠️ 대신 EN 에서 `hay[0] !== name` 이 되므로 `packHay` 가 hay[0] 을 못 뗀다
+              (1,599항목 × ~15자 ≈ 24KB raw). 그건 옛 인덱스에서 ko 만 100% 떼던
+              최적화였고 EN 도시·종류는 이미 못 떼고 있었다. */
+        en: {
+          name: p.name_en?.trim() || p.name,
+          sub: city.name_en || city.name,
+          hay: [p.name, p.name_en ?? "", bulletsEn],
+        },
       });
     }
   }

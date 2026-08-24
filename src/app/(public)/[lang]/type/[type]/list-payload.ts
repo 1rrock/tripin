@@ -13,6 +13,7 @@ export interface TypeListPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   address: string | null;
   /** 대표 컷 — 이 장소를 실은 첫 출처 영상. 제목은 alt 용 원문 그대로 */
   cut: { youtubeId: string; videoTitle: string } | null;
@@ -56,6 +57,7 @@ export function toTypeListGroup(g: TypeCityGroup): TypeListGroup {
         slug: p.slug,
         name: p.name,
         nameLocal: p.nameLocal,
+        nameEn: p.nameEn,
         address: p.address,
         /* 출처 배열 전체가 아니라 **첫 컷 하나**만 — 행이 그리는 건 그것뿐이다.
            `sources` 를 통째로 실으면 555곳 × 채널·타임코드가 그대로 따라온다. */

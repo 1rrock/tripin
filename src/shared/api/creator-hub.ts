@@ -24,6 +24,7 @@ export interface CreatorMapPlaceRaw {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -108,7 +109,7 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, name_en, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .in("id", ids)
         .eq("map_status", "confirmed"),
@@ -169,6 +170,7 @@ export const loadCreatorMap = cachePublic(async function loadCreatorMap(
       slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
+      nameEn: p.name_en,
       placeType: p.place_type,
       lat: p.lat as number,
       lng: p.lng as number,

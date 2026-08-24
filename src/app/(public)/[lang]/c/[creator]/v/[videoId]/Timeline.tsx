@@ -25,7 +25,12 @@ import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { Act } from "@/shared/ui/icons";
 import { MapView, type MapPin } from "@/shared/ui/MapView";
 import { useLocale } from "@/shared/i18n/LocaleContext";
-import { displayCityName, displayPlaceName, displayPlaceSecondary } from "@/shared/i18n/display";
+import {
+  displayCityName,
+  displayPlaceName,
+  displayPlaceSecondary,
+  displayPlaceSecondaryLang,
+} from "@/shared/i18n/display";
 
 function fmt(sec: number | null): string {
   if (sec === null) return "—";
@@ -82,7 +87,12 @@ function StopRow({
           {displayPlaceSecondary(stop, locale) ? (
             <>
               {" · "}
-              <span lang={locale === "en" ? "ko" : "ja"}>{displayPlaceSecondary(stop, locale)}</span>
+              {/* 보조줄의 언어는 고정이 아니다 — EN 에서 `nameEn` 이 메인으로
+                  올라가면 이 자리에 현지어(일본어)가 설 수 있다. display.ts 가
+                  실제 값을 보고 고른다. */}
+              <span lang={displayPlaceSecondaryLang(stop, locale)}>
+                {displayPlaceSecondary(stop, locale)}
+              </span>
             </>
           ) : null}
         </span>

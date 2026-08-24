@@ -27,6 +27,7 @@ export function toCityPlace(p: CityPlaceRaw): CityPlace {
     slug: p.slug,
     name: p.name,
     nameLocal: p.nameLocal,
+    nameEn: p.nameEn,
     placeType: p.placeType,
     lat: p.lat,
     lng: p.lng,

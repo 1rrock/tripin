@@ -14,27 +14,64 @@ export function displayCityName(
 
 /**
  * 장소 표시명.
- * EN: 현지어(nameLocal)가 있으면 그걸 메인(길찾기·현지 표기), 없으면 한글명.
+ *
  * KO: 한글명 메인.
+ * EN: `nameEn` → `nameLocal` → `name` 순.
+ *
+ * ⚠️ 2026-08-24 이전에는 EN 이 `nameLocal` 만 봤고 `nameEn` 은 **어느 화면도 읽지
+ *    않았다.** 공개 장소 1,884곳 중 `nameLocal` 이 있는 것은 145곳뿐이라, EN 트리의
+ *    장소 이름이 사실상 전부 한국어로 나갔다. 지금은 1,599곳에 `nameEn` 이 있다
+ *    (나머지 285곳은 이름이 이미 라틴 문자라 채울 것이 없다).
+ *
+ * 왜 `nameEn` 이 `nameLocal` 보다 위인가: 이 화면을 EN 으로 보는 사람은 그 글자를
+ * **읽어야** 한다. 간판 표기(한자·한글)는 아래 보조줄에 그대로 남으므로 길찾기·
+ * 현지 검색에 필요한 정보는 잃지 않는다 — 자리만 바뀐다.
  */
 export function displayPlaceName(
-  place: { name: string; nameLocal?: string | null },
+  place: { name: string; nameLocal?: string | null; nameEn?: string | null },
   locale: Locale,
 ): string {
-  if (locale === "en" && place.nameLocal?.trim()) return place.nameLocal.trim();
+  if (locale === "en") {
+    if (place.nameEn?.trim()) return place.nameEn.trim();
+    if (place.nameLocal?.trim()) return place.nameLocal.trim();
+  }
   return place.name;
 }
 
+/**
+ * 보조줄 — **간판에 적힌 표기**다. 메인이 읽는 이름이면 여기가 찾는 이름이 된다.
+ * 메인으로 이미 쓴 문자열은 여기 다시 쓰지 않는다.
+ */
 export function displayPlaceSecondary(
-  place: { name: string; nameLocal?: string | null },
+  place: { name: string; nameLocal?: string | null; nameEn?: string | null },
   locale: Locale,
 ): string | null {
   if (locale === "en") {
-    // 메인에 원어를 썼으면 한글명을 보조로
-    if (place.nameLocal?.trim() && place.name.trim()) return place.name.trim();
-    return null;
+    const primary = displayPlaceName(place, locale);
+    const local = place.nameLocal?.trim();
+    // 현지어 간판이 있으면 그것이 우선 — 없으면 한글명이 간판 노릇을 한다
+    if (local && local !== primary) return local;
+    const ko = place.name.trim();
+    return ko && ko !== primary ? ko : null;
   }
   return place.nameLocal?.trim() || null;
+}
+
+/**
+ * 보조줄의 `lang` 속성 — 보조줄이 어느 언어인지는 **고정이 아니다.**
+ *
+ * EN 에서 보조줄은 현지어(`nameLocal`, 대개 일본어)일 수도 한글명일 수도 있다.
+ * 예전엔 호출부가 `locale === "en" ? "ko" : "ja"` 로 못박아 뒀는데, `nameEn` 이
+ * 메인으로 올라오면서 EN 보조줄에 일본어가 서는 경우가 생겼다 — 그대로 두면
+ * 스크린리더가 한자를 한국어로 읽는다.
+ */
+export function displayPlaceSecondaryLang(
+  place: { name: string; nameLocal?: string | null; nameEn?: string | null },
+  locale: Locale,
+): "ko" | "ja" | undefined {
+  const secondary = displayPlaceSecondary(place, locale);
+  if (!secondary) return undefined;
+  return secondary === place.name.trim() ? "ko" : "ja";
 }
 
 /** 원문(한국어) — "원문 보기" 토글용. */

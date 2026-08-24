@@ -116,13 +116,15 @@ export function mapSearchText(
  * 필터를 안 돌리므로 그 응답에서는 이 조립 비용도, 바이트도 없어야 한다.
  */
 export function decodeMapPin(payload: MapIndexPayload, row: MapIndexRow): MapCanvasPin {
-  const [id, name, slug, nameLocal, typeIdx, lat, lng, cityIdx, youtubeId, creatorIdxs] = row;
+  const [id, name, slug, nameLocal, nameEn, typeIdx, lat, lng, cityIdx, youtubeId, creatorIdxs] =
+    row;
   const [citySlug, cityName, cityNameEn, countryCode] = payload.cities[cityIdx]!;
   return {
     id,
     name,
     slug,
     nameLocal,
+    nameEn,
     placeType: payload.types[typeIdx]!,
     lat,
     lng,
@@ -151,7 +153,7 @@ export function decodeMapIndex(payload: MapIndexPayload): MapCanvasPlace[] {
       ...pin,
       searchText: mapSearchText(
         pin,
-        row[9].map((i) => payload.creators[i]![1]),
+        row[10].map((i) => payload.creators[i]![1]),
       ),
     };
   });

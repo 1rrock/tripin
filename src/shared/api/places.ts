@@ -35,6 +35,7 @@ export interface PlaceDetail {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -56,6 +57,7 @@ export interface NearbyPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   youtubeId: string | null;
 }
@@ -77,6 +79,7 @@ const loadCityPlaceIndex = cachePublic(async function loadCityPlaceIndex(): Prom
       slug: p.slug,
       name: p.name,
       nameLocal: p.nameLocal,
+      nameEn: p.nameEn,
       placeType: p.placeType,
       youtubeId: p.youtubeId,
     });
@@ -133,6 +136,7 @@ export async function loadPlaceBySlug(
     slug: pin.slug,
     name: pin.name,
     nameLocal: pin.nameLocal,
+    nameEn: pin.nameEn,
     placeType: pin.placeType,
     lat: pin.lat,
     lng: pin.lng,

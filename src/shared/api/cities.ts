@@ -53,6 +53,7 @@ export interface CityPlaceRaw {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -148,7 +149,7 @@ const loadGraphRows = reactCache(async function loadGraphRows() {
       supabase
         .from("places")
         .select(
-          "id, slug, name, name_local, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
+          "id, slug, name, name_local, name_en, place_type, city_id, country_code, map_status, lat, lng, address, summary, summary_bullets, price_hint, summary_en, summary_bullets_en, price_hint_en, en_source, google_maps_url, google_place_id, kakao_place_id, naver_place_id",
         )
         .eq("map_status", "confirmed")
         .range(from, to),
@@ -276,6 +277,7 @@ export const loadCityDetail = cachePublic(async function loadCityDetail(
         slug: p.slug,
         name: p.name,
         nameLocal: p.name_local,
+        nameEn: p.name_en,
         placeType: p.place_type,
         lat: p.lat!,
         lng: p.lng!,
@@ -367,6 +369,7 @@ export interface HomeMapPlace {
   slug: string;
   name: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -421,6 +424,7 @@ export type MapCanvasPin = {
   /** `/place/[slug]` 의 주소 — 목록 행의 `href`. `placePath()` 로 인코딩해서 쓸 것. */
   slug: string;
   nameLocal: string | null;
+  nameEn: string | null;
   placeType: PlaceType;
   lat: number;
   lng: number;
@@ -461,16 +465,23 @@ export type MapIndexPayload = {
 };
 
 /**
- * [id, name, slug, nameLocal, types 자리, lat, lng, cities 자리, youtubeId, creators 자리들]
+ * [id, name, slug, nameLocal, nameEn, types 자리, lat, lng, cities 자리, youtubeId, creators 자리들]
  *
  * `slug` 가 `name` **바로 옆**인 것은 우연이 아니다 — slug 는 name 에서 만든
  * 문자열이라(`방노타지마-_lk5`) 둘을 붙여 두면 압축기가 겹치는 부분을 참조로
  * 접는다. 자리를 id 옆으로 옮겨 재 보니 brotli 가 107KB → 109KB 로 늘었다.
+ * `nameEn` 도 같은 이유로 이름 무리 옆에 붙인다.
+ *
+ * ⚠️ `nameEn` 은 2026-08-24 에 더했다(공개 1,599곳, 합 26.5KB raw). 이 인덱스는
+ *    **로케일 무관**이라 ko 클라이언트도 이 값을 받는다 — 로케일별로 가르면
+ *    캐시 항목과 CDN 사본이 둘로 늘어나므로 그 비용을 택하지 않았다.
+ *    `map:canvas-index` 는 0.27MiB(2MiB 의 13%)라 여유가 크다.
  */
 export type MapIndexRow = [
   string,
   string,
   string,
+  string | null,
   string | null,
   number,
   number,
@@ -534,7 +545,7 @@ export const loadMapCreators = cachePublic(async function loadMapCreators(): Pro
   /* 행의 채널 자리는 이미 슬러그 기준으로 dedup 되어 있다(buildMapIndexPayload) —
      예전처럼 장소마다 `new Set` 을 다시 만들지 않는다. */
   for (const row of index.places) {
-    for (const i of row[9]) {
+    for (const i of row[10]) {
       const slug = index.creators[i]![0];
       counts.set(slug, (counts.get(slug) ?? 0) + 1);
     }
@@ -616,7 +627,7 @@ function buildMapIndexPayload(all: HomeMapPlace[]): MapIndexPayload {
       }
       sources.push(idx);
     }
-    return [p.id, p.name, p.slug, p.nameLocal, ti, p.lat, p.lng, ci, p.youtubeId, sources];
+    return [p.id, p.name, p.slug, p.nameLocal, p.nameEn, ti, p.lat, p.lng, ci, p.youtubeId, sources];
   });
 
   return { cities, types, creators, places };
@@ -760,6 +771,7 @@ export const loadHomeMap = reactCache(async function loadHomeMap(
       slug: p.slug,
       name: p.name,
       nameLocal: p.name_local,
+      nameEn: p.name_en,
       placeType: p.place_type,
       lat: coords.lat,
       lng: coords.lng,
