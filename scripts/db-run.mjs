@@ -151,6 +151,27 @@ function ledgerKey(file) {
   return relative(ROOT, abs).split(sep).join("/");
 }
 
+/**
+ * `-- @hold: <이유>` 가 머리에 적힌 마이그레이션인가.
+ *
+ * 왜 필요한가 — **만들었지만 적용하면 안 되는 마이그레이션**이 실재한다.
+ * `0020_drop_bulk_confirm_backup.sql` 이 그렇다: `_bulk_confirm_20260805` 를
+ * 정리하는 대가로 `0002_confirm_all_candidates.sql` 이 남긴 롤백 절차의 근거를
+ * 잃고, 그 롤백 대상에 재검토가 안 끝난 장소 여섯이 있다(동명이점 오확정은 이
+ * 프로젝트의 유일한 구조적 리스크다 — `0001_init.sql:121`).
+ *
+ * 그런데 그 파일이 디렉터리에 있는 것만으로 `npm run db:migrate` 무인자가
+ * **같이 적용해 버린다.** "당분간 개별 실행을 써라" 라는 문서 한 줄로 막던 것을
+ * 코드로 옮긴다 — 문서는 사고를 못 막고, 이 사고는 되돌리기가 어렵다.
+ *
+ * 인자로 파일을 직접 주면 그대로 적용된다. 그게 의도적으로 푸는 유일한 길이다.
+ */
+function holdReason(file) {
+  const head = readFileSync(file, "utf8").slice(0, 4000);
+  const m = head.match(/^\s*--\s*@hold:?\s*(.*)$/m);
+  return m ? m[1].trim() || "(이유 없음)" : null;
+}
+
 function apply(file) {
   const label = basename(file);
   const key = ledgerKey(file);
@@ -185,17 +206,34 @@ if (args.length > 0) {
       console.error(`파일 없음: ${file}`);
       process.exit(1);
     }
+    /* 보류된 파일도 **인자로 주면 적용한다** — 그게 의도적으로 푸는 길이다.
+       다만 조용히 넘기지 않는다: 왜 보류였는지 눈앞에 한 번 띄운다. */
+    const held = holdReason(file);
+    if (held) console.log(`\n⚠️ ${basename(file)} 은 보류(@hold)된 파일입니다 — ${held}`);
     apply(file);
   }
 } else {
   // 미적용 마이그레이션 전부 순서대로
   const done = appliedSet();
-  const pending = readdirSync(MIGRATIONS_DIR)
+  const notApplied = readdirSync(MIGRATIONS_DIR)
     .filter((f) => f.endsWith(".sql"))
     .sort()
     // 키를 상대경로로 바꾸기 전 이력은 basename 으로 들어 있다 — 둘 다 적용된 것으로 본다.
     // (안 그러면 이미 적용된 마이그레이션이 전부 다시 돌아간다)
     .filter((f) => !done.has(ledgerKey(join(MIGRATIONS_DIR, f))) && !done.has(f));
+
+  /* 보류된 것을 걸러낸다. **조용히 빼지 않는다** — 안 빼는 것보다 나쁜 게
+     "왜 안 돌았는지 모르는 것"이라, 이름과 이유를 반드시 출력한다. */
+  const held = [];
+  const pending = [];
+  for (const f of notApplied) {
+    const reason = holdReason(join(MIGRATIONS_DIR, f));
+    (reason ? held : pending).push(reason ? { f, reason } : f);
+  }
+  for (const h of held) console.log(`⏸  ${h.f} — 보류(@hold): ${h.reason}`);
+  if (held.length) {
+    console.log(`   적용하려면 개별 실행: npm run db:run -- supabase/migrations/${held[0].f}\n`);
+  }
 
   if (pending.length === 0) {
     console.log("✔ 적용할 마이그레이션이 없습니다. (최신 상태)");
