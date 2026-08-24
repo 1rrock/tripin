@@ -62,48 +62,36 @@ export function NewListButton({
   }
 
   if (!open) {
-    const button = (
-      <button
-        type="button"
-        onClick={() => setOpen(true)}
-        className={
-          variant === "row"
-            ? `roll w-full cursor-pointer ${ROW_BODY} pr-(--gutter)`
-            : `flex h-11 w-fit cursor-pointer items-center justify-center gap-1.5 px-4 font-bold transition-transform active:scale-[0.98] ${className}`
-        }
-        style={
-          variant === "row"
-            ? undefined
-            : {
-                /* 화면의 주 행동이다 — 잉크 채움. 산호는 핀에만 쓴다(globals.css) */
-                fontSize: "var(--t-body)",
-                borderRadius: "var(--r-control)",
-                background: "var(--paper)",
-                color: "var(--sheet)",
-              }
-        }
-      >
-        {variant === "row" ? (
-          <>
+    /* 두 갈래가 한때 같은 `<button>` 을 공유했다. 그래서 이 트리거만 h-11(44) +
+       `--r-control`(10px) 이라는, 봉인된 `Button` 의 네 규격 어디에도 없는 **다섯 번째**
+       규격이었다. 갈래를 쪼개 규격이 있는 쪽은 `Button` 에 넘긴다 —
+       `secondary`(먹색 채움)가 예전 인라인 스타일과 같은 색이고, 44px 도 `md` 그대로다.
+       바뀌는 것은 라운드 10px → 12px 하나뿐이다.
+       row 갈래는 단추가 아니라 **목록의 행**이라 여기 남는다 — `Button` 에 넣으면
+       ROW_BODY 의 행 문법(좌 아이콘 · 2줄 텍스트 · 전폭)을 잃는다. */
+    if (variant === "row") {
+      return (
+        <li className={`border-b ${className}`} style={{ borderColor: "var(--hairline)" }}>
+          <button
+            type="button"
+            onClick={() => setOpen(true)}
+            className={`roll w-full cursor-pointer ${ROW_BODY} pr-(--gutter)`}
+          >
             <RowIcon>
               <Plus className="size-5" weight="bold" />
             </RowIcon>
             <RowText name={m.saved.listNew} meta={hint} />
-          </>
-        ) : (
-          <>
-            <Plus className="size-4" weight="bold" />
-            {m.saved.listNew}
-          </>
-        )}
-      </button>
-    );
-    return variant === "row" ? (
-      <li className={`border-b ${className}`} style={{ borderColor: "var(--hairline)" }}>
-        {button}
-      </li>
-    ) : (
-      button
+          </button>
+        </li>
+      );
+    }
+    return (
+      /* 화면의 주 행동이지만 브랜드색은 아니다 — 산호는 워드마크·주 CTA·활성 표시에만
+         (PRODUCT.md). 이 화면의 산호는 핀이 가져간다. */
+      <Button variant="secondary" size="md" onClick={() => setOpen(true)} className={className}>
+        <Plus className="size-4" weight="bold" />
+        {m.saved.listNew}
+      </Button>
     );
   }
 
