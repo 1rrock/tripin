@@ -234,6 +234,8 @@ export const ko = {
     watchOnYoutube: "유튜브 보기",
     watchOnYoutubeAt: "유튜브 {ts}부터",
     videoDetail: "영상 상세보기",
+    /** 목록 행이 펼치는 아웃링크 줄의 마지막 칸 — 요약·사진이 있는 장소 페이지로 */
+    placeMore: "자세히",
     home: "홈",
     about: "소개",
     policy: "콘텐츠 정책",
@@ -751,6 +753,7 @@ export type Messages = {
     watchOnYoutube: string;
     watchOnYoutubeAt: string;
     videoDetail: string;
+    placeMore: string;
     home: string;
     about: string;
     policy: string;

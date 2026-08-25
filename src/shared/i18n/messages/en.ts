@@ -209,6 +209,7 @@ export const en: Messages = {
     watchOnYoutube: "Watch on YouTube",
     watchOnYoutubeAt: "YouTube from {ts}",
     videoDetail: "Video details",
+    placeMore: "Details",
     home: "Home",
     about: "About",
     policy: "Content policy",
