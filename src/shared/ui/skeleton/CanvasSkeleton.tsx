@@ -1,7 +1,11 @@
 /**
- * 캔버스(지도 + 패널) 화면의 뼈대 — `/map`, `/city/[city]`, `/c/[creator]`.
+ * 캔버스(지도 + 패널) 화면의 뼈대 — 이제 `/map` **하나뿐**이다.
  *
- * 이 세 화면은 `.canvas-page` 한 벌을 공유하는데, 그 CSS 가 브레이크포인트에서
+ * `/city/[city]` 는 조각 화면과 같은 껍데기(2단 그리드)로 옮겨 갔고 그 뼈대는
+ * `PieceSkeleton.tsx` 에 있다. `/c/[creator]` 허브(`CreatorSkeleton`)는 원래
+ * `canvas-*` 를 안 쓴다 — 예전 주석의 "세 화면" 은 틀린 말이었다.
+ *
+ * `.canvas-page` CSS 가 브레이크포인트에서
  * 레이아웃을 **통째로 갈아끼운다**(globals.css):
  *   모바일 /map — 지도 전면 + 목록 바텀시트(`--map-sheet-h`)
  *   ≥1024 — `.canvas-page` 가 `position:fixed inset-0`, 지도가 전면, 패널이 왼쪽 400px 카드
@@ -39,33 +43,6 @@ function ChipRow({ widths }: { widths: string[] }) {
 function BoneNo() {
   return <BoneDot size={28} className="mt-0.5" />;
 }
-
-/** 요약 불릿 — `<SummaryBlock className="pl-10">` 의 자리 */
-function BoneSummary() {
-  return (
-    <div className="pl-10">
-      <ul
-        className="flex flex-col gap-1.5"
-        style={{ fontSize: "var(--t-body)", lineHeight: 1.65 }}
-      >
-        {["92%", "68%"].map((w, i) => (
-          <li key={i} className="flex gap-2">
-            <span aria-hidden style={{ color: "var(--dim)" }}>
-              ·
-            </span>
-            <span>
-              <Bone w={w} />
-            </span>
-          </li>
-        ))}
-      </ul>
-    </div>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────
-   /map — HomeCanvas (surface="page", lead="home")
-   ──────────────────────────────────────────────────────────────── */
 
 /**
  * 검색 알약 — `HomeCanvas` 의 `searchField(floating)` 을 그대로 베낀다.
@@ -211,124 +188,6 @@ export function MapSkeleton({ label }: { label: string }) {
     </BoneRoot>
   );
 }
-
-/* ────────────────────────────────────────────────────────────────
-   /city/[city] — 모바일 헤더 + CityExplorer
-   ──────────────────────────────────────────────────────────────── */
-
-export function CitySkeleton({ label }: { label: string }) {
-  return (
-    <BoneRoot label={label}>
-      {/* 모바일 전용 머리 — 데스크톱은 패널 안 제목이 대신한다 */}
-      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:hidden">
-        <BoneCrumb last="4.5rem" />
-        <h1
-          className="font-black"
-          style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-        >
-          <Bone w="72%" />
-        </h1>
-        <p className="index tnum">
-          <Bone w="8rem" />
-        </p>
-      </header>
-
-      <div className="canvas-page">
-        <BoneMap />
-
-        <section className="canvas-panel">
-          {/* 데스크톱 전용 제목 */}
-          <div className="hidden px-(--gutter) pt-4 pb-1 lg:block">
-            <h1
-              className="font-black"
-              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-            >
-              <Bone w="55%" />
-            </h1>
-          </div>
-
-          <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:pt-3">
-            <ChipRow widths={["3.5rem", "4rem", "3.5rem", "4.5rem", "3.75rem"]} />
-            <ChipRow widths={["4.5rem", "6rem", "5.5rem", "6.5rem"]} />
-            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              <p className="index tnum">
-                <Bone w="10rem" />
-              </p>
-            </div>
-          </div>
-
-          <div className="flex flex-col gap-(--block) px-(--gutter) pb-10">
-            <ol>
-              {times(5).map((i) => (
-                <li key={i}>
-                  <hr className="rule" />
-                  <div className="-mx-2.5 flex flex-col gap-3 px-2.5 py-4">
-                    <div className="flex w-full items-start gap-3 text-left">
-                      <BoneNo />
-                      <span className="min-w-0 flex-1">
-                        <span
-                          className="block font-bold"
-                          style={{
-                            fontSize: "var(--t-title)",
-                            letterSpacing: "-0.025em",
-                            lineHeight: 1.3,
-                          }}
-                        >
-                          <Bone w="58%" />
-                        </span>
-                        <span
-                          className="mt-1 block"
-                          style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                        >
-                          <Bone w="38%" />
-                        </span>
-                        <span
-                          className="mt-0.5 block"
-                          style={{ fontSize: "var(--t-meta)", color: "var(--dim)" }}
-                        >
-                          <Bone w="76%" />
-                        </span>
-                      </span>
-                    </div>
-
-                    <BoneSummary />
-
-                    <div className="flex flex-wrap items-center gap-2 pl-10">
-                      <BoneAct w="7.5rem" />
-                      <BoneAct w="5rem" />
-                    </div>
-                  </div>
-                </li>
-              ))}
-              <hr className="rule" />
-            </ol>
-
-            {/* 이 도시에 간 채널 */}
-            <section className="flex flex-col gap-3">
-              <h2 className="index">
-                <Bone w="9rem" />
-              </h2>
-              <div className="flex flex-wrap gap-2">
-                {["5rem", "6.5rem", "5.5rem"].map((w, i) => (
-                  <BoneChip key={i} w={w} />
-                ))}
-              </div>
-            </section>
-
-            <span className="index inline-flex items-center gap-1.5">
-              <BoneDot size={14} radius="3px" />
-              <Bone w="5.5rem" />
-            </span>
-          </div>
-        </section>
-      </div>
-    </BoneRoot>
-  );
-}
-
-/* ────────────────────────────────────────────────────────────────
-   /c/[creator] — 모바일 헤더 + CreatorExplorer + 영상 목록
-   ──────────────────────────────────────────────────────────────── */
 
 export function CreatorSkeleton({ label }: { label: string }) {
   return (

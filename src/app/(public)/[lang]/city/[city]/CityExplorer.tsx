@@ -7,10 +7,15 @@
  * 따라가기"고 여기는 "이 도시에서 고르기"라, 한 장소에 출처 채널이 여러 개 붙을 수 있고
  * 그게 이 화면의 값이다.
  *
- * 선택의 두 갈래를 구분한다:
- *   · **핀** 을 누르면 상세 시트가 열린다 — 지도에는 이름 말고 들어갈 자리가 없으니까
- *   · **목록 행** 을 누르면 지도만 그 핀으로 옮긴다 — 행 자체가 이미 상세다
- * 둘 다 같은 activeId 를 쓰므로 지도와 목록의 강조는 항상 일치한다.
+ * 껍데기는 조각(`Explorer`)과 **한 벌**이다 — 모바일은 지도가 상부, 데스크톱은
+ * 좌 목록 + 우 sticky 지도. 예전에는 `/map` 의 `.canvas-page` 를 빌려 썼는데
+ * `.canvas-root` 를 안 달아서, 그 클래스를 전제하는 규칙들이 반만 걸렸다:
+ * 데스크톱에선 캔버스가 뷰포트를 덮어 푸터·빵부스러기가 뒤에 산 채로 남았고,
+ * 모바일에선 상세 드로어가 42dvh 지도 상자의 52%(= 화면의 21.8%) 안에 눌렸다.
+ * 껍데기를 옮기면서 그 분기들이 통째로 사라졌다.
+ *
+ * **핀도 행도 같은 일을 한다**: 그 행을 펴고 지도를 그 핀으로 옮긴다. 상세
+ * 드로어는 이 화면에 없다 — 목록 행이 이미 상세다(아래 `selectPlace` 주석).
  *
  * 필터는 클라이언트. `?type=`·`?channel=` 은 replace 로 동기화해 공유·뒤로가기가 된다.
  * 지도 뷰포트 초기화를 피하려고 풀 네비게이션은 쓰지 않는다.
@@ -26,8 +31,8 @@ import { usePathname, useRouter } from "next/navigation";
 import type { PlaceType } from "@/shared/api/database.types";
 import type { CityCreator, MapPlaceDetail, PlaceSource } from "@/shared/api/cities";
 import { MapView } from "@/shared/ui/MapView";
-import { PlaceSheet } from "@/shared/ui/PlaceSheet";
 import { ShareButton } from "@/shared/ui/ShareButton";
+import { SaveButton } from "@/shared/ui/SaveButton";
 import { PlaceRowLink } from "@/shared/ui/PlaceRowLink";
 import { Chip, FrameNo, Rule } from "@/shared/ui/frame"
 import { EmptyState } from "@/shared/ui/EmptyState";
@@ -39,7 +44,7 @@ import {
   displayPlaceSecondary,
   displayPlaceSecondaryLang,
 } from "@/shared/i18n/display";
-import type { SummaryDisplay } from "@/shared/i18n/display";
+import { placePath } from "@/shared/lib/place-path";
 
 /**
  * 목록·핀이 읽는 최소 형태. **요약·출처·지도링크는 여기 없다.**
@@ -56,14 +61,20 @@ import type { SummaryDisplay } from "@/shared/i18n/display";
  * 요약·출처를 잃는 게 아니다 — 드로어가 그대로 보여주고, 이제 각 장소에
  * `/place/[slug]` 문서가 따로 있다(행 전체가 그 링크다).
  */
-/** 상세가 도착하기 전 PlaceSheet 에 넘길 빈 요약 — SummaryBlock 이 알아서 아무것도 안 그린다. */
-const EMPTY_SUMMARY: SummaryDisplay = {
-  bullets: [],
-  summary: null,
-  priceHint: null,
-  isMachine: false,
-  original: null,
-};
+/** 아웃링크 — 유튜브는 타임스탬프 포함(&t=초). 조각 화면과 같은 문법. */
+function youtubeUrl(videoId: string, sec: number | null): string {
+  return `https://www.youtube.com/watch?v=${videoId}${sec ? `&t=${Math.floor(sec)}s` : ""}`;
+}
+
+/** 알약에 적는 타임코드 — 1시간을 넘으면 h:mm:ss. */
+function fmtTs(sec: number): string {
+  const h = Math.floor(sec / 3600);
+  const mm = Math.floor((sec % 3600) / 60);
+  const ss = Math.floor(sec % 60);
+  return h > 0
+    ? `${h}:${String(mm).padStart(2, "0")}:${String(ss).padStart(2, "0")}`
+    : `${mm}:${String(ss).padStart(2, "0")}`;
+}
 
 /**
  * 첫 진입의 쿼리 — `useSearchParams()` 를 **쓰지 않는다.**
@@ -112,6 +123,7 @@ export function CityExplorer({
   total,
   presentTypes,
   creators,
+  totalPlaces,
 }: {
   cityName: string;
   citySlug: string;
@@ -122,6 +134,8 @@ export function CityExplorer({
   /** 전체 기준으로 서버가 센 종류 칩 — 꼬리가 와도 칩 줄이 안 튄다 */
   presentTypes: PlaceType[];
   creators: CityCreator[];
+  /** 통계 줄의 장소 수 — 서버가 전체 기준으로 센 값 */
+  totalPlaces: number;
 }) {
   const { messages: m, href, t, locale } = useLocale();
   const router = useRouter();
@@ -129,7 +143,6 @@ export function CityExplorer({
   const [type, setType] = useState<PlaceType | null>(null);
   const [channel, setChannel] = useState<string | null>(null);
   const [activeId, setActiveId] = useState<string | null>(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
   const rowRefs = useRef<globalThis.Map<string, HTMLLIElement>>(new globalThis.Map());
 
   /**
@@ -200,24 +213,6 @@ export function CityExplorer({
     syncQuery(type, next);
   };
 
-  const applyChannelFromDrawer = useCallback(
-    (slug: string) => {
-      if (slug === channel) return;
-      setChannel(slug);
-      const params = new URLSearchParams(window.location.search);
-      params.set("channel", slug);
-      const qs = params.toString();
-      const url = qs ? `${pathname}?${qs}` : pathname;
-      const st = window.history.state;
-      window.history.replaceState(
-        { ...(st && typeof st === "object" ? st : {}) },
-        "",
-        url,
-      );
-    },
-    [channel, pathname],
-  );
-
   const shown = useMemo(
     () =>
       places.filter((p) => {
@@ -245,44 +240,42 @@ export function CityExplorer({
     [shown],
   );
 
-  /** 지도 핀 → 상세 시트. 지도에는 이름 말고 들어갈 자리가 없다 */
-  const onPinClick = useCallback(
-    (id: string) => {
-      if (activeId === id && sheetOpen) {
-        setSheetOpen(false);
-        setActiveId(null);
-        return;
-      }
-      setActiveId(id);
-      setSheetOpen(true);
-      const el = rowRefs.current.get(id);
-      if (el) {
-        const r = el.getBoundingClientRect();
-        if (r.top < 0 || r.bottom > window.innerHeight) {
-          el.scrollIntoView({ behavior: "smooth", block: "center" });
+  /**
+   * 핀과 행이 **같은 일**을 한다 — 그 행을 펴고, 지도를 그 핀으로 옮긴다.
+   * 다시 누르면 해제. 조각 화면(`Explorer.selectPlace`)과 같은 계약이다.
+   *
+   * 예전에는 핀을 누르면 상세 드로어(`PlaceSheet`)가 떴는데, 이 화면의 부모
+   * 상자가 42dvh 짜리 지도 래퍼라 `height:52%` 가 화면의 21.8% 로 계산됐다.
+   * 375×667 에서 드로어 146px 인데 줄지 않는 크롬만 154px 이라 본문이 0px 으로
+   * 눌리고 하단 CTA 가 잘렸다. 껍데기를 조각 화면과 맞추면서 드로어를 걷어냈다.
+   */
+  const selectPlace = useCallback((id: string) => {
+    setActiveId((prev) => {
+      const next = prev === id ? null : id;
+      if (next !== null) {
+        const el = rowRefs.current.get(next);
+        if (el) {
+          const r = el.getBoundingClientRect();
+          if (r.top < 0 || r.bottom > window.innerHeight) {
+            el.scrollIntoView({ behavior: "smooth", block: "center" });
+          }
         }
       }
-    },
-    [activeId, sheetOpen],
-  );
-
-  /** 목록 행 → 지도만 옮긴다. 행 자체가 이미 상세라 시트를 겹쳐 띄우지 않는다 */
-  const onRowClick = (id: string) => {
-    setSheetOpen(false);
-    setActiveId((prev) => (prev === id ? null : id));
-  };
-
-  const activeIndex = shown.findIndex((p) => p.id === visibleActiveId);
-  const activePlace = activeIndex >= 0 ? shown[activeIndex]! : null;
+      return next;
+    });
+  }, []);
 
   /**
-   * 드로어 상세 — 목록 페이로드에 안 실은 요약·출처·지도링크를 열 때 받는다.
+   * 고른 한 곳의 상세 — 목록 페이로드에 안 실은 **지도 앱 딥링크와 출처**를 받는다.
    * `/map`(HomeCanvas)과 같은 라우트·같은 계약이라 CDN 캐시 항목도 공유한다.
+   *
+   * 이 화면에서 출처가 특히 중요하다 — 한 장소에 채널이 여럿 붙고 그게 이 화면의
+   * 값이다(머리 주석). 드로어가 하던 그 일을 펼친 행이 받는다.
    *
    * `?l=` 로 로케일을 URL 에 넣는 이유는 라우트 주석에 있다 — 응답이 s-maxage 로
    * CDN 에 앉는데 proxy 가 심는 헤더는 캐시 키에 안 들어간다.
    */
-  const detailForId = sheetOpen ? visibleActiveId : null;
+  const detailForId = visibleActiveId;
   const [detail, setDetail] = useState<MapPlaceDetail | null>(null);
   const [settledFor, setSettledFor] = useState<string | null>(null);
   const [detailFor, setDetailFor] = useState<string | null>(detailForId);
@@ -312,60 +305,58 @@ export function CityExplorer({
   }, [detailForId, locale]);
 
   /** 채널 필터 중이면 출처도 그 채널만 — "이 사람이 간 장면"에 맞춤 */
-  const sourcesFor = (sources: PlaceSource[]) =>
-    channel ? sources.filter((s) => s.creatorSlug === channel) : sources;
+  const activeSources = channel
+    ? (detail?.sources ?? []).filter((src: PlaceSource) => src.creatorSlug === channel)
+    : (detail?.sources ?? []);
+  /* 고른 행이 펼 지도 앱 딥링크. 상세가 오기 전에는 비어 있고, 그동안은
+     행동 줄이 같은 자리에 뼈를 세운다 — 도착해도 줄이 안 튄다. */
+  const activeMapLinks = detail?.mapLinks ?? [];
 
   return (
-    <div className="canvas-page">
-      {/* 지도 — 이 화면의 본체. 시트가 이 안에 절대배치되므로 relative 필수 */}
-      <div className="canvas-map">
+    <div className="lg:grid lg:grid-cols-[minmax(0,30rem)_1fr] lg:items-start lg:gap-7 lg:px-(--gutter) lg:pt-4">
+      {/* 지도 = 라이트박스. 모바일은 상부, 데스크톱은 우측 sticky.
+          위에 겹쳐 뜨는 것은 없다 — 핀을 누르면 목록의 그 행이 펴진다. */}
+      <div className="lg:sticky lg:top-4 lg:order-2">
         <MapView
-          className="h-full w-full"
+          className="h-[28dvh] min-h-[11.5rem] w-full lg:h-[calc(100dvh-2rem)] lg:min-h-0"
           pins={pins}
           activeId={visibleActiveId}
-          onPinClick={onPinClick}
+          onPinClick={selectPlace}
           cluster
         />
-        {sheetOpen && activePlace ? (
-          <PlaceSheet
-            index={activeIndex + 1}
-            place={{
-              id: activePlace.id,
-              slug: activePlace.slug,
-              name: displayPlaceName(activePlace, locale),
-              nameLocal: activePlace.nameLocal,
-              typeLabel: m.placeTypes[activePlace.placeType],
-              /* 주소는 목록이 이미 갖고 있다 — 상세가 오기 전에도 빈칸이 안 남는다 */
-              address: activePlace.address,
-              summary: detail?.summary ?? EMPTY_SUMMARY,
-              mapLinks: detail?.mapLinks ?? [],
-              sources: detail ? sourcesFor(detail.sources) : [],
-              celebrities: detail?.celebrities ?? [],
-            }}
-            loading={detailLoading}
-            heroHint={
-              activePlace.youtubeId
-                ? { creatorSlug: channel ?? "", youtubeId: activePlace.youtubeId }
-                : null
-            }
-            onClose={() => setSheetOpen(false)}
-            onSelectChannel={applyChannelFromDrawer}
-          />
-        ) : null}
       </div>
 
-      <section className="canvas-panel">
-        {/* 데스크톱 h1 — 모바일 h1(페이지 헤더, lg:hidden)과 공유 버튼 짝을 맞춘다 */}
-        <div className="hidden items-start gap-2 px-(--gutter) pt-4 pb-1 lg:flex">
-          <h1
-            className="min-w-0 flex-1 font-black"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-          >
-            {cityName}
-          </h1>
-          <ShareButton title={cityName} bare className="mt-0.5" />
-        </div>
-        <div className="flex flex-col gap-3 px-(--gutter) pt-5 pb-4 lg:pt-3">
+      <section className="lg:order-1">
+        <header className="flex flex-col gap-3.5 px-(--gutter) pt-6 pb-5 lg:px-0 lg:pt-0">
+          {/* 빵부스러기는 데스크톱에도 선다 — 검색 유입이 위로 올라갈 길.
+              예전에는 `lg:hidden` 이었는데, 그건 이 화면이 데스크톱에서 캔버스에
+              덮이던 시절의 처방이었다. 이제 목록과 같은 칸에 있어 그냥 보인다. */}
+          <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
+            <Link href={href("/")} className="underline-offset-4 hover:underline">
+              {m.cityDetail.home}
+            </Link>
+            <Icon.chevron className="size-2.5" />
+            <Link href={href("/map")} className="underline-offset-4 hover:underline">
+              {m.nav.map}
+            </Link>
+            <Icon.chevron className="size-2.5" />
+            <span style={{ color: "var(--paper)" }}>{cityName}</span>
+          </nav>
+
+          <div className="flex items-start gap-2">
+            <h1
+              className="min-w-0 flex-1 font-black"
+              style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
+            >
+              {t(m.cityDetail.creatorsTitle, { city: cityName })}
+            </h1>
+            <ShareButton title={cityName} bare className="mt-0.5" />
+          </div>
+
+          <p className="index tnum" style={{ color: "var(--dim)" }}>
+            {t(m.cityDetail.stats, { creators: creators.length, places: totalPlaces })}
+          </p>
+
           {presentTypes.length > 1 ? (
             <div className="no-scrollbar -mx-(--gutter) flex gap-2 overflow-x-auto px-(--gutter) lg:mx-0 lg:flex-wrap lg:px-0">
               <Chip active={type === null} onClick={() => selectType(null)}>
@@ -423,9 +414,9 @@ export function CityExplorer({
               </Link>
             ) : null}
           </div>
-        </div>
+        </header>
 
-        <div className="flex flex-col gap-(--block) px-(--gutter) pb-10">
+        <div className="flex flex-col gap-(--block) px-(--gutter) pb-10 lg:px-0">
           {shown.length === 0 && !placesReady ? (
             /* 꼬리가 오기 전 — 깊은 링크 필터가 앞줄 36곳에서만 안 걸린 것일 수
                있다. "찾는 곳이 없어요" 를 띄웠다가 곧 목록이 차면 그건 거짓말이다.
@@ -473,7 +464,7 @@ export function CityExplorer({
                     >
                       <PlaceRowLink
                         slug={place.slug}
-                        onOpen={() => onRowClick(place.id)}
+                        onOpen={() => selectPlace(place.id)}
                         active={active}
                         className="flex w-full cursor-pointer items-start gap-3 text-left"
                       >
@@ -513,10 +504,73 @@ export function CityExplorer({
                           ) : null}
                         </span>
                       </PlaceRowLink>
-                      {/* 요약·유튜브·지도 링크는 여기 없다 — 드로어와 `/place/[slug]` 가
-                          맡는다. 행에 그리던 시절 이 목록 하나가 3.1MB 였다(위 CityPlace 주석).
-                          아웃링크를 가리는 게 아니라 한 단계 뒤로 옮긴 것이고,
-                          `/map` 목록이 이미 같은 문법이다. */}
+                      {/* 행동 줄 — 평소엔 하트 하나, 고른 행에서만 아웃링크가 편다.
+                          요약·사진은 여전히 여기 없다: 행마다 그리던 시절 이 목록
+                          하나가 3.1MB 였다(위 CityPlace 주석). 링크도 **접힌 동안에는
+                          DOM 에 없다** — 561곳짜리 도시에서 곱하기 561 을 피하려고,
+                          고른 한 곳의 딥링크만 그때 받아 그린다.
+
+                          영상 알약이 **채널 이름을 달고** 나오는 게 이 화면의 몫이다.
+                          한 집에 채널이 여럿 붙고 그게 여기의 값인데, 드로어를 걷어내면서
+                          "누가 갔나" 가 사라지면 안 된다. 채널 필터가 걸려 있으면 그
+                          채널 것만 남는다(activeSources).
+
+                          규격은 전부 36px 단이다 — 하트가 36px 이라 28px 기본 칩을
+                          섞으면 밑선이 어긋난다(globals.css `.chip` 머리의 감사 메모). */}
+                      <div className="flex flex-wrap items-center gap-2 pl-10">
+                        <SaveButton
+                          placeId={place.id}
+                          placeName={displayPlaceName(place, locale)}
+                        />
+                        {active ? (
+                          <>
+                            {activeMapLinks.length > 0 ? (
+                              activeMapLinks.map((link) => (
+                                /* 나라 기본이 첫 칸이다(shared/lib/map-links.ts) */
+                                <Chip key={link.app} size="md" href={link.url}>
+                                  {m.map.mapApps[link.app]}
+                                </Chip>
+                              ))
+                            ) : detailLoading ? (
+                              /* 도착 전 같은 폭을 잡아 둔다 — 안 잡으면 하트만 있던
+                                 줄에 알약이 튀어 들어오며 아래 목록이 밀린다. */
+                              <span aria-hidden className="flex gap-2">
+                                {[92, 78].map((w) => (
+                                  <span
+                                    key={w}
+                                    className="bone-line"
+                                    style={{ width: w, height: 36, borderRadius: "var(--r-round)" }}
+                                  />
+                                ))}
+                              </span>
+                            ) : null}
+
+                            {activeSources.slice(0, 3).map((src) => (
+                              <Chip
+                                key={`${src.creatorSlug}-${src.youtubeId}`}
+                                size="md"
+                                href={youtubeUrl(src.youtubeId, src.timestampSec)}
+                                title={src.videoTitle}
+                              >
+                                <Icon.play className="size-4 shrink-0" />
+                                <span className="max-w-[9rem] truncate">{src.creatorName}</span>
+                                {src.timestampSec !== null ? (
+                                  <span className="tnum opacity-60">
+                                    {fmtTs(src.timestampSec)}
+                                  </span>
+                                ) : null}
+                              </Chip>
+                            ))}
+
+                            {/* 요약·사진·주변 장소는 장소 페이지에 있다. 행 제목도 같은
+                                곳을 가리키지만 좌클릭은 선택이 가져간다(PlaceRowLink). */}
+                            <Chip size="md" href={href(placePath(place.slug))}>
+                              {m.common.placeMore}
+                              <Icon.chevron className="size-2.5" />
+                            </Chip>
+                          </>
+                        ) : null}
+                      </div>
                     </div>
                   </li>
                 );

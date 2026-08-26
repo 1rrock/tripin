@@ -10,8 +10,9 @@
  */
 
 export { HomeSkeleton } from "./skeleton/HomeSkeleton";
-export { MapSkeleton, CitySkeleton, CreatorSkeleton } from "./skeleton/CanvasSkeleton";
-export { PieceSkeleton } from "./skeleton/PieceSkeleton";
+export { MapSkeleton, CreatorSkeleton } from "./skeleton/CanvasSkeleton";
+/* 조각과 도시가 같은 껍데기를 쓰므로 뼈대도 한 파일에 있다 */
+export { PieceSkeleton, CitySkeleton } from "./skeleton/PieceSkeleton";
 export { VideoSkeleton } from "./skeleton/VideoSkeleton";
 export { TypeDetailSkeleton } from "./skeleton/TypeDetailSkeleton";
 export { ChannelsSkeleton } from "./skeleton/ChannelsSkeleton";

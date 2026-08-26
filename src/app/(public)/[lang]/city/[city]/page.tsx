@@ -1,16 +1,12 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { loadCityDetail } from "@/shared/api/cities";
-import { getDictionary, t } from "@/shared/i18n/get-dictionary";
+import { getDictionary } from "@/shared/i18n/get-dictionary";
 import { displayCityName } from "@/shared/i18n/display";
 import type { Locale } from "@/shared/i18n/config";
-import { localePath } from "@/shared/i18n/locale";
 import { publicMeta, absoluteUrl } from "@/shared/seo/page-meta";
 import { JsonLd, breadcrumbList, placeList } from "@/shared/seo/json-ld";
 import { placePath } from "@/shared/lib/place-path";
-import { Icon } from "@/shared/ui/icons";
-import { ShareButton } from "@/shared/ui/ShareButton";
 import { FILTERABLE_TYPES } from "@/shared/ui/place-types";
 import { CityExplorer } from "./CityExplorer";
 import { CITY_HEAD, toCityPlace } from "./list-payload";
@@ -139,60 +135,14 @@ export default async function CityPage({ params }: { params: Promise<Params> }) 
           ),
         ]}
       />
-      {/* 브레드크럼은 데스크톱에도 세운다 — 검색 유입이 위로 올라갈 길.
-          제목·통계는 모바일 전용(데스크톱 h1 은 CityExplorer 가 그린다). */}
-      <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:pb-0">
-        {/* 아래 h1·통계 줄과 같은 `lg:hidden` 이다 — 빠져 있었다.
-            ≥1024 에서 `.canvas-page` 가 `position:fixed inset-0 z-10` 로 뷰포트를
-            통째로 덮으므로(globals.css) 이 빵부스러기는 **안 보이는데 탭 순서에는
-            남아** 있었다. 실측: 1440 에서 이 두 링크의 `elementFromPoint` 가 둘 다
-            캔버스를 돌려줬다 — 키보드 사용자는 보이지 않는 링크로 포커스가 간다.
-            구조화 빵부스러기(`breadcrumbList` JSON-LD)는 위에서 따로 싣고 있고,
-            모바일 우선 색인이라 크롤러가 보는 폭에서는 그대로 보인다. */}
-        <nav
-          className="index flex items-center gap-1.5 lg:hidden"
-          style={{ color: "var(--dim)" }}
-        >
-          <Link
-            href={localePath("/", locale)}
-            className="underline-offset-4 hover:underline"
-          >
-            {m.cityDetail.home}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <Link
-            href={localePath("/map", locale)}
-            className="underline-offset-4 hover:underline"
-          >
-            {m.nav.map}
-          </Link>
-          <Icon.chevron className="size-2.5" />
-          <span style={{ color: "var(--paper)" }}>{cityLabel}</span>
-        </nav>
-
-        <div className="flex items-start gap-2 lg:hidden">
-          <h1
-            className="min-w-0 flex-1 font-black"
-            style={{ fontSize: "var(--t-screen)", letterSpacing: "-0.04em", lineHeight: 1.15 }}
-          >
-            {t(m.cityDetail.creatorsTitle, { city: cityLabel })}
-          </h1>
-          <ShareButton title={cityLabel} bare className="mt-0.5" />
-        </div>
-
-        <p className="index tnum lg:hidden" style={{ color: "var(--dim)" }}>
-          {t(m.cityDetail.stats, {
-            creators: data.creators.length,
-            places: data.places.length,
-          })}
-        </p>
-      </header>
-
+      {/* 머리(빵부스러기·제목·통계)는 이 안에서 그린다 — 조각 화면(`Explorer`)과
+          같은 껍데기라 머리도 목록과 같은 칸(데스크톱 좌측)에 들어가야 한다. */}
       <CityExplorer
         cityName={cityLabel}
         citySlug={data.slug}
         places={headPlaces}
         total={data.places.length}
+        totalPlaces={data.places.length}
         presentTypes={presentTypes}
         creators={data.creators}
       />
