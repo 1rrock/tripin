@@ -935,7 +935,12 @@ export function MapView({
           aria-label={m.map.viewAll}
           title={m.map.viewAll}
           onClick={() => refitRef.current?.()}
-          className="absolute bottom-3 left-3 grid size-10 cursor-pointer place-items-center"
+          /* `map-refit` 은 자리를 옮기기 위한 이름표다 — 데스크톱 캔버스
+             (`/map`·`/city/[city]`)에서 이 기본 자리(left:12px)가 좌측 레일
+             (fixed, x 16–80, 불투명) 아래로 들어간다. globals.css 의
+             `@media (min-width:1024px)` 캔버스 블록이 패널 오른쪽으로 민다.
+             조각·영상 화면의 지도는 칸 안에 있어 겹치지 않으므로 그대로 둔다. */
+          className="map-refit absolute bottom-3 left-3 grid size-10 cursor-pointer place-items-center"
           style={{
             background: "var(--paper)",
             borderRadius: "var(--r-frame)",

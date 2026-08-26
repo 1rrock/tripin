@@ -870,6 +870,21 @@ html:has(.canvas-root) .site-header {
   html:has(.canvas-page) {
     overflow: hidden;
   }
+  /* 데스크톱에서 캔버스는 뷰포트를 통째로 덮는다(아래 fixed inset-0). 그러면
+     푸터는 **그 뒤에 산 채로 깔린다** — 안 보이는데 탭 순서에는 남아서, 키보드로
+     Tab 을 누르면 포커스가 보이지 않는 링크로 들어간다.
+
+     `/map` 은 `.canvas-root` 를 달아 위쪽 `html:has(.canvas-root) footer` 규칙에
+     이미 걸리지만 `/city/[city]` 는 `canvas-page` 만 달아서 안 걸렸다. 실측:
+     1440 에서 `/city/jeju` 의 푸터 링크 7개 + 빵부스러기 2개가 캔버스 뒤에
+     남아 `elementFromPoint` 가 전부 캔버스를 돌려줬다.
+
+     ⚠️ 이 규칙을 `@media` 밖으로 꺼내지 마라 — 1023px 이하에서 `.canvas-page` 는
+     `position:static` 이라 푸터가 정상적으로 문서 끝에 서고, 그건 가려야 할 것이
+     아니다. */
+  html:has(.canvas-page) footer {
+    display: none;
+  }
   .canvas-page {
     position: fixed;
     inset: 0;
@@ -904,6 +919,18 @@ html:has(.canvas-root) .site-header {
      목록 이름)이 카드 모서리에 딱 붙어 섰다. 안쪽 좌우 여백(16px)과 맞춘다. */
   .canvas-panel-scroll {
     padding-top: 12px;
+  }
+  /* "전체 핀 보기" — 기본 자리는 지도 좌하단(left:12px)인데, 이 화면에서는 그
+     자리가 좌측 레일(.desktop-rail: fixed, x 16–80, `--ground` 불투명, z-40)
+     **뒤**다. 실측: 1440 에서 버튼 [12,848,52,888] 중 x16–52·y848–884 가 레일에
+     덮여 `elementFromPoint(16,868)` 이 버튼이 아니라 레일을 돌려줬다 — 40px 중
+     36px 이 가려져 사실상 못 누른다.
+
+     패널 오른쪽 가장자리로 민다. 폭 식을 `.canvas-panel` 과 **같은 값**으로
+     적는다 — 저기 width 를 바꾸면 여기도 같이 바꿔야 한다. 우하단은 구글 제
+     컨트롤(확대·축소)과 저작권 줄이 이미 쓰고 있어 비켜 간다. */
+  .canvas-page .map-refit {
+    left: calc(92px + min(400px, 100vw - 120px) + 12px);
   }
   .place-drawer-handle {
     display: none;

@@ -142,7 +142,17 @@ export default async function CityPage({ params }: { params: Promise<Params> }) 
       {/* 브레드크럼은 데스크톱에도 세운다 — 검색 유입이 위로 올라갈 길.
           제목·통계는 모바일 전용(데스크톱 h1 은 CityExplorer 가 그린다). */}
       <header className="flex flex-col gap-3 px-(--gutter) pt-4 pb-1 lg:pb-0">
-        <nav className="index flex items-center gap-1.5" style={{ color: "var(--dim)" }}>
+        {/* 아래 h1·통계 줄과 같은 `lg:hidden` 이다 — 빠져 있었다.
+            ≥1024 에서 `.canvas-page` 가 `position:fixed inset-0 z-10` 로 뷰포트를
+            통째로 덮으므로(globals.css) 이 빵부스러기는 **안 보이는데 탭 순서에는
+            남아** 있었다. 실측: 1440 에서 이 두 링크의 `elementFromPoint` 가 둘 다
+            캔버스를 돌려줬다 — 키보드 사용자는 보이지 않는 링크로 포커스가 간다.
+            구조화 빵부스러기(`breadcrumbList` JSON-LD)는 위에서 따로 싣고 있고,
+            모바일 우선 색인이라 크롤러가 보는 폭에서는 그대로 보인다. */}
+        <nav
+          className="index flex items-center gap-1.5 lg:hidden"
+          style={{ color: "var(--dim)" }}
+        >
           <Link
             href={localePath("/", locale)}
             className="underline-offset-4 hover:underline"
