@@ -182,8 +182,12 @@ export default async function CreatorHubPage({
             </p>
             {/* 구독은 이 서비스 안의 구독이다. 유튜브로 나가는 링크를 밀어내지 않는다 —
                 "나가는 길이 본업"(PRODUCT.md 원칙 4) 이라 둘을 나란히 둔다. */}
+            {/* ⚠️ 이 줄은 **전부 36px 단**이다. `SubscribeButton`(Chip size="md")과
+                `ShareButton`(비-bare = size-9)이 36px 인데 `Act` 가 기본 28px 로
+                서서, 셋이 같은 flex-wrap 에서 밑선이 어긋나 있었다(실측 [28,36]).
+                영상 페이지 하단 "다음 행동" 줄이 이미 같은 이유로 전부 md 다. */}
             <div className="mt-2 flex flex-wrap items-center gap-2">
-              <Act icon="out" href={channelUrl}>
+              <Act icon="out" size="md" href={channelUrl}>
                 {m.hub.channelLink}
               </Act>
               <SubscribeButton creatorId={creator.id} creatorName={creator.display_name} />

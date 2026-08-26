@@ -122,6 +122,7 @@ export function Act({
   href,
   onClick,
   pressed = false,
+  size,
   title,
 }: {
   icon: IconName;
@@ -129,11 +130,14 @@ export function Act({
   href?: string;
   onClick?: () => void;
   pressed?: boolean;
+  /** `Chip` 의 단을 그대로 넘긴다 — 36px 짜리(`ShareButton`·`SubscribeButton`)와
+      한 `flex-wrap` 에 설 때 `"md"` 를 준다. 기본은 28px. */
+  size?: "sm" | "md";
   title?: string;
 }) {
   const Glyph = GLYPH[icon] ?? IconOut;
   return (
-    <Chip tone="soft" active={pressed} href={href} onClick={onClick} title={title}>
+    <Chip tone="soft" size={size} active={pressed} href={href} onClick={onClick} title={title}>
       <Glyph className="size-4 shrink-0" weight={pressed ? "fill" : "regular"} />
       <span>{children}</span>
     </Chip>

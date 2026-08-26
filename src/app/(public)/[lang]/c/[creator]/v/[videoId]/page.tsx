@@ -175,8 +175,11 @@ export default async function VideoPage({
             </p>
             {/* 유튜브로 바로 나갈 사람의 길 — 예전엔 정거장 행 안에만 있어서, 영상
                 자체를 보러 온 사람이 목록을 지나야 했다 */}
+            {/* ⚠️ 아래 "다음 행동" 줄과 같은 규율 — 이 줄도 **전부 36px 단**이다.
+                `ShareButton`(비-bare = size-9)이 36px 라 `Act` 기본 28px 이 옆에
+                서면 밑선이 어긋난다(실측 [28,36]). */}
             <div className="mt-1 flex flex-wrap items-center gap-2">
-              <Act icon="play" href={`https://www.youtube.com/watch?v=${video.youtubeId}`}>
+              <Act icon="play" size="md" href={`https://www.youtube.com/watch?v=${video.youtubeId}`}>
                 {m.common.watchOnYoutube}
               </Act>
               <ShareButton title={video.title} />
