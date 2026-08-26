@@ -31,7 +31,7 @@ export default function Loading() {
 
       {/* 인물 앵커 칩 — 실화면과 같은 sticky 자리에 세운다 */}
       <div
-        className="no-scrollbar sticky top-0 z-10 mt-4 flex gap-1.5 overflow-x-auto bg-(--ground) px-(--gutter) py-2.5"
+        className="no-scrollbar sticky top-(--site-header-h) z-10 mt-4 flex gap-1.5 overflow-x-auto bg-(--ground) px-(--gutter) py-2.5"
         style={{ borderBottom: "1px solid var(--hairline)" }}
       >
         {CHIPS.map((w, i) => (

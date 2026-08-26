@@ -831,8 +831,14 @@ export function PlaceSheet({
           <span className="mt-2 block">
             <span className="bone-line" style={{ width: "38%" }} />
           </span>
+          {/* `bone` 이 아니라 `bone-line` 이다. `.bone` 은 `position:absolute; inset:0`
+              이라 positioned 조상을 찾아 올라가는데, 부모 `.place-drawer-midboot` 는
+              positioned 가 아니라서 `.place-drawer` 까지 튀었다 — 실측: 뼈가
+              [0,421,390,581] 인데 부모는 [0,425,390,484] 로, 위 두 줄을 덮으며
+              드로어 천장에 앉았다. `bone-line` 은 `position:relative; display:block`
+              이라 흐름에 남는다(코드베이스의 다른 뼈 5곳이 쓰는 방식). */}
           <span
-            className="bone mt-4 block"
+            className="bone-line mt-4 block"
             style={{ width: "100%", height: 160, borderRadius: "var(--r-frame)" }}
           />
         </div>

@@ -139,7 +139,10 @@ export default async function CelebsPage({
           그건 규격 통일이 아니라 새 동작이다. */}
       <nav
         aria-label={m.celebs.title}
-        className="no-scrollbar sticky top-0 z-10 mt-4 flex gap-1.5 overflow-x-auto bg-(--ground) px-(--gutter) py-2.5"
+        /* `top-0` 이 아니라 헤더 높이만큼 내려온다 — 사이트 헤더도 `sticky top-0`
+           이고 z-30 이라, 둘 다 0 에 붙으면 이 줄(z-10, 49px)이 63px 짜리 헤더
+           밑으로 통째로 사라진다(실측 확인). ≥1024 에서는 토큰이 0 이다. */
+        className="no-scrollbar sticky top-(--site-header-h) z-10 mt-4 flex gap-1.5 overflow-x-auto bg-(--ground) px-(--gutter) py-2.5"
         style={{ borderBottom: "1px solid var(--hairline)" }}
       >
         {groups.map(([personName, spots]) => (
@@ -155,7 +158,10 @@ export default async function CelebsPage({
           id={celebAnchor(personName)}
           /* 그룹 키는 한글 원문이지만 보조기기가 듣는 이름은 화면과 같아야 한다 */
           aria-label={person(spots[0])}
-          className="scroll-mt-14 pt-9"
+          /* 앵커로 뛰었을 때 제목이 헤더(63) + 이 앵커 줄(49) 밑에 안 깔리게.
+             `scroll-mt-14`(56px)는 헤더 하나도 못 비켰다. */
+          className="pt-9"
+          style={{ scrollMarginTop: "calc(var(--site-header-h) + 3.0625rem)" }}
         >
           <div className="flex items-baseline gap-2.5 px-(--gutter)">
             {/* 킥커 바는 중성이다 — 인물이 열 명이면 산호 바가 열 개고, 그러면
