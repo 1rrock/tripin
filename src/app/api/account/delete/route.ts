@@ -18,8 +18,11 @@ import { publicEnv, serverEnv } from "@/shared/config/env";
  * (`supabase/migrations/0009_accounts.sql`).
  */
 export async function POST() {
-  /* getUser() 로 서버에 실재를 확인한 id 다. 쿠키의 JWT 를 파싱만 하는
-     getSession() 을 쓰면 위조된 쿠키로 남의 계정을 지울 수 있다. */
+  /* 서명이 검증된 id 다(`currentUserId()` → `getClaims()`). 쿠키의 JWT 를 검증 없이
+     파싱만 하는 getSession() 을 쓰면 위조된 쿠키로 남의 계정을 지울 수 있다.
+     getClaims 는 비대칭 키(ES256)로 로컬 검증하므로 위조는 여기서 막힌다.
+     다만 "서버에 아직 실재하는가"까지는 묻지 않는다 — 지우는 동작에선 무해하다
+     (이미 없는 계정을 지우면 아래 admin 호출이 조용히 끝난다). */
   const uid = await currentUserId();
   if (!uid) {
     return NextResponse.json({ error: "unauthorized" }, { status: 401 });

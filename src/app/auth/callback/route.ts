@@ -152,7 +152,8 @@ async function handleAuthError({
   /* 이 구글은 이미 다른 유저에 붙어 있다. 유저는 "연결"을 골랐으니
      그 계정으로 들어가게 한다. 한 번만 — 루프 방지 쿠키. */
   if (errorCode === "identity_already_exists" && !request.cookies.get(SWITCH_COOKIE)) {
-    const { data: current } = await sb.auth.getUser();
+    // id 만 쓴다 — identities 가 필요 없으니 getClaims() 로 충분하다.
+    const { data: current } = await sb.auth.getClaims();
     const redirectTo = `${origin}/auth/callback?next=${encodeURIComponent(next)}`;
     const { data, error } = await sb.auth.signInWithOAuth({
       provider: "google",
@@ -166,10 +167,10 @@ async function handleAuthError({
           options: { path: "/", maxAge: 600, sameSite: "lax", httpOnly: true },
         },
       ];
-      if (current.user?.id) {
+      if (current?.claims.sub) {
         extras.push({
           name: MERGE_COOKIE,
-          value: current.user.id,
+          value: current.claims.sub,
           options: { path: "/", maxAge: 600, sameSite: "lax", httpOnly: true },
         });
       }

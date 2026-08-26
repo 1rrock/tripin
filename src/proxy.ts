@@ -71,10 +71,19 @@ function rewriteTo(request: NextRequest, pathname: string) {
 /**
  * 로그인한(익명 포함) 유저의 세션 토큰을 갱신한다.
  *
- * ⚠️ 세션 쿠키가 **있을 때만** 돈다. 이 가드가 핵심이다 —
- *    getUser() 는 Supabase 로 네트워크 왕복을 한다. 가드 없이 걸면 검색 유입
- *    비로그인 방문자(주 트래픽)마다 왕복이 하나씩 붙는다. 저장 한 번 안 한
+ * ⚠️ 세션 쿠키가 **있을 때만** 돈다. 이 가드가 핵심이다 — 가드 없이 걸면 검색 유입
+ *    비로그인 방문자(주 트래픽)마다 검증 비용이 하나씩 붙는다. 저장 한 번 안 한
  *    사람에게 그 비용을 물릴 이유가 없다.
+ *
+ * getClaims() 를 쓴다. 이 프로젝트는 비대칭 키(ES256)라 매 요청마다 붙던
+ * `/auth/v1/user` 왕복이 로컬 ECDSA 서명검증(+10분 캐시되는 JWKS)으로 바뀐다 —
+ * 왕복이 없어지는 게 아니라 성격이 바뀌는 것이고, 콜드 인스턴스는 JWKS 를
+ * 한 번 받아야 하니 완전 공짜는 아니다. (대칭키 HS256 으로 돌아가면 getClaims
+ * 가 내부적으로 getUser() 로 폴백해 원래 동작으로 돌아간다.)
+ *
+ * 만료 토큰 갱신 부수효과는 그대로다: getClaims() 도 인자 없이 부르면
+ * getSession() → __loadSession() 을 타서, 만료 시 _callRefreshToken() 이 돈다
+ * (auth-js GoTrueClient.js).
  *
  * 갱신된 토큰은 두 곳에 쓴다:
  *   · request.cookies — 이 요청의 서버 컴포넌트가 새 토큰을 보게
@@ -104,7 +113,7 @@ async function refreshSession(request: NextRequest) {
   });
 
   // 토큰이 만료됐으면 여기서 갱신된다. 결과값 자체는 쓰지 않는다.
-  await sb.auth.getUser();
+  await sb.auth.getClaims();
 
   return pending;
 }

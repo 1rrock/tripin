@@ -38,12 +38,13 @@ export async function supabaseServer() {
 /**
  * 현재 유저 id — 없으면 null.
  *
- * `getUser()` 를 쓴다. `getSession()` 은 쿠키의 JWT 를 **검증 없이** 파싱하므로
+ * `getSession()` 은 쓰지 않는다 — 쿠키의 JWT 를 **검증 없이** 파싱하므로
  * 서버에서 신뢰하면 안 된다(위조된 쿠키를 그대로 믿게 된다).
- * getUser 는 Supabase 에 물어 서명을 확인한다.
+ * `getClaims()` 는 로컬에서 서명을 검증한다(이 프로젝트는 비대칭 키라 JWKS 로
+ * 가능하다) — Supabase 에 왕복하는 getUser() 와 신뢰 수준은 같다.
  */
 export async function currentUserId(): Promise<string | null> {
   const sb = await supabaseServer();
-  const { data } = await sb.auth.getUser();
-  return data.user?.id ?? null;
+  const { data } = await sb.auth.getClaims();
+  return data?.claims.sub ?? null;
 }

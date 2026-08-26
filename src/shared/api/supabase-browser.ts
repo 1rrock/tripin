@@ -45,7 +45,8 @@ let verifiedUid: string | null = null;
  *    **서버에 묻지 않고** 로컬에서 파싱만 하므로, 유저가 삭제됐거나 세션이
  *    무효화된 뒤에도 "살아있다" 고 답한다. 그 상태로 쓰면 DB 가
  *    `saved_places_user_id_fkey` (23503, "Key is not present in table users")
- *    로 걷어찬다 — 실제로 겪었다.
+ *    로 걷어찬다 — 실제로 겪었다. getClaims() 도 로컬 서명검증일 뿐이라 같은
+ *    구멍을 갖는다 — 여기서는 못 바꾼다. 서버에 실제로 물어야 하는 지점이다.
  *
  * 익명 유저도 auth.users 의 정식 row 이므로(is_anonymous = true) RLS 정책은
  * 익명/정식을 구분하지 않는다. 나중에 구글로 승격해도 **id 가 바뀌지 않아서**
