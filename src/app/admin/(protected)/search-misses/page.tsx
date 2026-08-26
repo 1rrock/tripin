@@ -45,8 +45,13 @@ export default async function SearchMissesPage() {
           </p>
         </Card>
       ) : (
-        <div className="overflow-hidden rounded-lg border border-neutral-200 bg-white shadow-sm">
-          <table className="w-full text-sm">
+        /* `overflow-hidden` 이었다. 고정 열 폭만 80+176+80=336px 에 칸마다 px-4
+           (좌우 32px)가 네 번 붙고 검색어 칸이 그 위에 얹히므로 390px 를 넘는데,
+           hidden 이라 넘친 부분이 **스크롤로도 안 닿았다** — 맨 오른쪽
+           `DismissButton` 을 누를 방법이 없었다. auto 로 바꾸면 모서리 라운딩은
+           그대로 유지되면서 가로 스크롤이 열린다(pieces/PiecesClient.tsx 와 같은 패턴). */
+        <div className="overflow-x-auto rounded-lg border border-neutral-200 bg-white shadow-sm">
+          <table className="w-full min-w-[560px] text-sm">
             <thead>
               <tr className="border-b border-neutral-200 bg-neutral-50 text-left text-neutral-500">
                 <th className="px-4 py-2.5 font-medium">검색어</th>

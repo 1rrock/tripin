@@ -181,7 +181,10 @@ export default async function AdminDashboardPage() {
           {pieces.length === 0 ? (
             <p className="py-6 text-center text-sm text-neutral-500">아직 조각이 없습니다.</p>
           ) : (
-            <table className="w-full text-sm">
+            /* 스크롤 컨테이너 — 없이 그리면 좁은 폭에서 표가 `Card` 밖으로 샌다.
+               같은 종류의 표를 `pieces/PiecesClient.tsx` 가 이 패턴으로 처리한다. */
+            <div className="-mx-1 overflow-x-auto px-1">
+              <table className="w-full min-w-[420px] text-sm">
               <thead className="text-left text-xs text-neutral-500">
                 <tr className="border-b border-neutral-200">
                   <th className="pb-2 font-medium">조각</th>
@@ -221,7 +224,8 @@ export default async function AdminDashboardPage() {
                   );
                 })}
               </tbody>
-            </table>
+              </table>
+            </div>
           )}
         </Card>
       </div>

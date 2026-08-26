@@ -31,12 +31,22 @@ export default async function ProtectedAdminLayout({
   return (
     <>
       <header className="border-b border-neutral-200 bg-white">
-        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between px-6">
-          <div className="flex items-center gap-5">
-            <Link href="/admin" className="text-sm font-bold tracking-tight">
+        {/* 좁은 폭에서 **내비만** 가로로 흐르게 한다.
+            예전에는 브랜드 + 링크 8개 + 로그아웃이 `flex-wrap` 도 `overflow-x-auto`
+            도 없이 한 줄에 강제됐다. 필요 폭을 재면 ~760px 인데, 이 트리에는
+            `html`/`body` 전역 `overflow-x:hidden` 이 없어서 390px 화면에서는
+            **문서 전체**가 가로로 늘어나고 오른쪽 끝 로그아웃이 밖으로 밀렸다.
+            운영자가 폰으로 삭제요청 큐를 볼 때 인증 직후 바로 부딪히는 자리다.
+
+            브랜드와 로그아웃은 `shrink-0` 으로 양 끝에 못박고, 가운데 내비가
+            줄어들며(`min-w-0`) 넘치는 만큼만 스크롤을 받는다. 데스크톱(≥1024)
+            에서는 폭이 남아 스크롤이 아예 생기지 않으므로 지금 화면 그대로다. */}
+        <div className="mx-auto flex h-14 max-w-5xl items-center justify-between gap-4 px-6">
+          <div className="flex min-w-0 items-center gap-5">
+            <Link href="/admin" className="shrink-0 text-sm font-bold tracking-tight">
               Eatripin 어드민
             </Link>
-            <nav className="flex items-center gap-3 text-sm text-neutral-600">
+            <nav className="no-scrollbar flex min-w-0 items-center gap-3 overflow-x-auto text-sm whitespace-nowrap text-neutral-600">
               <Link href="/admin/places" className="transition hover:text-neutral-900">
                 장소
               </Link>
@@ -67,7 +77,7 @@ export default async function ProtectedAdminLayout({
               </Link>
             </nav>
           </div>
-          <form method="post" action="/api/admin/logout">
+          <form method="post" action="/api/admin/logout" className="shrink-0">
             <button
               type="submit"
               className="rounded-md px-3 py-1.5 text-sm text-neutral-600 transition hover:bg-neutral-100 hover:text-neutral-900"
