@@ -1,0 +1,162 @@
+[
+  {
+    "name": "core",
+    "glyphs": 1729,
+    "unicodeRange": "U+0020-2FFF,U+3008-33DD,U+AC00-D7A3,U+1F10B-1F10C",
+    "files": [
+      {
+        "weight": "400",
+        "file": "Paperlogy-400-core.woff2",
+        "kb": 78.2
+      },
+      {
+        "weight": "500",
+        "file": "Paperlogy-500-core.woff2",
+        "kb": 78.2
+      },
+      {
+        "weight": "600",
+        "file": "Paperlogy-600-core.woff2",
+        "kb": 78.6
+      },
+      {
+        "weight": "700",
+        "file": "Paperlogy-700-core.woff2",
+        "kb": 78.5
+      },
+      {
+        "weight": "900",
+        "file": "Paperlogy-900-core.woff2",
+        "kb": 79.5
+      }
+    ]
+  },
+  {
+    "name": "ext0",
+    "glyphs": 2499,
+    "unicodeRange": "U+AC02-B6F8",
+    "files": [
+      {
+        "weight": "400",
+        "file": "Paperlogy-400-ext0.woff2",
+        "kb": 23.6
+      },
+      {
+        "weight": "500",
+        "file": "Paperlogy-500-ext0.woff2",
+        "kb": 23.7
+      },
+      {
+        "weight": "600",
+        "file": "Paperlogy-600-ext0.woff2",
+        "kb": 23.7
+      },
+      {
+        "weight": "700",
+        "file": "Paperlogy-700-ext0.woff2",
+        "kb": 23.8
+      },
+      {
+        "weight": "900",
+        "file": "Paperlogy-900-ext0.woff2",
+        "kb": 24.1
+      }
+    ]
+  },
+  {
+    "name": "ext1",
+    "glyphs": 2499,
+    "unicodeRange": "U+B6F9-C1E8",
+    "files": [
+      {
+        "weight": "400",
+        "file": "Paperlogy-400-ext1.woff2",
+        "kb": 21.9
+      },
+      {
+        "weight": "500",
+        "file": "Paperlogy-500-ext1.woff2",
+        "kb": 21.9
+      },
+      {
+        "weight": "600",
+        "file": "Paperlogy-600-ext1.woff2",
+        "kb": 22
+      },
+      {
+        "weight": "700",
+        "file": "Paperlogy-700-ext1.woff2",
+        "kb": 22.1
+      },
+      {
+        "weight": "900",
+        "file": "Paperlogy-900-ext1.woff2",
+        "kb": 22.3
+      }
+    ]
+  },
+  {
+    "name": "ext2",
+    "glyphs": 2499,
+    "unicodeRange": "U+C1E9-CCD3",
+    "files": [
+      {
+        "weight": "400",
+        "file": "Paperlogy-400-ext2.woff2",
+        "kb": 30.3
+      },
+      {
+        "weight": "500",
+        "file": "Paperlogy-500-ext2.woff2",
+        "kb": 30.2
+      },
+      {
+        "weight": "600",
+        "file": "Paperlogy-600-ext2.woff2",
+        "kb": 30.3
+      },
+      {
+        "weight": "700",
+        "file": "Paperlogy-700-ext2.woff2",
+        "kb": 30.3
+      },
+      {
+        "weight": "900",
+        "file": "Paperlogy-900-ext2.woff2",
+        "kb": 31
+      }
+    ]
+  },
+  {
+    "name": "ext3",
+    "glyphs": 2497,
+    "unicodeRange": "U+CCD4-D7A2",
+    "files": [
+      {
+        "weight": "400",
+        "file": "Paperlogy-400-ext3.woff2",
+        "kb": 22.5
+      },
+      {
+        "weight": "500",
+        "file": "Paperlogy-500-ext3.woff2",
+        "kb": 22.6
+      },
+      {
+        "weight": "600",
+        "file": "Paperlogy-600-ext3.woff2",
+        "kb": 22.7
+      },
+      {
+        "weight": "700",
+        "file": "Paperlogy-700-ext3.woff2",
+        "kb": 22.7
+      },
+      {
+        "weight": "900",
+        "file": "Paperlogy-900-ext3.woff2",
+        "kb": 23.1
+      }
+    ]
+  }
+]

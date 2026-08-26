@@ -307,6 +307,39 @@ PostgREST 기본 상한이다. `.range()` 로 끝까지 돌지 않으면 공개 
   다는데, shop 이 위면 전부 shop 으로 샌다. 우리 유저에겐 빵집이 먹는 곳이다.
 ---
 
+### 3-18. 한글 폰트 조각은 **패밀리 이름을 갈라야** 한다 — 한 이름으로 묶으면 전부 받는다
+
+Paperlogy 를 `core` + `ext0-3` 다섯 조각으로 잘라 싣는다(`src/app/fonts.ts`,
+`scripts/subset-fonts.mjs`). 홈 첫 진입 폰트 전송이 786KB → 393KB 로 줄었다.
+
+처음엔 next/font/google 이 한글에 쓰는 방식대로 25벌을 `Paperlogy` **한 이름**으로
+묶고 `unicode-range` 로 갈랐다. 그랬더니 브라우저가 **조각을 전부 받았다(922KB —
+자르기 전보다 나쁨)**. 같은 패밀리 안에서 범위가 겹치면 CSS 규칙상 **나중에 선언된
+face 가 이기는데**, core 의 `U+AC00-D7A3` 안에 ext 범위가 통째로 들어 있었다.
+구글이 한 이름으로 되는 건 조각마다 범위를 **정확히** 나열해 겹치지 않기 때문인데,
+한글은 그 목록이 900구간을 넘어 CSS 가 폰트에서 아낀 것보다 커진다.
+
+지금은 조각마다 이름이 다르고(`Paperlogy`, `Paperlogy Ext0`…) globals.css 에서
+사슬로 세운다. 브라우저가 앞 패밀리에 글자가 없으면 다음으로 넘어가므로 커버리지는
+원본과 같다(11,723 글리프 전수 대조로 확인 — 누락 0, 겹침 0).
+
+함정 셋:
+
+- **`className` 을 얹지 마라.** `declarations` 로 `font-family` 를 덮으면 next/font 가
+  지어낸 이름의 @font-face 가 존재하지 않는데, `className` 은 그 이름으로
+  `font-family` 를 덮어써서 `<html>` 이 브라우저 기본 글꼴로 떨어진다. `variable` 만 쓴다.
+- **`"Paperlogy Fallback"` 은 반드시 ext 뒤**다. 앞에 오면 모든 글자를 가진 폴백이
+  ext 조각을 영영 가린다. 이 폴백은 `adjustFontFallback: false` 라 next/font 가 안
+  만들어 주므로 globals.css 에 손으로 적혀 있다 — **폰트 파일을 갈아끼우면 그
+  size-adjust/ascent-override 숫자를 다시 계산해야 한다.**
+- **원본 Paperlogy 는 한글 11,172자 중 2,780자만 윤곽이 있다.** 나머지 8,392자는
+  cmap 에 있지만 빈 글리프다 — `쀍`·`쭑` 이 빈칸으로 나오는 건 **자르기 전부터**
+  그랬다. 조각 탓으로 오해하지 마라. 빈 글리프는 다 합쳐 6KB 라 그대로 싣는다.
+
+코퍼스가 늘어도 **다시 돌릴 필요 없다** — 새 글자는 ext 가 받아준다.
+`npm run fonts:subset` 은 core 히트율을 올리고 싶을 때만 돌린다(pyftsubset 필요).
+---
+
 ## 4. 새로 생긴 구조
 
 - **`(protected)` 어드민 라우트 그룹** — 로그인 화면만 밖에 두고 그 안은 레이아웃이

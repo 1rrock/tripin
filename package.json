@@ -11,7 +11,8 @@
     "db:run": "node scripts/db-run.mjs",
     "db:migrate": "node scripts/db-run.mjs",
     "translate:en": "node scripts/translate-en.mjs",
-    "check:closed": "node scripts/check-closed.mjs"
+    "check:closed": "node scripts/check-closed.mjs",
+    "fonts:subset": "node scripts/subset-fonts.mjs"
   },
   "dependencies": {
     "@googlemaps/js-api-loader": "^2.1.1",
